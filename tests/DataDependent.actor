@@ -1,0 +1,40 @@
+actor Repeater int in ==> int out :
+  action in:[i] ==> out:[i] end
+end
+
+actor Split int in ==> int pos, int neg :
+  action in:[i] ==> pos:[i] 
+    guard 0 <= i
+  end
+  action in:[i] ==> neg:[i] 
+    guard i < 0
+  end
+end
+
+network Net int in ==> int out1, int out2 :
+  action in:[x1,x2] ==> out1:[x2], out2:[x1] 
+    requires x1 < 0 && x2 > 0
+  end
+  
+  chinvariant a[0] < 0
+  chinvariant a[1] > 0
+  chinvariant tot(b) == rd(a)
+  chinvariant tot(d) == (rd(b)+1)/2
+  chinvariant tot(c) == rd(b)/2
+  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> b[i] == a[i])
+  chinvariant (forall int i :: 0 <= i && i < rd(b) && i % 2 == 0 ==> b[i] == d[i/2])
+  chinvariant (forall int i :: 0 <= i && i < rd(b) && i % 2 == 1 ==> b[i] == c[i/2])
+  
+  entities
+    rep = Repeater();
+    split = Split();
+  end
+  
+  structure
+    a: in --> rep.in;
+    b: rep.out --> split.in;
+    c: split.pos --> out1;
+    d: split.neg --> out2;
+  end
+
+end
