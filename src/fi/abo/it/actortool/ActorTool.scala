@@ -98,7 +98,6 @@ object ActorTool {
     }
     
     // report errors and merge declarations
-    assert(parseResults.size > 0)
     var parseErrors = false;
     val program: List[Actor] = parseResults.map(result => result match {
      case e: parser.NoSuccess =>
@@ -122,6 +121,8 @@ object ActorTool {
       case Some(p) => p
       case None => return //illegal program, errors have already been displayed
     }
+    
+    if (program.isEmpty) return // Error message has already been displayed
     
     if (!params.DoTypecheck) return
     

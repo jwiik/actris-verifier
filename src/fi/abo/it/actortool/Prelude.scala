@@ -21,7 +21,7 @@ object BoogiePrelude {
   //val predicates: Set[Predicate] = Set()
   
   // default components
-  private var components: Set[PreludeComponent] = Set(TypesAndGlobalVarsPL,DivModAbsPL,FooterPL)
+  private var components: Set[PreludeComponent] = Set(TypesAndGlobalVarsPL,FooterPL)
 
   // get the prelude (with all components currently included)
   def get: String = {
@@ -33,7 +33,7 @@ object BoogiePrelude {
 sealed abstract class PreludeComponent {
   // determines the order in which the components are output
   def compare(that: PreludeComponent): Boolean = {
-    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,FooterPL)
+    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,DivModAbsPL,FooterPL)
     if (!order.contains(this)) false
     else order.indexOf(this) < order.indexOf(that)
   }
