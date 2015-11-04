@@ -11,9 +11,18 @@ import scala.util.parsing.input.Position
 
 object ActorTool {
   
-  final val Param = "(?:[-/])(.*)(?::)?(.*)".r
-
-    
+  final val Param = "(?:[-/])(.*)".r
+  
+  object Step extends Enumeration {
+    type Step = Value
+    val Init = Value("Init")
+    val Parse = Value("Parse")
+    val Resolve = Value("Analysis")
+    val Infer = Value("Inference")
+    val Translation = Value("Translation")
+    val Verification = Value("Verification")
+  }
+  
   /**
    * Holds all command line arguments
    */
@@ -28,10 +37,12 @@ object ActorTool {
     val BoogieArgs: String 
     val NoBplFile: Boolean
     val BplFile: String
+    val Timing: Int
     final lazy val help = "Usage: actortool [option] <filename>+\n"
   }
   
   def parseCommandLine(args: Array[String]): Option[CommandLineParameters] = {
+
     var aBoogiePath = "./boogie"
     var aBoogieArgs = ""
     var aPrintProgram = true
@@ -41,22 +52,48 @@ object ActorTool {
     var aDoInfer = true
     var aDoTranslate = true
     var aDoVerify = true
+    var aTiming = 1
     
-    val inputs = new ListBuffer[String]()
     
     lazy val help = {
-      "Usage: actortool [option] <filename>+\n"
+      "actortool [option] <filename>+\n"
     }
     
+    val inputs = new ListBuffer[String]()
+
     for (a <- args) {
-      a match {
-        case Param("print",_) => aPrintProgram = true
-        case Param("boogiePath",v) => aBoogiePath = v
-        case Param("noTypecheck",_) => aDoTypecheck = false
-        case Param("noInfer",_) => aDoInfer = false
-        case Param("noTranslate",_) => aDoTranslate = false
-        case Param("noVerify",_) => aDoVerify = false
-        case _ => inputs += a
+      val paramval = a.split(":", 2)
+      val (param,value) = (if (paramval.size == 1) (paramval(0),None) else (paramval(0),Some(paramval(1))));
+      param match {
+        case Param("print") => aPrintProgram = true
+        case Param("boogiePath") => value match {
+          case None => reportCommandLineError("parameter boogiePath takes an argument"); return None
+          case Some(v) => aBoogiePath = v
+        }
+        case Param("noTypecheck") => aDoTypecheck = false
+        case Param("noInfer") => aDoInfer = false
+        case Param("noTranslate") => aDoTranslate = false
+        case Param("noVerify") => aDoVerify = false
+        case Param("timings") => {
+          value match {
+            case Some(v) =>
+              try {
+                aTiming = Integer.parseInt(v)
+              } catch {
+                case e: NumberFormatException => 
+                  reportCommandLineError("parameter timing takes an integer as argument.")
+                  return None
+              }
+            case None =>
+              reportCommandLineError("parameter timing takes an integer as argument.")
+              return None
+          }
+
+        }
+        case Param(x,_) => 
+          reportCommandLineError("unknown command line parameter " + x)
+          return None
+        case _ => inputs += param
       }
     }
     
@@ -81,6 +118,7 @@ object ActorTool {
         val DoVerify = aDoVerify
         val NoBplFile = aNoBplFile
         val BplFile = aBplFile
+        val Timing = aTiming
     })
   }
   
@@ -110,20 +148,30 @@ object ActorTool {
     if (parseErrors) None else Some(program)
   }
   
-	def main(args: Array[String]): Unit = {
+	def main(args: Array[String]) {
+    var timings = scala.collection.immutable.ListMap[Step.Value,Long]()
+    for (step <- Step.values) timings += (step -> 0)
+    var startTime = System.nanoTime
+    var tmpTime = startTime
+    
     // Parse command line arguments
     val params = parseCommandLine(args) match {
       case Some(p) => p
       case None => return //invalid arguments, help has been displayed
     }
     
+    timings += (Step.Init -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
+    
     val program = parsePrograms(params) match {
       case Some(p) => p
       case None => return //illegal program, errors have already been displayed
     }
     
-    if (program.isEmpty) return // Error message has already been displayed
+    timings += (Step.Parse -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
     
+    if (program.isEmpty) return // Error message has already been displayed
     if (!params.DoTypecheck) return
     
     val typeCheck = Resolver.resolve(program) match {
@@ -133,12 +181,21 @@ object ActorTool {
         true
     }
     
+    timings += (Step.Resolve -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
+    
     if (params.DoInfer) Inferencer.infer(program)
+    
+    timings += (Step.Infer -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
     
     if (!params.DoTranslate) return
     
     val translator = new Translator();
     val bplProg: List[Boogie.Decl] = translator.translateProgram(program);
+    
+    timings += (Step.Translation -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
     
     if (!params.DoVerify) return
     
@@ -174,18 +231,33 @@ object ActorTool {
     errorReadingThread.start()
     val input = new BufferedReader(new InputStreamReader(boogie.getInputStream))
     var line = input.readLine()
-    var previous_line = null: String
+    var previousLine = null: String
     val boogieOutput: ListBuffer[String] = new ListBuffer()
     while (line!=null){
-      if (previous_line != null) println
+      if (previousLine != null) println
       Console.out.print(line)
       Console.out.flush
       boogieOutput += line
-      previous_line = line
+      previousLine = line
       line = input.readLine()
     }
     boogie.waitFor
     input.close
+    Console.out.println
+    
+    timings += (Step.Verification -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
+    
+    val totalTime = System.nanoTime - startTime
+    
+    if (0 < params.Timing)
+      Console.out.println("Verification finished in %1.3f seconds" format (totalTime/1000000000.0))
+    if (1 < params.Timing) {
+      for (s <- Step.values) {
+        Console.out.println(s + ": %1.3f s" format (timings(s)/1000000000.0))
+      }
+    }
+    
 	}
   
   def writeFile(filename: String, text: String) {
@@ -195,8 +267,19 @@ object ActorTool {
     writer.close()
   }
   
-  def reportCommandLineError(msg: String, help: String) = {
-    println("Error: " + msg +" Usage: " + help)
+  def reportCommandLineError(msg: String) {
+    reportCommandLineError(msg,None)
+  }
+  
+  def reportCommandLineError(msg: String, help: String) {
+    reportCommandLineError(msg,Some(help))
+  }
+  
+  def reportCommandLineError(msg: String, help: Option[String]) {
+    println("Error: " + msg + (help match {
+      case Some(h) =>" Usage: " + h
+      case None =>
+    }))
   }
   
   def reportError(pos: Position, msg: String) = {
