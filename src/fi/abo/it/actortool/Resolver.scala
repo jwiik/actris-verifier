@@ -99,6 +99,7 @@ object Resolver {
             case s: Structure =>
               return Errors(List((s.pos, "Basic actors cannot have a structure block")))
             case Declaration(_,_,_) => // Already handled
+            case sc: Schedule => resolveSchedule(ctx,sc)
           }
         }  
         case n: Network => {
@@ -156,6 +157,7 @@ object Resolver {
               case ActorInvariant(e,_) => resolveExpr(ctx,e,BoolType)
               case ChannelInvariant(e,_) => resolveExpr(ctx,e,BoolType)
               case d: Declaration => return Errors(List((d.pos, "Networks cannot have declarations")))
+              case sch: Schedule => return Errors(List((sch.pos,"Networks cannot have schedules")))
             }
           }
           if (!hasEntities) return Errors(List((n.pos, "No entities block in " + n.id)))
@@ -286,6 +288,12 @@ object Resolver {
       }
     }
     channels
+  }
+  
+  def resolveSchedule(ctx: Context, sch: Schedule) {
+    for (t <- sch.transitions) {
+      
+    }
   }
   
   def resolveExpr(ctx: Context, exp: Expr, t: Type) {

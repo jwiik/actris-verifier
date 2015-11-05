@@ -18,18 +18,12 @@ class Parser extends StandardTokenParsers {
     phrase(programUnit)(new lexical.Scanner(new PagedSeqReader(PagedSeq fromFile file)))
   def Semi = ";" ?
   
-  object Count {
-    var i = 0
-    def next = { val v = i; i = i+1; v }
-    def reset = {i = 0}
-  }
-  
   case class PositionedString(v: String) extends Positional
   
   lexical.reserved += ("actor", "network", "action", "true", "false", "null", "int", "bool", 
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", 
                        "end", "forall", "exists", "do", "assert", "assume", "initialize", "requires",
-                       "ensures", "var", "next", "last"
+                       "ensures", "var", "next", "last", "schedule", "fsm", "regexp"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]", ":[",
@@ -57,7 +51,7 @@ class Parser extends StandardTokenParsers {
     case (tName ~ id) => OutPort(id,tName)
   })
   
-  def actorMember: Parser[Member] = positioned(actorInvDecl | actionDecl | varDecl)
+  def actorMember: Parser[Member] = positioned(actorInvDecl | actionDecl | varDecl | scheduleBlock)
   
   def networkMember: Parser[Member] = positioned(
       actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl)
@@ -70,12 +64,25 @@ class Parser extends StandardTokenParsers {
     case connections => Structure(connections)
   })
   
+  
+  
+  def scheduleBlock: Parser[Schedule] = 
+    positioned(("schedule" ~> "fsm" ~ ident ~ (":" ~> repsep(transition,Semi) <~ (Semi?) <~ "end")) ^^ {
+      case  "fsm" ~ init ~ transitions => Schedule(init,transitions)
+    })
+  
+  //def schedType = "fsm" | "regexp" 
+  
   def entityDecl = positioned(ident ~ ("=" ~> (ident ~ paramList)) ^^ {
     case name ~ (actorId ~ params) => Instance(name,actorId,params)
   })
   
   def connection = positioned(ident ~ (":" ~> portRef ~ ("-->" ~> portRef)) ^^ {
     case id ~ (from ~ to) => Connection(id,from,to)
+  })
+  
+  def transition = positioned(ident ~ ("(" ~> ident <~ ")") ~ ("-->" ~> ident) ^^ {
+    case (from ~ act ~ to)  => Transition(act,from,to)
   })
   
   def paramList: Parser[List[Expr]] = ("(" ~> repsep(expression,",") <~ ")" ^^ {
@@ -106,9 +113,9 @@ class Parser extends StandardTokenParsers {
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
       case (id ~ "action" ~ inputs ~ outputs ~ guard ~ requires ~ ensures ~ vars ~ stmt) => 
-        Action(id.getOrElse("act#"+Count.next),false,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
+        Action(id,false,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
       case (id ~ "initialize" ~ inputs ~ outputs ~ guard ~ requires ~ ensures ~ vars ~ stmt) => 
-        Action(id.getOrElse("act#"+Count.next),true,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
+        Action(id,true,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
     }
   )
   

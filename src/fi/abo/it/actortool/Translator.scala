@@ -124,7 +124,7 @@ class Translator {
        body:::
        postCondAsserts:::
        invAsserts
-     List(Boogie.Proc(prefix+a.label,Nil,Nil,Nil,Nil,stmt))
+     List(Boogie.Proc(prefix+a.fullName,Nil,Nil,Nil,Nil,stmt))
    }
   
   def translateNetwork(network: Network): List[Boogie.Decl] = {
@@ -304,7 +304,7 @@ class Translator {
       List(bAssume(VarExpr("C#init") ==@ VarExpr("C"))) :::
       (for ((_,nwi) <- nwInvs) yield bAssume(nwi)) :::
       (for ((pos,chi) <- chInvs) yield bAssert(chi,pos,"Channel invariant might not hold on action entry"))
-    val initProc = Boogie.Proc(prefix+nwa.label+"#entry",Nil,Nil,Modifies,Nil,initStmt)
+    val initProc = Boogie.Proc(prefix+nwa.fullName+"#entry",Nil,Nil,Modifies,Nil,initStmt)
     
     // Sub-actor executions
     val childActionProcs = new ListBuffer[Boogie.Proc]()
@@ -318,7 +318,7 @@ class Translator {
       }
       for (m <- actor.members) m match {
         case ca@Action(_,false,_,_,_,_,_,_,_) => { // Ignore init actions for now
-          val procName = prefix+nwa.label+Sep+actor.fullName+Sep+ca.label
+          val procName = prefix+nwa.fullName+Sep+actor.fullName+Sep+ca.fullName
           val (subActStmt,newVarDecls,firingRule) = 
             transSubActionExecution(
                 inst, ca, boogieName, cInitAssumes, chInvs, actorVars.toList, sourceMap, targetMap)
@@ -370,7 +370,7 @@ class Translator {
       }).flatten:::
       (for ((pos,nwi) <- nwInvs) yield 
           bAssert(nwi,pos,"The network might not preserve the network invariant")) 
-    val exitProc = Boogie.Proc(prefix+nwa.label+"#exit",Nil,Nil,Modifies,Nil,exitStmt)
+    val exitProc = Boogie.Proc(prefix+nwa.fullName+"#exit",Nil,Nil,Modifies,Nil,exitStmt)
     
     // The complete list of Boogie procedure generated for this network
     chDecl:::initProc::childActionProcs.toList:::List(exitProc)

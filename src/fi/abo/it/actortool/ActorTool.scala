@@ -15,7 +15,7 @@ object ActorTool {
   
   object Step extends Enumeration {
     type Step = Value
-    val Init = Value("Init")
+    //val Init = Value("Init")
     val Parse = Value("Parse")
     val Resolve = Value("Analysis")
     val Infer = Value("Inference")
@@ -26,7 +26,7 @@ object ActorTool {
   /**
    * Holds all command line arguments
    */
-  sealed abstract class CommandLineParameters {
+  abstract class CommandLineParameters {
     val BoogiePath: String 
     val Files: List[File]
     val PrintProgram: Boolean 
@@ -52,7 +52,7 @@ object ActorTool {
     var aDoInfer = true
     var aDoTranslate = true
     var aDoVerify = true
-    var aTiming = 1
+    var aTiming = 2
     
     
     lazy val help = {
@@ -78,7 +78,7 @@ object ActorTool {
           value match {
             case Some(v) =>
               try {
-                aTiming = Integer.parseInt(v)
+                aTiming = v.toInt
               } catch {
                 case e: NumberFormatException => 
                   reportCommandLineError("parameter timing takes an integer as argument.")
@@ -129,7 +129,7 @@ object ActorTool {
     // parse programs
     val parser = new Parser
     val parseResults = if (files.isEmpty) {
-      println("No input file provided. Use 'actortool -help' for a list of all available command line options.")
+      reportCommandLineError("No input file provided.", params.help)
       Nil
     } else for (file <- files) yield {
       parser.parseFile(file)
@@ -148,20 +148,24 @@ object ActorTool {
     if (parseErrors) None else Some(program)
   }
   
-	def main(args: Array[String]) {
-    var timings = scala.collection.immutable.ListMap[Step.Value,Long]()
-    for (step <- Step.values) timings += (step -> 0)
-    var startTime = System.nanoTime
-    var tmpTime = startTime
-    
+  
+  def main(args: Array[String]) {
     // Parse command line arguments
     val params = parseCommandLine(args) match {
       case Some(p) => p
       case None => return //invalid arguments, help has been displayed
     }
+    verify(params)
+  }
+  
+	def verify(params: CommandLineParameters) {
+    var timings = scala.collection.immutable.ListMap[Step.Value,Long]()
+    for (step <- Step.values) timings += (step -> 0)
+    var startTime = System.nanoTime
+    var tmpTime = startTime
     
-    timings += (Step.Init -> (System.nanoTime - tmpTime))
-    tmpTime = System.nanoTime
+//    timings += (Step.Init -> (System.nanoTime - tmpTime))
+//    tmpTime = System.nanoTime
     
     val program = parsePrograms(params) match {
       case Some(p) => p
@@ -254,7 +258,7 @@ object ActorTool {
       Console.out.println("Verification finished in %1.3f seconds" format (totalTime/1000000000.0))
     if (1 < params.Timing) {
       for (s <- Step.values) {
-        Console.out.println(s + ": %1.3f s" format (timings(s)/1000000000.0))
+        Console.out.println(s + ": %1.3fs" format (timings(s)/1000000000.0))
       }
     }
     

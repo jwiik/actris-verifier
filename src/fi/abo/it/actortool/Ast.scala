@@ -59,13 +59,22 @@ sealed abstract class Member extends ASTNode {
   def isChannelInvariant = false
   def isEntities = false
   def isStructure = false
+  def isSchedule = false
 }
 
-sealed case class Action(val label: String, val init: Boolean, 
+object Count {
+  private var i = -1
+  def next = { i = i+1; i }
+  def reset = {i = -1}
+}
+
+sealed case class Action(
+    private val label: Option[String], val init: Boolean, 
     val inputPattern: List[InputPattern], val outputPattern: List[OutputPattern],
-    val guard: Option[Expr], val requires: List[Expr], val ensures: List[Expr], varDecls: List[Declaration],
+    val guard: Option[Expr], 
+    val requires: List[Expr], val ensures: List[Expr], varDecls: List[Declaration],
     val body: Option[List[Stmt]]) extends Member {
-  
+
   override def isAction = true
   
   def getInputCount(portId: String) = inputPattern.find(p => p.portId == portId) match {
@@ -78,6 +87,7 @@ sealed case class Action(val label: String, val init: Boolean,
     case Some(i) => i.exps.size
   }
   
+  val fullName = label match { case Some(l) => l; case None => "anon$"+Count.next}
 }
 
 sealed case class Declaration(val id: String, val typ: Type, val constant: Boolean) extends Member {
@@ -100,6 +110,10 @@ sealed case class Structure(val connections: List[Connection]) extends Member {
   override def isStructure = true
 }
 
+sealed case class Schedule(val initState: String, val transitions: List[Transition]) extends Member {
+  override def isSchedule = true
+}
+
 sealed case class Instance(val id: String, val actorId: String, val parameters: List[Expr]) extends ASTNode {
   var actor: Actor = null
 }
@@ -107,6 +121,8 @@ sealed case class Instance(val id: String, val actorId: String, val parameters: 
 sealed case class Connection(val id: String, val from: PortRef, val to: PortRef) extends ASTNode {
   var typ: Type = null
 }
+
+sealed case class Transition(action: String, from: String, to: String) extends ASTNode
 
 sealed case class PortRef(val actor: Option[String], val name: String) extends ASTNode
 
