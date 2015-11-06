@@ -30,6 +30,7 @@ class Translator {
     def Bool = NamedType("bool");
     def Real = NamedType("real");
     def Int = NamedType("int");
+    def State = NamedType("State")
   }
   
   object AstElement {
@@ -70,11 +71,35 @@ class Translator {
     }
   }
   
+  val currentState = "A"+Sep+"State"
+  
   def translateActor(actor: BasicActor): List[Boogie.Decl] = {
     val decls = new ListBuffer[Boogie.Decl]()
     val actions = new ListBuffer[Action]()
     val invariants = new ListBuffer[(Position,Boogie.Expr)]()
     val actorVars = new ListBuffer[Boogie.LocalVar]()
+    
+    val prefix = actor.id+Sep
+    val states = actor.schedule match {
+      case Some(s) => 
+        actorVars += bLocal(currentState,BType.State)
+        s.states
+      case None => Nil
+    }
+    
+    val bActorStates = for (s <- states) yield {
+      //actorVars += bLocal(currentState,BType.State)
+      Boogie.Const(prefix+s,true,BType.State)
+    }
+    
+    if (!states.isEmpty) {
+      val allowedStatesInvariant = 
+        (for (s <- states) yield {
+          Boogie.VarExpr(currentState) ==@ Boogie.VarExpr(prefix+s)
+        }).reduceLeft((a,b) => (a || b))
+      invariants += ((actor.pos,allowedStatesInvariant))
+    }
+      
     for (m <- actor.members) {
       m match {
         case ActorInvariant(e,_) => invariants += ((e.pos,transExprNoRename(e)))
@@ -84,15 +109,16 @@ class Translator {
       }
     }
     for (a <- actions) {
-      decls ++= translateActorAction(a,invariants.toList,actorVars.toList,actor.id+Sep)
+      decls ++= translateActorAction(a,invariants.toList,actorVars.toList,actor.schedule,prefix)
     }
-    decls.toList
+    bActorStates:::decls.toList
   }
   
    def translateActorAction(
        a: Action, 
        invs: List[(Position,Boogie.Expr)],
        actorVars: List[Boogie.LocalVar],
+       schedule: Option[Schedule],
        prefix: String): List[Boogie.Decl] = {
           
      val inputVars = (for (inPat <- a.inputPattern) yield {
@@ -101,13 +127,32 @@ class Translator {
      
      val invAssumes = for ((pos,i) <- invs) yield Helper.bAssume(i)
      val preCondAssumes = for (p <- a.requires) yield Helper.bAssume(transExprNoRename(p))
+     
      val guardAssume = a.guard match {
        case None => Nil
        case Some(e) => List(bAssume(transExprNoRename(e)))
      }
+     
+     val transitions = schedule match {
+       case Some(sched) => for (t <- sched.transitions.filter(t => t.action == a.fullName)) yield (t.from,t.to)
+       case None => Nil
+     }
+     
+     val stateGuards = for ((f,t) <- transitions) yield {
+       (Boogie.VarExpr(currentState) ==@ Boogie.VarExpr(prefix+f))
+     }
+     val stateGuard = 
+       if (stateGuards.isEmpty) Nil
+       else List(bAssume(stateGuards.reduceLeft((a,b) => (a || b))))
+     
      val body = a.body match {
        case None => List(bAssume(Boogie.BoolLiteral(true)))
        case Some(b) => transStmtNoRename(b) 
+     }
+     val stateUpdates = transitions match {
+       case Nil => Nil
+       case List((f,t)) => List(Boogie.Assign(Boogie.VarExpr(currentState), Boogie.VarExpr(prefix+t)))
+       case _ => assert(false); Nil
      }
      val invAsserts = for ((pos,i) <- invs) yield {
        bAssert(i,pos,"Action might not preserve invariant")
@@ -120,8 +165,10 @@ class Translator {
        inputVars:::
        invAssumes:::
        preCondAssumes:::
+       stateGuard:::
        guardAssume:::
        body:::
+       stateUpdates:::
        postCondAsserts:::
        invAsserts
      List(Boogie.Proc(prefix+a.fullName,Nil,Nil,Nil,Nil,stmt))

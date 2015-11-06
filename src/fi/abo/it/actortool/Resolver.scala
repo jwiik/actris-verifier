@@ -88,9 +88,13 @@ object Resolver {
             case _ =>
           }
 
-          val ctx = new ActorContext(rootCtx, vars, inports, outports) 
+          val ctx = new ActorContext(rootCtx, vars, inports, outports)
+          var schedule: Option[Schedule] = None
+          val actions = new ListBuffer[Action]()
           for (m <- a.members) m match {
-            case ac: Action => resolveAction(ctx,ac)
+            case ac: Action => 
+              resolveAction(ctx,ac)
+              actions += ac
             case ActorInvariant(e,_) => resolveExpr(ctx,e,BoolType)
             case ci: ChannelInvariant =>
               return Errors(List((ci.pos, "Basic actors cannot have channel invariants")))
@@ -99,8 +103,13 @@ object Resolver {
             case s: Structure =>
               return Errors(List((s.pos, "Basic actors cannot have a structure block")))
             case Declaration(_,_,_) => // Already handled
-            case sc: Schedule => resolveSchedule(ctx,sc)
+            case sc: Schedule => schedule = Some(sc)
           }
+          schedule match {
+            case Some(s) => resolveSchedule(ctx, actions.toList, s)
+            case None =>
+          }
+          
         }  
         case n: Network => {
           var inports = Map[String,InPort]()
@@ -290,10 +299,36 @@ object Resolver {
     channels
   }
   
-  def resolveSchedule(ctx: Context, sch: Schedule) {
+  def resolveSchedule(ctx: Context, actions: List[Action], sch: Schedule): Set[String] = {
+    import scala.collection.mutable.ListMap
+    val states = new scala.collection.mutable.HashSet[String]
+    val trans = new ListMap[String,ListMap[String,String]]
+    
+    val actionMap = actions.map(a => (a.fullName,a)).toMap
+    
+    states += sch.initState
     for (t <- sch.transitions) {
+      states += t.from
+      states += t.to
+      if (! (actionMap contains t.action)) {
+        ctx.error(t.pos, "Undeclared action: " + t.action)
+      }
+      if (!(trans contains t.action)) {
+        trans(t.action) = new ListMap[String,String]
+      }
       
+      if (trans(t.action) contains t.from) {
+        ctx.error(t.pos, "Duplicate transition from state " + t.from + " with action " + t.action)
+      }
+      else {
+        trans(t.action) += (t.from -> t.to)
+      }
+    } 
+    
+    for (t <- trans.keys) {
+      actionMap(t).transitions = trans(t).toList
     }
+    states.toSet
   }
   
   def resolveExpr(ctx: Context, exp: Expr, t: Type) {

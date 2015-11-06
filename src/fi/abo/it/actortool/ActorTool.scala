@@ -15,7 +15,6 @@ object ActorTool {
   
   object Step extends Enumeration {
     type Step = Value
-    //val Init = Value("Init")
     val Parse = Value("Parse")
     val Resolve = Value("Analysis")
     val Infer = Value("Inference")
@@ -46,7 +45,7 @@ object ActorTool {
     var aBoogiePath = "./boogie"
     var aBoogieArgs = ""
     var aPrintProgram = true
-    var aNoBplFile = true
+    var aNoBplFile = false
     var aBplFile = "out.bpl"
     var aDoTypecheck = true
     var aDoInfer = true
@@ -95,6 +94,12 @@ object ActorTool {
           return None
         case _ => inputs += param
       }
+    }
+    
+    if (inputs.isEmpty) reportCommandLineError("No input file(s) provided.", help);
+    else {
+      if (inputs(0).endsWith(".actor")) aBplFile = inputs(0).substring(0,inputs(0).length-6)+".bpl"
+      else aBplFile = inputs(0)+".bpl"
     }
     
     // check that input files exist

@@ -21,6 +21,14 @@ sealed abstract class Actor(val id: String, val inports: List[InPort],
 sealed case class BasicActor(override val id: String, override val inports: List[InPort], 
     override val outports: List[OutPort], override val members: List[Member]) extends Actor(id,inports,outports,members) {
   override def isActor = true
+  
+  lazy val schedule = {
+    val opt = members.find(m => m match {case sc: Schedule => true; case _ => false;})
+    opt match {
+      case Some(opt) => Some(opt.asInstanceOf[Schedule])
+      case None => None
+    }
+  }
 }
 
 sealed case class Network(
@@ -75,6 +83,8 @@ sealed case class Action(
     val requires: List[Expr], val ensures: List[Expr], varDecls: List[Declaration],
     val body: Option[List[Stmt]]) extends Member {
 
+  var transitions: List[(String,String)] = Nil
+  
   override def isAction = true
   
   def getInputCount(portId: String) = inputPattern.find(p => p.portId == portId) match {
@@ -112,6 +122,9 @@ sealed case class Structure(val connections: List[Connection]) extends Member {
 
 sealed case class Schedule(val initState: String, val transitions: List[Transition]) extends Member {
   override def isSchedule = true
+  lazy val states = {
+    (for (t <- transitions) yield List(t.from,t.to)).flatten.distinct
+  }
 }
 
 sealed case class Instance(val id: String, val actorId: String, val parameters: List[Expr]) extends ASTNode {

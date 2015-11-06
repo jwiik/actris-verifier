@@ -49,6 +49,7 @@ object TypesAndGlobalVarsPL extends PreludeComponent {
 type Chan a;
 type CType = <a>[Chan a]int;
 type MType = <a>[Chan a][int]a;
+type State;
 var M: MType;
 var C: CType;
 var R: CType; 
