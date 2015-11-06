@@ -1,9 +1,24 @@
-actor FairMerge int in1, int in2 ==> int out :
-  a1: action in1:[i] ==> out:[i] end
-  a2: action in2:[i] ==> out:[i] end
+actor FairMerge int x1, int x2 ==> int y :
+  a1: action x1:[i] ==> y:[i] end
+  a2: action x2:[i] ==> y:[i] end
   
   schedule fsm s1:
     s1 (a1) --> s2;
     s2 (a2) --> s1;
+  end
+end
+
+network Top int in1, int in2 ==> int out :
+  action in1:[i,j] ==> out:[i,j] end
+  
+  chinvariant tot(c) == rd(a)+rd(b)
+  
+  entities
+    fm = FairMerge();
+  end
+  structure
+    a: in1 --> fm.x1;
+    b: in2 --> fm.x2;
+    c: fm.y --> out;
   end
 end
