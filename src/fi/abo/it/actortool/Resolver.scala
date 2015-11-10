@@ -14,9 +14,10 @@ object Resolver {
     def error(p: Position, msg: String)
     def lookUp(id: String): Option[Declaration] = None
     def currentAccessedElement: Option[Expr] = None
+    def actors = Map.empty[String,Actor]
   }
   
-  sealed class RootContext(val parentCtx: Context, val actors: Map[String,Actor]) extends Context(parentCtx) {
+  sealed class RootContext(val parentCtx: Context, override val actors: Map[String,Actor]) extends Context(parentCtx) {
     val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
     override def lookUp(id: String): Option[Declaration] = None
@@ -30,15 +31,23 @@ object Resolver {
   sealed class ActorContext(override val parentCtx: RootContext, override val vars: Map[String,Declaration], 
       val inports: Map[String,InPort], val outports: Map[String,OutPort]) extends ChildContext(parentCtx,vars) {
     
-    private var channels = Map[String,Declaration]()
+    private var channels = Map[String,Connection]()
+    private var entities = Map[String,Actor]()
     
-    def addChannels(channels: Map[String,Declaration]) = {
+    def addChannels(channels: Map[String,Connection]) = {
       this.channels = channels
     }
     
+    def addEntities(entities: Map[String,Actor]) = {
+      this.entities = entities
+    }
+    
+    def getEntity(id: String) = entities.get(id)
+    
     override def lookUp(id: String): Option[Declaration] = {
       if (vars contains id) Some(vars(id))
-      else if (channels contains id) Some(channels(id))
+      else if (channels contains id) Some(Declaration(channels(id).id,ChanType(channels(id).typ),true))
+      else if (entities contains id) Some(Declaration(entities(id).id,ActorType(entities(id)),true))
       else  parentCtx.lookUp(id)
     }
   }
@@ -122,10 +131,10 @@ object Resolver {
             outports = outports + (p.id -> p)
           }
           
-          val ctx = new ActorContext(rootCtx, Map[String,Declaration](), inports, outports) 
+          val ctx = new ActorContext(rootCtx, Map.empty, inports, outports) 
 
           var hasEntities, hasStructure = false
-          var channels = Map.empty[String,Declaration]
+          var channels = Map.empty[String,Connection]
           for (m <- n.members) {
             m match {
               case e: Entities =>
@@ -145,6 +154,7 @@ object Resolver {
           }
           
           ctx.addChannels(channels)
+          ctx.addEntities(entities)
                     
           for (m <- n.members) {
             m match {
@@ -251,7 +261,7 @@ object Resolver {
   }
   
   def resolveStructure(ctx: ActorContext, entities: Map[String,Actor], structure: Structure) = {
-    var channels = Map[String,Declaration]()
+    var channels = Map[String,Connection]()
     for (c <- structure.connections) {
       val from = c.from match {
         case PortRef(Some(a),p) =>
@@ -293,7 +303,7 @@ object Resolver {
         case (Some(f),Some(t)) =>
           if (f.portType != t.portType) ctx.error(c.from.pos, "Incompatible port types")
           c.typ = f.portType
-          channels = channels + (c.id -> Declaration(c.id,ChanType(c.typ),true))
+          channels = channels + (c.id -> c)
       }
     }
     channels
@@ -392,6 +402,50 @@ object Resolver {
       case fa@FunctionApp("tot",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("initial",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tokens",params) => resolveDelayFunction(ctx, fa)
+      case fa@FunctionApp("state",params) => {
+        if (params.size != 2) {
+          ctx.error(fa.pos, "Expected two arguments")
+          UnknownType
+        }
+        else {
+          val tActor = resolveExpr(ctx,params(0))
+          val state = params(1) match {
+            case Id(id) => id
+            case x => 
+              ctx.error(x.pos, "The second argument to 'state' must be a state identifier")
+              return UnknownType
+          }
+          tActor match {
+            case ActorType(a) =>
+              a match {
+                case n: Network =>
+                  ctx.error(params(0).pos, "Function 'state' cannot be used on networks")
+                  UnknownType
+                case ba: BasicActor =>
+                  ba.schedule match {
+                    case Some(schedule) =>
+                      if (schedule.states contains state) {
+                        return BoolType
+                      }
+                      else {
+                        ctx.error(params(0).pos, "Actor " + ba.fullName + " has no state named " + state)
+                        return UnknownType
+                      }
+                    case None => 
+                      ctx.error(params(0).pos, "Actor " + ba.fullName + " has no FSM schedule")
+                      return UnknownType
+                  }
+              }
+            case _ =>
+              ctx.error(params(0).pos, "Actor instance expected, found: " + tActor.id)
+              UnknownType
+          }
+        }
+      }
+      case fa@FunctionApp(name,params) => {
+        ctx.error(fa.pos,"Undefined function: " + name)
+        UnknownType
+      }
       case is@IndexSymbol(name) => {
 //        if (!params.isEmpty) {
 //          if (1 < params.size) ctx.error(fa.pos, "Function last takes at most one parameter")
@@ -405,10 +459,7 @@ object Resolver {
         is.typ = IntType(32)
         IntType(32)
       }
-      case fa@FunctionApp(name,params) => {
-        ctx.error(fa.pos,"Undefined function: " + name)
-        UnknownType
-      }
+      
       case BoolLiteral(_) => BoolType
       case IntLiteral(_) => IntType(32)
       case FloatLiteral(_) => throw new IllegalArgumentException()
@@ -438,8 +489,8 @@ object Resolver {
   def resolvePredicate(ctx: Context, exp: BinaryExpr): Type = {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
-    if (!t1.isBool) ctx.error(exp.left.pos, "Expected type bool: " + exp.left)
-    if (!t2.isBool) ctx.error(exp.right.pos, "Expected type bool: " + exp.right)
+    if (!t1.isBool) ctx.error(exp.left.pos, "Expected type bool, found: " + t1.id)
+    if (!t2.isBool) ctx.error(exp.right.pos, "Expected type bool, found: " + t2.id)
     exp.typ = BoolType
     exp.typ
   }

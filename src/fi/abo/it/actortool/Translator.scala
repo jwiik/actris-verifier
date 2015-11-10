@@ -13,7 +13,7 @@ import fi.abo.it.actortool.Boogie.UnaryExpr
 class Translator {
   
   final val Sep = "#"
-  final val Modifies = List("C","R","M")
+  final val Modifies = List("C","R","M","St")
   
   object BMap extends Enumeration {
     type BMap = String
@@ -21,6 +21,8 @@ class Translator {
     final val C = "C"
     final val R = "R"
     final val M = "M"
+    final val St = "St"
+    final val This = "this#"
   }
   
   object BType {
@@ -31,6 +33,7 @@ class Translator {
     def Real = NamedType("real");
     def Int = NamedType("int");
     def State = NamedType("State")
+    def Actor = NamedType("Actor")
   }
   
   object AstElement {
@@ -70,9 +73,7 @@ class Translator {
       case n: Network => translateNetwork(n)
     }
   }
-  
-  val currentState = "A"+Sep+"State"
-  
+    
   def translateActor(actor: BasicActor): List[Boogie.Decl] = {
     val decls = new ListBuffer[Boogie.Decl]()
     val actions = new ListBuffer[Action]()
@@ -82,7 +83,7 @@ class Translator {
     val prefix = actor.id+Sep
     val states = actor.schedule match {
       case Some(s) => 
-        actorVars += bLocal(currentState,BType.State)
+        actorVars += bThisDecl
         s.states
       case None => Nil
     }
@@ -95,7 +96,7 @@ class Translator {
     if (!states.isEmpty) {
       val allowedStatesInvariant = 
         (for (s <- states) yield {
-          Boogie.VarExpr(currentState) ==@ Boogie.VarExpr(prefix+s)
+          bThis ==@ Boogie.VarExpr(prefix+s)
         }).reduceLeft((a,b) => (a || b))
       invariants += ((actor.pos,allowedStatesInvariant))
     }
@@ -134,12 +135,12 @@ class Translator {
      }
      
      val transitions = schedule match {
-       case Some(sched) => for (t <- sched.transitions.filter(t => t.action == a.fullName)) yield (t.from,t.to)
+       case Some(sched) => sched.transitionsOnAction(a.fullName)
        case None => Nil
      }
      
      val stateGuards = for ((f,t) <- transitions) yield {
-       (Boogie.VarExpr(currentState) ==@ Boogie.VarExpr(prefix+f))
+       (bThis ==@ Boogie.VarExpr(prefix+f))
      }
      val stateGuard = 
        if (stateGuards.isEmpty) Nil
@@ -151,7 +152,7 @@ class Translator {
      }
      val stateUpdates = transitions match {
        case Nil => Nil
-       case List((f,t)) => List(Boogie.Assign(Boogie.VarExpr(currentState), Boogie.VarExpr(prefix+t)))
+       case List((f,t)) => List(Boogie.Assign(bThis, Boogie.VarExpr(prefix+t)))
        case _ => assert(false); Nil
      }
      val invAsserts = for ((pos,i) <- invs) yield {
@@ -171,7 +172,7 @@ class Translator {
        stateUpdates:::
        postCondAsserts:::
        invAsserts
-     List(Boogie.Proc(prefix+a.fullName,Nil,Nil,Nil,Nil,stmt))
+     List(Boogie.Proc(prefix+a.fullName,Nil,Nil,Modifies,Nil,stmt))
    }
   
   def translateNetwork(network: Network): List[Boogie.Decl] = {
@@ -202,7 +203,10 @@ class Translator {
       TokensDefFinder.visitExpr(nwInvariants.toList)(buffer);
       buffer.toSet
     }
-    val boogieName = (for (c <- connections) yield ((c.id,namePrefix+c.id))).toMap
+    val boogieName = {
+      (for (c <- connections) yield ((c.id,namePrefix+c.id))):::
+      (for (e <- entities) yield ((e.id,namePrefix+e.id)))
+    }.toMap
     val bNwInvs = for (nwi <- nwInvariants.toList) yield ((nwi.pos,transExpr(nwi)(boogieName)))
     val bChInvs = for (ChannelInvariant(chi,_) <- chInvariants) yield ((chi.pos,transExpr(chi)(boogieName)))
     
@@ -280,7 +284,7 @@ class Translator {
        delayedChannels: Set[String],
        prefix: String): List[Boogie.Decl] = {
     
-    val chDecls = new ListBuffer[Boogie.Const]()
+    val constDecls = new ListBuffer[Boogie.Const]()
         
     //val sourceMap = (for (c <- connections) yield ((c.from,boogieName(c.id)))).toMap
     //val targetMap = (for (c <- connections) yield ((c.to,boogieName(c.id)))).toMap
@@ -288,8 +292,11 @@ class Translator {
     val cInitAssumesBuffer = new ListBuffer[Boogie.Assume]()
     val readAssumesBuffer = new ListBuffer[Boogie.Assume]()
     
+    for (e <- entities) {
+      constDecls += Boogie.Const(boogieName(e.id),true,BType.Actor)
+    }
     for (c <- connections) {
-     chDecls += Boogie.Const(boogieName(c.id),true,BType.Chan(type2BType(c.typ)))
+     constDecls += Boogie.Const(boogieName(c.id),true,BType.Chan(type2BType(c.typ)))
      if (!(delayedChannels contains c.id)) {
        c.from match {
          case PortRef(None,p) => {
@@ -301,7 +308,7 @@ class Translator {
      readAssumesBuffer += bAssume(bRead(boogieName(c.id)) ==@ bInt(0))
     }
     
-    val chDecl = chDecls.toList
+    val constDecl = constDecls.toList
     val cInitAssumes = cInitAssumesBuffer.toList
     val readAssumes = readAssumesBuffer.toList
     
@@ -420,8 +427,10 @@ class Translator {
     val exitProc = Boogie.Proc(prefix+nwa.fullName+"#exit",Nil,Nil,Modifies,Nil,exitStmt)
     
     // The complete list of Boogie procedure generated for this network
-    chDecl:::initProc::childActionProcs.toList:::List(exitProc)
+    constDecl:::initProc::childActionProcs.toList:::List(exitProc)
   }
+  
+  val nextState = "St#next"
   
   def transSubActionExecution(
       instance: Instance, 
@@ -447,6 +456,7 @@ class Translator {
       val declId = Id(av.id); declId.typ = av.typ
       renameMap = renameMap + (declId -> Id(newName))
     }
+    newVars += bLocal(nextState,BType.State)
     
     val firingConds = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
     val replacements = scala.collection.mutable.HashMap.empty[Id,IndexAccessor]
@@ -472,6 +482,30 @@ class Translator {
         firingConds += transGuard
     }
     
+    
+    val states = actor match {
+      case ba: BasicActor => {
+        ba.schedule match {
+          case Some(schedule) => schedule.transitionsOnAction(action.fullName)
+          case None => Nil
+        }
+      }
+      case nw: Network => Nil
+    }
+    
+    val stateGuards = 
+      for ((f,t) <- states) yield {
+        (bState(boogieName(instance.id)) ==@ Boogie.VarExpr(actor.id+Sep+f))
+      }
+    
+        
+    val stateInv = {
+      if (!stateGuards.isEmpty) stateGuards.reduceLeft((a,b) => a || b)
+      else Boogie.BoolLiteral(true)
+    }
+    asgn += bAssume(stateInv)
+    
+    firingConds ++= stateGuards
     val firingRule = {
       if (!firingConds.isEmpty) firingConds.reduceLeft((a,b) => a && b) 
       else Boogie.BoolLiteral(true)
@@ -510,6 +544,18 @@ class Translator {
         }
       }
     }
+    
+    val nextStateExp =
+      for ((f,t) <- states) yield {
+        (Boogie.VarExpr(nextState) ==@ Boogie.VarExpr(actor.id+Sep+t))
+      }
+    if (!nextStateExp.isEmpty) {
+      asgn += bAssume(nextStateExp.reduceLeft((a,b) => a || b))
+      asgn += Boogie.Assign(bState(boogieName(instance.id)), Boogie.VarExpr(nextState))
+    }
+    
+
+    
     asgn ++= (for ((pos,chi) <- chInvs) yield bAssert(chi,pos, 
                 "Sub-actor action at " + action.pos + " might not preserve the channel invariant"))
                 
@@ -599,6 +645,11 @@ class Translator {
           case "tot" => bRead(transExpr(params(0)))+bCredit(transExpr(params(0)))
           case "initial" => bCredInit(transExpr(params(0)))
           case "tokens" => bCredit(transExpr(params(0))) ==@ transExpr(params(1))
+          case "state" => {
+            val actor = params(0).typ.asInstanceOf[ActorType].actor
+            val id = params(1).asInstanceOf[Id].id
+            bState(transExpr(params(0))) ==@ Boogie.VarExpr(actor.fullName+Sep+id)
+          }
           //case "last" => bRead()
           case _ => throw new RuntimeException() // Should not happen
         }
@@ -645,6 +696,8 @@ class Translator {
     
     def bLocal(id: String, tp: Type) = new Boogie.LocalVar(id, type2BType(tp))
     def bLocal(id: String, tp: BType) = new Boogie.LocalVar(id, tp)
+    def bThisDecl = bLocal(BMap.This,BType.Actor)
+    
     def bBool(b: Boolean) = Boogie.BoolLiteral(b)
     def bInt(i: Int) = Boogie.IntLiteral(i)
     def bAssert(e: Expr, pos: Position, msg: String) = new Boogie.Assert(e, pos, msg)
@@ -668,6 +721,11 @@ class Translator {
     def bChannelIdx(connName: String, ind: Boogie.Expr): Expr = ((VarExpr(BMap.M) apply VarExpr(connName)) apply ind)
     def bChannel(channel: Boogie.Expr): Expr = (VarExpr(BMap.M) apply channel)
     def bChannelIdx(channel: Boogie.Expr, ind: Boogie.Expr): Expr = ((VarExpr(BMap.M) apply channel) apply ind)
+    
+    def bState(id: String) = VarExpr(BMap.St) apply VarExpr(id)
+    def bState(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
+    val bThis = bState(BMap.This)
+
   }
   
 }

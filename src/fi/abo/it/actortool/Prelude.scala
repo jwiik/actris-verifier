@@ -42,18 +42,22 @@ sealed abstract class PreludeComponent {
 
 object TypesAndGlobalVarsPL extends PreludeComponent {
   val text = 
-"""
-// ---------------------------------------------------------------
+"""// ---------------------------------------------------------------
 // -- Types and global variables ---------------------------------
 // ---------------------------------------------------------------
 type Chan a;
+type Actor;
 type CType = <a>[Chan a]int;
 type MType = <a>[Chan a][int]a;
 type State;
+
 var M: MType;
 var C: CType;
 var R: CType; 
 var C#init: CType;
+var St: [Actor]State;
+
+const unique this#: Actor;
 """
 }
 

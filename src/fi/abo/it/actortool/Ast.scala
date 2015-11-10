@@ -125,6 +125,10 @@ sealed case class Schedule(val initState: String, val transitions: List[Transiti
   lazy val states = {
     (for (t <- transitions) yield List(t.from,t.to)).flatten.distinct
   }
+  
+  def transitionsOnAction(action: String) = {
+    for (t <- transitions.filter(t => t.action == action)) yield (t.from,t.to)
+  }
 }
 
 sealed case class Instance(val id: String, val actorId: String, val parameters: List[Expr]) extends ASTNode {
@@ -274,6 +278,7 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isUnknown = false
   def isChannel = false
   def isIndexed = false
+  def isActor = false
 }
 
 sealed abstract class ParamType(val name: String, parameters: List[Type]) extends Type(name) {
@@ -309,4 +314,7 @@ case object UnknownType extends Type("unknown") {
 }
 case class ChanType(contentType: Type) extends IndexedType("Chan",contentType,IntType(32)) {
   override def isChannel = true
+}
+case class ActorType(actor: Actor) extends Type("actor") {
+  override def isActor = true
 }
