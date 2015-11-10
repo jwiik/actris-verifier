@@ -4,7 +4,13 @@ object BoogiePrelude {
   
   // adds component c to the prelude. has no effect if c is already present.
   def addComponent(c: PreludeComponent*): Unit = {
-    components = components ++ c
+    for (comp <- c) {
+      for (d <- comp.dependencies) {
+        components = components + d
+      }
+      components = components + comp
+    }
+    
   }
 
   // removes a component from the prelude. use with great care, as other parts of
@@ -33,11 +39,12 @@ object BoogiePrelude {
 sealed abstract class PreludeComponent {
   // determines the order in which the components are output
   def compare(that: PreludeComponent): Boolean = {
-    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,DivModAbsPL,FooterPL)
+    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,DivModAbsPL,ShiftsPL,FooterPL)
     if (!order.contains(this)) false
     else order.indexOf(this) < order.indexOf(that)
   }
   def text: String
+  def dependencies = Set.empty[PreludeComponent]
 }
 
 object TypesAndGlobalVarsPL extends PreludeComponent {
@@ -64,11 +71,32 @@ const unique this#: Actor;
 object DivModAbsPL extends PreludeComponent {
   val text =
 """
-function at$abs(x: int): int { if 0 <= x then x else -x }
-function at$div(int, int): int;
-function at$mod(int, int): int;
-axiom (forall a,b: int :: at$div(a,b)*b + at$mod(a,b) == a);
-axiom (forall a,b: int :: 0 <= at$mod(a,b) && at$mod(a,b) < at$abs(b));
+function AT#Abs(x: int): int { if 0 <= x then x else -x }
+function AT#Div(int, int): int;
+function AT#Mod(int, int): int;
+axiom (forall a,b: int :: AT#Div(a,b)*b + AT#Mod(a,b) == a);
+axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
+"""
+}
+
+object ShiftsPL extends PreludeComponent {
+  
+  override def dependencies = Set(DivModAbsPL)
+  
+  val text =
+"""
+function AT#RShift(int, int): int;
+function AT#LShift(int, int): int;
+axiom (forall a: int :: (
+  AT#RShift(a,1) == AT#Div(a,2) &&
+  AT#RShift(a,2) == AT#Div(a,4) &&
+  AT#RShift(a,3) == AT#Div(a,8) &&
+  AT#RShift(a,4) == AT#Div(a,16) &&
+  AT#RShift(a,5) == AT#Div(a,32) &&
+  AT#RShift(a,6) == AT#Div(a,64) &&
+  AT#RShift(a,7) == AT#Div(a,128) &&
+  AT#RShift(a,8) == AT#Div(a,256)
+));
 """
 }
 

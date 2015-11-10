@@ -4,11 +4,18 @@ import scala.util.parsing.input.Positional
 
 trait ASTNode extends Positional
 
-sealed abstract class Actor(val id: String, val inports: List[InPort], 
-    val outports: List[OutPort], val members: List[Member]) extends ASTNode {
-  
+sealed abstract class TopDecl(val id: String) extends ASTNode {
   def isNetwork: Boolean = false
   def isActor: Boolean = false
+  def isUnit: Boolean = false
+}
+
+sealed case class DataUnit(override val id: String, val constants: List[Declaration]) extends TopDecl(id) {
+  override def isUnit = true
+}
+
+sealed abstract class Actor(override val id: String, val parameters: List[Declaration],
+    val inports: List[InPort], val outports: List[OutPort], val members: List[Member]) extends TopDecl(id) {
   
   def fullName: String = id
   
@@ -18,8 +25,10 @@ sealed abstract class Actor(val id: String, val inports: List[InPort],
   def getOutport(id: String) = outports.find(p => p.portId == id)
 }
 
-sealed case class BasicActor(override val id: String, override val inports: List[InPort], 
-    override val outports: List[OutPort], override val members: List[Member]) extends Actor(id,inports,outports,members) {
+sealed case class BasicActor(
+    override val id: String, override val parameters: List[Declaration], 
+    override val inports: List[InPort], override val outports: List[OutPort], 
+    override val members: List[Member]) extends Actor(id,parameters,inports,outports,members) {
   override def isActor = true
   
   lazy val schedule = {
@@ -33,9 +42,10 @@ sealed case class BasicActor(override val id: String, override val inports: List
 
 sealed case class Network(
     override val id: String, 
+    override val parameters: List[Declaration], 
     override val inports: List[InPort], 
     override val outports: List[OutPort], 
-    override val members: List[Member]) extends Actor(id,inports,outports,members) {
+    override val members: List[Member]) extends Actor(id,parameters,inports,outports,members) {
   
   override def isNetwork = true
   
@@ -131,7 +141,7 @@ sealed case class Schedule(val initState: String, val transitions: List[Transiti
   }
 }
 
-sealed case class Instance(val id: String, val actorId: String, val parameters: List[Expr]) extends ASTNode {
+sealed case class Instance(val id: String, val actorId: String, val arguments: List[Expr]) extends ASTNode {
   var actor: Actor = null
 }
 
@@ -204,6 +214,12 @@ sealed case class Div(override val left: Expr, override val right: Expr) extends
 }
 sealed case class Mod(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
   override val operator = "%"
+}
+sealed case class RShift(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
+  override val operator = ">>"
+}
+sealed case class LShift(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
+  override val operator = "<<"
 }
 sealed case class Eq(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
   override val operator = "="

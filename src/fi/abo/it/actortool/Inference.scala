@@ -3,7 +3,7 @@ package fi.abo.it.actortool
 object Inferencer {
   private var inferenceModules: List[InferenceModule] = List(StaticProperties)
   
-  def infer(program: List[Actor]) = {
+  def infer(program: List[TopDecl]) = {
     for (module <- inferenceModules) {
       for (a <- program) module.infer(a)
     }
@@ -11,7 +11,7 @@ object Inferencer {
 }
 
 object StaticProperties extends InferenceModule {
-  def infer(actor: Actor) = actor match {
+  def infer(decl: TopDecl) = decl match {
     case n: Network => {
       for (m <- n.members) m match {
         case Structure(connections) => {
@@ -42,5 +42,5 @@ object StaticProperties extends InferenceModule {
 } 
 
 abstract class InferenceModule {
-  def infer(actor: Actor)
+  def infer(decl: TopDecl)
 }

@@ -127,14 +127,14 @@ object ActorTool {
     })
   }
   
-  def parsePrograms(params: CommandLineParameters): Option[List[Actor]] = {
+  def parsePrograms(params: CommandLineParameters): Option[List[TopDecl]] = {
     val files = params.Files
     val printProgram = params.PrintProgram
     
     // parse programs
     val parser = new Parser
     val parseResults = if (files.isEmpty) {
-      reportCommandLineError("No input file provided.", params.help)
+      reportCommandLineError("No input file(s) provided.", params.help)
       Nil
     } else for (file <- files) yield {
       parser.parseFile(file)
@@ -142,7 +142,7 @@ object ActorTool {
     
     // report errors and merge declarations
     var parseErrors = false;
-    val program: List[Actor] = parseResults.map(result => result match {
+    val program: List[TopDecl] = parseResults.map(result => result match {
      case e: parser.NoSuccess =>
        parseErrors = true;
        println("Error: " + e);

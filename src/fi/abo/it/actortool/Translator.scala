@@ -15,6 +15,11 @@ class Translator {
   final val Sep = "#"
   final val Modifies = List("C","R","M","St")
   
+  object Uniquifier {
+    private var i = -1
+    def get(id: String) = { i = i+1; id+Sep+(i.toString) }
+  } 
+  
   object BMap extends Enumeration {
     type BMap = String
     final val CInit = "C#init"
@@ -64,13 +69,14 @@ class Translator {
   import AstElement._
   
   var currActor: Actor = null
-  var topDecls: Map[String,Actor] = null
+  var topDecls: Map[String,TopDecl] = null
 
-  def translateProgram(decls: List[Actor]): List[Boogie.Decl] = {
-    topDecls = (for (d <- decls) yield (d.id, d)).toMap
+  def translateProgram(decls: List[TopDecl]): List[Boogie.Decl] = {
+    topDecls = (for (d <- decls.filter(a => a.isInstanceOf[Actor])) yield (d.id, d)).toMap
     decls flatMap {
       case a: BasicActor => translateActor(a)
       case n: Network => translateNetwork(n)
+      case u: DataUnit => Nil
     }
   }
     
@@ -172,7 +178,7 @@ class Translator {
        stateUpdates:::
        postCondAsserts:::
        invAsserts
-     List(Boogie.Proc(prefix+a.fullName,Nil,Nil,Modifies,Nil,stmt))
+     List(Boogie.Proc(Uniquifier.get(prefix+a.fullName),Nil,Nil,Modifies,Nil,stmt))
    }
   
   def translateNetwork(network: Network): List[Boogie.Decl] = {
@@ -269,7 +275,7 @@ class Translator {
     }
     asgn ++= (for ((pos,nwi) <- nwInvs) yield 
         bAssert(nwi,pos,"Network initialization might not establish the network invariant")) 
-    List(Boogie.Proc(prefix+"init",Nil,Nil,Modifies,Nil,asgn.toList))
+    List(Boogie.Proc(Uniquifier.get(prefix+"init"),Nil,Nil,Modifies,Nil,asgn.toList))
   }
   
   def translateNetworkAction(
@@ -358,7 +364,7 @@ class Translator {
       List(bAssume(VarExpr("C#init") ==@ VarExpr("C"))) :::
       (for ((_,nwi) <- nwInvs) yield bAssume(nwi)) :::
       (for ((pos,chi) <- chInvs) yield bAssert(chi,pos,"Channel invariant might not hold on action entry"))
-    val initProc = Boogie.Proc(prefix+nwa.fullName+"#entry",Nil,Nil,Modifies,Nil,initStmt)
+    val initProc = Boogie.Proc(Uniquifier.get(prefix+nwa.fullName+"#entry"),Nil,Nil,Modifies,Nil,initStmt)
     
     // Sub-actor executions
     val childActionProcs = new ListBuffer[Boogie.Proc]()
@@ -379,7 +385,7 @@ class Translator {
           val stmt = 
             newVarDecls :::
             subActStmt
-          childActionProcs += Boogie.Proc(procName,Nil,Nil,Modifies,Nil,stmt)
+          childActionProcs += Boogie.Proc(Uniquifier.get(procName),Nil,Nil,Modifies,Nil,stmt)
           firingRules += firingRule
         }
         case _ => 
@@ -424,7 +430,7 @@ class Translator {
       }).flatten:::
       (for ((pos,nwi) <- nwInvs) yield 
           bAssert(nwi,pos,"The network might not preserve the network invariant")) 
-    val exitProc = Boogie.Proc(prefix+nwa.fullName+"#exit",Nil,Nil,Modifies,Nil,exitStmt)
+    val exitProc = Boogie.Proc(Uniquifier.get(prefix+nwa.fullName+"#exit"),Nil,Nil,Modifies,Nil,exitStmt)
     
     // The complete list of Boogie procedure generated for this network
     constDecl:::initProc::childActionProcs.toList:::List(exitProc)
@@ -447,11 +453,23 @@ class Translator {
     val newVars = new ListBuffer[Boogie.LocalVar]()
     var renameMap = Map[Id,Id]()
     
+    val parameterNames = instance.actor.parameters.map(p => Id(p.id))
+    val actorParams = instance.actor.parameters.map(p => {
+      val newName = "ActorParam"+Sep+p.id
+      newVars += bLocal(newName,type2BType(p.typ))
+      (Id(p.id),Id(newName))
+    }).toMap
+    renameMap = renameMap ++ actorParams
+    for ((name,value) <- (parameterNames zip instance.arguments)) {
+      // Add assumptions about the values of the actor parameters
+      asgn += bAssume(transExpr(IdReplacer.visitExpr(name)(renameMap))(boogieName) ==@ transExpr(value)(boogieName))
+    }
+    
     asgn ++= cInits // Assumptions about initial state of channels
     asgn ++= (for ((_,chi) <- chInvs) yield bAssume(chi))  // Assume channel invariants
     
     for (av <- actorVars) {  // Add actor variables to variable declarations and renaming scheme
-      val newName = "avar#"+av.id
+      val newName = "ActorVar"+Sep+av.id
       newVars += bLocal(newName,type2BType(av.typ))
       val declId = Id(av.id); declId.typ = av.typ
       renameMap = renameMap + (declId -> Id(newName))
@@ -612,12 +630,18 @@ class Translator {
       case Times(e1,e2) => transExpr(e1) * transExpr(e2)
       case Div(e1,e2) => 
         BoogiePrelude.addComponent(DivModAbsPL)
-        Boogie.FunctionApp("at$div",List(transExpr(e1),transExpr(e2)))
+        Boogie.FunctionApp("AT#Div",List(transExpr(e1),transExpr(e2)))
         //transExpr(e1) / transExpr(e2)
       case Mod(e1,e2) =>
         BoogiePrelude.addComponent(DivModAbsPL)
-        Boogie.FunctionApp("at$mod",List(transExpr(e1),transExpr(e2)))
+        Boogie.FunctionApp("AT#Mod",List(transExpr(e1),transExpr(e2)))
         //transExpr(e1) % transExpr(e2)
+      case RShift(e1,e2) =>
+        BoogiePrelude.addComponent(ShiftsPL)
+        Boogie.FunctionApp("AT#RShift",List(transExpr(e1),transExpr(e2)))
+      case LShift(e1,e2) =>
+        BoogiePrelude.addComponent(ShiftsPL)
+        Boogie.FunctionApp("AT#LShift",List(transExpr(e1),transExpr(e2)))
       case UnMinus(e) => UnaryExpr("-",transExpr(e))
       case IfThenElse(c,e1,e2) => Boogie.Ite(transExpr(c),transExpr(e1),transExpr(e2))
       case Forall(vars,e,pat) => 
@@ -881,6 +905,8 @@ abstract class ASTReplacingVisitor[A<:ASTNode,B<:ASTNode] {
       case Times(l,r) => Times(visitExpr(l),visitExpr(r))
       case Div(l,r) => Div(visitExpr(l),visitExpr(r))
       case Mod(l,r) => Mod(visitExpr(l),visitExpr(r))
+      case RShift(l,r) => RShift(visitExpr(l),visitExpr(r))
+      case LShift(l,r) => LShift(visitExpr(l),visitExpr(r))
       case UnMinus(e) => UnMinus(visitExpr(e))
       case IfThenElse(c,t,e) => IfThenElse(visitExpr(c),visitExpr(t),visitExpr(e))
       case Forall(v,e,None) => Forall(v,visitExpr(e),None)

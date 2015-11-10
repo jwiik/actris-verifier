@@ -63,41 +63,56 @@ object Resolver {
     override def currentAccessedElement = Some(accessor)
   }
 
-  def resolve(prog: List[Actor]): ResolverOutcome = {
-    var decls = Map[String,Actor]()
+  def resolve(prog: List[TopDecl]): ResolverOutcome = {
+    var decls = Map[String,TopDecl]()
+    
+    val actors: scala.collection.mutable.Map[String,Actor] = new scala.collection.mutable.HashMap()
+    val units: scala.collection.mutable.Map[String,DataUnit] = new scala.collection.mutable.HashMap()
     
     for (decl <- prog) {
       if (decls contains decl.id) {
         return Errors(List((decl.pos,"Duplicate actor name: " + decl.id)))
       }
       decls = decls + (decl.id -> decl) 
+      
+      decl match {
+        case du: DataUnit => units += (du.id -> du)
+        case ba: BasicActor => actors += (ba.id -> ba)
+        case nw: Network => actors += (nw.id -> nw)
+      }
     }
     
-    val rootCtx = new RootContext(null,decls)
+    val rootCtx = new RootContext(null,actors.toMap)
     
-    for (decl <- prog) {
-      var inports = Map[String,InPort]()
-      var outports = Map[String,OutPort]()
+    for (decl <- actors.values) {
+      val inports = scala.collection.mutable.HashMap[String,InPort]()
+      val outports = scala.collection.mutable.HashMap[String,OutPort]()
       for (p <- decl.inports) {
         if (inports contains p.id) rootCtx.error(p.pos, "Duplicate port: " + p.id)
-        inports = inports + (p.id -> p)
+        inports += (p.id -> p)
       }
       for (p <- decl.outports) {
         if ((inports contains p.id) || (outports contains p.id)) {
           rootCtx.error(p.pos, "Duplicate port: " + p.id)
         }
-        outports = outports + (p.id -> p)
+        outports += (p.id -> p)
       }
+      
+      val vars = scala.collection.mutable.HashMap[String,Declaration]()
+      for (p <- decl.parameters) {
+        vars += (p.id -> p)
+      }
+      
       decl match {
         case a: BasicActor => {
-          var vars = Map[String,Declaration]()
+          
           
           for (m <- a.members) m match {
-            case d: Declaration => vars = vars + (d.id -> d)
+            case d: Declaration => vars += (d.id -> d)
             case _ =>
           }
-
-          val ctx = new ActorContext(rootCtx, vars, inports, outports)
+          
+          val ctx = new ActorContext(rootCtx, vars.toMap, inports.toMap, outports.toMap)
           var schedule: Option[Schedule] = None
           val actions = new ListBuffer[Action]()
           for (m <- a.members) m match {
@@ -243,21 +258,38 @@ object Resolver {
   }
   
   def resolveEntities(ctx: ActorContext, e: Entities): Map[String,Actor] = {
-    var instances = Map[String,Actor]()
+    val instances = scala.collection.mutable.HashMap[String,Actor]()
     for (instance <- e.entities) {
       if (!(ctx.parentCtx.actors contains instance.actorId)) {
         ctx.error(instance.pos, "Unknown actor " + instance.actorId)
-        return instances
+        return instances.toMap
       }
+      
+      val actor = ctx.parentCtx.actors(instance.actorId)
+      val signature = for (p <- actor.parameters) yield p.typ
+      val arguments = for (p <- instance.arguments) yield { resolveExpr(ctx,p) }
+      
+      if (signature.size != arguments.size) {
+        ctx.error(instance.pos, "The actor " + actor.fullName + " takes " + signature.size + " parameters")
+        return instances.toMap
+      }
+      
+      for ((s,a) <- (signature zip arguments)) {
+        if (s != a) {
+          ctx.error(instance.pos, "Expected type " + s.id + "found: " + a)
+          return instances.toMap
+        }
+      }
+      
       if (instances contains instance.id) {
         ctx.error(instance.pos, "Instance id already used " + instance.id)
-        return instances
+        return instances.toMap
       }
-      val actor = ctx.parentCtx.actors(instance.actorId)
+      
       instance.actor = actor
-      instances = instances + (instance.id -> actor)
+      instances += (instance.id -> actor)
     }
-    instances
+    instances.toMap
   }
   
   def resolveStructure(ctx: ActorContext, entities: Map[String,Actor], structure: Structure) = {
@@ -352,6 +384,8 @@ object Resolver {
       case op: Times => resolveNumericBinaryExpr(ctx, op)
       case op: Div => resolveNumericBinaryExpr(ctx, op)
       case op: Mod => resolveNumericBinaryExpr(ctx, op)
+      case op: RShift => resolveShift(ctx,op)
+      case op: LShift => resolveShift(ctx,op)
       case m@UnMinus(e) =>
         val t = resolveExpr(ctx,e)
         if (!t.isNumeric) ctx.error(m.pos, "Expected numeric type, found: " + t.id)
@@ -460,9 +494,9 @@ object Resolver {
         IntType(32)
       }
       
-      case BoolLiteral(_) => BoolType
-      case IntLiteral(_) => IntType(32)
-      case FloatLiteral(_) => throw new IllegalArgumentException()
+      case l@BoolLiteral(_) => l.typ = BoolType; BoolType
+      case l@IntLiteral(_) => l.typ = IntType(32); IntType(32)
+      case l@FloatLiteral(_) => throw new IllegalArgumentException()
       case v@Id(id) =>
         ctx.lookUp(id) match {
           case Some(d) => 
@@ -470,6 +504,7 @@ object Resolver {
             v.typ
           case None => 
             ctx.error(exp.pos, "Unknown variable: " + id)
+            v.typ = UnknownType
             UnknownType
         }
         
@@ -511,6 +546,18 @@ object Resolver {
     if (t1 != t2) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
     exp.typ = BoolType
     exp.typ
+  }
+  
+  def resolveShift(ctx: Context, exp: BinaryExpr): Type = {
+    val t1 = resolveExpr(ctx, exp.left)
+    val t2 = resolveExpr(ctx, exp.right)
+    
+    if (!t1.isInt) ctx.error(exp.left.pos, "Shift operation only applicable on integers, found: " + t1.id)
+    if (!t2.isInt) ctx.error(exp.right.pos, "Shift operation only applicable on integers, found: " + t2.id)
+    
+    exp.typ = t1
+    t1
+    
   }
   
   def resolveQuantifier(ctx: Context, quant: Quantifier): Type = {

@@ -1,0 +1,57 @@
+actor add int in1, int in2 ==> int out :
+  action in1:[i], in2:[j] ==> out:[i+j] end
+end
+
+actor delay(int k) int in ==> int out :
+  initialize ==> out:[k] end
+  action in:[i] ==> out:[i] end
+end
+
+actor mulc(int c) int in ==> int out :
+  action in:[i] ==> out:[c*i] end
+end
+
+actor rshift(int s) int in ==> int out :
+  action in:[i] ==> out:[i >> s] end
+end
+
+network iir() int in ==> int out :
+  action in:[i] ==> out:[(171*g[last]+85*i) >> 8] end
+  
+  invariant tokens(f,1)
+  invariant f[next] == 171*g[last]
+  
+  chinvariant rd(a) == tot(b)
+  chinvariant rd(b) == tot(c)
+  chinvariant rd(c) == tot(d)
+  chinvariant rd(d) == tot(e)
+  chinvariant rd(e)+1 == tot(f)
+  chinvariant rd(c) == tot(g)
+  chinvariant rd(f) == tot(c)
+  
+  chinvariant 171*g[-1] == f[0] 
+  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> b[i] == 85*a[i])
+  chinvariant (forall int i :: 0 <= i && i < tot(c) ==> c[i] == b[i]+f[i])
+  chinvariant (forall int i :: 0 <= i && i < tot(d) ==> d[i] == c[i] >> 8)
+  chinvariant (forall int i :: 0 <= i && i < tot(g) ==> g[i] == c[i] >> 8)
+  chinvariant (forall int i :: 0 <= i && i < tot(e) ==> e[i] == 171*d[i])
+  chinvariant (forall int i :: 1 <= i && i < tot(f) ==> f[i] == e[i-1])
+  
+  entities
+    del1 = delay(0);
+    mul1 = mulc(85);
+    mul2 = mulc(171);
+    rsh1 = rshift(8);
+    add1 = add(); 
+  end
+  
+  structure
+    a: in --> mul1.in;
+    b: mul1.out --> add1.in1;
+    c: add1.out --> rsh1.in;
+    d: rsh1.out --> mul2.in;
+    e: mul2.out --> del1.in;
+    f: del1.out --> add1.in2;
+    g: rsh1.out --> out;
+  end
+end

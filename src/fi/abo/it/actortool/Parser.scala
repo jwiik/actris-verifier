@@ -20,29 +20,40 @@ class Parser extends StandardTokenParsers {
   
   case class PositionedString(v: String) extends Positional
   
-  lexical.reserved += ("actor", "network", "action", "true", "false", "null", "int", "bool", 
+  lexical.reserved += ("actor", "network", "unit", "action", "true", "false", "null", "int", "bool", 
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", 
                        "end", "forall", "exists", "do", "assert", "assume", "initialize", "requires",
                        "ensures", "var", "next", "last", "schedule", "fsm", "regexp"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]", ":[",
-                       "-->", "::", "{", "}")
+                       "-->", "::", "{", "}", "<<" , ">>")
+                       
+  def programUnit = (actorDecl | networkDecl | unitDecl)*
   
-  def programUnit = (actorDecl | networkDecl)*
+  def unitDecl = positioned(("unit" ~> ident ~ (":" ~> (varDecl*)) <~ "end" ) ^^ {
+    case (id ~ decls) => DataUnit(id,decls)
+  })
   
   def actorDecl =
-    positioned(("actor" ~> ident ~ repsep(inPortDecl,",") ~ 
+    positioned(("actor" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ repsep(inPortDecl,",") ~ 
         ("==>" ~> repsep(outPortDecl,",")) ~ (":" ~> (actorMember*)) <~ "end") ^^ {
-      case (id ~ inports ~ outports ~ members) => BasicActor(id, inports, outports, members)
+      case (id ~ Some(params) ~ inports ~ outports ~ members) => BasicActor(id, params, inports, outports, members)
+      case (id ~ None ~ inports ~ outports ~ members) => BasicActor(id, Nil, inports, outports, members)
     })
     
   def networkDecl =
-    positioned(("network" ~> ident ~ repsep(inPortDecl,",") ~ 
+    positioned(("network" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ repsep(inPortDecl,",") ~ 
         ("==>" ~> repsep(outPortDecl,",")) ~ (":" ~> (networkMember*)) <~ "end") ^^ {
-      case (id ~ inports ~ outports ~ members) => Network(id, inports, outports, members)
+      case (id ~ Some(params) ~ inports ~ outports ~ members) => Network(id, params, inports, outports, members)
+      case (id ~ None ~ inports ~ outports ~ members) => Network(id, Nil, inports, outports, members)
     })
   
+  def formalParam = positioned(
+      (typeName ~ ident) ^^ {
+        case (tName ~ id) => Declaration(id,tName,true)
+      }  
+    )
   def inPortDecl: Parser[InPort] = positioned((typeName ~ ident) ^^ {
     case (tName ~ id) => InPort(id,tName)
   })
@@ -149,7 +160,7 @@ class Parser extends StandardTokenParsers {
       }
   })
   
-  def cmpExpr: Parser[Expr] = positioned((addExpr ~ ((cmpOp ~ addExpr) ?)) ^^ {
+  def cmpExpr: Parser[Expr] = positioned((bitManipExpr ~ ((cmpOp ~ bitManipExpr) ?)) ^^ {
     case e ~ None => e
     case e1 ~ Some("==" ~ e2) => Eq(e1,e2)
     case e1 ~ Some("!=" ~ e2) => NotEq(e1,e2)
@@ -160,6 +171,13 @@ class Parser extends StandardTokenParsers {
   })
   
   def cmpOp = "==" | "!=" | "<" | "<=" | ">=" | ">" 
+  
+  def bitManipExpr: Parser[Expr] = positioned((addExpr ~ ((">>" | "<<" ) ~ addExpr *)) ^^{
+    case e0 ~ rest => (rest foldLeft e0) {
+      case (a, ">>" ~ b) => RShift(a,b)
+      case (a, "<<" ~ b) => LShift(a,b)
+    }
+  }) 
   
   def addExpr: Parser[Expr] = positioned((mulExpr ~ (("+" | "-") ~ mulExpr *)) ^^{
     case e0 ~ rest => (rest foldLeft e0) {
@@ -173,7 +191,9 @@ class Parser extends StandardTokenParsers {
       case (a, "/" ~ b) => Div(a,b)
       case (a, "%" ~ b) => Mod(a,b) 
     }
-  }) 
+  })
+  
+  
   
   def unaryExpr: Parser[Expr] = positioned(
     "-" ~> unaryExpr ^^ UnMinus | 
