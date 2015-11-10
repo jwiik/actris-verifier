@@ -2,8 +2,8 @@ actor Add int in1, int in2 ==> int out :
   action in1:[i], in2:[j] ==> out:[i+j] end
 end
 
-actor Delay int in ==> int out :
-  initialize ==> out:[0] end
+actor Delay(int k) int in ==> int out :
+  initialize ==> out:[k] end
   action in:[i] ==> out:[i] end
 end
 
@@ -25,7 +25,7 @@ network Net int in ==> int out :
   
   entities
     add = Add();
-    del = Delay();
+    del = Delay(0);
   end
   
   structure

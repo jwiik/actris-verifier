@@ -1,41 +1,50 @@
-
 // ---------------------------------------------------------------
 // -- Types and global variables ---------------------------------
 // ---------------------------------------------------------------
 type Chan a;
+type Actor;
 type CType = <a>[Chan a]int;
 type MType = <a>[Chan a][int]a;
 type State;
+
 var M: MType;
 var C: CType;
 var R: CType; 
 var C#init: CType;
+var St: [Actor]State;
+
+const unique this#: Actor;
 
 // ---------------------------------------------------------------
 // -- End of prelude ---------------------------------------------
 // ---------------------------------------------------------------
 
 procedure Add#anon$0()
+  modifies C, R, M, St;
 {
   var i: int;
   var j: int;
   assume true;
 }
 procedure Delay#anon$1()
+  modifies C, R, M, St;
 {
   assume true;
 }
 procedure Delay#anon$2()
+  modifies C, R, M, St;
 {
   var i: int;
   assume true;
 }
+const unique Net#add: Actor;
+const unique Net#del: Actor;
 const unique Net#a: Chan (int);
 const unique Net#b: Chan (int);
 const unique Net#c: Chan (int);
 const unique Net#d: Chan (int);
 procedure Net#anon$3#entry()
-  modifies C, R, M;
+  modifies C, R, M, St;
 {
   assume C#init[Net#a] == 1;
   assume C#init[Net#c] == 0;
@@ -74,8 +83,9 @@ procedure Net#anon$3#entry()
   assert {:msg "  24.15: Channel invariant might not hold on action entry"} M[Net#b][0] == M[Net#c][-1];
 }
 procedure Net#anon$3#Add#anon$0()
-  modifies C, R, M;
+  modifies C, R, M, St;
 {
+  var St#next: State;
   var in1#i: int;
   var in2#j: int;
   assume C#init[Net#a] == 1;
@@ -106,6 +116,7 @@ procedure Net#anon$3#Add#anon$0()
     (1 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (M[Net#b][i] == M[Net#d][i - 1])
   );
   assume M[Net#b][0] == M[Net#c][-1];
+  assume true;
   assume (1 <= C[Net#a]) && (1 <= C[Net#b]);
   in1#i := M[Net#a][R[Net#a]];
   R[Net#a] := R[Net#a] + 1;
@@ -144,8 +155,9 @@ procedure Net#anon$3#Add#anon$0()
   assert {:msg "  24.15: Sub-actor action at 2.3 might not preserve the channel invariant"} M[Net#b][0] == M[Net#c][-1];
 }
 procedure Net#anon$3#Delay#anon$2()
-  modifies C, R, M;
+  modifies C, R, M, St;
 {
+  var St#next: State;
   var in#i: int;
   assume C#init[Net#a] == 1;
   assume C#init[Net#c] == 0;
@@ -175,6 +187,7 @@ procedure Net#anon$3#Delay#anon$2()
     (1 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (M[Net#b][i] == M[Net#d][i - 1])
   );
   assume M[Net#b][0] == M[Net#c][-1];
+  assume true;
   assume 1 <= C[Net#d];
   in#i := M[Net#d][R[Net#d]];
   R[Net#d] := R[Net#d] + 1;
@@ -208,7 +221,7 @@ procedure Net#anon$3#Delay#anon$2()
   assert {:msg "  24.15: Sub-actor action at 7.3 might not preserve the channel invariant"} M[Net#b][0] == M[Net#c][-1];
 }
 procedure Net#anon$3#exit()
-  modifies C, R, M;
+  modifies C, R, M, St;
 {
   assume C#init[Net#a] == 1;
   assume C#init[Net#c] == 0;
