@@ -1,0 +1,19 @@
+actor NonDetMerge int x1, int x2 ==> int y :
+  a1: action x1:[i] ==> y:[i] end
+  a2: action x2:[i] ==> y:[i] end
+end
+
+network Top int in1, int in2 ==> int out :
+  action in1:[i], in2:[j] ==> out:[i,j] end
+  
+  chinvariant tot(c) == rd(a)+rd(b)
+    
+  entities
+    ndm = NonDetMerge();
+  end
+  structure
+    a: in1 --> ndm.x1;
+    b: in2 --> ndm.x2;
+    c: ndm.y --> out;
+  end
+end

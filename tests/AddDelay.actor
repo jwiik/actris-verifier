@@ -1,7 +1,9 @@
+@sdf
 actor Add int in1, int in2 ==> int out :
   action in1:[i], in2:[j] ==> out:[i+j] end
 end
 
+@sdf
 actor Delay(int k) int in ==> int out :
   initialize ==> out:[k] end
   action in:[i] ==> out:[i] end
@@ -13,11 +15,6 @@ network Net int in ==> int out :
   invariant tokens(b,1)
   invariant b[next] == c[last]
   
-  chinvariant tot(c) == rd(a)
-  chinvariant tot(c) == rd(b)
-  chinvariant tot(d) == rd(a)
-  chinvariant tot(d) == rd(b)
-  chinvariant tot(b) == rd(d)+1
   chinvariant (forall int i :: 0 <= i && i < tot(c) ==> c[i] == a[i]+b[i])
   chinvariant (forall int i :: 0 <= i && i < tot(d) ==> d[i] == a[i]+b[i])
   chinvariant (forall int i :: 1 <= i && i < tot(b) ==> b[i] == d[i-1])

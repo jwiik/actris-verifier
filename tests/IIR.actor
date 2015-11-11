@@ -1,16 +1,20 @@
+@sdf
 actor add int in1, int in2 ==> int out :
   action in1:[i], in2:[j] ==> out:[i+j] end
 end
 
+@sdf
 actor delay(int k) int in ==> int out :
   initialize ==> out:[k] end
   action in:[i] ==> out:[i] end
 end
 
+@sdf
 actor mulc(int c) int in ==> int out :
   action in:[i] ==> out:[c*i] end
 end
 
+@sdf
 actor rshift(int s) int in ==> int out :
   action in:[i] ==> out:[i >> s] end
 end
@@ -20,14 +24,6 @@ network iir() int in ==> int out :
   
   invariant tokens(f,1)
   invariant f[next] == 171*g[last]
-  
-  chinvariant rd(a) == tot(b)
-  chinvariant rd(b) == tot(c)
-  chinvariant rd(c) == tot(d)
-  chinvariant rd(d) == tot(e)
-  chinvariant rd(e)+1 == tot(f)
-  chinvariant rd(c) == tot(g)
-  chinvariant rd(f) == tot(c)
   
   chinvariant 171*g[-1] == f[0] 
   chinvariant (forall int i :: 0 <= i && i < tot(b) ==> b[i] == 85*a[i])

@@ -99,46 +99,46 @@ procedure iir#anon$5#entry#5()
   assume C#init == C;
   assume C[iir#f] == 1;
   assume M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
-  assert {:msg "  Channel invariant might not hold on action entry"} R[iir#g] == 0;
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= C[iir#g];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= R[iir#g];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= C[iir#f];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= R[iir#f];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= C[iir#e];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= R[iir#e];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= C[iir#d];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= R[iir#d];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= C[iir#c];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= R[iir#c];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= C[iir#b];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= R[iir#b];
-  assert {:msg "  Channel invariant might not hold on action entry"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= C[iir#a];
-  assert {:msg "  Channel invariant might not hold on action entry"} 0 <= R[iir#a];
-  assert {:msg "  24.15: Channel invariant might not hold on action entry"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  25.15: Channel invariant might not hold on action entry"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  26.15: Channel invariant might not hold on action entry"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  27.15: Channel invariant might not hold on action entry"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  28.15: Channel invariant might not hold on action entry"} (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assert {:msg "  29.15: Channel invariant might not hold on action entry"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  30.15: Channel invariant might not hold on action entry"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  32.15: Channel invariant might not hold on action entry"} (171 * M[iir#g][-1]) == M[iir#f][0];
-  assert {:msg "  33.16: Channel invariant might not hold on action entry"} (forall i: int :: 
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} R[iir#f] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} R[iir#b] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} R[iir#c] == (R[iir#g] + C[iir#g]);
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} R[iir#c] == (R[iir#d] + C[iir#d]);
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} R[iir#d] == (R[iir#e] + C[iir#e]);
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} R[iir#a] == (R[iir#b] + C[iir#b]);
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} R[iir#g] == 0;
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= C[iir#g];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= R[iir#g];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= C[iir#f];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= R[iir#f];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= C[iir#e];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= R[iir#e];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= C[iir#d];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= R[iir#d];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= C[iir#c];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= R[iir#c];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= C[iir#b];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= R[iir#b];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= C[iir#a];
+  assert {:msg "  Channel invariant might not hold on action entry (generated)"} 0 <= R[iir#a];
+  assert {:msg "  28.3: Channel invariant might not hold on action entry"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "  29.3: Channel invariant might not hold on action entry"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
   );
-  assert {:msg "  34.16: Channel invariant might not hold on action entry"} (forall i: int :: 
+  assert {:msg "  30.3: Channel invariant might not hold on action entry"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#c] + C[iir#c])) ==> (M[iir#c][i] == (M[iir#b][i] + M[iir#f][i]))
   );
-  assert {:msg "  35.16: Channel invariant might not hold on action entry"} (forall i: int :: 
+  assert {:msg "  31.3: Channel invariant might not hold on action entry"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#d] + C[iir#d])) ==> (M[iir#d][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  36.16: Channel invariant might not hold on action entry"} (forall i: int :: 
+  assert {:msg "  32.3: Channel invariant might not hold on action entry"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#g] + C[iir#g])) ==> (M[iir#g][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  37.16: Channel invariant might not hold on action entry"} (forall i: int :: 
+  assert {:msg "  33.3: Channel invariant might not hold on action entry"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#e] + C[iir#e])) ==> (M[iir#e][i] == (171 * M[iir#d][i]))
   );
-  assert {:msg "  38.16: Channel invariant might not hold on action entry"} (forall i: int :: 
+  assert {:msg "  34.3: Channel invariant might not hold on action entry"} (forall i: int :: 
     (1 <= i) && (i < (R[iir#f] + C[iir#f])) ==> (M[iir#f][i] == M[iir#e][i - 1])
   );
 }
@@ -155,6 +155,13 @@ procedure iir#anon$5#delay#anon$2#6()
   assume C#init[iir#d] == 0;
   assume C#init[iir#e] == 0;
   assume C#init[iir#g] == 0;
+  assume R[iir#f] == (R[iir#c] + C[iir#c]);
+  assume R[iir#b] == (R[iir#c] + C[iir#c]);
+  assume R[iir#c] == (R[iir#g] + C[iir#g]);
+  assume R[iir#c] == (R[iir#d] + C[iir#d]);
+  assume R[iir#d] == (R[iir#e] + C[iir#e]);
+  assume R[iir#a] == (R[iir#b] + C[iir#b]);
+  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
   assume R[iir#g] == 0;
   assume 0 <= C[iir#g];
   assume 0 <= R[iir#g];
@@ -171,13 +178,6 @@ procedure iir#anon$5#delay#anon$2#6()
   assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
   assume 0 <= C[iir#a];
   assume 0 <= R[iir#a];
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
   assume (171 * M[iir#g][-1]) == M[iir#f][0];
   assume (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
@@ -204,46 +204,46 @@ procedure iir#anon$5#delay#anon$2#6()
   C[iir#e] := C[iir#e] - 1;
   M[iir#f][R[iir#f] + C[iir#f]] := in#i;
   C[iir#f] := C[iir#f] + 1;
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant"} 0 <= R[iir#a];
-  assert {:msg "  24.15: Sub-actor action at 7.3 might not preserve the channel invariant"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  25.15: Sub-actor action at 7.3 might not preserve the channel invariant"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  26.15: Sub-actor action at 7.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  27.15: Sub-actor action at 7.3 might not preserve the channel invariant"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  28.15: Sub-actor action at 7.3 might not preserve the channel invariant"} (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assert {:msg "  29.15: Sub-actor action at 7.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  30.15: Sub-actor action at 7.3 might not preserve the channel invariant"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  32.15: Sub-actor action at 7.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
-  assert {:msg "  33.16: Sub-actor action at 7.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} R[iir#f] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} R[iir#b] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#g] + C[iir#g]);
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#d] + C[iir#d]);
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} R[iir#d] == (R[iir#e] + C[iir#e]);
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} R[iir#a] == (R[iir#b] + C[iir#b]);
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} R[iir#g] == 0;
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#g];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#g];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#f];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#f];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#e];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#e];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#d];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#d];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#c];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#c];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#b];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#b];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#a];
+  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#a];
+  assert {:msg "  28.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "  29.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
   );
-  assert {:msg "  34.16: Sub-actor action at 7.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  30.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#c] + C[iir#c])) ==> (M[iir#c][i] == (M[iir#b][i] + M[iir#f][i]))
   );
-  assert {:msg "  35.16: Sub-actor action at 7.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  31.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#d] + C[iir#d])) ==> (M[iir#d][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  36.16: Sub-actor action at 7.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  32.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#g] + C[iir#g])) ==> (M[iir#g][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  37.16: Sub-actor action at 7.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  33.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#e] + C[iir#e])) ==> (M[iir#e][i] == (171 * M[iir#d][i]))
   );
-  assert {:msg "  38.16: Sub-actor action at 7.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  34.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (forall i: int :: 
     (1 <= i) && (i < (R[iir#f] + C[iir#f])) ==> (M[iir#f][i] == M[iir#e][i - 1])
   );
 }
@@ -260,6 +260,13 @@ procedure iir#anon$5#mulc#anon$3#7()
   assume C#init[iir#d] == 0;
   assume C#init[iir#e] == 0;
   assume C#init[iir#g] == 0;
+  assume R[iir#f] == (R[iir#c] + C[iir#c]);
+  assume R[iir#b] == (R[iir#c] + C[iir#c]);
+  assume R[iir#c] == (R[iir#g] + C[iir#g]);
+  assume R[iir#c] == (R[iir#d] + C[iir#d]);
+  assume R[iir#d] == (R[iir#e] + C[iir#e]);
+  assume R[iir#a] == (R[iir#b] + C[iir#b]);
+  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
   assume R[iir#g] == 0;
   assume 0 <= C[iir#g];
   assume 0 <= R[iir#g];
@@ -276,13 +283,6 @@ procedure iir#anon$5#mulc#anon$3#7()
   assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
   assume 0 <= C[iir#a];
   assume 0 <= R[iir#a];
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
   assume (171 * M[iir#g][-1]) == M[iir#f][0];
   assume (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
@@ -309,46 +309,46 @@ procedure iir#anon$5#mulc#anon$3#7()
   C[iir#a] := C[iir#a] - 1;
   M[iir#b][R[iir#b] + C[iir#b]] := ActorParam#c * in#i;
   C[iir#b] := C[iir#b] + 1;
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#a];
-  assert {:msg "  24.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  25.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  26.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  27.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  28.15: Sub-actor action at 11.3 might not preserve the channel invariant"} (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assert {:msg "  29.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  30.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  32.15: Sub-actor action at 11.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
-  assert {:msg "  33.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#f] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#b] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#g] + C[iir#g]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#d] + C[iir#d]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#d] == (R[iir#e] + C[iir#e]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#a] == (R[iir#b] + C[iir#b]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#g] == 0;
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#g];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#g];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#f];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#f];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#e];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#e];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#d];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#d];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#c];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#c];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#b];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#b];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#a];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#a];
+  assert {:msg "  28.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "  29.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
   );
-  assert {:msg "  34.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  30.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#c] + C[iir#c])) ==> (M[iir#c][i] == (M[iir#b][i] + M[iir#f][i]))
   );
-  assert {:msg "  35.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  31.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#d] + C[iir#d])) ==> (M[iir#d][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  36.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  32.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#g] + C[iir#g])) ==> (M[iir#g][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  37.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  33.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#e] + C[iir#e])) ==> (M[iir#e][i] == (171 * M[iir#d][i]))
   );
-  assert {:msg "  38.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  34.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (1 <= i) && (i < (R[iir#f] + C[iir#f])) ==> (M[iir#f][i] == M[iir#e][i - 1])
   );
 }
@@ -365,6 +365,13 @@ procedure iir#anon$5#mulc#anon$3#8()
   assume C#init[iir#d] == 0;
   assume C#init[iir#e] == 0;
   assume C#init[iir#g] == 0;
+  assume R[iir#f] == (R[iir#c] + C[iir#c]);
+  assume R[iir#b] == (R[iir#c] + C[iir#c]);
+  assume R[iir#c] == (R[iir#g] + C[iir#g]);
+  assume R[iir#c] == (R[iir#d] + C[iir#d]);
+  assume R[iir#d] == (R[iir#e] + C[iir#e]);
+  assume R[iir#a] == (R[iir#b] + C[iir#b]);
+  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
   assume R[iir#g] == 0;
   assume 0 <= C[iir#g];
   assume 0 <= R[iir#g];
@@ -381,13 +388,6 @@ procedure iir#anon$5#mulc#anon$3#8()
   assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
   assume 0 <= C[iir#a];
   assume 0 <= R[iir#a];
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
   assume (171 * M[iir#g][-1]) == M[iir#f][0];
   assume (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
@@ -414,46 +414,46 @@ procedure iir#anon$5#mulc#anon$3#8()
   C[iir#d] := C[iir#d] - 1;
   M[iir#e][R[iir#e] + C[iir#e]] := ActorParam#c * in#i;
   C[iir#e] := C[iir#e] + 1;
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 11.3 might not preserve the channel invariant"} 0 <= R[iir#a];
-  assert {:msg "  24.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  25.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  26.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  27.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  28.15: Sub-actor action at 11.3 might not preserve the channel invariant"} (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assert {:msg "  29.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  30.15: Sub-actor action at 11.3 might not preserve the channel invariant"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  32.15: Sub-actor action at 11.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
-  assert {:msg "  33.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#f] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#b] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#g] + C[iir#g]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#d] + C[iir#d]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#d] == (R[iir#e] + C[iir#e]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#a] == (R[iir#b] + C[iir#b]);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} R[iir#g] == 0;
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#g];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#g];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#f];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#f];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#e];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#e];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#d];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#d];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#c];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#c];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#b];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#b];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#a];
+  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#a];
+  assert {:msg "  28.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "  29.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
   );
-  assert {:msg "  34.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  30.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#c] + C[iir#c])) ==> (M[iir#c][i] == (M[iir#b][i] + M[iir#f][i]))
   );
-  assert {:msg "  35.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  31.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#d] + C[iir#d])) ==> (M[iir#d][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  36.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  32.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#g] + C[iir#g])) ==> (M[iir#g][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  37.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  33.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#e] + C[iir#e])) ==> (M[iir#e][i] == (171 * M[iir#d][i]))
   );
-  assert {:msg "  38.16: Sub-actor action at 11.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  34.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (forall i: int :: 
     (1 <= i) && (i < (R[iir#f] + C[iir#f])) ==> (M[iir#f][i] == M[iir#e][i - 1])
   );
 }
@@ -470,6 +470,13 @@ procedure iir#anon$5#rshift#anon$4#9()
   assume C#init[iir#d] == 0;
   assume C#init[iir#e] == 0;
   assume C#init[iir#g] == 0;
+  assume R[iir#f] == (R[iir#c] + C[iir#c]);
+  assume R[iir#b] == (R[iir#c] + C[iir#c]);
+  assume R[iir#c] == (R[iir#g] + C[iir#g]);
+  assume R[iir#c] == (R[iir#d] + C[iir#d]);
+  assume R[iir#d] == (R[iir#e] + C[iir#e]);
+  assume R[iir#a] == (R[iir#b] + C[iir#b]);
+  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
   assume R[iir#g] == 0;
   assume 0 <= C[iir#g];
   assume 0 <= R[iir#g];
@@ -486,13 +493,6 @@ procedure iir#anon$5#rshift#anon$4#9()
   assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
   assume 0 <= C[iir#a];
   assume 0 <= R[iir#a];
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
   assume (171 * M[iir#g][-1]) == M[iir#f][0];
   assume (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
@@ -521,46 +521,46 @@ procedure iir#anon$5#rshift#anon$4#9()
   C[iir#d] := C[iir#d] + 1;
   M[iir#g][R[iir#g] + C[iir#g]] := AT#RShift(in#i, ActorParam#s);
   C[iir#g] := C[iir#g] + 1;
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 15.3 might not preserve the channel invariant"} 0 <= R[iir#a];
-  assert {:msg "  24.15: Sub-actor action at 15.3 might not preserve the channel invariant"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  25.15: Sub-actor action at 15.3 might not preserve the channel invariant"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  26.15: Sub-actor action at 15.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  27.15: Sub-actor action at 15.3 might not preserve the channel invariant"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  28.15: Sub-actor action at 15.3 might not preserve the channel invariant"} (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assert {:msg "  29.15: Sub-actor action at 15.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  30.15: Sub-actor action at 15.3 might not preserve the channel invariant"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  32.15: Sub-actor action at 15.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
-  assert {:msg "  33.16: Sub-actor action at 15.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} R[iir#f] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} R[iir#b] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#g] + C[iir#g]);
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#d] + C[iir#d]);
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} R[iir#d] == (R[iir#e] + C[iir#e]);
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} R[iir#a] == (R[iir#b] + C[iir#b]);
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} R[iir#g] == 0;
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#g];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#g];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#f];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#f];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#e];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#e];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#d];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#d];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#c];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#c];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#b];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#b];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#a];
+  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#a];
+  assert {:msg "  28.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "  29.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
   );
-  assert {:msg "  34.16: Sub-actor action at 15.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  30.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#c] + C[iir#c])) ==> (M[iir#c][i] == (M[iir#b][i] + M[iir#f][i]))
   );
-  assert {:msg "  35.16: Sub-actor action at 15.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  31.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#d] + C[iir#d])) ==> (M[iir#d][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  36.16: Sub-actor action at 15.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  32.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#g] + C[iir#g])) ==> (M[iir#g][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  37.16: Sub-actor action at 15.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  33.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#e] + C[iir#e])) ==> (M[iir#e][i] == (171 * M[iir#d][i]))
   );
-  assert {:msg "  38.16: Sub-actor action at 15.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  34.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (forall i: int :: 
     (1 <= i) && (i < (R[iir#f] + C[iir#f])) ==> (M[iir#f][i] == M[iir#e][i - 1])
   );
 }
@@ -576,6 +576,13 @@ procedure iir#anon$5#add#anon$0#10()
   assume C#init[iir#d] == 0;
   assume C#init[iir#e] == 0;
   assume C#init[iir#g] == 0;
+  assume R[iir#f] == (R[iir#c] + C[iir#c]);
+  assume R[iir#b] == (R[iir#c] + C[iir#c]);
+  assume R[iir#c] == (R[iir#g] + C[iir#g]);
+  assume R[iir#c] == (R[iir#d] + C[iir#d]);
+  assume R[iir#d] == (R[iir#e] + C[iir#e]);
+  assume R[iir#a] == (R[iir#b] + C[iir#b]);
+  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
   assume R[iir#g] == 0;
   assume 0 <= C[iir#g];
   assume 0 <= R[iir#g];
@@ -592,13 +599,6 @@ procedure iir#anon$5#add#anon$0#10()
   assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
   assume 0 <= C[iir#a];
   assume 0 <= R[iir#a];
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
   assume (171 * M[iir#g][-1]) == M[iir#f][0];
   assume (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
@@ -628,46 +628,46 @@ procedure iir#anon$5#add#anon$0#10()
   C[iir#f] := C[iir#f] - 1;
   M[iir#c][R[iir#c] + C[iir#c]] := in1#i + in2#j;
   C[iir#c] := C[iir#c] + 1;
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 2.3 might not preserve the channel invariant"} 0 <= R[iir#a];
-  assert {:msg "  24.15: Sub-actor action at 2.3 might not preserve the channel invariant"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  25.15: Sub-actor action at 2.3 might not preserve the channel invariant"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  26.15: Sub-actor action at 2.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  27.15: Sub-actor action at 2.3 might not preserve the channel invariant"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  28.15: Sub-actor action at 2.3 might not preserve the channel invariant"} (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assert {:msg "  29.15: Sub-actor action at 2.3 might not preserve the channel invariant"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  30.15: Sub-actor action at 2.3 might not preserve the channel invariant"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  32.15: Sub-actor action at 2.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
-  assert {:msg "  33.16: Sub-actor action at 2.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} R[iir#f] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} R[iir#b] == (R[iir#c] + C[iir#c]);
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#g] + C[iir#g]);
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} R[iir#c] == (R[iir#d] + C[iir#d]);
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} R[iir#d] == (R[iir#e] + C[iir#e]);
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} R[iir#a] == (R[iir#b] + C[iir#b]);
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} R[iir#g] == 0;
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#g];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#g];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#f];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#f];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#e];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#e];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#d];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#d];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#c];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#c];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#b];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#b];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= C[iir#a];
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated)"} 0 <= R[iir#a];
+  assert {:msg "  28.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "  29.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
   );
-  assert {:msg "  34.16: Sub-actor action at 2.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  30.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#c] + C[iir#c])) ==> (M[iir#c][i] == (M[iir#b][i] + M[iir#f][i]))
   );
-  assert {:msg "  35.16: Sub-actor action at 2.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  31.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#d] + C[iir#d])) ==> (M[iir#d][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  36.16: Sub-actor action at 2.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  32.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#g] + C[iir#g])) ==> (M[iir#g][i] == AT#RShift(M[iir#c][i], 8))
   );
-  assert {:msg "  37.16: Sub-actor action at 2.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  33.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (forall i: int :: 
     (0 <= i) && (i < (R[iir#e] + C[iir#e])) ==> (M[iir#e][i] == (171 * M[iir#d][i]))
   );
-  assert {:msg "  38.16: Sub-actor action at 2.3 might not preserve the channel invariant"} (forall i: int :: 
+  assert {:msg "  34.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (forall i: int :: 
     (1 <= i) && (i < (R[iir#f] + C[iir#f])) ==> (M[iir#f][i] == M[iir#e][i - 1])
   );
 }
@@ -680,6 +680,13 @@ procedure iir#anon$5#exit#11()
   assume C#init[iir#d] == 0;
   assume C#init[iir#e] == 0;
   assume C#init[iir#g] == 0;
+  assume R[iir#f] == (R[iir#c] + C[iir#c]);
+  assume R[iir#b] == (R[iir#c] + C[iir#c]);
+  assume R[iir#c] == (R[iir#g] + C[iir#g]);
+  assume R[iir#c] == (R[iir#d] + C[iir#d]);
+  assume R[iir#d] == (R[iir#e] + C[iir#e]);
+  assume R[iir#a] == (R[iir#b] + C[iir#b]);
+  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
   assume R[iir#g] == 0;
   assume 0 <= C[iir#g];
   assume 0 <= R[iir#g];
@@ -696,13 +703,6 @@ procedure iir#anon$5#exit#11()
   assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
   assume 0 <= C[iir#a];
   assume 0 <= R[iir#a];
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume (R[iir#e] + 1) == (R[iir#f] + C[iir#f]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
   assume (171 * M[iir#g][-1]) == M[iir#f][0];
   assume (forall i: int :: 
     (0 <= i) && (i < (R[iir#b] + C[iir#b])) ==> (M[iir#b][i] == (85 * M[iir#a][i]))
@@ -723,15 +723,15 @@ procedure iir#anon$5#exit#11()
     (1 <= i) && (i < (R[iir#f] + C[iir#f])) ==> (M[iir#f][i] == M[iir#e][i - 1])
   );
   assume !(((((1 <= C[iir#e]) || (1 <= C[iir#a])) || (1 <= C[iir#d])) || (1 <= C[iir#c])) || ((1 <= C[iir#b]) && (1 <= C[iir#f])));
-  assert {:msg "  19.3: The network might leave unread tokens on channel a"} C[iir#a] == 0;
-  assert {:msg "  19.3: The network might leave unread tokens on channel b"} C[iir#b] == 0;
-  assert {:msg "  19.3: The network might leave unread tokens on channel c"} C[iir#c] == 0;
-  assert {:msg "  19.3: The network might leave unread tokens on channel d"} C[iir#d] == 0;
-  assert {:msg "  19.3: The network might leave unread tokens on channel e"} C[iir#e] == 0;
-  assert {:msg "  19.3: The network might not produce the specified number of tokens on output out"} C[iir#g] == 1;
-  assert {:msg "  19.26: Network output might not conform to specified action output"} M[iir#g][0] == AT#RShift((171 * M[iir#g][R[iir#g] - 1]) + (85 * M[iir#a][0]), 8);
+  assert {:msg "  23.3: The network might leave unread tokens on channel a"} C[iir#a] == 0;
+  assert {:msg "  23.3: The network might leave unread tokens on channel b"} C[iir#b] == 0;
+  assert {:msg "  23.3: The network might leave unread tokens on channel c"} C[iir#c] == 0;
+  assert {:msg "  23.3: The network might leave unread tokens on channel d"} C[iir#d] == 0;
+  assert {:msg "  23.3: The network might leave unread tokens on channel e"} C[iir#e] == 0;
+  assert {:msg "  23.3: The network might not produce the specified number of tokens on output out"} C[iir#g] == 1;
+  assert {:msg "  23.26: Network output might not conform to specified action output"} M[iir#g][0] == AT#RShift((171 * M[iir#g][R[iir#g] - 1]) + (85 * M[iir#a][0]), 8);
   R[iir#g] := R[iir#g] + C[iir#g];
   C[iir#g] := 0;
-  assert {:msg "  21.13: The network might not preserve the network invariant"} C[iir#f] == 1;
-  assert {:msg "  22.13: The network might not preserve the network invariant"} M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
+  assert {:msg "  25.3: The network might not preserve the network invariant"} C[iir#f] == 1;
+  assert {:msg "  26.3: The network might not preserve the network invariant"} M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
 }
