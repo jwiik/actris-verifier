@@ -27,26 +27,40 @@ class Parser extends StandardTokenParsers {
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]", ":[",
-                       "-->", "::", "{", "}", "<<" , ">>")
+                       "-->", "::", "{", "}", "<<" , ">>", "@")
                        
   def programUnit = (actorDecl | networkDecl | unitDecl)*
+  
+  def annotation = positioned(("@" ~> ident) ^^ { case id => Annotation(id)})
   
   def unitDecl = positioned(("unit" ~> ident ~ (":" ~> (varDecl*)) <~ "end" ) ^^ {
     case (id ~ decls) => DataUnit(id,decls)
   })
   
-  def actorDecl =
-    positioned(("actor" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ repsep(inPortDecl,",") ~ 
-        ("==>" ~> repsep(outPortDecl,",")) ~ (":" ~> (actorMember*)) <~ "end") ^^ {
-      case (id ~ Some(params) ~ inports ~ outports ~ members) => BasicActor(id, params, inports, outports, members)
-      case (id ~ None ~ inports ~ outports ~ members) => BasicActor(id, Nil, inports, outports, members)
+  def actorDecl = positioned(
+     ((annotation *) ~ 
+         ("actor" ~> ident ~ 
+         ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ 
+         repsep(inPortDecl,",") ~ 
+         ("==>" ~> repsep(outPortDecl,",")) ~ 
+         (":" ~> (actorMember*)) <~ "end")) ^^ {
+       case (a ~ (id ~ Some(params) ~ inports ~ outports ~ members)) => 
+         BasicActor(a, id, params, inports, outports, members)
+       case (a ~ (id ~ None ~ inports ~ outports ~ members)) => 
+         BasicActor(a, id, Nil, inports, outports, members)
     })
     
-  def networkDecl =
-    positioned(("network" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ repsep(inPortDecl,",") ~ 
-        ("==>" ~> repsep(outPortDecl,",")) ~ (":" ~> (networkMember*)) <~ "end") ^^ {
-      case (id ~ Some(params) ~ inports ~ outports ~ members) => Network(id, params, inports, outports, members)
-      case (id ~ None ~ inports ~ outports ~ members) => Network(id, Nil, inports, outports, members)
+  def networkDecl = positioned(
+      ((annotation *) ~
+          ("network" ~> ident ~ 
+          ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ 
+          repsep(inPortDecl,",") ~ 
+          ("==>" ~> repsep(outPortDecl,",")) ~ 
+          (":" ~> (networkMember*)) <~ "end")) ^^ {
+      case (a ~ (id ~ Some(params) ~ inports ~ outports ~ members)) => 
+        Network(a, id, params, inports, outports, members)
+      case (a ~ (id ~ None ~ inports ~ outports ~ members)) => 
+        Network(a, id, Nil, inports, outports, members)
     })
   
   def formalParam = positioned(

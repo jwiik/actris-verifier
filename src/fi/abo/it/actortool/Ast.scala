@@ -4,20 +4,40 @@ import scala.util.parsing.input.Positional
 
 trait ASTNode extends Positional
 
+trait Annotatble {
+  val annotations: List[Annotation] 
+  def hasAnnotation(name: String) = annotations.exists { a => a.name == name }
+}
+
 sealed abstract class TopDecl(val id: String) extends ASTNode {
   def isNetwork: Boolean = false
   def isActor: Boolean = false
   def isUnit: Boolean = false
 }
 
-sealed case class DataUnit(override val id: String, val constants: List[Declaration]) extends TopDecl(id) {
+sealed case class Annotation(name: String) extends ASTNode
+
+sealed case class DataUnit(
+    override val id: String, 
+    val constants: List[Declaration]) extends TopDecl(id) {
   override def isUnit = true
 }
 
-sealed abstract class Actor(override val id: String, val parameters: List[Declaration],
-    val inports: List[InPort], val outports: List[OutPort], val members: List[Member]) extends TopDecl(id) {
+sealed abstract class Actor(
+    override val annotations: List[Annotation],
+    override val id: String, val parameters: List[Declaration],
+    val inports: List[InPort], val outports: List[OutPort], 
+    val members: List[Member]) extends TopDecl(id) with Annotatble {
   
   def fullName: String = id
+  
+  lazy val actions: List[Action] = {
+    members.filter { x => x.isAction } map { x => x.asInstanceOf[Action] }
+  }
+  
+  lazy val actorInvariants: List[ActorInvariant] = {
+    members.filter { x => x.isActorInvariant } map { x => x.asInstanceOf[ActorInvariant] }
+  }
   
   def hasInport(id: String) = inports.exists(p => p.portId == id)
   def hasOutport(id: String) = outports.exists(p => p.portId == id)
@@ -26,9 +46,12 @@ sealed abstract class Actor(override val id: String, val parameters: List[Declar
 }
 
 sealed case class BasicActor(
+    override val annotations: List[Annotation],
     override val id: String, override val parameters: List[Declaration], 
     override val inports: List[InPort], override val outports: List[OutPort], 
-    override val members: List[Member]) extends Actor(id,parameters,inports,outports,members) {
+    override val members: List[Member]) 
+    extends Actor(annotations,id,parameters,inports,outports,members) {
+  
   override def isActor = true
   
   lazy val schedule = {
@@ -41,11 +64,12 @@ sealed case class BasicActor(
 }
 
 sealed case class Network(
+    override val annotations: List[Annotation],
     override val id: String, 
     override val parameters: List[Declaration], 
     override val inports: List[InPort], 
     override val outports: List[OutPort], 
-    override val members: List[Member]) extends Actor(id,parameters,inports,outports,members) {
+    override val members: List[Member]) extends Actor(annotations,id,parameters,inports,outports,members) {
   
   override def isNetwork = true
   
@@ -55,16 +79,23 @@ sealed case class Network(
   
   def channelInvariants = inferredChannelInvariants:::userDefinedChannelInvariants
   
-  def addChannelInvariant(chi: ChannelInvariant) { 
-    inferredChannelInvariants = chi::inferredChannelInvariants 
+  def addChannelInvariant(chi: Expr) { 
+    inferredChannelInvariants = ChannelInvariant(chi,true)::inferredChannelInvariants 
   }
   
-  private lazy val entities: List[Instance] = {
+  lazy val entities: Option[Entities] = {
     members.find { x => x.isEntities } match {
-      case None => Nil
-      case Some(insts) => insts.asInstanceOf[Entities].entities
+      case None => None
+      case Some(insts) => Some(insts.asInstanceOf[Entities])
     }
   }
+  
+  lazy val structure: Option[Structure] = {
+    members.find { x => x.isStructure } match {
+      case None => None
+      case Some(struct) => Some(struct.asInstanceOf[Structure])
+    }
+  } 
   
 }
 
@@ -128,10 +159,29 @@ sealed case class Entities(val entities: List[Instance]) extends Member {
 
 sealed case class Structure(val connections: List[Connection]) extends Member {
   override def isStructure = true
+  
+  def incomingConnection(entityId: String, portId: String) = connections.find { 
+    x => x match {
+      case Connection(_,_,PortRef(Some(e),p)) => entityId == e && portId == p
+      case _ => false
+    } 
+  }
+  
+  def outgoingConnections(entityId: String, portId: String) = {
+    val cons = connections.filter { 
+      x => x match {
+        case Connection(_,PortRef(Some(e),p),_) => entityId == e && portId == p
+        case _ => false
+      } 
+    }
+    cons
+  }
+  
 }
 
 sealed case class Schedule(val initState: String, val transitions: List[Transition]) extends Member {
   override def isSchedule = true
+  
   lazy val states = {
     (for (t <- transitions) yield List(t.from,t.to)).flatten.distinct
   }
