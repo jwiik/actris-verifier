@@ -26,12 +26,6 @@ network iir() int in ==> int out :
   invariant f[next] == 171*g[last]
   
   chinvariant 171*g[-1] == f[0] 
-  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> b[i] == 85*a[i])
-  chinvariant (forall int i :: 0 <= i && i < tot(c) ==> c[i] == b[i]+f[i])
-  chinvariant (forall int i :: 0 <= i && i < tot(d) ==> d[i] == c[i] >> 8)
-  chinvariant (forall int i :: 0 <= i && i < tot(g) ==> g[i] == c[i] >> 8)
-  chinvariant (forall int i :: 0 <= i && i < tot(e) ==> e[i] == 171*d[i])
-  chinvariant (forall int i :: 1 <= i && i < tot(f) ==> f[i] == e[i-1])
   
   entities
     del1 = delay(0);
