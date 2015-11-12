@@ -18,7 +18,12 @@ class Translator {
   object Uniquifier {
     private var i = -1
     def get(id: String) = { i = i+1; id+Sep+(i.toString) }
-  } 
+  }
+  
+  object GeneratedInvariantCount {
+    private var i = -1
+    def next = { i = i+1; "#"+(i.toString) }
+  }
   
   object BMap extends Enumeration {
     type BMap = String
@@ -250,7 +255,7 @@ class Translator {
             val cIds = sourceMap(PortRef(Some(inst.id),opat.portId))
             for (cId <- cIds) {
               for (e <- opat.exps) {
-                val renamedExp = IdReplacer.visitExpr(e)(Map.empty)
+                val renamedExp = IdToIdReplacer.visitExpr(e)(Map.empty)
                 asgn += Boogie.Assign(
                     bChannelIdx(cId,bRead(cId)+bCredit(cId)),transExpr(renamedExp)(boogieName))
                 asgn += Boogie.Assign(bCredit(cId),bCredit(cId) + Boogie.IntLiteral(1))
@@ -294,7 +299,7 @@ class Translator {
      if (!(delayedChannels contains c.id)) {
        c.from match {
          case PortRef(None,p) => {
-           cInitAssumesBuffer += bAssume(bCredInit(boogieName(c.id)) ==@ bInt(nwa.getInputCount(p)))
+           cInitAssumesBuffer += bAssume(bCredInit(boogieName(c.id)) ==@ bInt(nwa.portInputCount(p)))
          }
          case PortRef(_,_) => cInitAssumesBuffer += bAssume(bCredInit(boogieName(c.id)) ==@ bInt(0))
        }
@@ -327,7 +332,7 @@ class Translator {
       val outChan = targetMap(PortRef(None,opat.portId))
       var i = 0
       for (e <- opat.exps) yield {
-        val renamedExp = ChannelAccReplacer.visitExpr(e)(replacements)
+        val renamedExp = IdReplacer.visitExpr(e)(replacements)
         val id = Id(outChan)
         id.typ = ChanType(e.typ)
         val acc = IndexAccessor(id,IntLiteral(i))
@@ -340,9 +345,9 @@ class Translator {
     }).flatten
     
     val nwPre = for (p <- nwa.requires) yield 
-      bAssume(transExpr(ChannelAccReplacer.visitExpr(p)(replacements))(boogieName))
+      bAssume(transExpr(IdReplacer.visitExpr(p)(replacements))(boogieName))
     val nwPost = for (q <- nwa.ensures) yield 
-      transExpr(ChannelAccReplacer.visitExpr(q)(replacements))(boogieName)
+      transExpr(IdReplacer.visitExpr(q)(replacements))(boogieName)
 
     // Network action entry
     val initStmt = 
@@ -353,7 +358,7 @@ class Translator {
       (for ((_,nwi) <- nwInvs) yield bAssume(nwi)) :::
       (for ((chi,bChi) <- chInvs) yield {
         val baseMsg = "Channel invariant might not hold on action entry"
-        val msg = if (chi.generated) baseMsg + " (generated)" else baseMsg
+        val msg = if (chi.generated) baseMsg + " (generated " + GeneratedInvariantCount.next + " )" else baseMsg
         bAssert(bChi,chi.pos,msg)
       })
     val initProc = Boogie.Proc(Uniquifier.get(prefix+nwa.fullName+"#entry"),Nil,Nil,Modifies,Nil,initStmt)
@@ -394,7 +399,7 @@ class Translator {
        if (!(delayedChannels contains c.id)) {
          c.to match {
            case PortRef(None,p) => {
-             List(bAssert(bCredit(boogieName(c.id)) ==@ bInt(nwa.getOutputCount(p)),nwa.pos,
+             List(bAssert(bCredit(boogieName(c.id)) ==@ bInt(nwa.portOutputCount(p)),nwa.pos,
                  "The network might not produce the specified number of tokens on output " + p))
            }
            case PortRef(_,_) => 
@@ -454,7 +459,7 @@ class Translator {
     renameMap = renameMap ++ actorParams
     for ((name,value) <- (parameterNames zip instance.arguments)) {
       // Add assumptions about the values of the actor parameters
-      asgn += bAssume(transExpr(IdReplacer.visitExpr(name)(renameMap))(boogieName) ==@ transExpr(value)(boogieName))
+      asgn += bAssume(transExpr(IdToIdReplacer.visitExpr(name)(renameMap))(boogieName) ==@ transExpr(value)(boogieName))
     }
     
     asgn ++= cInits // Assumptions about initial state of channels
@@ -486,7 +491,7 @@ class Translator {
     val renamedGuard = action.guard match {
       case None =>
       case Some(g) =>
-        val renamedGuard = ChannelAccReplacer.visitExpr(g)(replacements.toMap)
+        val renamedGuard = IdReplacer.visitExpr(g)(replacements.toMap)
         val transGuard = transExpr(renamedGuard)(boogieName)
         asgn += bAssume(transGuard)
         firingConds += transGuard
@@ -535,20 +540,20 @@ class Translator {
     }
  
     for (pre <- action.requires) {
-      val renamedPre = IdReplacer.visitExpr(pre)(renameMap)
+      val renamedPre = IdToIdReplacer.visitExpr(pre)(renameMap)
       asgn += bAssert(
           transExpr(renamedPre)(boogieName),pre.pos,
           "Precondition might not hold for instance at " + instance.pos)
     }
     for (post <- action.ensures) {
-      val renamedPost = IdReplacer.visitExpr(post)(renameMap)
+      val renamedPost = IdToIdReplacer.visitExpr(post)(renameMap)
       asgn += bAssume(transExpr(renamedPost)(boogieName))
     }
     for (opat <- action.outputPattern) {
       val cIds = sourceMap(PortRef(Some(instance.id),opat.portId))
       for (cId <- cIds) {
         for (e <- opat.exps) {
-          val renamedExp = IdReplacer.visitExpr(e)(renameMap)
+          val renamedExp = IdToIdReplacer.visitExpr(e)(renameMap)
           asgn += Boogie.Assign(bChannelIdx(cId,bRead(cId)+bCredit(cId)),transExpr(renamedExp)(boogieName))
           asgn += Boogie.Assign(bCredit(cId),bCredit(cId) + Boogie.IntLiteral(1))
         }
@@ -568,9 +573,7 @@ class Translator {
     
     asgn ++= (for ((chi,bChi) <- chInvs) yield {
       val baseMsg = "Sub-actor action at " + action.pos + " might not preserve the channel invariant"
-      val msg =
-        if (chi.generated) baseMsg + " (generated)"
-        else baseMsg
+      val msg = if (chi.generated) baseMsg + " (generated " + GeneratedInvariantCount.next + ")" else baseMsg
       bAssert(bChi,chi.pos,msg)
     })
             

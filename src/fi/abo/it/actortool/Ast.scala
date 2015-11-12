@@ -79,8 +79,11 @@ sealed case class Network(
   
   def channelInvariants = inferredChannelInvariants:::userDefinedChannelInvariants
   
-  def addChannelInvariant(chi: Expr) { 
-    inferredChannelInvariants = ChannelInvariant(chi,true)::inferredChannelInvariants 
+  def addChannelInvariant(chi: Expr) { addChannelInvariants(List(chi)) }
+  
+  def addChannelInvariants(chis: List[Expr]) {
+    val newInvariants = chis map { x => ChannelInvariant(x,true) }
+    inferredChannelInvariants = inferredChannelInvariants:::newInvariants
   }
   
   lazy val entities: Option[Entities] = {
@@ -128,15 +131,19 @@ sealed case class Action(
   
   override def isAction = true
   
-  def getInputCount(portId: String) = inputPattern.find(p => p.portId == portId) match {
+  def portInputCount(portId: String) = portInputPattern(portId) match {
     case None => 0
     case Some(i) => i.vars.size
   }
   
-  def getOutputCount(portId: String) = outputPattern.find(p => p.portId == portId) match {
+  def portOutputCount(portId: String) = portOutputPattern(portId) match {
     case None => 0
     case Some(i) => i.exps.size
   }
+  
+  def portInputPattern(portId: String) = inputPattern.find(p => p.portId == portId)
+  
+  def portOutputPattern(portId: String) = outputPattern.find(p => p.portId == portId)
   
   val fullName = label match { case Some(l) => l; case None => "anon$"+Count.next}
 }

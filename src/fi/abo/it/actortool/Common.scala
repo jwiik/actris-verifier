@@ -5,8 +5,8 @@ import scala.collection.mutable.ListBuffer
 /**
  * @author Jonatan Wiik
  */
-object ChannelAccReplacer extends ASTReplacingVisitor[Id,IndexAccessor] {
-  override def visitExpr(expr: Expr)(implicit map: Map[Id,IndexAccessor]): Expr = {
+object IdReplacer extends ASTReplacingVisitor[Id,Expr] {
+  override def visitExpr(expr: Expr)(implicit map: Map[Id,Expr]): Expr = {
     expr match {
       case id: Id => {
         map.get(id) match {
@@ -24,7 +24,7 @@ object ChannelAccReplacer extends ASTReplacingVisitor[Id,IndexAccessor] {
 }
 
 
-object IdReplacer extends ASTReplacingVisitor[Id,Id] {
+object IdToIdReplacer extends ASTReplacingVisitor[Id,Id] {
   override def visitId(id: Id)(implicit map: Map[Id,Id]): Id = {
     val replacement = map.get(id) match {
       case None => id
