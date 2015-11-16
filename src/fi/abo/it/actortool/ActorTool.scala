@@ -37,6 +37,7 @@ object ActorTool {
     val NoBplFile: Boolean
     val BplFile: String
     val Timing: Int
+    val InferModules: List[String]
     final lazy val help = "Usage: actortool [option] <filename>+\n"
   }
   
@@ -52,6 +53,7 @@ object ActorTool {
     var aDoTranslate = true
     var aDoVerify = true
     var aTiming = 2
+    var aInferModules = List("default")
     
     
     lazy val help = {
@@ -87,9 +89,21 @@ object ActorTool {
               reportCommandLineError("parameter timing takes an integer as argument.")
               return None
           }
-
         }
-        case Param(x,_) => 
+        case Param("inferModules") => {
+          value match {
+            case Some(v) => {
+              val modules = Inferencer.Modules
+              val valList = v.split(",")
+              for (m <- valList) {
+                if (!(modules contains m)) reportCommandLineError("no inference module named " + m)
+              }
+              aInferModules = valList.toList
+            }
+            case None => reportCommandLineError("parameter " + param + " takes a comma-separated list as parameter")
+          }
+        }
+        case Param(x) => 
           reportCommandLineError("unknown command line parameter " + x)
           return None
         case _ => inputs += param
@@ -124,6 +138,7 @@ object ActorTool {
         val NoBplFile = aNoBplFile
         val BplFile = aBplFile
         val Timing = aTiming
+        val InferModules = aInferModules
     })
   }
   
@@ -193,7 +208,7 @@ object ActorTool {
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
-    if (params.DoInfer) Inferencer.infer(program)
+    if (params.DoInfer) Inferencer.infer(program,params.InferModules)
     
     timings += (Step.Infer -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime

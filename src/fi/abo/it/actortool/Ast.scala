@@ -303,12 +303,23 @@ sealed abstract class Quantifier(val vars: List[Declaration], val expr: Expr, va
 }
 
 sealed case class Forall(
-    override val vars: List[Declaration], override val expr: Expr, override val pattern: Option[Expr]) extends Quantifier(vars,expr,pattern) {
+    override val vars: List[Declaration], override val expr: Expr, 
+    override val pattern: Option[Expr]) extends Quantifier(vars,expr,pattern) {
+  
   override val operator = "forall"
+
+  def this(vars: List[Id], expr: Expr) = this(vars map {x => Declaration(x.id,x.typ,false)},expr,None)
+  
 }
 
+object Forall {
+  def apply(vars: List[Id], expr: Expr) = new Forall(vars,expr)
+}
+
+
 sealed case class Exists(
-    override val vars: List[Declaration], override val expr: Expr, override val pattern: Option[Expr]) extends Quantifier(vars,expr,pattern) {
+    override val vars: List[Declaration], override val expr: Expr, 
+    override val pattern: Option[Expr]) extends Quantifier(vars,expr,pattern) {
   override val operator = "exists"
 }
 

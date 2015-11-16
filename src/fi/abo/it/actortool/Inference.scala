@@ -18,16 +18,22 @@ object Elements {
   def urd(id: String) = FunctionApp("urd",List(Id(id): Expr))
   def tot(id: String) = FunctionApp("tot",List(Id(id): Expr))
   def initial(id: String) = FunctionApp("initial",List(Id(id): Expr))
-  def intlit(i: Int) = IntLiteral(i)
+  def lit(i: Int) = IntLiteral(i)
 } 
 
 import Elements._
 
 object Inferencer {
-  
-  private var inferenceModules: List[InferenceModule] = List(StaticProperties,SDFClass)
-  
-  def infer(program: List[TopDecl]) = {
+  final val Modules = List(StaticProperties,SDFClass).map(m => (m.name,m)).toMap
+  private val DefaultModules = Set(StaticProperties,SDFClass)
+      
+  def infer(program: List[TopDecl], modules: List[String]) = {
+    val inferenceModules = modules match {
+      case Nil => DefaultModules
+      case List("default") => DefaultModules
+      case list => (StaticProperties::(list map { l => Modules(l) })).toSet
+    }
+    
     for (module <- inferenceModules) {
       for (a <- program) module.infer(a)
     }
@@ -35,18 +41,20 @@ object Inferencer {
 }
 
 object StaticProperties extends InferenceModule {
+  def name = "basic-wf"
+  
   def network(n: Network)(implicit ctx: Context) {
     for (m <- n.members) m match {
       case Structure(connections) => {
         for (c <- connections) {
-          n.addChannelInvariant(AtMost(intlit(0),rd(c.id)))
-          n.addChannelInvariant(AtMost(intlit(0),urd(c.id)))
+          n.addChannelInvariant(AtMost(lit(0),rd(c.id)))
+          n.addChannelInvariant(AtMost(lit(0),urd(c.id)))
           c.from match {
             case PortRef(None,x) => n.addChannelInvariant(Eq(tot(c.id),initial(c.id)))
             case _ =>
           }
           c.to match {
-            case PortRef(None,x) => n.addChannelInvariant(Eq(rd(c.id),intlit(0)))
+            case PortRef(None,x) => n.addChannelInvariant(Eq(rd(c.id),lit(0)))
             case _ =>
           }
         }
@@ -58,9 +66,11 @@ object StaticProperties extends InferenceModule {
 }
 
 object SDFClass extends InferenceModule {
+  def name = "sdf-annot"
   
   val SdfAnnot = "sdf"
-  
+  val quantVar = Id("idx$"); quantVar.typ = IntType(32)
+
   def network(n: Network)(implicit ctx: Context) = {
     
     val countInvariants = new ListBuffer[Expr]
@@ -81,65 +91,81 @@ object SDFClass extends InferenceModule {
     for (e <- sdfAnnotEnts) {
       val action = e.actor.actions.filter{ a => !a.init }(0)
       
-      val quantVar = Id("idx")
-      val replacements = {
-        val inputs = (for (ipat <- action.inputPattern) yield {
-            val inChan = n.structure.get.incomingConnection(e.id, ipat.portId).get
-            var i = 0
-            for (v <- ipat.vars) yield {
-              val cId = Id(inChan.id); cId.typ = ChanType(v.typ)
-              val acc = if (i == 0) IndexAccessor(cId,quantVar) else IndexAccessor(cId,Minus(quantVar,IntLiteral(i)))
-              acc.typ = v.typ
-              i = i+1
-              (v -> acc)
-            }
-          }).flatten
-          
-        val params = (for ((p,a) <- (e.actor.parameters zip e.arguments)) yield {(Id(p.id) -> a)})
-        (inputs:::params).toMap
-      }
-
-      
-      
-      
       for (op <- e.actor.outports) {
         for (ip <- e.actor.inports) {
-          val inRate = action.portInputCount(ip.portId)
-          val outRate = action.portOutputCount(op.portId)
+        val outRate = action.portOutputCount(op.portId)
+        
+        val outChans = n.structure.get.outgoingConnections(e.id, op.portId)
+        
+        for (oc <- outChans) {
           
-          val inChan = n.structure.get.incomingConnection(e.id, ip.portId).get
-          val outChans = n.structure.get.outgoingConnections(e.id, op.portId)
-          
-          (inRate,outRate) match {
-            case (1,1) => for (oc <- outChans) {
-              val tokenAmountInv =
-                if (delayedChannels contains oc.id) Eq(rd(inChan.id),Minus(tot(oc.id),delayedChannels(oc.id)))
-                else Eq(rd(inChan.id),tot(oc.id))
-              countInvariants += tokenAmountInv
-                            
-              
-              
-              val outPatRev = action.portOutputPattern(op.portId).get.exps.reverse
-              
+          val replacements = {
+            val inputs = (for (ipat <- action.inputPattern) yield {
+              val inRate = action.portInputCount(ipat.portId)
+              val inChan = n.structure.get.incomingConnection(e.id, ipat.portId).get
               var i = 0
-              for (e <- outPatRev) {
-                val (highBound, idx) = delayedChannels.get(oc.id) match {
-                  case None => 
-                    if (i == 0) (tot(oc.id), quantVar)
-                    else (tot(oc.id), Minus(quantVar,intlit(i)))
-                  case Some(d) => (Minus(tot(oc.id),d), Minus(Plus(quantVar,d),intlit(i)))
+              for (v <- ipat.vars) yield {
+                val cId = Id(inChan.id); cId.typ = ChanType(v.typ)
+                val rated = (inRate,outRate) match {
+                  case (1,1) => quantVar
+                  case (x,1) => Times(lit(x),quantVar)
+                  case (1,y) => Div(quantVar,lit(y))
+                  case (x,y) => Times(Div(lit(x),lit(y)),quantVar)
                 }
-                val eReplaced = IdReplacer.visitExpr(e)(replacements)
-                val cId = Id(oc.id); cId.typ = ChanType(e.typ)
-                val acc = IndexAccessor(cId,idx); acc.typ = e.typ
-                val bound = And(AtMost(intlit(0),quantVar),Less(quantVar,highBound))
-                val quantExp = Implies(bound,Eq(acc,eReplaced))
-                valueInvariants += Forall(List(Declaration(quantVar.id,IntType(32),false)), quantExp, None)
+                val idx = if (i == 0) rated else Plus(rated,lit(i))
+                val delayAdjustedIdx =
+                  if (delayedChannels contains oc.id) Minus(idx,delayedChannels(oc.id))
+                  else idx
+                val acc = IndexAccessor(cId,delayAdjustedIdx)
+                acc.typ = v.typ
+                i = i+1
+                (v -> acc)
               }
-              
-            } // case
-          } // match
-        } // for
+            }).flatten
+            val params = (for ((p,a) <- (e.actor.parameters zip e.arguments)) yield {(Id(p.id) -> a)})
+            (inputs:::params).toMap
+          }
+          
+          val inRate = action.portInputCount(ip.portId)
+          val inChan = n.structure.get.incomingConnection(e.id, ip.portId).get
+          val ratedTot = 
+            if (inRate == 1) tot(oc.id)
+            else Times(lit(inRate),tot(oc.id))
+          val ratedRd =
+            if (outRate == 1) rd(inChan.id)
+            else Times(lit(outRate),rd(inChan.id))
+          
+          val ratedDelayedTot = 
+            if (delayedChannels contains oc.id) Minus(ratedTot,delayedChannels(oc.id))
+            else ratedTot
+            
+          countInvariants += Eq(ratedRd,ratedDelayedTot)
+                      
+          val outFuncs = action.portOutputPattern(op.portId).get.exps
+          
+          var k = 0
+          for (fk <- outFuncs) {
+            val lowBound = delayedChannels.get(oc.id) match {
+              case None => lit(0)
+              case Some(d) => d
+            }
+            val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot(oc.id)))
+            val bounds = // If there is more than one output we need differentiate with mod
+              if (1 < outFuncs.size) And(quantBounds,Eq(Mod(quantVar,lit(outRate)),lit(k)))
+              else quantBounds
+            
+            val fkRenamed = IdReplacer.visitExpr(fk)(replacements)
+            val cId = Id(oc.id); cId.typ = ChanType(fk.typ)
+            val acc = IndexAccessor(cId,quantVar); acc.typ = fk.typ
+            
+            val quantExp = Implies(bounds,Eq(acc,fkRenamed))
+            
+            valueInvariants += Forall(List(quantVar), quantExp)
+            k = k+1
+          }
+        }
+        
+      } // for
       } // for
     } // for
     n.addChannelInvariants(countInvariants.toList)
@@ -149,6 +175,9 @@ object SDFClass extends InferenceModule {
 }
 
 abstract class InferenceModule {
+  
+  def name: String
+  
   final def infer(decl: TopDecl): InferenceOutcome = {
     val ctx = new Context
     decl match {
