@@ -76,8 +76,8 @@ procedure Net#anon$3#entry#3()
   assert {:msg "  Channel invariant might not hold on action entry (generated #9 )"} 0 <= C[Net#d];
   assert {:msg "  Channel invariant might not hold on action entry (generated #10 )"} R[Net#d] == 0;
   assert {:msg "  Channel invariant might not hold on action entry (generated #11 )"} R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #12 )"} (forall idx: int :: 
-    (0 <= idx) && (idx < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx] == M[Net#a][idx])
+  assert {:msg "  Channel invariant might not hold on action entry (generated #12 )"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assert {:msg "  20.3: Channel invariant might not hold on action entry"} (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assert {:msg "  21.3: Channel invariant might not hold on action entry"} (R[Net#d] + C[Net#d]) == AT#Div(R[Net#b] + 1, 2);
@@ -110,8 +110,8 @@ procedure Net#anon$3#Repeater#anon$0#4()
   assume 0 <= C[Net#d];
   assume R[Net#d] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assume (forall idx: int :: 
-    (0 <= idx) && (idx < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx] == M[Net#a][idx])
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assume (R[Net#d] + C[Net#d]) == AT#Div(R[Net#b] + 1, 2);
@@ -141,8 +141,8 @@ procedure Net#anon$3#Repeater#anon$0#4()
   assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #22)"} 0 <= C[Net#d];
   assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #23)"} R[Net#d] == 0;
   assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #24)"} R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #25)"} (forall idx: int :: 
-    (0 <= idx) && (idx < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx] == M[Net#a][idx])
+  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #25)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assert {:msg "  20.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assert {:msg "  21.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (R[Net#d] + C[Net#d]) == AT#Div(R[Net#b] + 1, 2);
@@ -175,8 +175,8 @@ procedure Net#anon$3#Split#anon$1#5()
   assume 0 <= C[Net#d];
   assume R[Net#d] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assume (forall idx: int :: 
-    (0 <= idx) && (idx < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx] == M[Net#a][idx])
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assume (R[Net#d] + C[Net#d]) == AT#Div(R[Net#b] + 1, 2);
@@ -207,8 +207,8 @@ procedure Net#anon$3#Split#anon$1#5()
   assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant (generated #35)"} 0 <= C[Net#d];
   assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant (generated #36)"} R[Net#d] == 0;
   assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant (generated #37)"} R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant (generated #38)"} (forall idx: int :: 
-    (0 <= idx) && (idx < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx] == M[Net#a][idx])
+  assert {:msg "  Sub-actor action at 7.3 might not preserve the channel invariant (generated #38)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assert {:msg "  20.3: Sub-actor action at 7.3 might not preserve the channel invariant"} (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assert {:msg "  21.3: Sub-actor action at 7.3 might not preserve the channel invariant"} (R[Net#d] + C[Net#d]) == AT#Div(R[Net#b] + 1, 2);
@@ -241,8 +241,8 @@ procedure Net#anon$3#Split#anon$2#6()
   assume 0 <= C[Net#d];
   assume R[Net#d] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assume (forall idx: int :: 
-    (0 <= idx) && (idx < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx] == M[Net#a][idx])
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assume (R[Net#d] + C[Net#d]) == AT#Div(R[Net#b] + 1, 2);
@@ -273,8 +273,8 @@ procedure Net#anon$3#Split#anon$2#6()
   assert {:msg "  Sub-actor action at 10.3 might not preserve the channel invariant (generated #48)"} 0 <= C[Net#d];
   assert {:msg "  Sub-actor action at 10.3 might not preserve the channel invariant (generated #49)"} R[Net#d] == 0;
   assert {:msg "  Sub-actor action at 10.3 might not preserve the channel invariant (generated #50)"} R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  Sub-actor action at 10.3 might not preserve the channel invariant (generated #51)"} (forall idx: int :: 
-    (0 <= idx) && (idx < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx] == M[Net#a][idx])
+  assert {:msg "  Sub-actor action at 10.3 might not preserve the channel invariant (generated #51)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assert {:msg "  20.3: Sub-actor action at 10.3 might not preserve the channel invariant"} (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assert {:msg "  21.3: Sub-actor action at 10.3 might not preserve the channel invariant"} (R[Net#d] + C[Net#d]) == AT#Div(R[Net#b] + 1, 2);
@@ -305,8 +305,8 @@ procedure Net#anon$3#exit#7()
   assume 0 <= C[Net#d];
   assume R[Net#d] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assume (forall idx: int :: 
-    (0 <= idx) && (idx < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx] == M[Net#a][idx])
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assume (R[Net#d] + C[Net#d]) == AT#Div(R[Net#b] + 1, 2);

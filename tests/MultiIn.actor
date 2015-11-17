@@ -1,0 +1,19 @@
+actor Add2 int in ==> int out :
+  action in:[i,j] ==> out:[i+j] end
+end
+
+network Net int in ==> int out :
+  action in:[x,y] ==> out:[x+y] end
+  
+  chinvariant rd(a) == 2*tot(b)
+  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> b[i] == a[2*i]+a[2*i+1])
+  
+  entities
+    add = Add2();
+  end
+  structure
+    a: in --> add.in;
+    b: add.out --> out;
+  end
+
+end

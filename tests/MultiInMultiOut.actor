@@ -1,0 +1,17 @@
+@sdf
+actor Test int in ==> int out :
+  action in:[i,j] ==> out:[i+j,i-j,i*j] end
+end
+
+network Net int in ==> int out :
+  action in:[x,y] ==> out:[x+y,x-y,x*y] end
+  
+  entities
+    t = Test();
+  end
+  structure
+    a: in --> t.in;
+    b: t.out --> out;
+  end
+
+end

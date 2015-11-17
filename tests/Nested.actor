@@ -16,6 +16,7 @@ end
 network Nested int x ==> int y :
   action x:[i] ==> y:[i] end
   
+  chinvariant tot(y) == rd(x)
   chinvariant (forall int i :: 0 <= i && i < tot(y) ==> x[i] == y[i])
   
   entities
