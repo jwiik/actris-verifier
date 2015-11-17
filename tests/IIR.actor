@@ -22,7 +22,7 @@ end
 network iir() int in ==> int out :
   action in:[i] ==> out:[(171*g[last]+85*i) >> 8] end
   
-  invariant tokens(f,1,0)
+  invariant tokens(f,1)
   invariant f[next] == 171*g[last]
   
   chinvariant 171*g[-1] == f[0] 

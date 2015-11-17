@@ -196,9 +196,9 @@ class Translator {
     
     val namePrefix = network.id+Sep
     val delayedChannels =  {
-      val buffer = new ListBuffer[(String,Expr,Expr)]
+      val buffer = new ListBuffer[(String,Expr)]
       TokensDefFinder.visitExpr(nwInvariants map {nwi => nwi.expr})(buffer);
-      (buffer map {case (x,amount,init) => (x,(amount,init))}).toMap
+      (buffer map {case (x,amount) => (x,(amount))}).toMap
     }
     
     val boogieName = {
@@ -239,7 +239,7 @@ class Translator {
        targetMap: Map[PortRef,String],
        entities: List[Instance],
        connections: List[Connection],
-       delayedChannels: Map[String,(Expr,Expr)],
+       delayedChannels: Map[String,(Expr)],
        prefix: String): List[Boogie.Decl] = {
     
     val asgn = new ListBuffer[Boogie.Stmt]
@@ -296,7 +296,7 @@ class Translator {
        targetMap: Map[PortRef,String],
        entities: List[Instance],
        connections: List[Connection],
-       delayedChannels: Map[String,(Expr,Expr)],
+       delayedChannels: Map[String,(Expr)],
        prefix: String): List[Boogie.Decl] = {
     
     val constDecls = new ListBuffer[Boogie.Const]()

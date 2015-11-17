@@ -77,9 +77,9 @@ object SDFClass extends InferenceModule {
     val valueInvariants = new ListBuffer[Expr]
     
     val delayedChannels =  {
-      val buffer = new ListBuffer[(String,Expr,Expr)]
+      val buffer = new ListBuffer[(String,Expr)]
       TokensDefFinder.visitExpr(n.actorInvariants map {nwi => nwi.expr})(buffer);
-      (buffer map {case (ch,amount,_) => (ch,amount)}).toMap
+      (buffer map {case (ch,amount) => (ch,amount)}).toMap
     }
     
     val sdfAnnotEnts = 

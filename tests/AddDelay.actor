@@ -12,7 +12,7 @@ end
 network Net int in ==> int out :
   action in:[x] ==> out:[c[last]+x] end
   
-  invariant tokens(b,1,0)
+  invariant tokens(b,1)
   invariant b[next] == c[last]
   
   chinvariant b[0] == c[-1]

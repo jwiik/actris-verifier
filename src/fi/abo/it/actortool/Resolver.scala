@@ -590,7 +590,7 @@ object Resolver {
   }
   
   def resolveDelayFunction(ctx: Context, fa: FunctionApp): Type = {
-    if (fa.parameters.size != 3) {
+    if (fa.parameters.size != 2) {
         ctx.error(fa.pos,"Function " + fa.name + " takes exactly 3 argument")
         return BoolType
     }
@@ -602,11 +602,11 @@ object Resolver {
     if (!amountType.isInt) {
       ctx.error(fa.parameters(1).pos,"The second argument to function " + fa.name + " must be a integer")
     }
-    val contentType = paramType.asInstanceOf[ChanType].contentType
-    val initType = resolveExpr(ctx,fa.parameters(2))
-    if (initType != contentType) {
-      ctx.error(fa.parameters(2).pos,"Expected: " + contentType + "found: " + initType.id)
-    }
+//    val contentType = paramType.asInstanceOf[ChanType].contentType
+//    val initType = resolveExpr(ctx,fa.parameters(2))
+//    if (initType != contentType) {
+//      ctx.error(fa.parameters(2).pos,"Expected: " + contentType + "found: " + initType.id)
+//    }
     BoolType
   }
   
