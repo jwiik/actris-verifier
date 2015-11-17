@@ -77,9 +77,9 @@ object SDFClass extends InferenceModule {
     val valueInvariants = new ListBuffer[Expr]
     
     val delayedChannels =  {
-      val buffer = new ListBuffer[(String,Expr)]
+      val buffer = new ListBuffer[(String,Expr,Expr)]
       TokensDefFinder.visitExpr(n.actorInvariants map {nwi => nwi.expr})(buffer);
-      buffer.toMap
+      (buffer map {case (ch,amount,_) => (ch,amount)}).toMap
     }
     
     val sdfAnnotEnts = 
@@ -87,12 +87,14 @@ object SDFClass extends InferenceModule {
         case e: Entities => e.entities.filter { i => i.actor.hasAnnotation(SdfAnnot) }
         case _ => Nil
       }).flatten
+      
+      
     
     for (e <- sdfAnnotEnts) {
       val action = e.actor.actions.filter{ a => !a.init }(0)
       
       for (op <- e.actor.outports) {
-        for (ip <- e.actor.inports) {
+        
         val outRate = action.portOutputCount(op.portId)
         
         val outChans = n.structure.get.outgoingConnections(e.id, op.portId)
@@ -126,21 +128,22 @@ object SDFClass extends InferenceModule {
             (inputs:::params).toMap
           }
           
-          val inRate = action.portInputCount(ip.portId)
-          val inChan = n.structure.get.incomingConnection(e.id, ip.portId).get
-          val ratedTot = 
-            if (inRate == 1) tot(oc.id)
-            else Times(lit(inRate),tot(oc.id))
-          val ratedRd =
-            if (outRate == 1) rd(inChan.id)
-            else Times(lit(outRate),rd(inChan.id))
-          
-          val ratedDelayedTot = 
-            if (delayedChannels contains oc.id) Minus(ratedTot,delayedChannels(oc.id))
-            else ratedTot
+          for (ip <- e.actor.inports) {
+            val inRate = action.portInputCount(ip.portId)
+            val inChan = n.structure.get.incomingConnection(e.id, ip.portId).get
+            val ratedTot = 
+              if (inRate == 1) tot(oc.id)
+              else Times(lit(inRate),tot(oc.id))
+            val ratedRd =
+              if (outRate == 1) rd(inChan.id)
+              else Times(lit(outRate),rd(inChan.id))
             
-          countInvariants += Eq(ratedRd,ratedDelayedTot)
-                      
+            val ratedDelayedTot = 
+              if (delayedChannels contains oc.id) Minus(ratedTot,delayedChannels(oc.id))
+              else ratedTot
+              
+            countInvariants += Eq(ratedRd,ratedDelayedTot)
+          }          
           val outFuncs = action.portOutputPattern(op.portId).get.exps
           
           var k = 0
@@ -166,7 +169,7 @@ object SDFClass extends InferenceModule {
         }
         
       } // for
-      } // for
+      //} // for
     } // for
     n.addChannelInvariants(countInvariants.toList)
     n.addChannelInvariants(valueInvariants.toList)

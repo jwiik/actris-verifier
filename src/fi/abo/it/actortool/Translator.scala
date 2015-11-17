@@ -196,9 +196,9 @@ class Translator {
     
     val namePrefix = network.id+Sep
     val delayedChannels =  {
-      val buffer = new ListBuffer[(String,Expr)]
+      val buffer = new ListBuffer[(String,Expr,Expr)]
       TokensDefFinder.visitExpr(nwInvariants map {nwi => nwi.expr})(buffer);
-      (buffer map {case (x,y) => x}).toSet
+      (buffer map {case (x,amount,init) => (x,(amount,init))}).toMap
     }
     
     val boogieName = {
@@ -219,7 +219,8 @@ class Translator {
       }
       (source.toMap,target.toMap)
     }
-    //decls ++= translateNetworkInit(/*nwa,*/ bNwInvs, bChInvs, boogieName, sourceMap, targetMap, entities, connections, delayedChannels, network.id+Sep)
+    decls ++= translateNetworkInit(/*nwa,*/ bNwInvs, bChInvs, boogieName, sourceMap, targetMap, entities, connections, delayedChannels, network.id+Sep)
+
     for (a <- actions) {
       decls ++= translateNetworkAction(
           a,bNwInvs,bChInvs,boogieName,sourceMap,targetMap,entities,
@@ -231,31 +232,44 @@ class Translator {
   
   def translateNetworkInit(
        //nwa: Action, 
-       nwInvs: List[(Position,Boogie.Expr)],
-       chInvs: List[(Position,Boogie.Expr)],
+       nwInvs: List[(ActorInvariant,Boogie.Expr)],
+       chInvs: List[(ChannelInvariant,Boogie.Expr)],
        boogieName: Map[String,String],
        sourceMap: Map[PortRef,List[String]],
        targetMap: Map[PortRef,String],
        entities: List[Instance],
        connections: List[Connection],
-       delayedChannels: Set[String],
+       delayedChannels: Map[String,(Expr,Expr)],
        prefix: String): List[Boogie.Decl] = {
     
-    val asgn = new ListBuffer[Boogie.Stmt]()
+    val asgn = new ListBuffer[Boogie.Stmt]
+    val vars = new ListBuffer[Boogie.LocalVar]
     
     for (c <- connections) {
       asgn += bAssume(bCredit(boogieName(c.id)) ==@ bInt(0))
+      asgn += bAssume(bRead(boogieName(c.id)) ==@ bInt(0))
     }
     
     for (inst <- entities) {
       val actor = inst.actor
+      val actorParams = actor.parameters.map(p => {
+        val newName = "ActorParam"+Sep+inst.id+Sep+p.id
+        vars += bLocal(newName,type2BType(p.typ))
+        (Id(p.id),Id(newName))
+      }).toMap
+      val parameterNames = actor.parameters map {x => Id(x.id)}
+      for ((name,value) <- (parameterNames zip inst.arguments)) {
+        // Add assumptions about the values of the actor parameters
+        asgn += bAssume(transExpr(IdToIdReplacer.visitExpr(name)(actorParams))(boogieName) ==@ transExpr(value)(boogieName))
+      }
+      
       for (m <- actor.members) m match {
         case ca@Action(_,true,_,_,_,_,_,_,_) => {
           for (opat <- ca.outputPattern) {
             val cIds = sourceMap(PortRef(Some(inst.id),opat.portId))
             for (cId <- cIds) {
               for (e <- opat.exps) {
-                val renamedExp = IdToIdReplacer.visitExpr(e)(Map.empty)
+                val renamedExp = IdToIdReplacer.visitExpr(e)(actorParams)
                 asgn += Boogie.Assign(
                     bChannelIdx(cId,bRead(cId)+bCredit(cId)),transExpr(renamedExp)(boogieName))
                 asgn += Boogie.Assign(bCredit(cId),bCredit(cId) + Boogie.IntLiteral(1))
@@ -266,9 +280,11 @@ class Translator {
         case _ =>
       }
     }
-    asgn ++= (for ((pos,nwi) <- nwInvs) yield 
-        bAssert(nwi,pos,"Network initialization might not establish the network invariant")) 
-    List(Boogie.Proc(Uniquifier.get(prefix+"init"),Nil,Nil,Modifies,Nil,asgn.toList))
+    asgn ++= (for ((nwi,bNwi) <- nwInvs) yield 
+        bAssert(bNwi,nwi.pos,"Network initialization might not establish the network invariant"))
+    
+    val stmt = vars.toList:::asgn.toList
+    List(Boogie.Proc(Uniquifier.get(prefix+"init"),Nil,Nil,Modifies,Nil,stmt))
   }
   
   def translateNetworkAction(
@@ -280,7 +296,7 @@ class Translator {
        targetMap: Map[PortRef,String],
        entities: List[Instance],
        connections: List[Connection],
-       delayedChannels: Set[String],
+       delayedChannels: Map[String,(Expr,Expr)],
        prefix: String): List[Boogie.Decl] = {
     
     val constDecls = new ListBuffer[Boogie.Const]()
@@ -358,7 +374,7 @@ class Translator {
       (for ((_,nwi) <- nwInvs) yield bAssume(nwi)) :::
       (for ((chi,bChi) <- chInvs) yield {
         val baseMsg = "Channel invariant might not hold on action entry"
-        val msg = if (chi.generated) baseMsg + " (generated " + GeneratedInvariantCount.next + " )" else baseMsg
+        val msg = if (chi.generated) baseMsg + " (generated " + GeneratedInvariantCount.next + ")" else baseMsg
         bAssert(bChi,chi.pos,msg)
       })
     val initProc = Boogie.Proc(Uniquifier.get(prefix+nwa.fullName+"#entry"),Nil,Nil,Modifies,Nil,initStmt)

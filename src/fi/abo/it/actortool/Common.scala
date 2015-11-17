@@ -35,10 +35,10 @@ object IdToIdReplacer extends ASTReplacingVisitor[Id,Id] {
   }
 }
 
-object TokensDefFinder extends ASTVisitor[ListBuffer[(String,Expr)]] {
-  override def visitExpr(expr: Expr)(implicit info: ListBuffer[(String,Expr)]) {
+object TokensDefFinder extends ASTVisitor[ListBuffer[(String,Expr,Expr)]] {
+  override def visitExpr(expr: Expr)(implicit info: ListBuffer[(String,Expr,Expr)]) {
     expr match {
-      case delay@FunctionApp("tokens",List(ch,amount)) => info += ((ch.asInstanceOf[Id].id, amount))
+      case delay@FunctionApp("tokens",List(ch,amount,init)) => info += ((ch.asInstanceOf[Id].id,amount,init))
       case _ =>
     }
     super.visitExpr(expr)
