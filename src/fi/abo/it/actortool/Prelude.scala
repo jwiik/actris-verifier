@@ -64,7 +64,12 @@ var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
+
 const unique this#: Actor;
+
+type List a = [int]a;
+var AT#intlst: List int;
+
 """
 }
 
@@ -97,6 +102,17 @@ axiom (forall a: int :: (
   AT#RShift(a,7) == AT#Div(a,128) &&
   AT#RShift(a,8) == AT#Div(a,256)
 ));
+"""
+}
+
+object ChAggregates extends PreludeComponent {
+  
+  //override def dependencies = Set(DivModAbsPL)
+  
+  val text =
+"""
+function AT#ChSum(Chan int, int): int;
+axiom (forall ch: Chan int, limit: int :: (AT#ChSum(ch,limit) == ch[limit]+AT#ChSum(ch,limit-1)));
 """
 }
 

@@ -143,9 +143,9 @@ object SDFClass extends InferenceModule {
               else ratedTot
               
             countInvariants += Eq(ratedRd,ratedDelayedTot)
-          }          
-          val outFuncs = action.portOutputPattern(op.portId).get.exps
+          }
           
+          val outFuncs = action.portOutputPattern(op.portId).get.exps
           var k = 0
           for (fk <- outFuncs) {
             val lowBound = delayedChannels.get(oc.id) match {
@@ -167,9 +167,7 @@ object SDFClass extends InferenceModule {
             k = k+1
           }
         }
-        
       } // for
-      //} // for
     } // for
     n.addChannelInvariants(countInvariants.toList)
     n.addChannelInvariants(valueInvariants.toList)

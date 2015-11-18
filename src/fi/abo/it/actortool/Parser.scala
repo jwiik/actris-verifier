@@ -21,9 +21,10 @@ class Parser extends StandardTokenParsers {
   case class PositionedString(v: String) extends Positional
   
   lexical.reserved += ("actor", "network", "unit", "action", "true", "false", "null", "int", "bool", 
-                       "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", 
-                       "end", "forall", "exists", "do", "assert", "assume", "initialize", "requires",
-                       "ensures", "var", "next", "last", "schedule", "fsm", "regexp"
+                       "uint", "size", "guard", "entities", "structure", "int", "bool", "invariant", 
+                       "chinvariant", "end", "forall", "exists", "do", "assert", "assume", "initialize", 
+                       "requires", "ensures", "var", "next", "last", "schedule", "fsm", "regexp", "List",
+                       "type"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]", ":[",
@@ -65,7 +66,7 @@ class Parser extends StandardTokenParsers {
   
   def formalParam = positioned(
       (typeName ~ ident) ^^ {
-        case (tName ~ id) => Declaration(id,tName,true)
+        case (tName ~ id) => Declaration(id,tName,true,None)
       }  
     )
   def inPortDecl: Parser[InPort] = positioned((typeName ~ ident) ^^ {
@@ -122,8 +123,10 @@ class Parser extends StandardTokenParsers {
     case expr => ChannelInvariant(expr,false)
   })
   
-  def varDecl = positioned((typeName ~ ident <~ Semi) ^^ {
-    case (typ ~ id) => Declaration(id,typ,false)
+  def varDecl = positioned((typeName ~ ident ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {
+    case (typ ~ id ~ None) => Declaration(id,typ,false,None)
+    case (typ ~ id ~ Some("=" ~ value)) => Declaration(id,typ,true,Some(value))
+    case (typ ~ id ~ Some(":=" ~ value)) => Declaration(id,typ,false,Some(value))
   })
    
   def actionDecl: Parser[Action] = positioned(
@@ -216,6 +219,7 @@ class Parser extends StandardTokenParsers {
     "(" ~> expression <~ ")" ^^ { case e => e } |
     suffixExpr |
     functionApp |
+    listLiteral |
     atom
   )
   
@@ -229,7 +233,7 @@ class Parser extends StandardTokenParsers {
   def quantOp = "forall" | "exists"
   
   def declaration = positioned(typeName ~ ident ^^ {
-    case (t ~ id) => Declaration(id,t,false)
+    case (t ~ id) => Declaration(id,t,false,None)
   })
   
   def pattern: Parser[Expr] = positioned("{" ~> expression <~ "}")
@@ -244,6 +248,11 @@ class Parser extends StandardTokenParsers {
         case (id ~ params) => FunctionApp(id,params)
       })
   
+  def listLiteral: Parser[Expr] = positioned(
+      ("[" ~> repsep(expression,",") <~ "]") ^^{
+        case lst => ListLiteral(lst)
+      })
+      
   def suffixExpr: Parser[Expr] = positioned(
       (atom ~ ("[" ~> expression <~ "]")) ^^ {
         case (e ~ suffix) => IndexAccessor(e,suffix)
@@ -272,13 +281,27 @@ class Parser extends StandardTokenParsers {
   def statement: Parser[Stmt] = positioned(
     "assert" ~> expression <~ Semi ^^ Assert |
     "assume" ~> expression <~ Semi ^^ Assume |
-    identifier ~ ":=" ~ expression <~ Semi ^^ {
-      case (id ~ _ ~ exp) => Assignment(id,exp)
+    identifier ~ opt("[" ~> expression <~ "]") ~ (":=" ~> expression) <~ Semi ^^ {
+      case (id ~ None ~ exp) => Assign(id,exp)
+      case (id ~ Some(idx) ~ exp) => IndexAssign(id,idx,exp)
     }
   )
   
-  def typeName: Parser[Type] = positioned(
-    "int" ^^^ IntType(32) |
-    "bool" ^^^ BoolType
+  def typeName = primType | compositeType 
+  
+  def primType: Parser[Type] = positioned(
+    ("int" | "uint") ~ (opt("(" ~> "size" ~> "=" ~> numericLit <~ ")")) ^^ {
+      case "int" ~ Some(size) => IntType(size.toInt)
+      case "int" ~ None => IntType(32) 
+      case "uint" ~ Some(size) => UintType(size.toInt) 
+      case "uint" ~ None => UintType(32) 
+    }
+    | "bool" ^^^ BoolType
+  )
+  
+  def compositeType: Parser[Type] = positioned(
+    "List" ~> ("(" ~> "type" ~> ":" ~> typeName ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")") ^^ {
+      case (contType ~ size) => ListType(contType,size.toInt)
+    }
   )
 }

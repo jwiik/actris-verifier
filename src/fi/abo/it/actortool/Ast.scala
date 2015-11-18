@@ -148,7 +148,8 @@ sealed case class Action(
   val fullName = label match { case Some(l) => l; case None => "anon$"+Count.next}
 }
 
-sealed case class Declaration(val id: String, val typ: Type, val constant: Boolean) extends Member {
+sealed case class Declaration(val id: String, val typ: Type, 
+    val constant: Boolean, val value: Option[Expr]) extends Member {
   override def isDeclaration = true
 }
 
@@ -308,7 +309,7 @@ sealed case class Forall(
   
   override val operator = "forall"
 
-  def this(vars: List[Id], expr: Expr) = this(vars map {x => Declaration(x.id,x.typ,false)},expr,None)
+  def this(vars: List[Id], expr: Expr) = this(vars map {x => Declaration(x.id,x.typ,false,None)},expr,None)
   
 }
 
@@ -328,6 +329,8 @@ case class IndexAccessor(override val exp: Expr, val suffix: Expr) extends Suffi
 
 sealed case class FunctionApp(val name: String, val parameters: List[Expr]) extends Expr
 
+sealed case class ListLiteral(val elements: List[Expr]) extends Expr
+
 sealed abstract class Assignable extends Expr
 sealed case class Id(val id: String) extends Assignable
 sealed abstract class Literal extends Expr
@@ -340,7 +343,8 @@ sealed case class IndexSymbol(id: String) extends Expr {
 }
 
 sealed abstract class Stmt extends ASTNode
-sealed case class Assignment(val asgn: Assignable, val expr: Expr) extends Stmt
+sealed case class Assign(val id: Id, val expr: Expr) extends Stmt
+sealed case class IndexAssign(val id: Id, val index: Expr, val expr: Expr) extends Stmt
 sealed case class IfElse(val ifCond: Expr, val ifStmt: List[Stmt], val elseIfs: List[ElseIf], val elseStmt: List[Stmt]) extends Stmt
 sealed case class ElseIf(val cond: Expr, val stmt: List[Stmt])
 sealed case class While(val cond: Expr, val invariants: List[Expr], val stmt: List[Stmt]) extends Stmt
@@ -363,6 +367,7 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isChannel = false
   def isIndexed = false
   def isActor = false
+  def isList = false
 }
 
 sealed abstract class ParamType(val name: String, parameters: List[Type]) extends Type(name) {
@@ -372,12 +377,13 @@ sealed abstract class IndexedType(override val name: String, val resultType: Typ
   ParamType(name,List(resultType,indexType)) {
   override def isIndexed = true
 }
+
   
-sealed case class IntType(size: Int) extends Type("int") {
+sealed case class IntType(size: Int) extends Type("int("+size+")") {
   override def isInt = true
   override def isNumeric = true
 }
-sealed case class UintType(size: Int) extends Type("uint") {
+sealed case class UintType(size: Int) extends Type("uint("+size+")") {
   override def isInt = true
   override def isNumeric = true
 }
@@ -401,4 +407,8 @@ case class ChanType(contentType: Type) extends IndexedType("Chan",contentType,In
 }
 case class ActorType(actor: Actor) extends Type("actor") {
   override def isActor = true
+}
+case class ListType(contentType: Type, val size: Int) extends IndexedType(
+    "List("+contentType.id+","+size+")",contentType,IntType(32)) {
+  override def isList = true
 }

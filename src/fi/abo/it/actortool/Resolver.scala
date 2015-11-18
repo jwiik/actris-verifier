@@ -46,8 +46,10 @@ object Resolver {
     
     override def lookUp(id: String): Option[Declaration] = {
       if (vars contains id) Some(vars(id))
-      else if (channels contains id) Some(Declaration(channels(id).id,ChanType(channels(id).typ),true))
-      else if (entities contains id) Some(Declaration(entities(id).id,ActorType(entities(id)),true))
+      else if (channels contains id) 
+        Some(Declaration(channels(id).id,ChanType(channels(id).typ),true,None))
+      else if (entities contains id) 
+        Some(Declaration(entities(id).id,ActorType(entities(id)),true,None))
       else  parentCtx.lookUp(id)
     }
   }
@@ -101,6 +103,10 @@ object Resolver {
       val vars = scala.collection.mutable.HashMap[String,Declaration]()
       for (p <- decl.parameters) {
         vars += (p.id -> p)
+        p.value match {
+          case None =>
+          case Some(v) => resolveExpr(rootCtx,v)
+        }
       }
       
       decl match {
@@ -126,7 +132,7 @@ object Resolver {
               return Errors(List((e.pos, "Basic actors cannot have a entities block")))
             case s: Structure =>
               return Errors(List((s.pos, "Basic actors cannot have a structure block")))
-            case Declaration(_,_,_) => // Already handled
+            case Declaration(_,_,_,_) => // Already handled
             case sc: Schedule => schedule = Some(sc)
           }
           schedule match {
@@ -221,7 +227,7 @@ object Resolver {
       val pDecl = actorCtx.inports(inPat.portId)
       for (v <- inPat.vars) {
         if (vars contains v.id) actorCtx.error(inPat.pos, "Variable name already used: " + v.id)
-        val d = Declaration(v.id,pDecl.portType,false)
+        val d = Declaration(v.id,pDecl.portType,false,None)
         v.typ = actorCtx.inports(inPat.portId).portType
         vars = vars + (d.id -> d)
       }
@@ -493,7 +499,18 @@ object Resolver {
         is.typ = IntType(32)
         IntType(32)
       }
-      
+      case ll@ListLiteral(lst) => {
+        val size = lst.size
+        assert(size > 0)
+        val cntType = resolveExpr(ctx,lst(0))
+        for (e <- lst.drop(1)) {
+          val t = resolveExpr(ctx,e)
+          if (cntType != t) {
+            ctx.error(e.pos,"List elements do not have consistent types. Found " + cntType.id + " and " + t.id)
+          }
+        }
+        ListType(cntType,size)
+      }
       case l@BoolLiteral(_) => l.typ = BoolType; BoolType
       case l@IntLiteral(_) => l.typ = IntType(32); IntType(32)
       case l@FloatLiteral(_) => throw new IllegalArgumentException()
@@ -610,15 +627,40 @@ object Resolver {
     BoolType
   }
   
+  def isConstant(ctx: Context, id: Id) = id match {
+    case Id(i) => {
+      ctx.lookUp(i) match {
+        case Some(decl) => decl.constant
+        case None => false
+      }
+    }
+  }
+  
   def resolveStmt(ctx: Context, stmts: List[Stmt]): Unit =
     for (stmt <- stmts) resolveStmt(ctx, stmt)
   
   def resolveStmt(ctx: Context, stmt: Stmt): Unit = stmt match {
-    case Assignment(id,exp) =>
+    case Assign(id,exp) =>
+      if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
       val it = resolveExpr(ctx,id)
       val et = resolveExpr(ctx, exp)
       if (it != et) 
         ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable of type " + it.id)
+    case IndexAssign(id,idx,exp) =>
+      if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
+      
+      val it = resolveExpr(ctx,id)
+      val et = resolveExpr(ctx, exp)
+      val xt = resolveExpr(ctx,idx)
+      if (!it.isList) {
+        ctx.error(id.pos,  id.id + " is not a list."); return
+      }
+      else {
+        if (it.asInstanceOf[ListType].contentType != et) {
+          ctx.error(id.pos, "Cannot assign a value of type " + et.id + " to a list of type " + it.id); return
+        }
+      }
+      if (!xt.isInt) ctx.error(idx.pos, "List indices must be integers.")
     case While(cond,invs,body) =>
       resolveExpr(ctx,cond,BoolType)
       for (i <- invs) resolveExpr(ctx,i,BoolType)

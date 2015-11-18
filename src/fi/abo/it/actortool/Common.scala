@@ -54,7 +54,8 @@ abstract class ASTVisitor[T] {
   
   def visitStmt(stmt: Stmt)(implicit info: T) {
     stmt match {
-      case Assignment(id,exp) => visitAssignable(id); visitExpr(exp)
+      case Assign(id,exp) => visitAssignable(id); visitExpr(exp)
+      case IndexAssign(id,idx,exp) => visitAssignable(id); visitExpr(idx); visitExpr(exp)
       case Assert(e) => visitExpr(e)
       case Assume(e) => visitExpr(e)
       case Havoc(vars) => for (v <- vars) visitId(v)
@@ -100,6 +101,7 @@ abstract class ASTVisitor[T] {
       case Exists(v,e,Some(p)) => visitExpr(e); visitExpr(p)
       case IndexAccessor(l,i) => visitExpr(l); visitExpr(i)
       case FunctionApp(n,args) => visitExpr(args)
+      case ListLiteral(els) => for (e <- els) visitExpr(e)
       case is: IndexSymbol => visitExpr(is.indexedExpr)
       case il: IntLiteral =>
       case bl: BoolLiteral =>
@@ -123,7 +125,8 @@ abstract class ASTReplacingVisitor[A<:ASTNode,B<:ASTNode] {
   
   def visitStmt(stmt: Stmt)(implicit map: Map[A,B]): Stmt = {
     stmt match {
-      case Assignment(id,exp) => Assignment(visitAssignable(id),visitExpr(exp))
+      case Assign(id,exp) => Assign(visitId(id),visitExpr(exp))
+      case IndexAssign(id,idx,exp) => IndexAssign(visitId(id),visitExpr(idx),visitExpr(exp))
       case Assert(e) => Assert(visitExpr(e))
       case Assume(e) => Assume(visitExpr(e))
       case Havoc(vars) => Havoc(for (v <- vars) yield visitId(v))
@@ -170,6 +173,7 @@ abstract class ASTReplacingVisitor[A<:ASTNode,B<:ASTNode] {
       case Exists(v,e,Some(p)) => Exists(v,visitExpr(e),Some(visitExpr(p)))
       case IndexAccessor(l,i) => IndexAccessor(visitExpr(l),visitExpr(i))
       case FunctionApp(n,args) => FunctionApp(n,visitExpr(args))
+      case ListLiteral(els) => ListLiteral(for (e <- els) yield visitExpr(e))
       case is: IndexSymbol =>
         is.indexedExpr = visitExpr(is.indexedExpr); is
       case il: IntLiteral => il
@@ -178,12 +182,6 @@ abstract class ASTReplacingVisitor[A<:ASTNode,B<:ASTNode] {
     }
     newExpr.typ = expr.typ
     newExpr
-  }
-  
-  def visitAssignable(asgn: Assignable)(implicit map: Map[A,B]): Assignable = {
-    asgn match {
-      case id: Id => visitId(id)
-    }
   }
   
   def visitId(id: Id)(implicit map: Map[A,B]): Id = {

@@ -44,6 +44,7 @@ class Translator {
     def Int = NamedType("int");
     def State = NamedType("State")
     def Actor = NamedType("Actor")
+    def List(cType: BType) = Boogie.IndexedType("List", cType)
   }
   
   object AstElement {
@@ -116,7 +117,7 @@ class Translator {
       m match {
         case ActorInvariant(e,_) => invariants += ((e.pos,transExprNoRename(e)))
         case a: Action => actions += a
-        case Declaration(id,t,_) => actorVars += bLocal(id, t)
+        case Declaration(id,t,_,_) => actorVars += bLocal(id, t)
         case _ =>
       }
     }
@@ -467,15 +468,18 @@ class Translator {
     var renameMap = Map[Id,Id]()
     
     val parameterNames = instance.actor.parameters.map(p => Id(p.id))
+    
     val actorParams = instance.actor.parameters.map(p => {
       val newName = "ActorParam"+Sep+p.id
       newVars += bLocal(newName,type2BType(p.typ))
       (Id(p.id),Id(newName))
     }).toMap
+    
     renameMap = renameMap ++ actorParams
     for ((name,value) <- (parameterNames zip instance.arguments)) {
       // Add assumptions about the values of the actor parameters
-      asgn += bAssume(transExpr(IdToIdReplacer.visitExpr(name)(renameMap))(boogieName) ==@ transExpr(value)(boogieName))
+      asgn += bAssume(transExpr(
+          IdToIdReplacer.visitExpr(name)(renameMap))(boogieName) ==@ transExpr(value)(boogieName))
     }
     
     asgn ++= cInits // Assumptions about initial state of channels
@@ -491,6 +495,7 @@ class Translator {
     
     val firingConds = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
     val replacements = scala.collection.mutable.HashMap.empty[Id,IndexAccessor]
+    
     for (ipat <- action.inputPattern) {
       val cId = targetMap(PortRef(Some(instance.id),ipat.portId))
       val cond = Boogie.IntLiteral(ipat.numConsumed) <= bCredit(cId)
@@ -504,6 +509,7 @@ class Translator {
       
       firingConds += cond
     }
+    
     val renamedGuard = action.guard match {
       case None =>
       case Some(g) =>
@@ -542,6 +548,10 @@ class Translator {
       else Boogie.BoolLiteral(true)
     }
     asgn += bAssume(firingRule)
+    
+    for (ActorInvariant(e,_) <- actor.actorInvariants) {
+      asgn += bAssume(transExpr(IdToIdReplacer.visitExpr(e)(renameMap))(boogieName))
+    }
     
     for (ipat <- action.inputPattern) {
       val cId = targetMap(PortRef(Some(instance.id),ipat.portId))
@@ -604,7 +614,8 @@ class Translator {
     val bStmts = new ListBuffer[Boogie.Stmt]()
     for (s <- stmts) {
       bStmts ++= (s match {
-        case Assignment(id,exp) => List(Boogie.Assign(transExpr(id),transExpr(exp)))
+        case Assign(id,exp) => List(Boogie.Assign(transExpr(id),transExpr(exp)))
+        case IndexAssign(id,idx,exp) => List(Boogie.AssignMap(transExpr(id),transExpr(idx),transExpr(exp)))
         case Assert(e) => List(bAssert(transExpr(e), e.pos, "Condition might not hold"))
         case Assume(e) => List(bAssume(transExpr(e)))
         case Havoc(ids) => for (i <- ids) yield { Boogie.Havoc(transExpr(i)) }
@@ -704,6 +715,17 @@ class Translator {
         if (e.typ.isChannel) bChannelIdx(transExpr(e),transExpr(i))
         else transExpr(e) apply transExpr(i)
       }
+      case ListLiteral(lst) => {
+        var listlit: Boogie.Expr = intlst
+        var i = 0
+        for (e <- lst) {
+          val transE = transExpr(e)
+          listlit = Boogie.MapStore(listlit,Boogie.IntLiteral(i),transE)
+          i = i+1
+        }
+        listlit
+      }
+
       case IntLiteral(i) => Boogie.IntLiteral(i)
       case BoolLiteral(b) => Boogie.BoolLiteral(b)
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
@@ -727,6 +749,7 @@ class Translator {
         case UintType(_) => BType.Int
         case ChanType(contentType) => BType.Chan(type2BType(contentType))
         case ActorType(_) => BType.Actor
+        case ListType(contentType,_) => BType.List(type2BType(contentType))
         case UnknownType =>
           assert(false, "Unknown types should not occur during the translation")
           null
@@ -764,13 +787,9 @@ class Translator {
     def bState(id: String) = VarExpr(BMap.St) apply VarExpr(id)
     def bState(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
     val bThis = bState(BMap.This)
+    
+    val intlst = VarExpr("AT#intlst");
 
   }
   
 }
-
-
-
-
-
-
