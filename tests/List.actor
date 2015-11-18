@@ -1,0 +1,31 @@
+actor ListTest int in ==> int out :
+  
+  invariant x[0] == 10
+  
+  List(type: int, size=3) x := [10,11,12];
+
+  action in:[i] ==> out:[x[i]] 
+    guard 0 <= i && i < 3
+  do
+    x[i] := 11;
+  end
+end
+
+network Net int in ==> int out :
+  action in:[i] ==> out:[10] 
+    requires i == 0
+  end
+  
+  chinvariant a[0] == 0
+  chinvariant rd(a) == tot(b)
+  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> b[i] == 10)
+  
+  entities
+    l = ListTest();
+  end
+  
+  structure
+    a: in --> l.in;
+    b: l.out --> out;
+  end
+end
