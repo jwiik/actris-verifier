@@ -124,7 +124,7 @@ sealed case class Action(
     private val label: Option[String], val init: Boolean, 
     val inputPattern: List[InputPattern], val outputPattern: List[OutputPattern],
     val guard: Option[Expr], 
-    val requires: List[Expr], val ensures: List[Expr], varDecls: List[Declaration],
+    val requires: List[Expr], val ensures: List[Expr], variables: List[Declaration],
     val body: Option[List[Stmt]]) extends Member {
 
   var transitions: List[(String,String)] = Nil

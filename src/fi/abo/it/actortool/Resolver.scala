@@ -232,6 +232,11 @@ object Resolver {
         vars = vars + (d.id -> d)
       }
     }
+    for (v <- action.variables) {
+      if (vars contains v.id) actorCtx.error(v.pos, "Variable name already used: " + v.id)
+      vars = vars + (v.id -> v)
+    } 
+    
     val ctx = new ActionContext(actorCtx,vars)
     action.guard match {
       case Some(g) => resolveExpr(ctx, g, BoolType)

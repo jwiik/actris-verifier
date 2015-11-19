@@ -135,14 +135,14 @@ class Parser extends StandardTokenParsers {
         repsep(inputPattern,",") ~ 
         ("==>" ~> repsep(outputPattern,",")) ~
         ("guard" ~> expression ?) ~
+        ("var" ~> repsep(varDecl,",") ?) ~
         ("requires" ~> expression *) ~
         ("ensures" ~> expression *) ~
-        ("var" ~> repsep(varDecl,",") ?) ~
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
-      case (id ~ "action" ~ inputs ~ outputs ~ guard ~ requires ~ ensures ~ vars ~ stmt) => 
+      case (id ~ "action" ~ inputs ~ outputs ~ guard ~ vars ~ requires ~ ensures  ~ stmt) => 
         Action(id,false,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
-      case (id ~ "initialize" ~ inputs ~ outputs ~ guard ~ requires ~ ensures ~ vars ~ stmt) => 
+      case (id ~ "initialize" ~ inputs ~ outputs ~ guard ~ vars ~ requires ~ ensures  ~ stmt) => 
         Action(id,true,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
     }
   )
@@ -180,6 +180,7 @@ class Parser extends StandardTokenParsers {
   def cmpExpr: Parser[Expr] = positioned((bitManipExpr ~ ((cmpOp ~ bitManipExpr) ?)) ^^ {
     case e ~ None => e
     case e1 ~ Some("==" ~ e2) => Eq(e1,e2)
+    case e1 ~ Some("=" ~ e2) => Eq(e1,e2)
     case e1 ~ Some("!=" ~ e2) => NotEq(e1,e2)
     case e1 ~ Some("<" ~ e2) => Less(e1,e2)
     case e1 ~ Some(">" ~ e2) => Greater(e1,e2)
@@ -187,7 +188,7 @@ class Parser extends StandardTokenParsers {
     case e1 ~ Some(">=" ~ e2) => AtLeast(e1,e2)
   })
   
-  def cmpOp = "==" | "!=" | "<" | "<=" | ">=" | ">" 
+  def cmpOp = "==" | "=" | "!=" | "<" | "<=" | ">=" | ">" 
   
   def bitManipExpr: Parser[Expr] = positioned((addExpr ~ ((">>" | "<<" ) ~ addExpr *)) ^^{
     case e0 ~ rest => (rest foldLeft e0) {
