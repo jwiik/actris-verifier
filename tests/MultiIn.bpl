@@ -13,7 +13,12 @@ var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
+
 const unique this#: Actor;
+
+type List a = [int]a;
+var AT#intlst: List int;
+
 
 // ---------------------------------------------------------------
 // -- End of prelude ---------------------------------------------
@@ -22,8 +27,8 @@ const unique this#: Actor;
 procedure Add2#anon$0#0()
   modifies C, R, M, St;
 {
-  var i: int;
-  var j: int;
+  var IV#in#i: int;
+  var IV#in#j: int;
   assume true;
 }
 const unique Net#add: Actor;
@@ -32,17 +37,18 @@ const unique Net#b: Chan (int);
 procedure Net#anon$1#entry#1()
   modifies C, R, M, St;
 {
+  var Net#out#0: int;
   assume C#init[Net#a] == 2;
   assume C#init[Net#b] == 0;
   assume R[Net#a] == 0;
   assume R[Net#b] == 0;
   assume C#init == C;
-  assert {:msg "  Channel invariant might not hold on action entry (generated #0 )"} 0 <= R[Net#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #1 )"} 0 <= C[Net#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #2 )"} (R[Net#a] + C[Net#a]) == C#init[Net#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #3 )"} 0 <= R[Net#b];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #4 )"} 0 <= C[Net#b];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #5 )"} R[Net#b] == 0;
+  assert {:msg "  Channel invariant might not hold on action entry (generated #0)"} 0 <= R[Net#a];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #1)"} 0 <= C[Net#a];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #2)"} (R[Net#a] + C[Net#a]) == C#init[Net#a];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #3)"} 0 <= R[Net#b];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #4)"} 0 <= C[Net#b];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #5)"} R[Net#b] == 0;
   assert {:msg "  8.3: Channel invariant might not hold on action entry"} R[Net#a] == (2 * (R[Net#b] + C[Net#b]));
   assert {:msg "  9.3: Channel invariant might not hold on action entry"} (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (M[Net#b][i] == (M[Net#a][2 * i] + M[Net#a][(2 * i) + 1]))
@@ -90,6 +96,7 @@ procedure Net#anon$1#Add2#anon$0#2()
 procedure Net#anon$1#exit#3()
   modifies C, R, M, St;
 {
+  var Net#out#0: int;
   assume C#init[Net#a] == 2;
   assume C#init[Net#b] == 0;
   assume 0 <= R[Net#a];
@@ -105,7 +112,8 @@ procedure Net#anon$1#exit#3()
   assume !(2 <= C[Net#a]);
   assert {:msg "  6.3: The network might leave unread tokens on channel a"} C[Net#a] == 0;
   assert {:msg "  6.3: The network might not produce the specified number of tokens on output out"} C[Net#b] == 1;
-  assert {:msg "  6.28: Network output might not conform to specified action output"} M[Net#b][0] == (M[Net#a][0] + M[Net#a][1]);
+  Net#out#0 := M[Net#b][0];
+  assert {:msg "  6.28: Network output might not conform to the specified action output"} Net#out#0 == (M[Net#a][0] + M[Net#a][1]);
   R[Net#b] := R[Net#b] + C[Net#b];
   C[Net#b] := 0;
 }

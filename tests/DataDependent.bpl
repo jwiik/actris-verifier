@@ -13,7 +13,12 @@ var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
+
 const unique this#: Actor;
+
+type List a = [int]a;
+var AT#intlst: List int;
+
 
 function AT#Abs(x: int): int { if 0 <= x then x else -x }
 function AT#Div(int, int): int;
@@ -28,34 +33,22 @@ axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
 procedure Repeater#anon$0#0()
   modifies C, R, M, St;
 {
-  var i: int;
+  var IV#in#i: int;
   assume true;
 }
 procedure Split#anon$1#1()
   modifies C, R, M, St;
 {
-  var i: int;
-  assume 0 <= i;
+  var IV#in#i: int;
+  assume 0 <= IV#in#i;
   assume true;
 }
 procedure Split#anon$2#2()
   modifies C, R, M, St;
 {
-  var i: int;
-  assume i < 0;
+  var IV#in#i: int;
+  assume IV#in#i < 0;
   assume true;
-}
-procedure Net#init#3()
-  modifies C, R, M, St;
-{
-  assume C[Net#a] == 0;
-  assume R[Net#a] == 0;
-  assume C[Net#b] == 0;
-  assume R[Net#b] == 0;
-  assume C[Net#c] == 0;
-  assume R[Net#c] == 0;
-  assume C[Net#d] == 0;
-  assume R[Net#d] == 0;
 }
 const unique Net#rep: Actor;
 const unique Net#split: Actor;
@@ -63,9 +56,11 @@ const unique Net#a: Chan (int);
 const unique Net#b: Chan (int);
 const unique Net#c: Chan (int);
 const unique Net#d: Chan (int);
-procedure Net#anon$3#entry#4()
+procedure Net#anon$3#entry#3()
   modifies C, R, M, St;
 {
+  var Net#out1#0: int;
+  var Net#out2#0: int;
   assume C#init[Net#a] == 2;
   assume C#init[Net#b] == 0;
   assume C#init[Net#c] == 0;
@@ -101,7 +96,7 @@ procedure Net#anon$3#entry#4()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
 }
-procedure Net#anon$3#Repeater#anon$0#5()
+procedure Net#anon$3#Repeater#anon$0#4()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -166,7 +161,7 @@ procedure Net#anon$3#Repeater#anon$0#5()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
 }
-procedure Net#anon$3#Split#anon$1#6()
+procedure Net#anon$3#Split#anon$1#5()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -232,7 +227,7 @@ procedure Net#anon$3#Split#anon$1#6()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
 }
-procedure Net#anon$3#Split#anon$2#7()
+procedure Net#anon$3#Split#anon$2#6()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -298,9 +293,11 @@ procedure Net#anon$3#Split#anon$2#7()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
 }
-procedure Net#anon$3#exit#8()
+procedure Net#anon$3#exit#7()
   modifies C, R, M, St;
 {
+  var Net#out1#0: int;
+  var Net#out2#0: int;
   assume C#init[Net#a] == 2;
   assume C#init[Net#b] == 0;
   assume C#init[Net#c] == 0;
@@ -334,8 +331,10 @@ procedure Net#anon$3#exit#8()
   assert {:msg "  16.3: The network might leave unread tokens on channel b"} C[Net#b] == 0;
   assert {:msg "  16.3: The network might not produce the specified number of tokens on output out1"} C[Net#c] == 1;
   assert {:msg "  16.3: The network might not produce the specified number of tokens on output out2"} C[Net#d] == 1;
-  assert {:msg "  16.31: Network output might not conform to specified action output"} M[Net#c][0] == M[Net#a][1];
-  assert {:msg "  16.42: Network output might not conform to specified action output"} M[Net#d][0] == M[Net#a][0];
+  Net#out1#0 := M[Net#c][0];
+  assert {:msg "  16.31: Network output might not conform to the specified action output"} Net#out1#0 == M[Net#a][1];
+  Net#out2#0 := M[Net#d][0];
+  assert {:msg "  16.42: Network output might not conform to the specified action output"} Net#out2#0 == M[Net#a][0];
   R[Net#c] := R[Net#c] + C[Net#c];
   C[Net#c] := 0;
   R[Net#d] := R[Net#d] + C[Net#d];

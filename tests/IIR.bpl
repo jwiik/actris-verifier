@@ -13,7 +13,12 @@ var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
+
 const unique this#: Actor;
+
+type List a = [int]a;
+var AT#intlst: List int;
+
 
 function AT#Abs(x: int): int { if 0 <= x then x else -x }
 function AT#Div(int, int): int;
@@ -41,8 +46,8 @@ axiom (forall a: int :: (
 procedure add#anon$0#0()
   modifies C, R, M, St;
 {
-  var i: int;
-  var j: int;
+  var IV#in1#i: int;
+  var IV#in2#j: int;
   assume true;
 }
 procedure delay#anon$1#1()
@@ -53,50 +58,20 @@ procedure delay#anon$1#1()
 procedure delay#anon$2#2()
   modifies C, R, M, St;
 {
-  var i: int;
+  var IV#in#i: int;
   assume true;
 }
 procedure mulc#anon$3#3()
   modifies C, R, M, St;
 {
-  var i: int;
+  var IV#in#i: int;
   assume true;
 }
 procedure rshift#anon$4#4()
   modifies C, R, M, St;
 {
-  var i: int;
+  var IV#in#i: int;
   assume true;
-}
-procedure iir#init#5()
-  modifies C, R, M, St;
-{
-  var ActorParam#del1#k: int;
-  var ActorParam#mul1#c: int;
-  var ActorParam#mul2#c: int;
-  var ActorParam#rsh1#s: int;
-  assume C[iir#a] == 0;
-  assume R[iir#a] == 0;
-  assume C[iir#b] == 0;
-  assume R[iir#b] == 0;
-  assume C[iir#c] == 0;
-  assume R[iir#c] == 0;
-  assume C[iir#d] == 0;
-  assume R[iir#d] == 0;
-  assume C[iir#e] == 0;
-  assume R[iir#e] == 0;
-  assume C[iir#f] == 0;
-  assume R[iir#f] == 0;
-  assume C[iir#g] == 0;
-  assume R[iir#g] == 0;
-  assume ActorParam#del1#k == 0;
-  M[iir#f][R[iir#f] + C[iir#f]] := ActorParam#del1#k;
-  C[iir#f] := C[iir#f] + 1;
-  assume ActorParam#mul1#c == 85;
-  assume ActorParam#mul2#c == 171;
-  assume ActorParam#rsh1#s == 8;
-  assert {:msg "  25.3: Network initialization might not establish the network invariant"} C[iir#f] == 1;
-  assert {:msg "  26.3: Network initialization might not establish the network invariant"} M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
 }
 const unique iir#del1: Actor;
 const unique iir#mul1: Actor;
@@ -110,9 +85,10 @@ const unique iir#d: Chan (int);
 const unique iir#e: Chan (int);
 const unique iir#f: Chan (int);
 const unique iir#g: Chan (int);
-procedure iir#anon$5#entry#6()
+procedure iir#anon$5#entry#5()
   modifies C, R, M, St;
 {
+  var iir#out#0: int;
   assume C#init[iir#a] == 1;
   assume C#init[iir#b] == 0;
   assume C#init[iir#c] == 0;
@@ -172,7 +148,7 @@ procedure iir#anon$5#entry#6()
   );
   assert {:msg "  28.3: Channel invariant might not hold on action entry"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#delay#anon$2#7()
+procedure iir#anon$5#delay#anon$2#6()
   modifies C, R, M, St;
 {
   var ActorParam#k: int;
@@ -277,7 +253,7 @@ procedure iir#anon$5#delay#anon$2#7()
   );
   assert {:msg "  28.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#mulc#anon$3#8()
+procedure iir#anon$5#mulc#anon$3#7()
   modifies C, R, M, St;
 {
   var ActorParam#c: int;
@@ -382,7 +358,7 @@ procedure iir#anon$5#mulc#anon$3#8()
   );
   assert {:msg "  28.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#mulc#anon$3#9()
+procedure iir#anon$5#mulc#anon$3#8()
   modifies C, R, M, St;
 {
   var ActorParam#c: int;
@@ -487,7 +463,7 @@ procedure iir#anon$5#mulc#anon$3#9()
   );
   assert {:msg "  28.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#rshift#anon$4#10()
+procedure iir#anon$5#rshift#anon$4#9()
   modifies C, R, M, St;
 {
   var ActorParam#s: int;
@@ -594,7 +570,7 @@ procedure iir#anon$5#rshift#anon$4#10()
   );
   assert {:msg "  28.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#add#anon$0#11()
+procedure iir#anon$5#add#anon$0#10()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -701,9 +677,10 @@ procedure iir#anon$5#add#anon$0#11()
   );
   assert {:msg "  28.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#exit#12()
+procedure iir#anon$5#exit#11()
   modifies C, R, M, St;
 {
+  var iir#out#0: int;
   assume C#init[iir#a] == 1;
   assume C#init[iir#b] == 0;
   assume C#init[iir#c] == 0;
@@ -759,7 +736,8 @@ procedure iir#anon$5#exit#12()
   assert {:msg "  23.3: The network might leave unread tokens on channel d"} C[iir#d] == 0;
   assert {:msg "  23.3: The network might leave unread tokens on channel e"} C[iir#e] == 0;
   assert {:msg "  23.3: The network might not produce the specified number of tokens on output out"} C[iir#g] == 1;
-  assert {:msg "  23.26: Network output might not conform to specified action output"} M[iir#g][0] == AT#RShift((171 * M[iir#g][R[iir#g] - 1]) + (85 * M[iir#a][0]), 8);
+  iir#out#0 := M[iir#g][0];
+  assert {:msg "  23.26: Network output might not conform to the specified action output"} iir#out#0 == AT#RShift((171 * M[iir#g][R[iir#g] - 1]) + (85 * M[iir#a][0]), 8);
   R[iir#g] := R[iir#g] + C[iir#g];
   C[iir#g] := 0;
   assert {:msg "  25.3: The network might not preserve the network invariant"} C[iir#f] == 1;

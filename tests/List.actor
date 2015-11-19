@@ -1,24 +1,28 @@
 actor ListTest int in ==> int out :
   
-  invariant x[0] == 10
+  invariant X[0] = 10 && X[1] = 11 && X[2] = 12
   
-  List(type: int, size=3) x := [10,11,12];
+  List(type: int, size=3) X = [10,11,12];
 
-  action in:[i] ==> out:[x[i]] 
+  action in:[i] ==> out:[X[i]] 
     guard 0 <= i && i < 3
-  do
-    x[i] := 11;
+    var int o
+  do 
+    o := X[i];
   end
 end
 
 network Net int in ==> int out :
-  action in:[i] ==> out:[10] 
-    requires i == 0
+  action in:[i] ==> out:[y]
+    var int y
+    requires 0 <= i && i < 3
+    ensures  i = 0 ==> y = 10
   end
   
-  chinvariant a[0] == 0
-  chinvariant rd(a) == tot(b)
-  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> b[i] == 10)
+  chinvariant 0 <= a[0] && a[0] < 3
+  chinvariant rd(a) = tot(b)
+  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> 10 <= b[i] && b[i] <= 12)
+  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> a[i] = 0 ==> b[i] = 10)
   
   entities
     l = ListTest();

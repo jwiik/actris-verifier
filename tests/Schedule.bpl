@@ -13,7 +13,12 @@ var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
+
 const unique this#: Actor;
+
+type List a = [int]a;
+var AT#intlst: List int;
+
 
 // ---------------------------------------------------------------
 // -- End of prelude ---------------------------------------------
@@ -25,7 +30,7 @@ procedure FairMerge#a1#0()
   modifies C, R, M, St;
 {
   var this#: Actor;
-  var i: int;
+  var IV#x1#i: int;
   assume (St[this#] == FairMerge#s1) || (St[this#] == FairMerge#s2);
   assume St[this#] == FairMerge#s1;
   assume true;
@@ -36,7 +41,7 @@ procedure FairMerge#a2#1()
   modifies C, R, M, St;
 {
   var this#: Actor;
-  var i: int;
+  var IV#x2#i: int;
   assume (St[this#] == FairMerge#s1) || (St[this#] == FairMerge#s2);
   assume St[this#] == FairMerge#s2;
   assume true;
@@ -50,6 +55,8 @@ const unique Top#c: Chan (int);
 procedure Top#anon$0#entry#2()
   modifies C, R, M, St;
 {
+  var Top#out#0: int;
+  var Top#out#1: int;
   assume C#init[Top#a] == 1;
   assume C#init[Top#b] == 1;
   assume C#init[Top#c] == 0;
@@ -58,15 +65,15 @@ procedure Top#anon$0#entry#2()
   assume R[Top#c] == 0;
   assume C#init == C;
   assume St[Top#fm] == FairMerge#s1;
-  assert {:msg "  Channel invariant might not hold on action entry (generated #0 )"} 0 <= R[Top#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #1 )"} 0 <= C[Top#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #2 )"} (R[Top#a] + C[Top#a]) == C#init[Top#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #3 )"} 0 <= R[Top#b];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #4 )"} 0 <= C[Top#b];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #5 )"} (R[Top#b] + C[Top#b]) == C#init[Top#b];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #6 )"} 0 <= R[Top#c];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #7 )"} 0 <= C[Top#c];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #8 )"} R[Top#c] == 0;
+  assert {:msg "  Channel invariant might not hold on action entry (generated #0)"} 0 <= R[Top#a];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #1)"} 0 <= C[Top#a];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #2)"} (R[Top#a] + C[Top#a]) == C#init[Top#a];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #3)"} 0 <= R[Top#b];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #4)"} 0 <= C[Top#b];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #5)"} (R[Top#b] + C[Top#b]) == C#init[Top#b];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #6)"} 0 <= R[Top#c];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #7)"} 0 <= C[Top#c];
+  assert {:msg "  Channel invariant might not hold on action entry (generated #8)"} R[Top#c] == 0;
   assert {:msg "  16.3: Channel invariant might not hold on action entry"} (R[Top#c] + C[Top#c]) == (R[Top#a] + R[Top#b]);
   assert {:msg "  17.3: Channel invariant might not hold on action entry"} ((R[Top#c] + C[Top#c]) >= 1) ==> (C[Top#a] == 0);
   assert {:msg "  18.3: Channel invariant might not hold on action entry"} ((R[Top#c] + C[Top#c]) >= 2) ==> (C[Top#b] == 0);
@@ -183,6 +190,8 @@ procedure Top#anon$0#FairMerge#a2#4()
 procedure Top#anon$0#exit#5()
   modifies C, R, M, St;
 {
+  var Top#out#0: int;
+  var Top#out#1: int;
   assume C#init[Top#a] == 1;
   assume C#init[Top#b] == 1;
   assume C#init[Top#c] == 0;
@@ -207,8 +216,10 @@ procedure Top#anon$0#exit#5()
   assert {:msg "  12.3: The network might leave unread tokens on channel a"} C[Top#a] == 0;
   assert {:msg "  12.3: The network might leave unread tokens on channel b"} C[Top#b] == 0;
   assert {:msg "  12.3: The network might not produce the specified number of tokens on output out"} C[Top#c] == 2;
-  assert {:msg "  12.36: Network output might not conform to specified action output"} M[Top#c][0] == M[Top#a][0];
-  assert {:msg "  12.38: Network output might not conform to specified action output"} M[Top#c][1] == M[Top#b][0];
+  Top#out#0 := M[Top#c][0];
+  assert {:msg "  12.36: Network output might not conform to the specified action output"} Top#out#0 == M[Top#a][0];
+  Top#out#1 := M[Top#c][1];
+  assert {:msg "  12.38: Network output might not conform to the specified action output"} Top#out#1 == M[Top#b][0];
   R[Top#c] := R[Top#c] + C[Top#c];
   C[Top#c] := 0;
   assert {:msg "  14.3: The network might not preserve the network invariant"} St[Top#fm] == FairMerge#s1;
