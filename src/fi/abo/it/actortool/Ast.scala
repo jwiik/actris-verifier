@@ -168,6 +168,20 @@ sealed case class Entities(val entities: List[Instance]) extends Member {
 sealed case class Structure(val connections: List[Connection]) extends Member {
   override def isStructure = true
   
+  def getInputChannel(portId: String) = connections.find {
+    x => x match {
+      case Connection(_,PortRef(None,p),_) => p == portId
+      case _ => false
+    }
+  }
+  
+  def getOutputChannel(portId: String) = connections.find {
+    x => x match {
+      case Connection(_,_,PortRef(None,p)) => p == portId
+      case _ => false
+    }
+  }
+  
   def incomingConnection(entityId: String, portId: String) = connections.find { 
     x => x match {
       case Connection(_,_,PortRef(Some(e),p)) => entityId == e && portId == p

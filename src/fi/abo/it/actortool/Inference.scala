@@ -24,8 +24,8 @@ object Elements {
 import Elements._
 
 object Inferencer {
-  final val Modules = List(StaticProperties,SDFClass).map(m => (m.name,m)).toMap
-  private val DefaultModules = Set(StaticProperties,SDFClass)
+  final val Modules = List(StaticProperties,NWPreToInvariant,SDFClass).map(m => (m.name,m)).toMap
+  private val DefaultModules = Set(StaticProperties,NWPreToInvariant,SDFClass)
       
   def infer(program: List[TopDecl], modules: List[String]) = {
     val inferenceModules = modules match {
@@ -41,7 +41,7 @@ object Inferencer {
 }
 
 object StaticProperties extends InferenceModule {
-  def name = "basic-wf"
+  override val name = "basic-wf"
   
   def network(n: Network)(implicit ctx: Context) {
     for (m <- n.members) m match {
@@ -62,11 +62,34 @@ object StaticProperties extends InferenceModule {
       case _ =>
     }
   }
+}
+
+object NWPreToInvariant extends InferenceModule {
+  override val name = "nw-precondition"
+  
+  def network(n: Network)(implicit ctx: Context) = {    
+    if (n.actions.size == 1) {
+      val action = n.actions(0)
+      val replacements = new ListBuffer[(Id,Expr)]
+      for (ipat <- action.inputPattern) {
+        val channel = n.structure.get.getInputChannel(ipat.portId).get
+        
+        for ((v,i) <- ipat.vars.view.zipWithIndex) {
+          val chId = Id(channel.id); chId.typ = ChanType(v.typ)
+          val accessor = IndexAccessor(chId,lit(i)); accessor.typ = v.typ
+          replacements += ((v,accessor))
+        }
+        val replMap = replacements.toMap
+        val renamedReqs = action.requires map { p => IdReplacer.visitExpr(p)(replMap) } 
+        n.addChannelInvariants(renamedReqs)
+      }
+    }
+  }
   
 }
 
 object SDFClass extends InferenceModule {
-  def name = "sdf-annot"
+  override val name = "sdf-annot"
   
   val SdfAnnot = "sdf"
   val quantVar = Id("idx$"); quantVar.typ = IntType(32)
@@ -177,7 +200,7 @@ object SDFClass extends InferenceModule {
 
 abstract class InferenceModule {
   
-  def name: String
+  val name: String
   
   final def infer(decl: TopDecl): InferenceOutcome = {
     val ctx = new Context
