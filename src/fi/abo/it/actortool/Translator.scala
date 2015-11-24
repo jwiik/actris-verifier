@@ -750,24 +750,17 @@ class Translator {
           case "urd" => bCredit(transExpr(params(0)))
           case "tot" => bRead(transExpr(params(0)))+bCredit(transExpr(params(0)))
           case "initial" => bCredInit(transExpr(params(0)))
+          case "next" => bChannelIdx(transExpr(params(0)), bRead(transExpr(params(0))))
+          case "prev" => bChannelIdx(transExpr(params(0)), bRead(transExpr(params(0))) - Boogie.IntLiteral(1))
           case "tokens" => bCredit(transExpr(params(0))) ==@ transExpr(params(1))
           case "state" => {
             val actor = params(0).typ.asInstanceOf[ActorType].actor
             val id = params(1).asInstanceOf[Id].id
             bState(transExpr(params(0))) ==@ Boogie.VarExpr(actor.fullName+Sep+id)
           }
-          //case "last" => bRead()
           case _ => throw new RuntimeException() // Should not happen
         }
       }
-      case is@IndexSymbol(name) => {
-        name match {
-          case "last" => bRead(transExpr(is.indexedExpr)) - Boogie.IntLiteral(1)
-          case "next" => bRead(transExpr(is.indexedExpr))
-          case _ => throw new RuntimeException("Unknown index symbol: " + name)
-        }
-      }
-        
       case IndexAccessor(e,i) => {
         if (e.typ.isChannel) bChannelIdx(transExpr(e),transExpr(i))
         else transExpr(e) apply transExpr(i)
@@ -784,6 +777,10 @@ class Translator {
       }
 
       case IntLiteral(i) => Boogie.IntLiteral(i)
+      case HexLiteral(x) => {
+        val bigInt = x.toList.map("0123456789abcdef".indexOf(_)).map(BigInt(_)).reduceLeft(_ * 16 + _)
+        Boogie.IntLiteral(bigInt.toString) // To decimal conversion
+      }
       case BoolLiteral(b) => Boogie.BoolLiteral(b)
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
       case Id(id) => renamings.get(id) match {

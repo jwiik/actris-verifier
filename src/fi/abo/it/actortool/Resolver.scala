@@ -286,8 +286,8 @@ object Resolver {
       }
       
       for ((s,a) <- (signature zip arguments)) {
-        if (s != a) {
-          ctx.error(instance.pos, "Expected type " + s.id + "found: " + a)
+        if (!TypeUtil.isCompatible(a,s)) {
+          ctx.error(instance.pos, "Expected type " + s.id + " found: " + a.id)
           return instances.toMap
         }
       }
@@ -395,8 +395,8 @@ object Resolver {
       case op: Times => resolveNumericBinaryExpr(ctx, op)
       case op: Div => resolveNumericBinaryExpr(ctx, op)
       case op: Mod => resolveNumericBinaryExpr(ctx, op)
-      case op: RShift => resolveShift(ctx,op)
-      case op: LShift => resolveShift(ctx,op)
+      case op: RShift => resolveShift(ctx,op) // t1
+      case op: LShift => resolveShift(ctx,op) // LubSumPow
       case m@UnMinus(e) =>
         val t = resolveExpr(ctx,e)
         if (!t.isNumeric) ctx.error(m.pos, "Expected numeric type, found: " + t.id)
@@ -437,8 +437,8 @@ object Resolver {
         else {
           val indexedType = tExp.asInstanceOf[IndexedType]
           val tInd = resolveExpr(accessorCtx,e2)
-          if (tInd != indexedType.indexType) 
-            ctx.error(e2.pos, "Expected " + indexedType.indexType + ", found: " + tInd.id)
+          if (!TypeUtil.isCompatible(tInd,indexedType.indexType)) 
+            ctx.error(e2.pos, "Expected " + indexedType.indexType.id + ", found: " + tInd.id)
           ac.typ = indexedType.resultType
           indexedType.resultType
         }
@@ -446,6 +446,8 @@ object Resolver {
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("initial",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
+      case fa@FunctionApp("prev",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("tokens",params) => resolveDelayFunction(ctx, fa)
       case fa@FunctionApp("state",params) => {
         if (params.size != 2) {
@@ -491,33 +493,25 @@ object Resolver {
         ctx.error(fa.pos,"Undefined function: " + name)
         UnknownType
       }
-      case is@IndexSymbol(name) => {
-//        if (!params.isEmpty) {
-//          if (1 < params.size) ctx.error(fa.pos, "Function last takes at most one parameter")
-//          val argType = resolveExpr(ctx,params(0))
-//          if (!argType.isInt) ctx.error(params(0).pos,"Expected integer type")
-//        }
-        ctx.currentAccessedElement match {
-          case Some(e) => is.indexedExpr = e
-          case None => ctx.error(is.pos, "Index '"+name+"' not used in an accessor context")
-        }
-        is.typ = IntType(32)
-        IntType(32)
-      }
       case ll@ListLiteral(lst) => {
         val size = lst.size
         assert(size > 0)
-        val cntType = resolveExpr(ctx,lst(0))
+        var cntType = resolveExpr(ctx,lst(0))
         for (e <- lst.drop(1)) {
           val t = resolveExpr(ctx,e)
-          if (cntType != t) {
+          val lub = TypeUtil.getLub(cntType, t)
+          if (lub.isDefined) {
+            cntType = lub.get
+          }
+          else {
             ctx.error(e.pos,"List elements do not have consistent types. Found " + cntType.id + " and " + t.id)
           }
         }
         ListType(cntType,size)
       }
       case l@BoolLiteral(_) => l.typ = BoolType; BoolType
-      case l@IntLiteral(_) => l.typ = IntType(32); IntType(32)
+      case l@IntLiteral(n) => l.typ = TypeUtil.createIntOrUint(n); l.typ
+      case hx@HexLiteral(x) => hx.typ = UintType(x.length*4); hx.typ
       case l@FloatLiteral(_) => throw new IllegalArgumentException()
       case v@Id(id) =>
         ctx.lookUp(id) match {
@@ -533,13 +527,25 @@ object Resolver {
     }
   }
   
+  def getSmallestSize(n: Int, signed: Boolean): Int = {
+    var p = 1
+    while ((-(2^p) <= n) && n <= (2^p)-1) { p = p+1 }
+    return p
+  }
+  
+  
   def resolveNumericBinaryExpr(ctx: Context, exp: BinaryExpr): Type = {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
     if (!t1.isNumeric) ctx.error(exp.left.pos, "Expected numeric type, found: " + t1.id)
     if (!t2.isNumeric) ctx.error(exp.right.pos, "Expected numeric type, found: " + t2.id)
-    if (t1 != t2) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
-    exp.typ = t1
+    if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
+    
+    exp.typ = TypeUtil.getLub(t1, t2) match {
+      case None => UnknownType
+      case Some(t) => t
+    }
+    
     exp.typ
   }
   
@@ -557,7 +563,7 @@ object Resolver {
     val t2 = resolveExpr(ctx, exp.right)
     if (!t1.isNumeric) ctx.error(exp.left.pos, "Expected numeric type: " + exp.left)
     if (!t2.isNumeric) ctx.error(exp.right.pos, "Expected numeric type: " + exp.right)
-    if (t1 != t2) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
+    if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
     exp.typ = BoolType
     exp.typ
   }
@@ -565,7 +571,7 @@ object Resolver {
   def resolveEqRelationalExpr(ctx: Context, exp: BinaryExpr): Type = {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
-    if (t1 != t2) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
+    if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
     exp.typ = BoolType
     exp.typ
   }
@@ -601,7 +607,7 @@ object Resolver {
   def resolveChannelCountFunction(ctx: Context, fa: FunctionApp): Type = {
       if (fa.parameters.size != 1) {
         ctx.error(fa.pos,"Function " + fa.name + " takes exactly 1 argument")
-        IntType(32)
+        return IntType(32)
       }
       val paramType = resolveExpr(ctx,fa.parameters(0))
       if (!paramType.isChannel) {
@@ -609,6 +615,20 @@ object Resolver {
       }
       fa.typ = IntType(32)
       IntType(32)
+  }
+  
+  def resolveChannelAccessFunction(ctx: Context, fa: FunctionApp): Type = {
+    if (fa.parameters.size != 1) {
+      ctx.error(fa.pos,"Function " + fa.name + " takes exactly 1 argument")
+      return UnknownType
+    }
+    val paramType = resolveExpr(ctx,fa.parameters(0))
+    if (!paramType.isChannel) {
+      ctx.error(fa.pos,"The argument to function " + fa.name + " must be a channel")
+      return UnknownType
+    }
+    fa.typ = paramType.asInstanceOf[ChanType].contentType
+    fa.typ
   }
   
   def resolveDelayFunction(ctx: Context, fa: FunctionApp): Type = {
@@ -653,7 +673,6 @@ object Resolver {
         ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable of type " + it.id)
     case IndexAssign(id,idx,exp) =>
       if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
-      
       val it = resolveExpr(ctx,id)
       val et = resolveExpr(ctx, exp)
       val xt = resolveExpr(ctx,idx)

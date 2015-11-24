@@ -8,6 +8,7 @@ import scala.collection.immutable.PagedSeq
 import scala.util.parsing.input.Position
 import scala.util.parsing.input.Positional
 import scala.util.parsing.input.NoPosition
+import scala.util.matching.Regex
 import java.io.File
 
 import scala.language.postfixOps
@@ -20,11 +21,24 @@ class Parser extends StandardTokenParsers {
   
   case class PositionedString(v: String) extends Positional
   
-  lexical.reserved += ("actor", "network", "unit", "action", "true", "false", "null", "int", "bool", 
-                       "uint", "size", "guard", "entities", "structure", "int", "bool", "invariant", 
-                       "chinvariant", "end", "forall", "exists", "do", "assert", "assume", "initialize", 
-                       "requires", "ensures", "var", "next", "last", "schedule", "fsm", "regexp", "List",
-                       "type"
+  class LexerWithHex extends StdLexical {    
+    lazy val hexDigits = "0123456789abcdefABCDEF".toArray.toSet
+    def hexDigit = elem("hex digit",  hexDigits.contains(_))
+    
+    override def token: Parser[Token] =
+      ('0' ~ 'x' ~ hexDigit ~ rep(hexDigit) ^^ { case '0' ~ 'x' ~ first ~ rest => HexaNumericLit(first :: rest mkString "") }
+      | super.token
+    )
+    
+    case class HexaNumericLit(chars: String) extends Token
+  }
+  
+  override val lexical: LexerWithHex = new LexerWithHex()
+  
+  lexical.reserved += ("actor", "network", "unit", "action", "true", "false", "int", "bool", "uint", "size", 
+                       "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
+                       "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
+                       "var", "schedule", "fsm", "regexp", "List", "type"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]", ":[",
@@ -262,19 +276,20 @@ class Parser extends StandardTokenParsers {
   def atom: Parser[Expr] = positioned(
     boolLiteral | 
     identifier |
-    indexSymbol |
+    hexaNumericLit ^^ { case n => HexLiteral(n) } |
     numericLit ^^ { case n => IntLiteral(n.toInt) }
   )
   
-  def indexSymbol: Parser[Expr] = positioned(
-    ("next" | "last") ^^ {f => IndexSymbol(f)}
-  )
+  import lexical.HexaNumericLit
+  
+  def hexaNumericLit: Parser[String] =
+    elem("hex-number", _.isInstanceOf[HexaNumericLit]) ^^ (_.chars)
   
   def boolLiteral = positioned(
     "true" ^^^ BoolLiteral(true) |
     "false" ^^^ BoolLiteral(false)
   )
-  
+    
   def identifier = positioned(ident ^^ Id)
   
   def statementBody: Parser[List[Stmt]] = (statement *)

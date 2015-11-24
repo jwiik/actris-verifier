@@ -80,7 +80,15 @@ object Boogie {
    def exists(x: BVar) = new Exists(x, this)
    def store(e: Expr, f: Expr, rhs: Expr) = MapUpdate(this, e, Some(f), rhs)
  }
- case class IntLiteral(n: Int) extends Expr
+ 
+ // Modified by JW: made it possible to use strings for int literals
+ case class IntLiteral(n: String) extends Expr {
+   def this(n: Int) = this(n.toString)
+ }
+ object IntLiteral {
+   def apply(n: Int) = new IntLiteral(n)
+ }
+ 
  case class RealLiteral(d: Double) extends Expr
  case class BoolLiteral(b: Boolean) extends Expr
  case class Null() extends Expr

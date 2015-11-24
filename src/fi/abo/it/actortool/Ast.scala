@@ -351,10 +351,7 @@ sealed abstract class Literal extends Expr
 sealed case class IntLiteral(val value: Int) extends Literal
 sealed case class BoolLiteral(val value: Boolean) extends Literal
 sealed case class FloatLiteral(val value: String) extends Literal
-
-sealed case class IndexSymbol(id: String) extends Expr {
-  var indexedExpr: Expr = null
-}
+sealed case class HexLiteral(val value: String) extends Literal
 
 sealed abstract class Stmt extends ASTNode
 sealed case class Assign(val id: Id, val expr: Expr) extends Stmt
@@ -373,7 +370,8 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isParametrized = false
   def isNumeric = false
   def isInt = false
-  def isUint = false
+  def isUnsignedInt = false
+  def isSignedInt = false
   def isBool = false
   def isFloat = false
   def isHalf = false
@@ -387,8 +385,9 @@ sealed abstract class Type(val id: String) extends ASTNode {
 sealed abstract class ParamType(val name: String, parameters: List[Type]) extends Type(name) {
   override def isParametrized = true
 }
-sealed abstract class IndexedType(override val name: String, val resultType: Type, val indexType: Type) extends 
-  ParamType(name,List(resultType,indexType)) {
+sealed abstract class IndexedType(
+    override val name: String, val resultType: Type, val indexType: Type) extends ParamType(name,List(resultType,indexType)) {
+  
   override def isIndexed = true
 }
 
@@ -396,11 +395,14 @@ sealed abstract class IndexedType(override val name: String, val resultType: Typ
 sealed case class IntType(size: Int) extends Type("int("+size+")") {
   override def isInt = true
   override def isNumeric = true
+  override def isSignedInt = true
 }
 sealed case class UintType(size: Int) extends Type("uint("+size+")") {
   override def isInt = true
   override def isNumeric = true
+  override def isUnsignedInt = true
 }
+
 case object BoolType extends Type("bool") {
   override def isBool = true
 }
