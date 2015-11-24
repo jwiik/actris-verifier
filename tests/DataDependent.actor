@@ -17,7 +17,6 @@ network Net int in ==> int out1, int out2 :
     requires x1 < 0 && x2 > 0
   end
   
-  chinvariant a[0] < 0 && a[1] > 0
   chinvariant tot(d) == (rd(b)+1)/2
   chinvariant tot(c) == rd(b)/2
   chinvariant (forall int i :: 0 <= i && i < rd(b) && i % 2 == 0 ==> b[i] == d[i/2])

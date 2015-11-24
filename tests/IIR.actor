@@ -20,10 +20,10 @@ actor rshift(int s) int in ==> int out :
 end
 
 network iir() int in ==> int out :
-  action in:[i] ==> out:[(171*g[last]+85*i) >> 8] end
+  action in:[i] ==> out:[(171*prev(g)+85*i) >> 8] end
   
   invariant tokens(f,1)
-  invariant f[next] == 171*g[last]
+  invariant next(f) = 171*prev(g)
   
   chinvariant 171*g[-1] == f[0] 
   

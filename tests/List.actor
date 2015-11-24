@@ -1,14 +1,22 @@
 actor ListTest int in ==> int out :
   
-  invariant X[0] = 10 && X[1] = 11 && X[2] = 12
+  List(type: uint(size=32), size=16) Chip_map_table = [
+								 0x744ac39b, 0x44ac39b7, 0x4ac39b74, 0xac39b744,
+								 0xc39b744a, 0x39b744ac, 0x9b744ac3, 0xb744ac39,
+								 0xdee06931, 0xee06931d, 0xe06931de, 0x6931dee,
+								 0x6931dee0, 0x931dee06, 0x31dee069, 0x1dee0693];
   
   List(type: int, size=3) X = [10,11,12];
 
+  invariant X == [10,11,12]
+  invariant Chip_map_table = [
+								 0x744ac39b, 0x44ac39b7, 0x4ac39b74, 0xac39b744,
+								 0xc39b744a, 0x39b744ac, 0x9b744ac3, 0xb744ac39,
+								 0xdee06931, 0xee06931d, 0xe06931de, 0x6931dee,
+								 0x6931dee0, 0x931dee06, 0x31dee069, 0x1dee0693]
+
   action in:[i] ==> out:[X[i]] 
     guard 0 <= i && i < 3
-    var int o
-  do 
-    o := X[i];
   end
 end
 

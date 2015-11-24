@@ -13,7 +13,6 @@ var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
-
 const unique this#: Actor;
 
 type List a = [int]a;
