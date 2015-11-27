@@ -123,7 +123,7 @@ object Resolver {
           val actions = new ListBuffer[Action]()
           for (m <- a.members) m match {
             case ac: Action => 
-              resolveAction(ctx,ac)
+              resolveAction(ctx,ac,false)
               actions += ac
             case ActorInvariant(e,_) => resolveExpr(ctx,e,BoolType)
             case ci: ChannelInvariant =>
@@ -190,7 +190,12 @@ object Resolver {
                     return Errors(List((ac.pos,"Network actions are not allowed to have bodies")))
                   case None => // OK
                 }
-                resolveAction(ctx, ac)
+                vars match {
+                  case x::rest => 
+                    return Errors(List((ac.pos,"Network actions cannot declare variables")))
+                  case Nil =>
+                }
+                resolveAction(ctx, ac, true)
               }
               case e: Entities =>  // Already handled
               case s: Structure => // Already handled 
@@ -208,7 +213,7 @@ object Resolver {
     if (rootCtx.errors.isEmpty) Success() else Errors(rootCtx.errors.toList)
   }
   
-  def resolveAction(actorCtx: ActorContext, action: Action) {
+  def resolveAction(actorCtx: ActorContext, action: Action, nwAction: Boolean) {
     if (action.init && action.inputPattern.length > 0) {
       actorCtx.error(action.pos, "Input patterns not allowed for intialize actions")
     }
@@ -244,7 +249,6 @@ object Resolver {
     }
     
     for (pre <- action.requires) resolveExpr(ctx, pre, BoolType)
-    for (post <- action.ensures) resolveExpr(ctx, post, BoolType)
     
     for (outPat <- action.outputPattern) {
       if (portWithPat contains outPat.portId) {
@@ -256,12 +260,31 @@ object Resolver {
         actorCtx.error(outPat.pos, "Undeclared outport: " + outPat.portId)
         return
       }
-      val pDecl = actorCtx.outports(outPat.portId)
+      val port = actorCtx.outports(outPat.portId)
+      assert(port.portType != null)
       for (e <- outPat.exps) {
-        assert(pDecl.portType != null)
-        resolveExpr(ctx,e,pDecl.portType)
+        if (nwAction) {
+          e match {
+            case id@Id(name) => ctx.lookUp(name) match {
+              case None => 
+                val decl = Declaration(name,port.portType,false,None)
+                vars = vars + (name -> decl)
+                action.addPlaceHolderVar(decl)
+                id.typ = port.portType
+              case Some(_) => resolveExpr(ctx,e,port.portType)
+            }
+            case _ => resolveExpr(ctx,e,port.portType)
+          }
+        }
+        else {
+          resolveExpr(ctx,e,port.portType)
+        }
       }
     }
+    
+    val postCtx = new ActionContext(actorCtx,vars)
+    for (post <- action.ensures) resolveExpr(postCtx, post, BoolType)
+    
     action.body match {
       case Some(stmt) => resolveStmt(ctx,stmt)
       case None =>
@@ -378,9 +401,9 @@ object Resolver {
       }
     } 
     
-    for (t <- trans.keys) {
-      actionMap(t).transitions = trans(t).toList
-    }
+//    for (t <- trans.keys) {
+//      actionMap(t).transitions = trans(t).toList
+//    }
     states.toSet
   }
   

@@ -65,6 +65,22 @@ object TypeUtil {
 
 }
 
+object ConjunctionSplitter extends ASTVisitor[ListBuffer[Expr]] {
+  
+  def split(expr: Expr): List[Expr] = {
+    val buffer = new ListBuffer[Expr]
+    visitExpr(expr)(buffer);
+    buffer.toList
+  }
+  
+  override def visitExpr(expr: Expr)(implicit conjs: ListBuffer[Expr]) {
+    expr match {
+      case And(left,right) => visitExpr(left); visitExpr(right)
+      case x => conjs += x 
+    }
+  }
+}
+
 object IdReplacer extends ASTReplacingVisitor[Id, Expr] {
   override def visitExpr(expr: Expr)(implicit map: Map[Id, Expr]): Expr = {
     expr match {

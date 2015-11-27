@@ -75,15 +75,16 @@ sealed case class Network(
   
   private lazy val userDefinedChannelInvariants = 
     for (m <- members.filter{ x => x.isChannelInvariant}) yield { m.asInstanceOf[ChannelInvariant] }
-  private var inferredChannelInvariants: List[ChannelInvariant] = Nil
   
-  def channelInvariants = inferredChannelInvariants:::userDefinedChannelInvariants
+  private var _inferredChannelInvariants: List[ChannelInvariant] = Nil
+  
+  def channelInvariants = _inferredChannelInvariants:::userDefinedChannelInvariants
   
   def addChannelInvariant(chi: Expr) { addChannelInvariants(List(chi)) }
   
   def addChannelInvariants(chis: List[Expr]) {
     val newInvariants = chis map { x => ChannelInvariant(x,true) }
-    inferredChannelInvariants = inferredChannelInvariants:::newInvariants
+    _inferredChannelInvariants = _inferredChannelInvariants:::newInvariants
   }
   
   lazy val entities: Option[Entities] = {
@@ -127,7 +128,14 @@ sealed case class Action(
     val requires: List[Expr], val ensures: List[Expr], variables: List[Declaration],
     val body: Option[List[Stmt]]) extends Member {
 
-  var transitions: List[(String,String)] = Nil
+ //var transitions: List[(String,String)] = Nil
+  
+  private var _placeHolderVars: List[Declaration] = Nil
+  
+  def placeHolderVars = _placeHolderVars
+  def addPlaceHolderVar(d: Declaration) = _placeHolderVars = _placeHolderVars:::List(d)
+  //def placeHolderVars_= (list: List[Declaration]) = _placeHolderVars = list
+  
   
   override def isAction = true
   
