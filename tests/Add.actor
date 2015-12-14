@@ -1,0 +1,25 @@
+@sdf
+actor Add int in1, int in2 ==> int out :
+  action in1:[i], in2:[j] ==> out:[i+j] end
+end
+
+network Net int in1, int in2 ==> int out :
+  
+  action in1:[x1], in2:[x2] ==> out:[y] 
+    ensures y = x1+x2
+  end
+  
+  chinvariant rd(a) = tot(c)
+  chinvariant rd(b) = tot(c)
+  
+  entities
+    add = Add();
+  end
+  
+  structure
+    a: in1 --> add.in1;
+    b: in2 --> add.in2;
+    c: add.out --> out;
+  end
+
+end

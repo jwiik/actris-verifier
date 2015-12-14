@@ -10,12 +10,15 @@ actor Delay(int k) int in ==> int out :
 end
 
 network Net int in ==> int out :
-  action in:[x] ==> out:[prev(c)+x] end
   
-  invariant tokens(b,1)
-  invariant next(b) = prev(c)
+  action in:[x] ==> out:[y] 
+    ensures y = prev(c)+x || y = x
+  end
   
-  chinvariant b[0] = c[-1]
+  invariant tokens(b,1) && true
+  invariant next(b) = prev(c) || next(b) = 0
+  
+  chinvariant b[0] = c[-1] || b[0] = 0
   
   entities
     add = Add();

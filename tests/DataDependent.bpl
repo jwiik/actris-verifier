@@ -13,7 +13,6 @@ var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
-
 const unique this#: Actor;
 
 type List a = [int]a;
@@ -50,13 +49,25 @@ procedure Split#anon$2#2()
   assume IV#in#i < 0;
   assume true;
 }
+procedure Net#init#3()
+  modifies C, R, M, St;
+{
+  assume C[Net#a] == 0;
+  assume R[Net#a] == 0;
+  assume C[Net#b] == 0;
+  assume R[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume R[Net#c] == 0;
+  assume C[Net#d] == 0;
+  assume R[Net#d] == 0;
+}
 const unique Net#rep: Actor;
 const unique Net#split: Actor;
 const unique Net#a: Chan (int);
 const unique Net#b: Chan (int);
 const unique Net#c: Chan (int);
 const unique Net#d: Chan (int);
-procedure Net#anon$3#entry#3()
+procedure Net#anon$3#entry#4()
   modifies C, R, M, St;
 {
   var Net#out1#0: int;
@@ -96,7 +107,7 @@ procedure Net#anon$3#entry#3()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
 }
-procedure Net#anon$3#Repeater#anon$0#4()
+procedure Net#anon$3#Repeater#anon$0#5()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -161,7 +172,7 @@ procedure Net#anon$3#Repeater#anon$0#4()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
 }
-procedure Net#anon$3#Split#anon$1#5()
+procedure Net#anon$3#Split#anon$1#6()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -227,7 +238,7 @@ procedure Net#anon$3#Split#anon$1#5()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
 }
-procedure Net#anon$3#Split#anon$2#6()
+procedure Net#anon$3#Split#anon$2#7()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -293,7 +304,7 @@ procedure Net#anon$3#Split#anon$2#6()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
 }
-procedure Net#anon$3#exit#7()
+procedure Net#anon$3#exit#8()
   modifies C, R, M, St;
 {
   var Net#out1#0: int;

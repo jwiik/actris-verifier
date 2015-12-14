@@ -10,9 +10,9 @@ type State;
 var M: MType;
 var C: CType;
 var R: CType; 
+var N: CType;
 var C#init: CType;
 var St: [Actor]State;
-
 
 const unique this#: Actor;
 
@@ -48,11 +48,23 @@ procedure FairMerge#a2#1()
   St[this#] := FairMerge#s1;
   assert {:msg "  1.1: Action might not preserve invariant"} (St[this#] == FairMerge#s1) || (St[this#] == FairMerge#s2);
 }
+procedure Top#init#2()
+  modifies C, R, M, St;
+{
+  assume C[Top#a] == 0;
+  assume R[Top#a] == 0;
+  assume C[Top#b] == 0;
+  assume R[Top#b] == 0;
+  assume C[Top#c] == 0;
+  assume R[Top#c] == 0;
+  assume St[Top#fm] == FairMerge#s1;
+  assert {:msg "  14.13: Network initialization might not establish the network invariant"} St[Top#fm] == FairMerge#s1;
+}
 const unique Top#fm: Actor;
 const unique Top#a: Chan (int);
 const unique Top#b: Chan (int);
 const unique Top#c: Chan (int);
-procedure Top#anon$0#entry#2()
+procedure Top#anon$0#entry#3()
   modifies C, R, M, St;
 {
   var Top#out#0: int;
@@ -83,7 +95,7 @@ procedure Top#anon$0#entry#2()
   assert {:msg "  23.3: Channel invariant might not hold on action entry"} ((R[Top#c] + C[Top#c]) >= 1) ==> (M[Top#c][0] == M[Top#a][0]);
   assert {:msg "  24.3: Channel invariant might not hold on action entry"} ((R[Top#c] + C[Top#c]) >= 2) ==> (M[Top#c][1] == M[Top#b][0]);
 }
-procedure Top#anon$0#FairMerge#a1#3()
+procedure Top#anon$0#FairMerge#a1#4()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -135,7 +147,7 @@ procedure Top#anon$0#FairMerge#a1#3()
   assert {:msg "  23.3: Sub-actor action at 2.3 might not preserve the channel invariant"} ((R[Top#c] + C[Top#c]) >= 1) ==> (M[Top#c][0] == M[Top#a][0]);
   assert {:msg "  24.3: Sub-actor action at 2.3 might not preserve the channel invariant"} ((R[Top#c] + C[Top#c]) >= 2) ==> (M[Top#c][1] == M[Top#b][0]);
 }
-procedure Top#anon$0#FairMerge#a2#4()
+procedure Top#anon$0#FairMerge#a2#5()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -187,7 +199,7 @@ procedure Top#anon$0#FairMerge#a2#4()
   assert {:msg "  23.3: Sub-actor action at 3.3 might not preserve the channel invariant"} ((R[Top#c] + C[Top#c]) >= 1) ==> (M[Top#c][0] == M[Top#a][0]);
   assert {:msg "  24.3: Sub-actor action at 3.3 might not preserve the channel invariant"} ((R[Top#c] + C[Top#c]) >= 2) ==> (M[Top#c][1] == M[Top#b][0]);
 }
-procedure Top#anon$0#exit#5()
+procedure Top#anon$0#exit#6()
   modifies C, R, M, St;
 {
   var Top#out#0: int;
@@ -222,5 +234,5 @@ procedure Top#anon$0#exit#5()
   assert {:msg "  12.38: Network output might not conform to the specified action output"} Top#out#1 == M[Top#b][0];
   R[Top#c] := R[Top#c] + C[Top#c];
   C[Top#c] := 0;
-  assert {:msg "  14.3: The network might not preserve the network invariant"} St[Top#fm] == FairMerge#s1;
+  assert {:msg "  14.13: The network might not preserve the network invariant"} St[Top#fm] == FairMerge#s1;
 }

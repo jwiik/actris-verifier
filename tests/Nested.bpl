@@ -10,9 +10,9 @@ type State;
 var M: MType;
 var C: CType;
 var R: CType; 
+var N: CType;
 var C#init: CType;
 var St: [Actor]State;
-
 
 const unique this#: Actor;
 
@@ -24,10 +24,18 @@ var AT#intlst: List int;
 // -- End of prelude ---------------------------------------------
 // ---------------------------------------------------------------
 
+procedure Top#init#0()
+  modifies C, R, M, St;
+{
+  assume C[Top#x] == 0;
+  assume R[Top#x] == 0;
+  assume C[Top#y] == 0;
+  assume R[Top#y] == 0;
+}
 const unique Top#n: Actor;
 const unique Top#x: Chan (int);
 const unique Top#y: Chan (int);
-procedure Top#anon$0#entry#0()
+procedure Top#anon$0#entry#1()
   modifies C, R, M, St;
 {
   var Top#out#0: int;
@@ -47,7 +55,7 @@ procedure Top#anon$0#entry#0()
     (0 <= i) && (i < (R[Top#y] + C[Top#y])) ==> (M[Top#x][i] == M[Top#y][i])
   );
 }
-procedure Top#anon$0#Nested#anon$1#1()
+procedure Top#anon$0#Nested#anon$1#2()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -82,7 +90,7 @@ procedure Top#anon$0#Nested#anon$1#1()
     (0 <= i) && (i < (R[Top#y] + C[Top#y])) ==> (M[Top#x][i] == M[Top#y][i])
   );
 }
-procedure Top#anon$0#exit#2()
+procedure Top#anon$0#exit#3()
   modifies C, R, M, St;
 {
   var Top#out#0: int;
@@ -106,10 +114,18 @@ procedure Top#anon$0#exit#2()
   R[Top#y] := R[Top#y] + C[Top#y];
   C[Top#y] := 0;
 }
+procedure Nested#init#4()
+  modifies C, R, M, St;
+{
+  assume C[Nested#x] == 0;
+  assume R[Nested#x] == 0;
+  assume C[Nested#y] == 0;
+  assume R[Nested#y] == 0;
+}
 const unique Nested#a: Actor;
 const unique Nested#x: Chan (int);
 const unique Nested#y: Chan (int);
-procedure Nested#anon$1#entry#3()
+procedure Nested#anon$1#entry#5()
   modifies C, R, M, St;
 {
   var Nested#y#0: int;
@@ -129,7 +145,7 @@ procedure Nested#anon$1#entry#3()
     (0 <= i) && (i < (R[Nested#y] + C[Nested#y])) ==> (M[Nested#x][i] == M[Nested#y][i])
   );
 }
-procedure Nested#anon$1#Repeater#anon$2#4()
+procedure Nested#anon$1#Repeater#anon$2#6()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -164,7 +180,7 @@ procedure Nested#anon$1#Repeater#anon$2#4()
     (0 <= i) && (i < (R[Nested#y] + C[Nested#y])) ==> (M[Nested#x][i] == M[Nested#y][i])
   );
 }
-procedure Nested#anon$1#exit#5()
+procedure Nested#anon$1#exit#7()
   modifies C, R, M, St;
 {
   var Nested#y#0: int;
@@ -188,7 +204,7 @@ procedure Nested#anon$1#exit#5()
   R[Nested#y] := R[Nested#y] + C[Nested#y];
   C[Nested#y] := 0;
 }
-procedure Repeater#anon$2#6()
+procedure Repeater#anon$2#8()
   modifies C, R, M, St;
 {
   var IV#in#i: int;

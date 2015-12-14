@@ -1,0 +1,19 @@
+@sdf
+actor Sum int in1 ==> int out :
+  
+  int sum;
+  
+  invariant 0 <= sum
+  
+  initialize ==> 
+  do
+    sum := 0;
+  end
+
+  action in1:[i] ==> out:[sum]
+    requires 0 <= i
+    ensures sum = old(sum)+i
+  do
+    sum := sum+i;
+  end
+end

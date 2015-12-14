@@ -10,6 +10,7 @@ type State;
 var M: MType;
 var C: CType;
 var R: CType; 
+var N: CType;
 var C#init: CType;
 var St: [Actor]State;
 
@@ -72,6 +73,36 @@ procedure rshift#anon$4#4()
   var IV#in#i: int;
   assume true;
 }
+procedure iir#init#5()
+  modifies C, R, M, St;
+{
+  var ActorParam#del1#k: int;
+  var ActorParam#mul1#c: int;
+  var ActorParam#mul2#c: int;
+  var ActorParam#rsh1#s: int;
+  assume C[iir#a] == 0;
+  assume R[iir#a] == 0;
+  assume C[iir#b] == 0;
+  assume R[iir#b] == 0;
+  assume C[iir#c] == 0;
+  assume R[iir#c] == 0;
+  assume C[iir#d] == 0;
+  assume R[iir#d] == 0;
+  assume C[iir#e] == 0;
+  assume R[iir#e] == 0;
+  assume C[iir#f] == 0;
+  assume R[iir#f] == 0;
+  assume C[iir#g] == 0;
+  assume R[iir#g] == 0;
+  assume ActorParam#del1#k == 0;
+  M[iir#f][R[iir#f] + C[iir#f]] := ActorParam#del1#k;
+  C[iir#f] := C[iir#f] + 1;
+  assume ActorParam#mul1#c == 85;
+  assume ActorParam#mul2#c == 171;
+  assume ActorParam#rsh1#s == 8;
+  assert {:msg "  Network initialization might not establish the network invariant"} iir#f == 1;
+  assert {:msg "  Network initialization might not establish the network invariant"} M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
+}
 const unique iir#del1: Actor;
 const unique iir#mul1: Actor;
 const unique iir#mul2: Actor;
@@ -84,7 +115,7 @@ const unique iir#d: Chan (int);
 const unique iir#e: Chan (int);
 const unique iir#f: Chan (int);
 const unique iir#g: Chan (int);
-procedure iir#anon$5#entry#5()
+procedure iir#anon$5#entry#6()
   modifies C, R, M, St;
 {
   var iir#out#0: int;
@@ -102,7 +133,7 @@ procedure iir#anon$5#entry#5()
   assume R[iir#f] == 0;
   assume R[iir#g] == 0;
   assume C#init == C;
-  assume C[iir#f] == 1;
+  assume iir#f == 1;
   assume M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
   assert {:msg "  Channel invariant might not hold on action entry (generated #0)"} 0 <= R[iir#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #1)"} 0 <= C[iir#a];
@@ -147,7 +178,7 @@ procedure iir#anon$5#entry#5()
   );
   assert {:msg "  28.3: Channel invariant might not hold on action entry"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#delay#anon$2#6()
+procedure iir#anon$5#delay#anon$2#7()
   modifies C, R, M, St;
 {
   var ActorParam#k: int;
@@ -252,7 +283,7 @@ procedure iir#anon$5#delay#anon$2#6()
   );
   assert {:msg "  28.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#mulc#anon$3#7()
+procedure iir#anon$5#mulc#anon$3#8()
   modifies C, R, M, St;
 {
   var ActorParam#c: int;
@@ -357,7 +388,7 @@ procedure iir#anon$5#mulc#anon$3#7()
   );
   assert {:msg "  28.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#mulc#anon$3#8()
+procedure iir#anon$5#mulc#anon$3#9()
   modifies C, R, M, St;
 {
   var ActorParam#c: int;
@@ -462,7 +493,7 @@ procedure iir#anon$5#mulc#anon$3#8()
   );
   assert {:msg "  28.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#rshift#anon$4#9()
+procedure iir#anon$5#rshift#anon$4#10()
   modifies C, R, M, St;
 {
   var ActorParam#s: int;
@@ -569,7 +600,7 @@ procedure iir#anon$5#rshift#anon$4#9()
   );
   assert {:msg "  28.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#add#anon$0#10()
+procedure iir#anon$5#add#anon$0#11()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -676,7 +707,7 @@ procedure iir#anon$5#add#anon$0#10()
   );
   assert {:msg "  28.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
 }
-procedure iir#anon$5#exit#11()
+procedure iir#anon$5#exit#12()
   modifies C, R, M, St;
 {
   var iir#out#0: int;
@@ -739,6 +770,6 @@ procedure iir#anon$5#exit#11()
   assert {:msg "  23.26: Network output might not conform to the specified action output"} iir#out#0 == AT#RShift((171 * M[iir#g][R[iir#g] - 1]) + (85 * M[iir#a][0]), 8);
   R[iir#g] := R[iir#g] + C[iir#g];
   C[iir#g] := 0;
-  assert {:msg "  25.3: The network might not preserve the network invariant"} C[iir#f] == 1;
-  assert {:msg "  26.3: The network might not preserve the network invariant"} M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
+  assert {:msg "  The network might not preserve the network invariant"} iir#f == 1;
+  assert {:msg "  The network might not preserve the network invariant"} M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
 }

@@ -10,9 +10,9 @@ type State;
 var M: MType;
 var C: CType;
 var R: CType; 
+var N: CType;
 var C#init: CType;
 var St: [Actor]State;
-
 
 const unique this#: Actor;
 
@@ -31,10 +31,18 @@ procedure Add2#anon$0#0()
   var IV#in#j: int;
   assume true;
 }
+procedure Net#init#1()
+  modifies C, R, M, St;
+{
+  assume C[Net#a] == 0;
+  assume R[Net#a] == 0;
+  assume C[Net#b] == 0;
+  assume R[Net#b] == 0;
+}
 const unique Net#add: Actor;
 const unique Net#a: Chan (int);
 const unique Net#b: Chan (int);
-procedure Net#anon$1#entry#1()
+procedure Net#anon$1#entry#2()
   modifies C, R, M, St;
 {
   var Net#out#0: int;
@@ -54,7 +62,7 @@ procedure Net#anon$1#entry#1()
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (M[Net#b][i] == (M[Net#a][2 * i] + M[Net#a][(2 * i) + 1]))
   );
 }
-procedure Net#anon$1#Add2#anon$0#2()
+procedure Net#anon$1#Add2#anon$0#3()
   modifies C, R, M, St;
 {
   var St#next: State;
@@ -93,7 +101,7 @@ procedure Net#anon$1#Add2#anon$0#2()
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (M[Net#b][i] == (M[Net#a][2 * i] + M[Net#a][(2 * i) + 1]))
   );
 }
-procedure Net#anon$1#exit#3()
+procedure Net#anon$1#exit#4()
   modifies C, R, M, St;
 {
   var Net#out#0: int;

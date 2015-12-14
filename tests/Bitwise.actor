@@ -1,0 +1,21 @@
+@sdf
+actor Add uint in ==> uint out :
+  action in:[i] ==> out:[i & 2] end
+end
+
+network Net uint in ==> uint out :
+  
+  action in:[x] ==> out:[y] 
+    ensures y = x & 2
+  end
+  
+  entities
+    add = Add();
+  end
+  
+  structure
+    a: in --> add.in;
+    c: add.out --> out;
+  end
+
+end
