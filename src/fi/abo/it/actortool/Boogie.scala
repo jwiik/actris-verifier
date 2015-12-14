@@ -23,6 +23,10 @@ object Boogie {
  sealed abstract class BType
  case class NamedType(s: String) extends BType
  case class IndexedType(id: String, t: BType) extends BType
+ 
+ // Added by JW
+ case class BVType(size: Int) extends BType
+ //
 
  case class Tag(s: String)
  sealed abstract class Stmt {
@@ -63,10 +67,16 @@ object Boogie {
    def <==>(that: Expr) = BinaryExpr("<==>", this, that)
    def unary_! = UnaryExpr("!", this)
    def <=(that: Expr) = BinaryExpr("<=", this, that)
+   def lte(that: Expr)(implicit bvMode: Boolean) = 
+     if (bvMode) FunctionApp("AT#BvUle",List(this,that)) else BinaryExpr("<=", this, that)
    def <(that: Expr) = BinaryExpr("<", this, that)
    def >=(that: Expr) = BinaryExpr(">=", this, that)
    def >(that: Expr) = BinaryExpr(">", this, that)
    def +(that: Expr) = BinaryExpr("+", this, that)
+   def plus(that: Expr)(implicit bvMode: Boolean) = 
+     if (bvMode) FunctionApp("AT#BvAdd",List(this,that)) else BinaryExpr("+", this, that)
+   def minus(that: Expr)(implicit bvMode: Boolean) = 
+     if (bvMode) FunctionApp("AT#BvSub",List(this,that)) else BinaryExpr("-", this, that)
    def -(that: Expr) = BinaryExpr("-", this, that)
    def *(that: Expr) = BinaryExpr("*", this, that)
    def /(that: Expr) = BinaryExpr("div", this, that)
@@ -88,7 +98,9 @@ object Boogie {
  object IntLiteral {
    def apply(n: Int) = new IntLiteral(n)
  }
- 
+ // Added by JW
+ case class BVLiteral(n: String, size: Int) extends Expr
+ //
  case class RealLiteral(d: Double) extends Expr
  case class BoolLiteral(b: Boolean) extends Expr
  case class Null() extends Expr
@@ -189,6 +201,9 @@ object Boogie {
      s
    case IndexedType(id,t) =>
      id + " (" + PrintType(t) + ")"
+   // Added by JW
+   case BVType(size) => "bv"+size
+   //
  }
  def Print(d: Decl): String = {
    indentLevel = 1
@@ -282,6 +297,9 @@ object Boogie {
  }
  def PrintExpr(e: Expr, useParens: Boolean): String = e match {
    case IntLiteral(n) => n.toString
+   // Added by JW
+   case BVLiteral(n,size) => n+"bv"+size
+   //
    case RealLiteral(d) => d.toString
    case BoolLiteral(b) => b.toString
    case Null() => "null"

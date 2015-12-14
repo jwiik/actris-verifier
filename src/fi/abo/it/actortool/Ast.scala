@@ -301,6 +301,9 @@ sealed case class RShift(override val left: Expr, override val right: Expr) exte
 sealed case class LShift(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
   override val operator = "<<"
 }
+sealed case class BWAnd(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
+  override val operator = "&"
+}
 sealed case class Eq(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
   override val operator = "="
 }
@@ -399,15 +402,16 @@ sealed abstract class IndexedType(
   override def isIndexed = true
 }
 
-  
-sealed case class IntType(size: Int) extends Type("int("+size+")") {
+sealed abstract class AbstractIntType(name: String, val size: Int) extends Type(name+"("+size+")") {
   override def isInt = true
   override def isNumeric = true
+}
+  
+sealed case class IntType(override val size: Int) extends AbstractIntType("int", size) {
   override def isSignedInt = true
 }
-sealed case class UintType(size: Int) extends Type("uint("+size+")") {
-  override def isInt = true
-  override def isNumeric = true
+
+sealed case class UintType(override val size: Int) extends AbstractIntType("uint", size) {
   override def isUnsignedInt = true
 }
 

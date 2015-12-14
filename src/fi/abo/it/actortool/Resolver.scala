@@ -23,6 +23,8 @@ object Resolver {
     override def lookUp(id: String): Option[Declaration] = None
   }
   
+  sealed class EmptyContext extends RootContext(null,Map.empty)
+  
   sealed abstract class ChildContext(val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentCtx) {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
     override def error(p: Position, msg: String) = parentCtx.error(p,msg)
@@ -400,11 +402,13 @@ object Resolver {
         trans(t.action) += (t.from -> t.to)
       }
     } 
-    
-//    for (t <- trans.keys) {
-//      actionMap(t).transitions = trans(t).toList
-//    }
     states.toSet
+  }
+  
+  def resolveExpr(exp: Expr): ResolverOutcome = {
+    val ctx = new EmptyContext()
+    resolveExpr(ctx,exp)
+    if (ctx.errors.isEmpty) Success() else Errors(ctx.errors.toList)
   }
   
   def resolveExpr(ctx: Context, exp: Expr, t: Type) {
@@ -418,8 +422,9 @@ object Resolver {
       case op: Times => resolveNumericBinaryExpr(ctx, op)
       case op: Div => resolveNumericBinaryExpr(ctx, op)
       case op: Mod => resolveNumericBinaryExpr(ctx, op)
-      case op: RShift => resolveShift(ctx,op) // t1
-      case op: LShift => resolveShift(ctx,op) // LubSumPow
+      case op: RShift => resolveBWExpr(ctx,op) // t1
+      case op: LShift => resolveBWExpr(ctx,op) // LubSumPow
+      case op: BWAnd => resolveBWExpr(ctx,op)
       case m@UnMinus(e) =>
         val t = resolveExpr(ctx,e)
         if (!t.isNumeric) ctx.error(m.pos, "Expected numeric type, found: " + t.id)
@@ -537,14 +542,19 @@ object Resolver {
       case hx@HexLiteral(x) => hx.typ = UintType(x.length*4); hx.typ
       case l@FloatLiteral(_) => throw new IllegalArgumentException()
       case v@Id(id) =>
-        ctx.lookUp(id) match {
-          case Some(d) => 
-            v.typ = d.typ
-            v.typ
-          case None => 
-            ctx.error(exp.pos, "Unknown variable: " + id)
-            v.typ = UnknownType
-            UnknownType
+        if (v.typ != null) {
+          v.typ
+        }
+        else {
+          ctx.lookUp(id) match {
+            case Some(d) => 
+              v.typ = d.typ
+              v.typ
+            case None => 
+              ctx.error(exp.pos, "Unknown variable: " + id)
+              v.typ = UnknownType
+              UnknownType
+          }
         }
         
     }
@@ -599,12 +609,12 @@ object Resolver {
     exp.typ
   }
   
-  def resolveShift(ctx: Context, exp: BinaryExpr): Type = {
+  def resolveBWExpr(ctx: Context, exp: BinaryExpr): Type = {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
     
-    if (!t1.isInt) ctx.error(exp.left.pos, "Shift operation only applicable on integers, found: " + t1.id)
-    if (!t2.isInt) ctx.error(exp.right.pos, "Shift operation only applicable on integers, found: " + t2.id)
+    if (!t1.isUnsignedInt) ctx.error(exp.left.pos, "Shift operation only applicable on integers, found: " + t1.id)
+    if (!t2.isUnsignedInt) ctx.error(exp.right.pos, "Shift operation only applicable on integers, found: " + t2.id)
     
     exp.typ = t1
     t1
@@ -692,7 +702,7 @@ object Resolver {
       if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
       val it = resolveExpr(ctx,id)
       val et = resolveExpr(ctx, exp)
-      if (it != et) 
+      if (!TypeUtil.isCompatible(it, et)) 
         ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable of type " + it.id)
     case IndexAssign(id,idx,exp) =>
       if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 

@@ -11,18 +11,19 @@ class ActorToolTestSuite extends FunSuite {
   
   test("Schedule.actor") {
     val params = new ActorTool.CommandLineParameters{
-        val BoogiePath = "./boogie"
-        val Files = List(new File("tests/Schedule.actor"))
-        val BoogieArgs = ""
-        val PrintProgram = true
-        val DoTypecheck = true
-        val DoInfer = true
-        val DoTranslate = true
-        val DoVerify = true
-        val NoBplFile = true
-        val BplFile = "out.bpl"
-        val Timing = 2
-        val InferModules = List("default")
+      val BoogiePath = "./boogie"
+      val Files = List(new File("tests/Schedule.actor"))
+      val BoogieArgs = ""
+      val PrintProgram = true
+      val DoTypecheck = true
+      val DoInfer = true
+      val DoTranslate = true
+      val DoVerify = true
+      val NoBplFile = true
+      val BplFile = "out.bpl"
+      val Timing = 2
+      val InferModules = List("default")
+      val BVMode = false
     }
     
     ActorTool.verify(params)

@@ -37,6 +37,7 @@ object ActorTool {
     val NoBplFile: Boolean
     val BplFile: String
     val Timing: Int
+    val BVMode: Boolean
     val InferModules: List[String]
     final lazy val help = "Usage: actortool [option] <filename>+\n"
   }
@@ -54,6 +55,7 @@ object ActorTool {
     var aDoVerify = true
     var aTiming = 2
     var aInferModules = List("default")
+    var aBVMode = false
     
     
     lazy val help = {
@@ -75,6 +77,7 @@ object ActorTool {
         case Param("noInfer") => aDoInfer = false
         case Param("noTranslate") => aDoTranslate = false
         case Param("noVerify") => aDoVerify = false
+        case Param("bvMode") => aBVMode = true
         case Param("timings") => {
           value match {
             case Some(v) =>
@@ -139,6 +142,7 @@ object ActorTool {
         val BplFile = aBplFile
         val Timing = aTiming
         val InferModules = aInferModules
+        val BVMode = aBVMode
     })
   }
   
@@ -215,7 +219,7 @@ object ActorTool {
     
     if (!params.DoTranslate) return
     
-    val translator = new Translator();
+    val translator = new Translator()(params.BVMode);
     val bplProg: List[Boogie.Decl] = translator.translateProgram(program);
     
     timings += (Step.Translation -> (System.nanoTime - tmpTime))
@@ -225,8 +229,8 @@ object ActorTool {
     
 		val boogiePath = params.BoogiePath
 		val boogieArgs = params.BoogieArgs
-		
-    val bplText = BoogiePrelude.get + (bplProg map Boogie.Print).foldLeft(""){ (a, b) => a + b };
+		if (params.BVMode) BoogiePrelude.addComponent(BitwisePL)
+    val bplText = BoogiePrelude.get(params.BVMode) + (bplProg map Boogie.Print).foldLeft(""){ (a, b) => a + b };
     val bplFilename = if (params.NoBplFile) "stdin.bpl" else params.BplFile
     if (params.PrintProgram) println(bplText)
     if (!params.NoBplFile) writeFile(bplFilename, bplText);

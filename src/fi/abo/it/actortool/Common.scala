@@ -188,6 +188,7 @@ abstract class ASTVisitor[T] {
         visitExpr(l); visitExpr(r)
       case RShift(l, r) =>
         visitExpr(l); visitExpr(r)
+      case BWAnd(l,r) => visitExpr(l); visitExpr(r)
       case UnMinus(e) => visitExpr(e)
       case IfThenElse(c, t, e) =>
         visitExpr(c); visitExpr(t); visitExpr(e)
@@ -261,6 +262,7 @@ abstract class ASTReplacingVisitor[A <: ASTNode, B <: ASTNode] {
       case Mod(l, r)             => Mod(visitExpr(l), visitExpr(r))
       case RShift(l, r)          => RShift(visitExpr(l), visitExpr(r))
       case LShift(l, r)          => LShift(visitExpr(l), visitExpr(r))
+      case BWAnd(l, r)           => BWAnd(visitExpr(l), visitExpr(r))
       case UnMinus(e)            => UnMinus(visitExpr(e))
       case IfThenElse(c, t, e)   => IfThenElse(visitExpr(c), visitExpr(t), visitExpr(e))
       case Forall(v, e, None)    => Forall(v, visitExpr(e), None)

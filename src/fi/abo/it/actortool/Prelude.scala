@@ -30,16 +30,16 @@ object BoogiePrelude {
   private var components: Set[PreludeComponent] = Set(TypesAndGlobalVarsPL,FooterPL)
 
   // get the prelude (with all components currently included)
-  def get: String = {
+  def get(bvMode: Boolean): String = {
     val l = components.toList.sortWith((a,b) => a compare b)
-    l.foldLeft("")((s:String,a:PreludeComponent) => s + (a text))
+    l.foldLeft("")((s:String,a:PreludeComponent) => s + (a.text.replace("@inttype@", if (bvMode) "bv32" else "int" )))
   }
 }
 
 sealed abstract class PreludeComponent {
   // determines the order in which the components are output
   def compare(that: PreludeComponent): Boolean = {
-    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,DivModAbsPL,ShiftsPL,FooterPL)
+    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,DivModAbsPL,BitwisePL,FooterPL)
     if (!order.contains(this)) false
     else order.indexOf(this) < order.indexOf(that)
   }
@@ -54,21 +54,20 @@ object TypesAndGlobalVarsPL extends PreludeComponent {
 // ---------------------------------------------------------------
 type Chan a;
 type Actor;
-type CType = <a>[Chan a]int;
-type MType = <a>[Chan a][int]a;
+type CType = <a>[Chan a]@inttype@;
+type MType = <a>[Chan a][@inttype@]a;
 type State;
 
 var M: MType;
 var C: CType;
 var R: CType; 
-var N: CType;
 var C#init: CType;
 var St: [Actor]State;
 
 const unique this#: Actor;
 
-type List a = [int]a;
-var AT#intlst: List int;
+type List a = [@inttype@]a;
+var AT#intlst: List @inttype@;
 
 """
 }
@@ -84,11 +83,22 @@ axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
 """
 }
 
-object ShiftsPL extends PreludeComponent {
+object BitwisePL extends PreludeComponent {
   
   override def dependencies = Set(DivModAbsPL)
   
   val text =
+"""
+function {:bvbuiltin "bvand"} AT#BvAnd(a: bv32, b: bv32): bv32;
+function {:bvbuiltin "bvadd"} AT#BvAdd(a: bv32, b: bv32): bv32;
+function {:bvbuiltin "bvsub"} AT#BvSub(a: bv32, b: bv32): bv32;
+function {:bvbuiltin "bvule"} AT#BvUle(a: bv32, b: bv32): bool;
+function {:bvbuiltin "bvult"} AT#BvUlt(a: bv32, b: bv32): bool;
+function AT#RShift(bv32,bv32): int;
+function AT#LShift(bv32,bv32): int;
+"""
+  
+  val old = 
 """
 function AT#RShift(int, int): int;
 function AT#LShift(int, int): int;
@@ -101,7 +111,7 @@ axiom (forall a: int :: (
   AT#RShift(a,6) == AT#Div(a,64) &&
   AT#RShift(a,7) == AT#Div(a,128) &&
   AT#RShift(a,8) == AT#Div(a,256)
-));
+)); 
 """
 }
 

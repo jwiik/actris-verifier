@@ -18,7 +18,7 @@ object Elements {
   def urd(id: String) = FunctionApp("urd",List(Id(id): Expr))
   def tot(id: String) = FunctionApp("tot",List(Id(id): Expr))
   def initial(id: String) = FunctionApp("initial",List(Id(id): Expr))
-  def lit(i: Int) = IntLiteral(i)
+  def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(32); li}
 } 
 
 import Elements._

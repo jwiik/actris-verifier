@@ -42,7 +42,7 @@ class Parser extends StandardTokenParsers {
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]", ":[",
-                       "-->", "::", "{", "}", "<<" , ">>", "@")
+                       "-->", "::", "{", "}", "<<" , ">>", "@", "&")
                        
   def programUnit = (actorDecl | networkDecl | unitDecl)*
   
@@ -204,10 +204,11 @@ class Parser extends StandardTokenParsers {
   
   def cmpOp = "==" | "=" | "!=" | "<" | "<=" | ">=" | ">" 
   
-  def bitManipExpr: Parser[Expr] = positioned((addExpr ~ ((">>" | "<<" ) ~ addExpr *)) ^^{
+  def bitManipExpr: Parser[Expr] = positioned((addExpr ~ ((">>" | "<<" | "&") ~ addExpr *)) ^^{
     case e0 ~ rest => (rest foldLeft e0) {
       case (a, ">>" ~ b) => RShift(a,b)
       case (a, "<<" ~ b) => LShift(a,b)
+      case (a, "&" ~ b) => BWAnd(a,b)
     }
   }) 
   

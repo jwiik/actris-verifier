@@ -10,7 +10,7 @@ import fi.abo.it.actortool.Boogie.NamedType
 import fi.abo.it.actortool.Boogie.LocalVar
 import fi.abo.it.actortool.Boogie.UnaryExpr
 
-class Translator {
+class Translator(implicit bvMode: Boolean) {
   
   final val Sep = "#"
   final val Modifies = List("C","R","M","St")
@@ -43,6 +43,7 @@ class Translator {
     def Bool = NamedType("bool");
     def Real = NamedType("real");
     def Int = NamedType("int");
+    def BV(size: Int) = Boogie.BVType(size)
     def State = NamedType("State")
     def Actor = NamedType("Actor")
     def List(cType: BType) = Boogie.IndexedType("List", cType)
@@ -182,7 +183,7 @@ class Translator {
        case _ => assert(false); Nil
      }
      val invAsserts = for ((pos,i) <- invs) yield {
-       bAssert(i,pos,"Action might not preserve invariant")
+       bAssert(i,pos, "Action at " + a.pos + " might not preserve invariant")
      }
      val postCondAsserts = for (q <- a.ensures) yield {
        bAssert(transExpr(q)(renameMap),q.pos,"Action postcondition might not hold")
@@ -310,8 +311,8 @@ class Translator {
             for (e <- opat.exps) {
               val renamedExp = IdToIdReplacer.visitExpr(e)(actorParams)
               asgn += Boogie.Assign(
-                  bChannelIdx(cId,bRead(cId)+bCredit(cId)),transExpr(renamedExp)(networkRenamings))
-              asgn += Boogie.Assign(bCredit(cId),bCredit(cId) + Boogie.IntLiteral(1))
+                  bChannelIdx(cId,bRead(cId) plus bCredit(cId)),transExpr(renamedExp)(networkRenamings))
+              asgn += Boogie.Assign(bCredit(cId),bCredit(cId) plus bInt(1))
             }
           }
         }
@@ -402,7 +403,7 @@ class Translator {
       for (v <- ipat.vars) {
         inChan.typ = ChanType(v.typ)
         val acc = IndexAccessor(inChan,IntLiteral(i))
-        acc.typ = v.typ
+        Resolver.resolveExpr(acc)
         replacements = replacements + (v -> acc)
         i = i+1
       }
@@ -417,7 +418,7 @@ class Translator {
         val id = Id(outChan)
         id.typ = ChanType(e.typ)
         val acc = if (0 < i) IndexAccessor(id,IntLiteral(i)) else IndexAccessor(id,IntLiteral(i))
-        acc.typ = e.typ
+        Resolver.resolveExpr(acc)
         
         val stmts =
           if (e.isInstanceOf[Id] && (nwa.placeHolderVars exists { _.id == e.asInstanceOf[Id].id  })) {
@@ -427,7 +428,6 @@ class Translator {
           }
           else {
             val name = prefix+opat.portId+Sep+i
-            println(e)
             procVars += bLocal(name,type2BType(e.typ))
             val v = VarExpr(name)
             List(
@@ -518,8 +518,8 @@ class Translator {
             List(
                 Boogie.Assign(
                     bRead(Boogie.VarExpr(name)),
-                    bRead(Boogie.VarExpr(name)) + bCredit(Boogie.VarExpr(name))),
-                Boogie.Assign(bCredit(Boogie.VarExpr(name)),Boogie.IntLiteral(0))
+                    bRead(Boogie.VarExpr(name)) plus bCredit(Boogie.VarExpr(name))),
+                Boogie.Assign(bCredit(Boogie.VarExpr(name)),bInt(0))
               )
           }
           case _ => Nil
@@ -588,7 +588,7 @@ class Translator {
     
     for (ipat <- action.inputPattern) {
       val cId = targetMap(PortRef(Some(instance.id),ipat.portId))
-      val cond = Boogie.IntLiteral(ipat.numConsumed) <= bCredit(cId)
+      val cond = bInt(ipat.numConsumed) lte bCredit(cId)
       
       val offset = ipat.vars.size-1
       for (v <- ipat.vars) yield {
@@ -650,8 +650,8 @@ class Translator {
         renameMap = renameMap + (v -> Id(inVar))
         newVars += bLocal(inVar,type2BType(v.typ))
         asgn += Boogie.Assign(Boogie.VarExpr(inVar),bChannelIdx(cId,/*bStep(cId)+*/bRead(cId)))
-        asgn += Boogie.Assign(bRead(cId),bRead(cId) + Boogie.IntLiteral(1))
-        asgn += Boogie.Assign(bCredit(cId),bCredit(cId) - Boogie.IntLiteral(1))
+        asgn += Boogie.Assign(bRead(cId),bRead(cId) plus bInt(1))
+        asgn += Boogie.Assign(bCredit(cId),bCredit(cId) minus bInt(1))
       }
     }
  
@@ -670,8 +670,8 @@ class Translator {
       for (cId <- cIds) {
         for (e <- opat.exps) {
           val renamedExp = IdToIdReplacer.visitExpr(e)(renameMap)
-          asgn += Boogie.Assign(bChannelIdx(cId,/*bStep(cId)+*/bRead(cId)+bCredit(cId)),transExpr(renamedExp)(networkRenamings))
-          asgn += Boogie.Assign(bCredit(cId),bCredit(cId) + Boogie.IntLiteral(1))
+          asgn += Boogie.Assign(bChannelIdx(cId,/*bStep(cId)+*/bRead(cId) plus bCredit(cId)),transExpr(renamedExp)(networkRenamings))
+          asgn += Boogie.Assign(bCredit(cId),bCredit(cId) plus bInt(1))
         }
       }
     }
@@ -727,14 +727,22 @@ class Translator {
       case Implies(e1,e2) => transExpr(e1) ==> transExpr(e2)
       case Iff(e1,e2) => transExpr(e1) <==> transExpr(e2)
       case Not(e) => UnaryExpr("!",transExpr(e)) 
-      case Less(e1,e2) => transExpr(e1) < transExpr(e2)
+      case Less(e1,e2) =>
+        if (bvMode) bFun("AT#BvUlt",transExpr(e1),transExpr(e2)) 
+        else transExpr(e1) < transExpr(e2)
       case Greater(e1,e2) => transExpr(e1) > transExpr(e2)
       case AtLeast(e1,e2) => transExpr(e1) >= transExpr(e2)
-      case AtMost(e1,e2) => transExpr(e1) <= transExpr(e2)
+      case AtMost(e1,e2) => 
+        if (bvMode) bFun("AT#BvUle",transExpr(e1),transExpr(e2)) 
+        else transExpr(e1) <= transExpr(e2)
       case Eq(e1,e2) => transExpr(e1) ==@ transExpr(e2)
       case NotEq(e1,e2) => transExpr(e1) !=@ transExpr(e2)
-      case Plus(e1,e2) => transExpr(e1) + transExpr(e2)
-      case Minus(e1,e2) => transExpr(e1) - transExpr(e2)
+      case Plus(e1,e2) => 
+        if (bvMode) bFun("AT#BvAdd",transExpr(e1),transExpr(e2)) 
+        else transExpr(e1) + transExpr(e2)
+      case Minus(e1,e2) =>
+        if (bvMode) bFun("AT#BvSub",transExpr(e1),transExpr(e2)) 
+        else transExpr(e1) - transExpr(e2)
       case Times(e1,e2) => transExpr(e1) * transExpr(e2)
       case Div(e1,e2) => 
         BoogiePrelude.addComponent(DivModAbsPL)
@@ -745,11 +753,14 @@ class Translator {
         Boogie.FunctionApp("AT#Mod",List(transExpr(e1),transExpr(e2)))
         //transExpr(e1) % transExpr(e2)
       case RShift(e1,e2) =>
-        BoogiePrelude.addComponent(ShiftsPL)
+        BoogiePrelude.addComponent(BitwisePL)
         Boogie.FunctionApp("AT#RShift",List(transExpr(e1),transExpr(e2)))
       case LShift(e1,e2) =>
-        BoogiePrelude.addComponent(ShiftsPL)
+        BoogiePrelude.addComponent(BitwisePL)
         Boogie.FunctionApp("AT#LShift",List(transExpr(e1),transExpr(e2)))
+      case BWAnd(e1,e2) =>
+        BoogiePrelude.addComponent(BitwisePL)
+        Boogie.FunctionApp("AT#BvAnd",List(transExpr(e1),transExpr(e2)))
       case UnMinus(e) => UnaryExpr("-",transExpr(e))
       case IfThenElse(c,e1,e2) => Boogie.Ite(transExpr(c),transExpr(e1),transExpr(e2))
       case Forall(vars,e,pat) => 
@@ -774,14 +785,14 @@ class Translator {
         name match {
           case "rd" => bRead(transExpr(params(0)))
           case "urd" => bCredit(transExpr(params(0)))
-          case "tot" => bRead(transExpr(params(0)))+bCredit(transExpr(params(0)))
+          case "tot" => bRead(transExpr(params(0))) plus bCredit(transExpr(params(0)))
           case "initial" => bCredInit(transExpr(params(0)))
           case "next" => 
             val ch = transExpr(params(0))
             bChannelIdx(ch, /*bStep(ch)+*/bRead(ch))
           case "prev" => 
             val ch = transExpr(params(0))
-            bChannelIdx(ch, /*bStep(ch)+*/bRead(ch)-bInt(1))
+            bChannelIdx(ch, /*bStep(ch)+*/bRead(ch) minus bInt(1))
           //case "tokens" => bCredit(transExpr(params(0))) ==@ transExpr(params(1))
           case "tokens" => 
             // Should not happen
@@ -809,16 +820,24 @@ class Translator {
         var i = 0
         for (e <- lst) {
           val transE = transExpr(e)
-          listlit = Boogie.MapStore(listlit,Boogie.IntLiteral(i),transE)
+          listlit = Boogie.MapStore(listlit,bInt(i),transE)
           i = i+1
         }
         listlit
       }
 
-      case IntLiteral(i) => Boogie.IntLiteral(i)
+      case il@IntLiteral(i) =>
+        if (bvMode) {
+          assert(il.typ != null)
+          val size = il.typ.asInstanceOf[AbstractIntType].size
+          Boogie.BVLiteral(i.toString,32)
+        }
+        else bInt(i)
+        
+        
       case HexLiteral(x) => {
         val bigInt = x.toList.map("0123456789abcdef".indexOf(_)).map(BigInt(_)).reduceLeft(_ * 16 + _)
-        Boogie.IntLiteral(bigInt.toString) // To decimal conversion
+        bInt(bigInt.toString) // To decimal conversion
       }
       case BoolLiteral(b) => Boogie.BoolLiteral(b)
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
@@ -832,14 +851,14 @@ class Translator {
   object Helper {
     import Boogie.Expr
     
-    def type2BType(t: Type): Boogie.BType = {
+    def type2BType(t: Type)(implicit bvMode: Boolean): Boogie.BType = {
       assert(t != null)
       t match {
-        case IntType(_) => BType.Int
+        case IntType(x) => if (bvMode) BType.BV(32) else BType.Int // BType.BV(x)
         case BoolType => BType.Bool
         case FloatType => BType.Real
         case HalfType => BType.Real
-        case UintType(_) => BType.Int
+        case UintType(_) => if (bvMode) BType.BV(32) else BType.Int // BType.BV(x)
         case ChanType(contentType) => BType.Chan(type2BType(contentType))
         case ActorType(_) => BType.Actor
         case ListType(contentType,_) => BType.List(type2BType(contentType))
@@ -849,12 +868,19 @@ class Translator {
       }
     }
     
-    def bLocal(id: String, tp: Type) = new Boogie.LocalVar(id, type2BType(tp))
+    def bLocal(id: String, tp: Type)(implicit bvMode: Boolean) = new Boogie.LocalVar(id, type2BType(tp))
     def bLocal(id: String, tp: BType) = new Boogie.LocalVar(id, tp)
     def bThisDecl = bLocal(BMap.This,BType.Actor)
     
     def bBool(b: Boolean) = Boogie.BoolLiteral(b)
-    def bInt(i: Int) = Boogie.IntLiteral(i)
+    
+    def bInt(i: Int)(implicit bvMode: Boolean): Boogie.Expr = bInt(i.toString)
+    
+    def bInt(i: String)(implicit bvMode: Boolean) = {
+      if (bvMode) Boogie.BVLiteral(i, 32)
+      else Boogie.IntLiteral(i)
+    }
+    
     def bAssert(e: Expr, pos: Position, msg: String) = new Boogie.Assert(e, pos, msg)
     def bAssert(e: Expr) = new Boogie.Assert(e,null,"Condition might not hold") 
     def bAssume(e: Expr) = Boogie.Assume(e)
@@ -869,8 +895,8 @@ class Translator {
     def bRead(connName: String) = (VarExpr(BMap.R) apply VarExpr(connName))
     def bRead(channel: Boogie.Expr) = (VarExpr(BMap.R) apply channel)
     
-    def bTotal(connName: String) = (bRead(connName)+bCredit(connName))
-    def bTotal(channel: Boogie.Expr) = (bRead(channel)+bCredit(channel))
+    def bTotal(connName: String) = (bRead(connName) plus bCredit(connName))
+    def bTotal(channel: Boogie.Expr) = (bRead(channel) plus bCredit(channel))
     
     def bChannel(connName: String): Expr = (VarExpr(BMap.M) apply VarExpr(connName))
     def bChannelIdx(connName: String, ind: Boogie.Expr): Expr = ((VarExpr(BMap.M) apply VarExpr(connName)) apply ind)
@@ -883,6 +909,8 @@ class Translator {
     def bState(id: String) = VarExpr(BMap.St) apply VarExpr(id)
     def bState(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
     val bThis = bState(BMap.This)
+    
+    def bFun(id: String, arg: Boogie.Expr*) = Boogie.FunctionApp(id,arg.toList)
     
     val intlst = VarExpr("AT#intlst");
 
