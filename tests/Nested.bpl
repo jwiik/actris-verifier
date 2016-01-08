@@ -9,8 +9,7 @@ type State;
 
 var M: MType;
 var C: CType;
-var R: CType; 
-var N: CType;
+var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
@@ -39,8 +38,8 @@ procedure Top#anon$0#entry#1()
   modifies C, R, M, St;
 {
   var Top#out#0: int;
-  assume C#init[Top#x] == 1;
-  assume C#init[Top#y] == 0;
+  assume C[Top#x] == 1;
+  assume C[Top#y] == 0;
   assume R[Top#x] == 0;
   assume R[Top#y] == 0;
   assume C#init == C;
@@ -60,8 +59,8 @@ procedure Top#anon$0#Nested#anon$1#2()
 {
   var St#next: State;
   var x#i: int;
-  assume C#init[Top#x] == 1;
-  assume C#init[Top#y] == 0;
+  assume C[Top#x] == 1;
+  assume C[Top#y] == 0;
   assume 0 <= R[Top#x];
   assume 0 <= C[Top#x];
   assume (R[Top#x] + C[Top#x]) == C#init[Top#x];
@@ -94,8 +93,8 @@ procedure Top#anon$0#exit#3()
   modifies C, R, M, St;
 {
   var Top#out#0: int;
-  assume C#init[Top#x] == 1;
-  assume C#init[Top#y] == 0;
+  assume C[Top#x] == 1;
+  assume C[Top#y] == 0;
   assume 0 <= R[Top#x];
   assume 0 <= C[Top#x];
   assume (R[Top#x] + C[Top#x]) == C#init[Top#x];
@@ -129,8 +128,8 @@ procedure Nested#anon$1#entry#5()
   modifies C, R, M, St;
 {
   var Nested#y#0: int;
-  assume C#init[Nested#x] == 1;
-  assume C#init[Nested#y] == 0;
+  assume C[Nested#x] == 1;
+  assume C[Nested#y] == 0;
   assume R[Nested#x] == 0;
   assume R[Nested#y] == 0;
   assume C#init == C;
@@ -150,8 +149,8 @@ procedure Nested#anon$1#Repeater#anon$2#6()
 {
   var St#next: State;
   var in#i: int;
-  assume C#init[Nested#x] == 1;
-  assume C#init[Nested#y] == 0;
+  assume C[Nested#x] == 1;
+  assume C[Nested#y] == 0;
   assume 0 <= R[Nested#x];
   assume 0 <= C[Nested#x];
   assume (R[Nested#x] + C[Nested#x]) == C#init[Nested#x];
@@ -184,8 +183,8 @@ procedure Nested#anon$1#exit#7()
   modifies C, R, M, St;
 {
   var Nested#y#0: int;
-  assume C#init[Nested#x] == 1;
-  assume C#init[Nested#y] == 0;
+  assume C[Nested#x] == 1;
+  assume C[Nested#y] == 0;
   assume 0 <= R[Nested#x];
   assume 0 <= C[Nested#x];
   assume (R[Nested#x] + C[Nested#x]) == C#init[Nested#x];

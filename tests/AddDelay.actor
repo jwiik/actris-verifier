@@ -15,7 +15,7 @@ network Net int in ==> int out :
     ensures y = prev(c)+x || y = x
   end
   
-  invariant tokens(b,1) && true
+  invariant tokens(b,1)
   invariant next(b) = prev(c) || next(b) = 0
   
   chinvariant b[0] = c[-1] || b[0] = 0

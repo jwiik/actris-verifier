@@ -9,8 +9,7 @@ type State;
 
 var M: MType;
 var C: CType;
-var R: CType; 
-var N: CType;
+var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
@@ -35,7 +34,7 @@ procedure FairMerge#a1#0()
   assume St[this#] == FairMerge#s1;
   assume true;
   St[this#] := FairMerge#s2;
-  assert {:msg "  1.1: Action might not preserve invariant"} (St[this#] == FairMerge#s1) || (St[this#] == FairMerge#s2);
+  assert {:msg "  1.1: Action at 2.3 might not preserve invariant"} (St[this#] == FairMerge#s1) || (St[this#] == FairMerge#s2);
 }
 procedure FairMerge#a2#1()
   modifies C, R, M, St;
@@ -46,7 +45,7 @@ procedure FairMerge#a2#1()
   assume St[this#] == FairMerge#s2;
   assume true;
   St[this#] := FairMerge#s1;
-  assert {:msg "  1.1: Action might not preserve invariant"} (St[this#] == FairMerge#s1) || (St[this#] == FairMerge#s2);
+  assert {:msg "  1.1: Action at 3.3 might not preserve invariant"} (St[this#] == FairMerge#s1) || (St[this#] == FairMerge#s2);
 }
 procedure Top#init#2()
   modifies C, R, M, St;
@@ -69,14 +68,14 @@ procedure Top#anon$0#entry#3()
 {
   var Top#out#0: int;
   var Top#out#1: int;
-  assume C#init[Top#a] == 1;
-  assume C#init[Top#b] == 1;
-  assume C#init[Top#c] == 0;
+  assume C[Top#a] == 1;
+  assume C[Top#b] == 1;
+  assume C[Top#c] == 0;
   assume R[Top#a] == 0;
   assume R[Top#b] == 0;
   assume R[Top#c] == 0;
-  assume C#init == C;
   assume St[Top#fm] == FairMerge#s1;
+  assume C#init == C;
   assert {:msg "  Channel invariant might not hold on action entry (generated #0)"} 0 <= R[Top#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #1)"} 0 <= C[Top#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #2)"} (R[Top#a] + C[Top#a]) == C#init[Top#a];
@@ -100,9 +99,9 @@ procedure Top#anon$0#FairMerge#a1#4()
 {
   var St#next: State;
   var x1#i: int;
-  assume C#init[Top#a] == 1;
-  assume C#init[Top#b] == 1;
-  assume C#init[Top#c] == 0;
+  assume C[Top#a] == 1;
+  assume C[Top#b] == 1;
+  assume C[Top#c] == 0;
   assume 0 <= R[Top#a];
   assume 0 <= C[Top#a];
   assume (R[Top#a] + C[Top#a]) == C#init[Top#a];
@@ -152,9 +151,9 @@ procedure Top#anon$0#FairMerge#a2#5()
 {
   var St#next: State;
   var x2#i: int;
-  assume C#init[Top#a] == 1;
-  assume C#init[Top#b] == 1;
-  assume C#init[Top#c] == 0;
+  assume C[Top#a] == 1;
+  assume C[Top#b] == 1;
+  assume C[Top#c] == 0;
   assume 0 <= R[Top#a];
   assume 0 <= C[Top#a];
   assume (R[Top#a] + C[Top#a]) == C#init[Top#a];
@@ -204,9 +203,9 @@ procedure Top#anon$0#exit#6()
 {
   var Top#out#0: int;
   var Top#out#1: int;
-  assume C#init[Top#a] == 1;
-  assume C#init[Top#b] == 1;
-  assume C#init[Top#c] == 0;
+  assume C[Top#a] == 1;
+  assume C[Top#b] == 1;
+  assume C[Top#c] == 0;
   assume 0 <= R[Top#a];
   assume 0 <= C[Top#a];
   assume (R[Top#a] + C[Top#a]) == C#init[Top#a];

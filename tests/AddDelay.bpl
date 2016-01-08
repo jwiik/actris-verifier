@@ -9,8 +9,7 @@ type State;
 
 var M: MType;
 var C: CType;
-var R: CType; 
-var N: CType;
+var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
@@ -57,8 +56,7 @@ procedure Net#init#3()
   assume ActorParam#del#k == 0;
   M[Net#b][R[Net#b] + C[Net#b]] := ActorParam#del#k;
   C[Net#b] := C[Net#b] + 1;
-  assert {:msg "  18.13: Network initialization might not establish the network invariant"} C[Net#b] == 1;
-  assert {:msg "  18.13: Network initialization might not establish the network invariant"} true;
+  C[Net#b] := C[Net#b] - 1;
   assert {:msg "  19.13: Network initialization might not establish the network invariant"} (M[Net#b][R[Net#b]] == M[Net#c][R[Net#c] - 1]) || (M[Net#b][R[Net#b]] == 0);
 }
 const unique Net#add: Actor;
@@ -71,17 +69,17 @@ procedure Net#anon$3#entry#4()
   modifies C, R, M, St;
 {
   var ActionPH#y: int;
-  assume C#init[Net#a] == 1;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 1;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume R[Net#a] == 0;
   assume R[Net#b] == 0;
   assume R[Net#c] == 0;
   assume R[Net#d] == 0;
-  assume C#init == C;
-  assume C[Net#b] == 1;
-  assume true;
+  C[Net#b] := C[Net#b] + 1;
   assume (M[Net#b][R[Net#b]] == M[Net#c][R[Net#c] - 1]) || (M[Net#b][R[Net#b]] == 0);
+  assume C#init == C;
   assert {:msg "  Channel invariant might not hold on action entry (generated #0)"} 0 <= R[Net#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #1)"} 0 <= C[Net#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #2)"} (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -114,9 +112,10 @@ procedure Net#anon$3#Add#anon$0#5()
   var St#next: State;
   var in1#i: int;
   var in2#j: int;
-  assume C#init[Net#a] == 1;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 1;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -187,9 +186,10 @@ procedure Net#anon$3#Delay#anon$2#6()
   var St#next: State;
   var in#i: int;
   assume ActorParam#k == 0;
-  assume C#init[Net#a] == 1;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 1;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -252,9 +252,10 @@ procedure Net#anon$3#exit#7()
   modifies C, R, M, St;
 {
   var ActionPH#y: int;
-  assume C#init[Net#a] == 1;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 1;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -282,13 +283,13 @@ procedure Net#anon$3#exit#7()
   assume (M[Net#b][0] == M[Net#c][-1]) || (M[Net#b][0] == 0);
   assume !(((1 <= C[Net#a]) && (1 <= C[Net#b])) || (1 <= C[Net#d]));
   assert {:msg "  14.3: The network might leave unread tokens on channel a"} C[Net#a] == 0;
+  assert {:msg "  14.3: The network might leave unread tokens on channel b"} C[Net#b] == 0;
   assert {:msg "  14.3: The network might not produce the specified number of tokens on output out"} C[Net#c] == 1;
   assert {:msg "  14.3: The network might leave unread tokens on channel d"} C[Net#d] == 0;
   ActionPH#y := M[Net#c][0];
   assert {:msg "  15.13: Network action postcondition might not hold"} (ActionPH#y == (M[Net#c][R[Net#c] - 1] + M[Net#a][0])) || (ActionPH#y == M[Net#a][0]);
   R[Net#c] := R[Net#c] + C[Net#c];
   C[Net#c] := 0;
-  assert {:msg "  18.13: The network might not preserve the network invariant"} C[Net#b] == 1;
-  assert {:msg "  18.13: The network might not preserve the network invariant"} true;
+  C[Net#b] := C[Net#b] - 1;
   assert {:msg "  19.13: The network might not preserve the network invariant"} (M[Net#b][R[Net#b]] == M[Net#c][R[Net#c] - 1]) || (M[Net#b][R[Net#b]] == 0);
 }

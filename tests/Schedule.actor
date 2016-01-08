@@ -13,12 +13,12 @@ network Top int in1, int in2 ==> int out :
   
   invariant state(fm,s1)
   
-  chinvariant tot(c) == rd(a)+rd(b)
-  chinvariant tot(c) >= 1 ==> urd(a) == 0
-  chinvariant tot(c) >= 2 ==> urd(b) == 0
-  chinvariant rd(a) == 0 && rd(b) == 0 ==> state(fm,s1)
-  chinvariant rd(a) == 1 && rd(b) == 0 ==> state(fm,s2)
-  chinvariant rd(a) == 1 && rd(b) == 1 ==> state(fm,s1)
+  chinvariant tot(c) = rd(a)+rd(b)
+  chinvariant tot(c) >= 1 ==> urd(a) = 0
+  chinvariant tot(c) >= 2 ==> urd(b) = 0
+  chinvariant rd(a) = 0 && rd(b) = 0 ==> state(fm,s1)
+  chinvariant rd(a) = 1 && rd(b) = 0 ==> state(fm,s2)
+  chinvariant rd(a) = 1 && rd(b) = 1 ==> state(fm,s1)
 
   chinvariant tot(c) >= 1 ==> c[0] == a[0]
   chinvariant tot(c) >= 2 ==> c[1] == b[0]

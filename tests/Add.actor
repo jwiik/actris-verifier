@@ -8,10 +8,7 @@ network Net int in1, int in2 ==> int out :
   action in1:[x1], in2:[x2] ==> out:[y] 
     ensures y = x1+x2
   end
-  
-  chinvariant rd(a) = tot(c)
-  chinvariant rd(b) = tot(c)
-  
+
   entities
     add = Add();
   end

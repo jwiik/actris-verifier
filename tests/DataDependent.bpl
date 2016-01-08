@@ -9,7 +9,7 @@ type State;
 
 var M: MType;
 var C: CType;
-var R: CType; 
+var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 
@@ -72,10 +72,10 @@ procedure Net#anon$3#entry#4()
 {
   var Net#out1#0: int;
   var Net#out2#0: int;
-  assume C#init[Net#a] == 2;
-  assume C#init[Net#b] == 0;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 2;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume R[Net#a] == 0;
   assume R[Net#b] == 0;
   assume R[Net#c] == 0;
@@ -112,10 +112,10 @@ procedure Net#anon$3#Repeater#anon$0#5()
 {
   var St#next: State;
   var in#i: int;
-  assume C#init[Net#a] == 2;
-  assume C#init[Net#b] == 0;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 2;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -177,10 +177,10 @@ procedure Net#anon$3#Split#anon$1#6()
 {
   var St#next: State;
   var in#i: int;
-  assume C#init[Net#a] == 2;
-  assume C#init[Net#b] == 0;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 2;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -243,10 +243,10 @@ procedure Net#anon$3#Split#anon$2#7()
 {
   var St#next: State;
   var in#i: int;
-  assume C#init[Net#a] == 2;
-  assume C#init[Net#b] == 0;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 2;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -309,10 +309,10 @@ procedure Net#anon$3#exit#8()
 {
   var Net#out1#0: int;
   var Net#out2#0: int;
-  assume C#init[Net#a] == 2;
-  assume C#init[Net#b] == 0;
-  assume C#init[Net#c] == 0;
-  assume C#init[Net#d] == 0;
+  assume C[Net#a] == 2;
+  assume C[Net#b] == 0;
+  assume C[Net#c] == 0;
+  assume C[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
