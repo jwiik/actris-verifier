@@ -119,6 +119,12 @@ class Translator(implicit bvMode: Boolean) {
         case ActorInvariant(e,_) => invariants += ((e.pos,transExpr(e)(Map.empty)))
         case a: Action => actions += a
         case Declaration(id,t,_,_) => actorVars += bLocal(id, t)
+        case FunctionDecl(name,ins,out,body) => {
+          val func = Boogie.Function(
+              actor.id+Sep+name, ins.map(i => Boogie.BVar(i.id,type2BType(i.typ))), 
+              Boogie.BVar("out"+Sep, type2BType(out)))
+          
+        }
         case _ =>
       }
     }
@@ -213,37 +219,37 @@ class Translator(implicit bvMode: Boolean) {
     
     val namePrefix = network.id+Sep
 
-    val delayedChannels =  {
-      val buffer = new ListBuffer[(String,Expr)]
-      TokensDefFinder.visitExpr(nwInvariants map {nwi => nwi.expr})(buffer);
-      (buffer map {case (x,amount) => (x,(amount))}).toMap
-    }
+//    val delayedChannels =  {
+//      val buffer = new ListBuffer[(String,Expr)]
+//      TokensDefFinder.visitExpr(nwInvariants map {nwi => nwi.expr})(buffer);
+//      (buffer map {case (x,amount) => (x,(amount))}).toMap
+//    }
     
     val networkRenamings = {
       (for (c <- connections) yield ((c.id,namePrefix+c.id))):::
       (for (e <- entities) yield ((e.id,namePrefix+e.id)))
     }.toMap
     
-    val splitNwInvariants = 
-      (nwInvariants map {x => 
-        ConjunctionSplitter.split(x.expr) map {y => 
-          val nwi = ActorInvariant(y,x.generated)
-          nwi.pos = x.expr.pos
-          nwi
-        }
-      }).flatten
-    
-    val nwiInhales = new ListBuffer[Boogie.Assume]
-    val nwiExhales = new ListBuffer[Boogie.Assert]
-        
-    val bNwInvs = for (nwi <- splitNwInvariants) yield {
-      val bNwi = nwi.expr match {
-        case FunctionApp("tokens",List(ch,tokens)) =>
-          bCredit(transExpr(ch)(networkRenamings)) ==@ transExpr(tokens)(networkRenamings)
-        case x => transExpr(x)(networkRenamings)
-      }
-      (nwi,bNwi)
-    }
+//    val splitNwInvariants = 
+//      (nwInvariants map {x => 
+//        ConjunctionSplitter.split(x.expr) map {y => 
+//          val nwi = ActorInvariant(y,x.generated)
+//          nwi.pos = x.expr.pos
+//          nwi
+//        }
+//      }).flatten
+//    
+//    val nwiInhales = new ListBuffer[Boogie.Assume]
+//    val nwiExhales = new ListBuffer[Boogie.Assert]
+//        
+//    val bNwInvs = for (nwi <- splitNwInvariants) yield {
+//      val bNwi = nwi.expr match {
+//        case FunctionApp("tokens",List(ch,tokens)) =>
+//          bCredit(transExpr(ch)(networkRenamings)) ==@ transExpr(tokens)(networkRenamings)
+//        case x => transExpr(x)(networkRenamings)
+//      }
+//      (nwi,bNwi)
+//    }
     
     //val bNwInvs = for (nwi <- nwInvariants) yield ((nwi,transExpr(nwi.expr)(networkRenamings)))
     val bChInvs = for (chi <- chInvariants) yield ((chi,transExpr(chi.expr)(networkRenamings)))
@@ -258,20 +264,20 @@ class Translator(implicit bvMode: Boolean) {
       }
       (source.toMap,target.toMap)
     }
-    decls ++= translateNetworkInit(bNwInvs, bChInvs, networkRenamings, 
+    decls ++= translateNetworkInit(nwInvariants, bChInvs, networkRenamings, 
         sourceMap, targetMap, entities, connections, network.id+Sep)
 
     for (a <- actions) {
       decls ++= translateNetworkAction(
-          a,bNwInvs,bChInvs,networkRenamings,sourceMap,targetMap,
-          entities,connections,delayedChannels,network.id+Sep)
+          a,nwInvariants,bChInvs,networkRenamings,sourceMap,targetMap,
+          entities,connections,/*delayedChannels,*/network.id+Sep)
     }
 
     decls.toList
   }
   
   def translateNetworkInit(
-       nwInvs: List[(ActorInvariant,Boogie.Expr)],
+       nwInvs: List[ActorInvariant],
        chInvs: List[(ChannelInvariant,Boogie.Expr)],
        networkRenamings: Map[String,String], // Channels and entities
        sourceMap: Map[PortRef,List[String]],
@@ -327,8 +333,11 @@ class Translator(implicit bvMode: Boolean) {
         case None =>
       }
     }
-    asgn ++= (for ((nwi,bNwi) <- nwInvs) yield 
-        bAssert(bNwi,nwi.pos,"Network initialization might not establish the network invariant"))
+    for (nwi <- nwInvs) {
+      asgn ++= Exhalator.visit(nwi, "Network initialization might not establish the network invariant", networkRenamings)
+    }
+    //asgn ++= (for ((nwi,bNwi) <- nwInvs) yield 
+    //    bAssert(bNwi,nwi.pos,"Network initialization might not establish the network invariant"))
     
     val stmt = vars.toList:::asgn.toList
     List(Boogie.Proc(Uniquifier.get(prefix+"init"),Nil,Nil,Modifies,Nil,stmt))
@@ -336,14 +345,14 @@ class Translator(implicit bvMode: Boolean) {
   
   def translateNetworkAction(
        nwa: Action, 
-       nwInvs: List[(ActorInvariant,Boogie.Expr)],
+       nwInvs: List[ActorInvariant],
        chInvs: List[(ChannelInvariant,Boogie.Expr)],
        networkRenamings: Map[String,String], // Channels and entities
        sourceMap: Map[PortRef,List[String]],
        targetMap: Map[PortRef,String],
        entities: List[Instance],
        connections: List[Connection],
-       delayedChannels: Map[String,(Expr)],
+       //delayedChannels: Map[String,(Expr)],
        prefix: String): List[Boogie.Decl] = {
     
     val constDecls = new ListBuffer[Boogie.Const]
@@ -375,14 +384,14 @@ class Translator(implicit bvMode: Boolean) {
     }
     for (c <- connections) {
      constDecls += Boogie.Const(networkRenamings(c.id),true,BType.Chan(type2BType(c.typ)))
-     if (!(delayedChannels contains c.id)) {
+     //if (!(delayedChannels contains c.id)) {
        c.from match {
          case PortRef(None,p) =>
-           cInitAssumesBuffer += bAssume(bCredInit(networkRenamings(c.id)) ==@ bInt(nwa.portInputCount(p)))
+           cInitAssumesBuffer += bAssume(bCredit(networkRenamings(c.id)) ==@ bInt(nwa.portInputCount(p)))
          case PortRef(_,_) => 
-           cInitAssumesBuffer += bAssume(bCredInit(networkRenamings(c.id)) ==@ bInt(0))
+           cInitAssumesBuffer += bAssume(bCredit(networkRenamings(c.id)) ==@ bInt(0))
        }
-     }
+     //}
      readAssumesBuffer += bAssume(bRead(networkRenamings(c.id)) ==@ bInt(0))
      //stepAssumesBuffer += bAssume(bInt(0) <= bStep(networkRenamings(c.id)))
     }
@@ -450,9 +459,9 @@ class Translator(implicit bvMode: Boolean) {
       cInitAssumes :::
       readAssumes :::
       //stepAssumes :::
+      (for (nwi <- nwInvs) yield Inhalator.visit(nwi, networkRenamings)).flatten :::
       nwPre:::
       List(bAssume(VarExpr("C#init") ==@ VarExpr("C"))) :::
-      (for ((_,nwi) <- nwInvs) yield bAssume(nwi)) :::
       (for ((chi,bChi) <- chInvs) yield {
         val baseMsg = "Channel invariant might not hold on action entry"
         val msg = if (chi.generated) baseMsg + " (generated " + GeneratedInvariantCount.next + ")" else baseMsg
@@ -496,7 +505,7 @@ class Translator(implicit bvMode: Boolean) {
       (for ((_,chi) <- chInvs) yield bAssume(chi)):::
       List(bAssume(firingNeg)):::
       (for (c <- connections) yield {
-       if (!(delayedChannels contains c.id)) {
+       //if (!(delayedChannels contains c.id)) {
          c.to match {
            case PortRef(None,p) => {
              List(bAssert(bCredit(networkRenamings(c.id)) ==@ bInt(nwa.portOutputCount(p)),nwa.pos,
@@ -506,8 +515,8 @@ class Translator(implicit bvMode: Boolean) {
              List(bAssert(bCredit(networkRenamings(c.id)) ==@ bInt(0),nwa.pos,
                  "The network might leave unread tokens on channel " + c.id))
          }
-       }
-       else Nil
+       //}
+       //else Nil
       }).flatten:::
       outputs:::
       (nwPost.map { case (pos,q) => bAssert(q,pos,"Network action postcondition might not hold") }) :::
@@ -525,8 +534,8 @@ class Translator(implicit bvMode: Boolean) {
           case _ => Nil
         }
       }).flatten:::
-      (for ((nwi,bNwi) <- nwInvs) yield 
-          bAssert(bNwi,nwi.pos,"The network might not preserve the network invariant")) 
+      (for (nwi <- nwInvs) yield 
+        Exhalator.visit(nwi,"The network might not preserve the network invariant",networkRenamings)).flatten 
     val exitProc = Boogie.Proc(Uniquifier.get(prefix+nwa.fullName+"#exit"),Nil,Nil,Modifies,Nil,exitStmt)
     
     // The complete list of Boogie procedure generated for this network
@@ -802,7 +811,11 @@ class Translator(implicit bvMode: Boolean) {
             val id = params(1).asInstanceOf[Id].id
             bState(transExpr(params(0))) ==@ Boogie.VarExpr(actor.fullName+Sep+id)
           }
-          case _ => throw new RuntimeException() // Should not happen
+          case x => {
+            val args = params.map(p => transExpr(p))
+            Boogie.FunctionApp("UDef"+Sep+x, args)
+          }
+          //case _ => throw new RuntimeException() // Should not happen
         }
       }
       case IndexAccessor(e,i) => {
@@ -846,6 +859,43 @@ class Translator(implicit bvMode: Boolean) {
         case Some(newId) => Boogie.VarExpr(newId)
       } 
     }
+  }
+  
+  object Inhalator extends Halator(true)
+  object Exhalator extends Halator(false)
+  
+  abstract class Halator(val inhale: Boolean) {
+    import Helper._
+    
+    def visit(inv: ActorInvariant, renamings: Map[String,String]): List[Boogie.Stmt] = 
+      visit(inv, "Invariant might not hold", renamings)
+    
+    def visit(inv: ActorInvariant, msg: String, renamings: Map[String,String]): List[Boogie.Stmt] = {
+      val buffer = new ListBuffer[Boogie.Stmt]
+      visit(inv.expr)(buffer,msg,renamings);
+      buffer.toList
+    }
+    
+    def visit(expr: Expr)(implicit buffer: ListBuffer[Boogie.Stmt], msg: String, renamings: Map[String,String]) {
+      expr match {
+        case And(left,right) => visit(left); visit(right)
+        case Implies(left,right) => {
+          val branchBuffer = new ListBuffer[Boogie.Stmt]
+          visit(right)(branchBuffer,msg,renamings)
+          buffer += Boogie.If(transExpr(left),branchBuffer.toList,List.empty) 
+        }
+        case FunctionApp("tokens",params) => {
+          val chCredit = bCredit(transExpr(params(0)))
+          if (inhale) buffer += Boogie.Assign(chCredit, chCredit + transExpr(params(1)))
+          else buffer += Boogie.Assign(chCredit, chCredit - transExpr(params(1)))
+        }
+        case x => {
+          if (inhale) buffer += bAssume(transExpr(x)) 
+          else buffer += bAssert(transExpr(x), x.pos, msg) 
+        }
+      }
+    }
+  
   }
   
   object Helper {

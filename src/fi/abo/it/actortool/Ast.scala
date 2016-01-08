@@ -113,6 +113,7 @@ sealed abstract class Member extends ASTNode {
   def isEntities = false
   def isStructure = false
   def isSchedule = false
+  def isFunctionDecl = false
 }
 
 object Count {
@@ -167,6 +168,10 @@ sealed case class ActorInvariant(val expr: Expr, val generated: Boolean) extends
 
 sealed case class ChannelInvariant(val expr: Expr, val generated: Boolean) extends Member {
   override def isChannelInvariant = true
+}
+
+sealed case class FunctionDecl(val name: String, val inputs: List[Declaration], val output: Type, val expr: Expr) extends Member {
+  override def isFunctionDecl = true
 }
 
 sealed case class Entities(val entities: List[Instance]) extends Member {
@@ -248,10 +253,10 @@ sealed case class OutPort(val portId: String, override val portType: Type) exten
 
 sealed abstract class Pattern(val portId: String) extends ASTNode
 
-sealed case class InputPattern(override val portId: String, val vars: List[Id]) extends Pattern(portId) {
+sealed case class InputPattern(override val portId: String, val vars: List[Id], repeat: Int) extends Pattern(portId) {
   def numConsumed = vars.size
 }
-sealed case class OutputPattern(override val portId: String, val exps: List[Expr]) extends Pattern(portId) {
+sealed case class OutputPattern(override val portId: String, val exps: List[Expr], repeat: Int) extends Pattern(portId) {
   def numProduced = exps.size
 }
 

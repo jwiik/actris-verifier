@@ -1,3 +1,4 @@
 #!/bin/bash
+PATH=/usr/local/bin:$PATH
 BOOGIE_DIR=/Users/jonatan/Tools/boogie
 mono $BOOGIE_DIR/Binaries/Boogie.exe /nologo /noinfer $@

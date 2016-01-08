@@ -60,7 +60,7 @@ type State;
 
 var M: MType;
 var C: CType;
-var R: CType; 
+var R: CType;
 var C#init: CType;
 var St: [Actor]State;
 

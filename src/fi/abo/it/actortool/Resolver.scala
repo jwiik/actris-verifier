@@ -15,6 +15,7 @@ object Resolver {
     def lookUp(id: String): Option[Declaration] = None
     def currentAccessedElement: Option[Expr] = None
     def actors = Map.empty[String,Actor]
+    def lookupFunction(name: String): Option[FunctionDecl] = None
   }
   
   sealed class RootContext(val parentCtx: Context, override val actors: Map[String,Actor]) extends Context(parentCtx) {
@@ -28,10 +29,13 @@ object Resolver {
   sealed abstract class ChildContext(val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentCtx) {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
     override def error(p: Position, msg: String) = parentCtx.error(p,msg)
+    override def lookupFunction(name: String): Option[FunctionDecl] = parentCtx.lookupFunction(name)
   }
   
-  sealed class ActorContext(override val parentCtx: RootContext, override val vars: Map[String,Declaration], 
-      val inports: Map[String,InPort], val outports: Map[String,OutPort]) extends ChildContext(parentCtx,vars) {
+  sealed class ActorContext(
+      override val parentCtx: RootContext, override val vars: Map[String,Declaration], 
+      val inports: Map[String,InPort], val outports: Map[String,OutPort], 
+      val functions: Map[String,FunctionDecl]) extends ChildContext(parentCtx,vars) {
     
     private var channels = Map[String,Connection]()
     private var entities = Map[String,Actor]()
@@ -53,6 +57,11 @@ object Resolver {
       else if (entities contains id) 
         Some(Declaration(entities(id).id,ActorType(entities(id)),true,None))
       else  parentCtx.lookUp(id)
+    }
+    
+    override def lookupFunction(name: String): Option[FunctionDecl] = {
+      if (functions contains name) Some(functions(name))
+      else parentCtx.lookupFunction(name)
     }
   }
   
@@ -103,6 +112,7 @@ object Resolver {
       }
       
       val vars = scala.collection.mutable.HashMap[String,Declaration]()
+      val functions = scala.collection.mutable.HashMap[String,FunctionDecl]()
       for (p <- decl.parameters) {
         vars += (p.id -> p)
         p.value match {
@@ -117,10 +127,11 @@ object Resolver {
           
           for (m <- a.members) m match {
             case d: Declaration => vars += (d.id -> d)
+            case fd: FunctionDecl => functions += (fd.name -> fd)
             case _ =>
           }
           
-          val ctx = new ActorContext(rootCtx, vars.toMap, inports.toMap, outports.toMap)
+          val ctx = new ActorContext(rootCtx, vars.toMap, inports.toMap, outports.toMap, functions.toMap)
           var schedule: Option[Schedule] = None
           val actions = new ListBuffer[Action]()
           for (m <- a.members) m match {
@@ -136,6 +147,7 @@ object Resolver {
               return Errors(List((s.pos, "Basic actors cannot have a structure block")))
             case Declaration(_,_,_,_) => // Already handled
             case sc: Schedule => schedule = Some(sc)
+            case fd: FunctionDecl =>
           }
           schedule match {
             case Some(s) => resolveSchedule(ctx, actions.toList, s)
@@ -154,7 +166,7 @@ object Resolver {
             outports = outports + (p.id -> p)
           }
           
-          val ctx = new ActorContext(rootCtx, Map.empty, inports, outports) 
+          val ctx = new ActorContext(rootCtx, Map.empty, inports, outports, Map.empty) 
 
           var hasEntities, hasStructure = false
           var channels = Map.empty[String,Connection]
@@ -205,6 +217,7 @@ object Resolver {
               case ChannelInvariant(e,_) => resolveExpr(ctx,e,BoolType)
               case d: Declaration => return Errors(List((d.pos, "Networks cannot have declarations")))
               case sch: Schedule => return Errors(List((sch.pos,"Networks cannot have schedules")))
+              case fd: FunctionDecl => return Errors(List((fd.pos,"Functions cannot be declared in networks for now.")))
             }
           }
           if (!hasEntities) return Errors(List((n.pos, "No entities block in " + n.id)))
@@ -279,7 +292,26 @@ object Resolver {
           }
         }
         else {
-          resolveExpr(ctx,e,port.portType)
+          val eType = resolveExpr(ctx,e)
+          if (eType.isList) {
+            if (outPat.exps.size != 1) {
+              ctx.error(e.pos, "Output patterns using lists must have length 1")
+            }
+            val listType = eType.asInstanceOf[ListType]
+            if (outPat.repeat > listType.size) {
+              ctx.error(e.pos, "Repeat value cannot be larger than the list used")
+            }
+            if (!TypeUtil.isCompatible(listType.contentType, port.portType)) {
+              ctx.error(e.pos, "List content has type " + listType.contentType.id + 
+                  ", which does not match port type" + port.portType.id)
+            }
+          }
+          else {
+            if (!TypeUtil.isCompatible(eType, port.portType)) {
+              ctx.error(e.pos, 
+                  "Expression type " + eType.id + " does not match port type " + port.portType.id)
+            }
+          }
         }
       }
     }
@@ -412,7 +444,9 @@ object Resolver {
   }
   
   def resolveExpr(ctx: Context, exp: Expr, t: Type) {
-    if (t != resolveExpr(ctx,exp)) ctx.error(exp.pos, "Expected type " + t.id)
+    if (t != resolveExpr(ctx,exp)) {
+      ctx.error(exp.pos, "Expected type " + t.id)
+    }
   }
   
   def resolveExpr(ctx: Context, exp: Expr): Type = {
@@ -518,8 +552,28 @@ object Resolver {
         }
       }
       case fa@FunctionApp(name,params) => {
-        ctx.error(fa.pos,"Undefined function: " + name)
-        UnknownType
+        ctx.lookupFunction(name) match {
+          case Some(fd) => {
+            if (params.size == fd.inputs.size) {
+              for ((arg,par) <- (params zip fd.inputs)) {
+                val aType = resolveExpr(ctx, arg)
+                if (!TypeUtil.isCompatible(aType,par.typ)) {
+                  ctx.error(arg.pos, "Invalid type for function argument, expected " + par.typ.id + ", found " + aType.id)
+                }
+              }
+              fd.output
+            }
+            else {
+              ctx.error(fa.pos, "Function " + name + " takes " + fd.inputs.size + " arguments, got " + params.size)
+              UnknownType
+            }
+          }
+          case None => {
+            ctx.error(fa.pos,"Undefined function: " + name)
+            UnknownType
+          }
+        }
+        
       }
       case ll@ListLiteral(lst) => {
         val size = lst.size
@@ -713,7 +767,7 @@ object Resolver {
         ctx.error(id.pos,  id.id + " is not a list."); return
       }
       else {
-        if (it.asInstanceOf[ListType].contentType != et) {
+        if (!TypeUtil.isCompatible(it.asInstanceOf[ListType].contentType,et)) {
           ctx.error(id.pos, "Cannot assign a value of type " + et.id + " to a list of type " + it.id); return
         }
       }

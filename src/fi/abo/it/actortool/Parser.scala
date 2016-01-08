@@ -38,10 +38,10 @@ class Parser extends StandardTokenParsers {
   lexical.reserved += ("actor", "network", "unit", "action", "true", "false", "int", "bool", "uint", "size", 
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
-                       "var", "schedule", "fsm", "regexp", "List", "type"
+                       "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
-                       "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]", ":[",
+                       "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
                        "-->", "::", "{", "}", "<<" , ">>", "@", "&")
                        
   def programUnit = (actorDecl | networkDecl | unitDecl)*
@@ -91,7 +91,7 @@ class Parser extends StandardTokenParsers {
     case (tName ~ id) => OutPort(id,tName)
   })
   
-  def actorMember: Parser[Member] = positioned(actorInvDecl | actionDecl | varDecl | scheduleBlock)
+  def actorMember: Parser[Member] = positioned(actorInvDecl | actionDecl | varDecl | scheduleBlock | functionDecl)
   
   def networkMember: Parser[Member] = positioned(
       actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl)
@@ -111,6 +111,10 @@ class Parser extends StandardTokenParsers {
       case  "fsm" ~ init ~ transitions => Schedule(init,transitions)
     })
   
+  def functionDecl: Parser[FunctionDecl] =
+    positioned(("function" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")") ~ ("-->" ~> typeName) ~ (":" ~> expression) <~ "end") ^^ {
+      case (name ~ inputs ~ output ~ body) => FunctionDecl(name,inputs,output,body)
+    })
   //def schedType = "fsm" | "regexp" 
   
   def entityDecl = positioned(ident ~ ("=" ~> (ident ~ paramList)) ^^ {
@@ -161,12 +165,14 @@ class Parser extends StandardTokenParsers {
     }
   )
   
-  def inputPattern = positioned(ident ~ (":[" ~> repsep(identifier,",") <~ "]") ^^ {
-    case (port ~ vars) => InputPattern(port, vars)
+  def inputPattern = positioned((ident ~ (":" ~> "[" ~> repsep(identifier,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
+    case (port ~ vars ~ Some(rep)) => InputPattern(port, vars, rep.toInt)
+    case (port ~ vars ~ None) => InputPattern(port, vars, 1)
   })
   
-  def outputPattern = positioned(ident ~ (":[" ~> repsep(expression,",") <~ "]") ^^ {
-    case (port ~ exps) => OutputPattern(port, exps)
+  def outputPattern = positioned((ident ~ (":" ~> "[" ~> repsep(expression,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
+    case (port ~ exps ~ Some(rep)) => OutputPattern(port, exps, rep.toInt)
+    case (port ~ exps ~ None) => OutputPattern(port, exps, 1)
   })  
 
   
