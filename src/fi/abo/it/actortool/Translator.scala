@@ -10,10 +10,14 @@ import fi.abo.it.actortool.Boogie.NamedType
 import fi.abo.it.actortool.Boogie.LocalVar
 import fi.abo.it.actortool.Boogie.UnaryExpr
 
+class TranslationException(val pos: Position, val msg: String) extends Exception(msg)
+
 class Translator(implicit bvMode: Boolean) {
   
   final val Sep = "#"
   final val Modifies = List("C","R","M","St")
+  
+  
   
   object Uniquifier {
     private var i = -1
@@ -790,7 +794,7 @@ class Translator(implicit bvMode: Boolean) {
           },
           transExpr(e)
         )
-      case FunctionApp(name,params) => {
+      case fa@FunctionApp(name,params) => {
         name match {
           case "rd" => bRead(transExpr(params(0)))
           case "urd" => bCredit(transExpr(params(0)))
@@ -803,9 +807,9 @@ class Translator(implicit bvMode: Boolean) {
             val ch = transExpr(params(0))
             bChannelIdx(ch, /*bStep(ch)+*/bRead(ch) minus bInt(1))
           //case "tokens" => bCredit(transExpr(params(0))) ==@ transExpr(params(1))
-          case "tokens" => 
-            // Should not happen
-            throw new RuntimeException("tokens should not occur here") 
+          case "tokens" =>
+            // Happens if tokens function is used in an invalid position
+            throw new TranslationException(fa.pos, "Function tokens used in invalid position") 
           case "state" => {
             val actor = params(0).typ.asInstanceOf[ActorType].actor
             val id = params(1).asInstanceOf[Id].id

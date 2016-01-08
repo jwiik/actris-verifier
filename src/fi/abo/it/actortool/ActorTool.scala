@@ -220,8 +220,13 @@ object ActorTool {
     if (!params.DoTranslate) return
     
     val translator = new Translator()(params.BVMode);
-    val bplProg: List[Boogie.Decl] = translator.translateProgram(program);
-    
+    val bplProg =
+      try {
+        translator.translateProgram(program);
+      } catch {
+        case ex: TranslationException => reportError(ex.pos,ex.msg)
+        return
+      }
     timings += (Step.Translation -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
