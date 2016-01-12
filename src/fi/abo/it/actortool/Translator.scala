@@ -223,10 +223,20 @@ class Translator(implicit bvMode: Boolean) {
     
     val namePrefix = network.id+Sep
     
-    val networkRenamings = {
-      (for (c <- connections) yield ((c.id,namePrefix+c.id))):::
-      (for (e <- entities) yield ((e.id,namePrefix+e.id)))
-    }.toMap
+    val (networkRenamings, subactorVarDecls) = {
+      val buffer = new ListBuffer[(String,String)]
+      val decls = new ListBuffer[Boogie.LocalVar]
+      for (c <- connections) buffer += ((c.id,namePrefix+c.id))
+      for (e <- entities) {
+        buffer += ((e.id,namePrefix+e.id))
+        for (av <- e.actor.variables) {
+          val avName = namePrefix+e.id+Sep+"AV"+Sep+av.id
+          buffer += ((av.id,avName))
+          decls += bLocal(avName,av.typ)
+        }
+      }
+      (buffer.toMap,decls.toList)
+    }
     
     val bChInvs = for (chi <- chInvariants) yield ((chi,transExpr(chi.expr)(networkRenamings)))
     
@@ -246,7 +256,7 @@ class Translator(implicit bvMode: Boolean) {
     for (a <- actions) {
       decls ++= translateNetworkAction(
           a,nwInvariants,bChInvs,networkRenamings,sourceMap,targetMap,
-          entities,connections,/*delayedChannels,*/network.id+Sep)
+          entities,connections,subactorVarDecls,network.id+Sep)
     }
 
     decls.toList
@@ -325,10 +335,13 @@ class Translator(implicit bvMode: Boolean) {
        targetMap: Map[PortRef,String],
        entities: List[Instance],
        connections: List[Connection],
+       subactorVarDecls: List[Boogie.LocalVar],
        prefix: String): List[Boogie.Decl] = {
     
     val constDecls = new ListBuffer[Boogie.Const]
     val procVars = new ListBuffer[Boogie.LocalVar]
+    
+    procVars ++= subactorVarDecls
     
     val actionRenamings = new ListBuffer[(String,String)]
     for (v <- nwa.variables) {
@@ -442,7 +455,7 @@ class Translator(implicit bvMode: Boolean) {
       }
       for (m <- actor.members) m match {
         case ca@Action(_,false,_,_,_,_,_,_,_) => { // Ignore init actions for now
-          val procName = prefix+nwa.fullName+Sep+actor.fullName+Sep+ca.fullName
+          val procName = prefix+nwa.fullName+Sep+actor.id+Sep+ca.fullName
           val (subActorStmt,newVarDecls,firingRule) = 
             transSubActionExecution(
                 inst, ca, networkRenamings, cInitAssumes, chInvs, actorVars.toList, sourceMap, targetMap)
@@ -526,9 +539,9 @@ class Translator(implicit bvMode: Boolean) {
     renameMap = renameMap ++ actorParams
     for ((name,value) <- (parameterNames zip instance.arguments)) {
       // Add assumptions about the values of the actor parameters
-      asgn += bAssume(transExpr(
-            IdToIdReplacer.visitExpr(name)(renameMap)
-          )(networkRenamings) ==@ transExpr(value)(networkRenamings))
+      asgn += bAssume(
+          transExpr(renameMap(name))(networkRenamings) ==@ 
+          transExpr(value)(networkRenamings))
     }
     
     asgn ++= cInits // Assumptions about initial state of channels

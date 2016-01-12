@@ -31,9 +31,11 @@ sealed abstract class Actor(
   
   def fullName: String = id
   
-  lazy val actions: List[Action] = {
+  lazy val actions: List[Action] =
     members.filter { x => x.isAction } map { x => x.asInstanceOf[Action] }
-  }
+  
+  lazy val variables: List[Declaration] = 
+    members.filter { x => x.isDeclaration } map { x => x.asInstanceOf[Declaration] }
   
   lazy val actorInvariants: List[ActorInvariant] = {
     members.filter { x => x.isActorInvariant } map { x => x.asInstanceOf[ActorInvariant] }
