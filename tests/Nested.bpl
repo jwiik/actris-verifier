@@ -38,8 +38,8 @@ procedure Top#anon$0#entry#1()
   modifies C, R, M, St;
 {
   var Top#out#0: int;
-  assume C[Top#x] == 1;
-  assume C[Top#y] == 0;
+  assume C#init[Top#x] == 1;
+  assume C#init[Top#y] == 0;
   assume R[Top#x] == 0;
   assume R[Top#y] == 0;
   assume C#init == C;
@@ -57,10 +57,11 @@ procedure Top#anon$0#entry#1()
 procedure Top#anon$0#Nested#anon$1#2()
   modifies C, R, M, St;
 {
+  var Top#out#0: int;
   var St#next: State;
   var x#i: int;
-  assume C[Top#x] == 1;
-  assume C[Top#y] == 0;
+  assume C#init[Top#x] == 1;
+  assume C#init[Top#y] == 0;
   assume 0 <= R[Top#x];
   assume 0 <= C[Top#x];
   assume (R[Top#x] + C[Top#x]) == C#init[Top#x];
@@ -93,8 +94,8 @@ procedure Top#anon$0#exit#3()
   modifies C, R, M, St;
 {
   var Top#out#0: int;
-  assume C[Top#x] == 1;
-  assume C[Top#y] == 0;
+  assume C#init[Top#x] == 1;
+  assume C#init[Top#y] == 0;
   assume 0 <= R[Top#x];
   assume 0 <= C[Top#x];
   assume (R[Top#x] + C[Top#x]) == C#init[Top#x];
@@ -106,12 +107,12 @@ procedure Top#anon$0#exit#3()
     (0 <= i) && (i < (R[Top#y] + C[Top#y])) ==> (M[Top#x][i] == M[Top#y][i])
   );
   assume !(1 <= C[Top#x]);
-  assert {:msg "  2.3: The network might leave unread tokens on channel x"} C[Top#x] == 0;
-  assert {:msg "  2.3: The network might not produce the specified number of tokens on output out"} C[Top#y] == 1;
   Top#out#0 := M[Top#y][0];
   assert {:msg "  2.26: Network output might not conform to the specified action output"} Top#out#0 == M[Top#x][0];
   R[Top#y] := R[Top#y] + C[Top#y];
-  C[Top#y] := 0;
+  C[Top#y] := C[Top#y] - 1;
+  assert {:msg "  2.3: The network might leave unread tokens on channel x"} C[Top#x] == 0;
+  assert {:msg "  2.3: The network might not produce the specified number of tokens on output out"} C[Top#y] == 0;
 }
 procedure Nested#init#4()
   modifies C, R, M, St;
@@ -128,8 +129,8 @@ procedure Nested#anon$1#entry#5()
   modifies C, R, M, St;
 {
   var Nested#y#0: int;
-  assume C[Nested#x] == 1;
-  assume C[Nested#y] == 0;
+  assume C#init[Nested#x] == 1;
+  assume C#init[Nested#y] == 0;
   assume R[Nested#x] == 0;
   assume R[Nested#y] == 0;
   assume C#init == C;
@@ -147,10 +148,11 @@ procedure Nested#anon$1#entry#5()
 procedure Nested#anon$1#Repeater#anon$2#6()
   modifies C, R, M, St;
 {
+  var Nested#y#0: int;
   var St#next: State;
   var in#i: int;
-  assume C[Nested#x] == 1;
-  assume C[Nested#y] == 0;
+  assume C#init[Nested#x] == 1;
+  assume C#init[Nested#y] == 0;
   assume 0 <= R[Nested#x];
   assume 0 <= C[Nested#x];
   assume (R[Nested#x] + C[Nested#x]) == C#init[Nested#x];
@@ -183,8 +185,8 @@ procedure Nested#anon$1#exit#7()
   modifies C, R, M, St;
 {
   var Nested#y#0: int;
-  assume C[Nested#x] == 1;
-  assume C[Nested#y] == 0;
+  assume C#init[Nested#x] == 1;
+  assume C#init[Nested#y] == 0;
   assume 0 <= R[Nested#x];
   assume 0 <= C[Nested#x];
   assume (R[Nested#x] + C[Nested#x]) == C#init[Nested#x];
@@ -196,12 +198,12 @@ procedure Nested#anon$1#exit#7()
     (0 <= i) && (i < (R[Nested#y] + C[Nested#y])) ==> (M[Nested#x][i] == M[Nested#y][i])
   );
   assume !(1 <= C[Nested#x]);
-  assert {:msg "  17.3: The network might leave unread tokens on channel x"} C[Nested#x] == 0;
-  assert {:msg "  17.3: The network might not produce the specified number of tokens on output y"} C[Nested#y] == 1;
   Nested#y#0 := M[Nested#y][0];
   assert {:msg "  17.23: Network output might not conform to the specified action output"} Nested#y#0 == M[Nested#x][0];
   R[Nested#y] := R[Nested#y] + C[Nested#y];
-  C[Nested#y] := 0;
+  C[Nested#y] := C[Nested#y] - 1;
+  assert {:msg "  17.3: The network might leave unread tokens on channel x"} C[Nested#x] == 0;
+  assert {:msg "  17.3: The network might not produce the specified number of tokens on output y"} C[Nested#y] == 0;
 }
 procedure Repeater#anon$2#8()
   modifies C, R, M, St;

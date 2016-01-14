@@ -68,14 +68,14 @@ procedure Top#anon$0#entry#3()
 {
   var Top#out#0: int;
   var Top#out#1: int;
-  assume C[Top#a] == 1;
-  assume C[Top#b] == 1;
-  assume C[Top#c] == 0;
+  assume C#init[Top#a] == 1;
+  assume C#init[Top#b] == 1;
+  assume C#init[Top#c] == 0;
   assume R[Top#a] == 0;
   assume R[Top#b] == 0;
   assume R[Top#c] == 0;
-  assume St[Top#fm] == FairMerge#s1;
   assume C#init == C;
+  assume St[Top#fm] == FairMerge#s1;
   assert {:msg "  Channel invariant might not hold on action entry (generated #0)"} 0 <= R[Top#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #1)"} 0 <= C[Top#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #2)"} (R[Top#a] + C[Top#a]) == C#init[Top#a];
@@ -97,11 +97,13 @@ procedure Top#anon$0#entry#3()
 procedure Top#anon$0#FairMerge#a1#4()
   modifies C, R, M, St;
 {
+  var Top#out#0: int;
+  var Top#out#1: int;
   var St#next: State;
   var x1#i: int;
-  assume C[Top#a] == 1;
-  assume C[Top#b] == 1;
-  assume C[Top#c] == 0;
+  assume C#init[Top#a] == 1;
+  assume C#init[Top#b] == 1;
+  assume C#init[Top#c] == 0;
   assume 0 <= R[Top#a];
   assume 0 <= C[Top#a];
   assume (R[Top#a] + C[Top#a]) == C#init[Top#a];
@@ -149,11 +151,13 @@ procedure Top#anon$0#FairMerge#a1#4()
 procedure Top#anon$0#FairMerge#a2#5()
   modifies C, R, M, St;
 {
+  var Top#out#0: int;
+  var Top#out#1: int;
   var St#next: State;
   var x2#i: int;
-  assume C[Top#a] == 1;
-  assume C[Top#b] == 1;
-  assume C[Top#c] == 0;
+  assume C#init[Top#a] == 1;
+  assume C#init[Top#b] == 1;
+  assume C#init[Top#c] == 0;
   assume 0 <= R[Top#a];
   assume 0 <= C[Top#a];
   assume (R[Top#a] + C[Top#a]) == C#init[Top#a];
@@ -203,9 +207,9 @@ procedure Top#anon$0#exit#6()
 {
   var Top#out#0: int;
   var Top#out#1: int;
-  assume C[Top#a] == 1;
-  assume C[Top#b] == 1;
-  assume C[Top#c] == 0;
+  assume C#init[Top#a] == 1;
+  assume C#init[Top#b] == 1;
+  assume C#init[Top#c] == 0;
   assume 0 <= R[Top#a];
   assume 0 <= C[Top#a];
   assume (R[Top#a] + C[Top#a]) == C#init[Top#a];
@@ -224,14 +228,14 @@ procedure Top#anon$0#exit#6()
   assume ((R[Top#c] + C[Top#c]) >= 1) ==> (M[Top#c][0] == M[Top#a][0]);
   assume ((R[Top#c] + C[Top#c]) >= 2) ==> (M[Top#c][1] == M[Top#b][0]);
   assume !(((1 <= C[Top#a]) && (St[Top#fm] == FairMerge#s1)) || ((1 <= C[Top#b]) && (St[Top#fm] == FairMerge#s2)));
-  assert {:msg "  12.3: The network might leave unread tokens on channel a"} C[Top#a] == 0;
-  assert {:msg "  12.3: The network might leave unread tokens on channel b"} C[Top#b] == 0;
-  assert {:msg "  12.3: The network might not produce the specified number of tokens on output out"} C[Top#c] == 2;
   Top#out#0 := M[Top#c][0];
   assert {:msg "  12.36: Network output might not conform to the specified action output"} Top#out#0 == M[Top#a][0];
   Top#out#1 := M[Top#c][1];
   assert {:msg "  12.38: Network output might not conform to the specified action output"} Top#out#1 == M[Top#b][0];
   R[Top#c] := R[Top#c] + C[Top#c];
-  C[Top#c] := 0;
+  C[Top#c] := C[Top#c] - 2;
   assert {:msg "  14.13: The network might not preserve the network invariant"} St[Top#fm] == FairMerge#s1;
+  assert {:msg "  12.3: The network might leave unread tokens on channel a"} C[Top#a] == 0;
+  assert {:msg "  12.3: The network might leave unread tokens on channel b"} C[Top#b] == 0;
+  assert {:msg "  12.3: The network might not produce the specified number of tokens on output out"} C[Top#c] == 0;
 }

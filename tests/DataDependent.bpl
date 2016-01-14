@@ -72,16 +72,16 @@ procedure Net#anon$3#entry#4()
 {
   var Net#out1#0: int;
   var Net#out2#0: int;
-  assume C[Net#a] == 2;
-  assume C[Net#b] == 0;
-  assume C[Net#c] == 0;
-  assume C[Net#d] == 0;
+  assume C#init[Net#a] == 2;
+  assume C#init[Net#b] == 0;
+  assume C#init[Net#c] == 0;
+  assume C#init[Net#d] == 0;
   assume R[Net#a] == 0;
   assume R[Net#b] == 0;
   assume R[Net#c] == 0;
   assume R[Net#d] == 0;
-  assume (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assume C#init == C;
+  assume (M[Net#a][0] < 0) && (M[Net#a][1] > 0);
   assert {:msg "  Channel invariant might not hold on action entry (generated #0)"} 0 <= R[Net#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #1)"} 0 <= C[Net#a];
   assert {:msg "  Channel invariant might not hold on action entry (generated #2)"} (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -110,12 +110,14 @@ procedure Net#anon$3#entry#4()
 procedure Net#anon$3#Repeater#anon$0#5()
   modifies C, R, M, St;
 {
+  var Net#out1#0: int;
+  var Net#out2#0: int;
   var St#next: State;
   var in#i: int;
-  assume C[Net#a] == 2;
-  assume C[Net#b] == 0;
-  assume C[Net#c] == 0;
-  assume C[Net#d] == 0;
+  assume C#init[Net#a] == 2;
+  assume C#init[Net#b] == 0;
+  assume C#init[Net#c] == 0;
+  assume C#init[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -175,12 +177,14 @@ procedure Net#anon$3#Repeater#anon$0#5()
 procedure Net#anon$3#Split#anon$1#6()
   modifies C, R, M, St;
 {
+  var Net#out1#0: int;
+  var Net#out2#0: int;
   var St#next: State;
   var in#i: int;
-  assume C[Net#a] == 2;
-  assume C[Net#b] == 0;
-  assume C[Net#c] == 0;
-  assume C[Net#d] == 0;
+  assume C#init[Net#a] == 2;
+  assume C#init[Net#b] == 0;
+  assume C#init[Net#c] == 0;
+  assume C#init[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -241,12 +245,14 @@ procedure Net#anon$3#Split#anon$1#6()
 procedure Net#anon$3#Split#anon$2#7()
   modifies C, R, M, St;
 {
+  var Net#out1#0: int;
+  var Net#out2#0: int;
   var St#next: State;
   var in#i: int;
-  assume C[Net#a] == 2;
-  assume C[Net#b] == 0;
-  assume C[Net#c] == 0;
-  assume C[Net#d] == 0;
+  assume C#init[Net#a] == 2;
+  assume C#init[Net#b] == 0;
+  assume C#init[Net#c] == 0;
+  assume C#init[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -309,10 +315,10 @@ procedure Net#anon$3#exit#8()
 {
   var Net#out1#0: int;
   var Net#out2#0: int;
-  assume C[Net#a] == 2;
-  assume C[Net#b] == 0;
-  assume C[Net#c] == 0;
-  assume C[Net#d] == 0;
+  assume C#init[Net#a] == 2;
+  assume C#init[Net#b] == 0;
+  assume C#init[Net#c] == 0;
+  assume C#init[Net#d] == 0;
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) == C#init[Net#a];
@@ -338,16 +344,16 @@ procedure Net#anon$3#exit#8()
     (0 <= i) && (i < R[Net#b]) && (AT#Mod(i, 2) == 1) ==> (M[Net#b][i] == M[Net#c][AT#Div(i, 2)])
   );
   assume !(((1 <= C[Net#a]) || ((1 <= C[Net#b]) && (0 <= M[Net#b][R[Net#b] - 0]))) || ((1 <= C[Net#b]) && (M[Net#b][R[Net#b] - 0] < 0)));
-  assert {:msg "  16.3: The network might leave unread tokens on channel a"} C[Net#a] == 0;
-  assert {:msg "  16.3: The network might leave unread tokens on channel b"} C[Net#b] == 0;
-  assert {:msg "  16.3: The network might not produce the specified number of tokens on output out1"} C[Net#c] == 1;
-  assert {:msg "  16.3: The network might not produce the specified number of tokens on output out2"} C[Net#d] == 1;
   Net#out1#0 := M[Net#c][0];
   assert {:msg "  16.31: Network output might not conform to the specified action output"} Net#out1#0 == M[Net#a][1];
   Net#out2#0 := M[Net#d][0];
   assert {:msg "  16.42: Network output might not conform to the specified action output"} Net#out2#0 == M[Net#a][0];
   R[Net#c] := R[Net#c] + C[Net#c];
-  C[Net#c] := 0;
+  C[Net#c] := C[Net#c] - 1;
   R[Net#d] := R[Net#d] + C[Net#d];
-  C[Net#d] := 0;
+  C[Net#d] := C[Net#d] - 1;
+  assert {:msg "  16.3: The network might leave unread tokens on channel a"} C[Net#a] == 0;
+  assert {:msg "  16.3: The network might leave unread tokens on channel b"} C[Net#b] == 0;
+  assert {:msg "  16.3: The network might not produce the specified number of tokens on output out1"} C[Net#c] == 0;
+  assert {:msg "  16.3: The network might not produce the specified number of tokens on output out2"} C[Net#d] == 0;
 }

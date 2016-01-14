@@ -1,5 +1,5 @@
 @sdf
-actor Sum int in1 ==> int out :
+actor Sum int in ==> int out :
   
   int sum;
   
@@ -10,9 +10,30 @@ actor Sum int in1 ==> int out :
     sum := 0;
   end
 
-  action in1:[i] ==> out:[sum]
+  action in:[i] ==> out:[sum]
     requires 0 <= i
+    ensures i <= sum
   do
     sum := sum+i;
   end
+end
+
+network Net int in ==> int out :
+  
+  action in:[x] ==> out:[y]
+    requires 0 <= x
+    ensures x <= y
+  end
+  
+  chinvariant 0 < rd(a) ==> a[0] <= c[0]
+
+  entities
+    sumact = Sum();
+  end
+  
+  structure
+    a: in --> sumact.in;
+    c: sumact.out --> out;
+  end
+
 end

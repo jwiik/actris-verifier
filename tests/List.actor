@@ -22,7 +22,6 @@ end
 
 network Net int in ==> int out :
   action in:[i] ==> out:[y]
-    var int y
     requires 0 <= i && i < 3
     ensures  i = 0 ==> y = 10
   end
