@@ -38,7 +38,7 @@ class Parser extends StandardTokenParsers {
   lexical.reserved += ("actor", "network", "unit", "action", "true", "false", "int", "bool", "uint", "size", 
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
-                       "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat"
+                       "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -91,7 +91,7 @@ class Parser extends StandardTokenParsers {
     case (tName ~ id) => OutPort(id,tName)
   })
   
-  def actorMember: Parser[Member] = positioned(actorInvDecl | actionDecl | varDecl | scheduleBlock | functionDecl)
+  def actorMember: Parser[Member] = positioned(actorInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl)
   
   def networkMember: Parser[Member] = positioned(
       actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl)
@@ -116,6 +116,11 @@ class Parser extends StandardTokenParsers {
       case (name ~ inputs ~ output ~ body) => FunctionDecl(name,inputs,output,body)
     })
   //def schedType = "fsm" | "regexp" 
+    
+  def priorityBlock: Parser[Priority] = 
+    positioned(("priority" ~> repsep(ident,">") <~ "end") ^^ {
+      case actions => Priority(actions)
+    })
   
   def entityDecl = positioned(ident ~ ("=" ~> (ident ~ paramList)) ^^ {
     case name ~ (actorId ~ params) => Instance(name,actorId,params)

@@ -391,7 +391,6 @@ class Translator(implicit bvMode: Boolean) {
         i = i+1
       }
     }
-    
 
     val outputs = (for (opat <- nwa.outputPattern) yield {
       val outChan = targetMap(PortRef(None,opat.portId))
@@ -529,8 +528,7 @@ class Translator(implicit bvMode: Boolean) {
     val actor = instance.actor
     val asgn = new ListBuffer[Boogie.Stmt]()
     val newVars = new ListBuffer[Boogie.LocalVar]()
-    //var renameMap = Map[Id,Id]()
-        
+            
     val parameterNames = instance.actor.parameters.map(p => p.id)
     
     val actorParamRenames = instance.actor.parameters.map(p => {
@@ -557,9 +555,6 @@ class Translator(implicit bvMode: Boolean) {
 //    }).toMap
     
     val actorRenamings = networkRenamings ++ actorParamRenames //++ actorVarRenames
-    
-
-    
     
     newVars += bLocal(nextState,BType.State)
     

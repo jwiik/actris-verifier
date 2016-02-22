@@ -228,6 +228,10 @@ sealed case class Schedule(val initState: String, val transitions: List[Transiti
   }
 }
 
+sealed case class Priority(val order: List[String]) extends Member {
+  
+}
+
 sealed case class Instance(val id: String, val actorId: String, val arguments: List[Expr]) extends ASTNode {
   var actor: Actor = null
 }

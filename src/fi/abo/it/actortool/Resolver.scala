@@ -133,6 +133,7 @@ object Resolver {
           
           val ctx = new ActorContext(rootCtx, vars.toMap, inports.toMap, outports.toMap, functions.toMap)
           var schedule: Option[Schedule] = None
+          var priority: Option[Priority] = None
           val actions = new ListBuffer[Action]()
           for (m <- a.members) m match {
             case ac: Action => 
@@ -147,13 +148,18 @@ object Resolver {
               return Errors(List((s.pos, "Basic actors cannot have a structure block")))
             case Declaration(_,_,_,_) => // Already handled
             case sc: Schedule => schedule = Some(sc)
+            case pr: Priority => priority = Some(pr)
             case fd: FunctionDecl =>
           }
+          val actionList = actions.toList
           schedule match {
-            case Some(s) => resolveSchedule(ctx, actions.toList, s)
+            case Some(s) => resolveSchedule(ctx, actionList, s)
             case None =>
           }
-          
+          priority match {
+            case Some(p) => resolvePriority(ctx, actionList, p)
+            case None =>
+          }
         }  
         case n: Network => {
           var inports = Map[String,InPort]()
@@ -216,7 +222,8 @@ object Resolver {
               case ActorInvariant(e,_) => resolveExpr(ctx,e,BoolType)
               case ChannelInvariant(e,_) => resolveExpr(ctx,e,BoolType)
               case d: Declaration => return Errors(List((d.pos, "Networks cannot have declarations")))
-              case sch: Schedule => return Errors(List((sch.pos,"Networks cannot have schedules")))
+              case sch: Schedule => return Errors(List((sch.pos,"Networks cannot have action schedules")))
+              case sch: Priority => return Errors(List((sch.pos,"Networks cannot have action priorities")))
               case fd: FunctionDecl => return Errors(List((fd.pos,"Functions cannot be declared in networks for now.")))
             }
           }
@@ -435,6 +442,18 @@ object Resolver {
       }
     } 
     states.toSet
+  }
+  
+  def resolvePriority(ctx: Context, actions: List[Action], prios: Priority) = {
+    val duplicates = prios.order.diff(prios.order.distinct).distinct
+    if (!duplicates.isEmpty) {
+      ctx.error(prios.pos, "Labels appear more than once in priority order " + (duplicates mkString ", "))
+    }
+    for (p <- prios.order) {
+      if (!(actions.exists { a => a.fullName == p })) {
+        ctx.error(prios.pos, "No action with label " + p)
+      }
+    }
   }
   
   def resolveExpr(exp: Expr): ResolverOutcome = {
