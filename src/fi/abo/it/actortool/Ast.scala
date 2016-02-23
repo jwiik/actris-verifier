@@ -41,6 +41,22 @@ sealed abstract class Actor(
     members.filter { x => x.isActorInvariant } map { x => x.asInstanceOf[ActorInvariant] }
   }
   
+  lazy val schedule = {
+    val opt = members.find(m => m match {case sc: Schedule => true; case _ => false;})
+    opt match {
+      case Some(opt) => Some(opt.asInstanceOf[Schedule])
+      case None => None
+    }
+  }
+  
+  lazy val priority = {
+    val opt = members.find(m => m match {case pr: Priority => true; case _ => false;})
+    opt match {
+      case Some(opt) => Some(opt.asInstanceOf[Priority])
+      case None => None
+    }
+  }
+  
   def hasInport(id: String) = inports.exists(p => p.portId == id)
   def hasOutport(id: String) = outports.exists(p => p.portId == id)
   def getInport(id: String) = inports.find(p => p.portId == id)
@@ -56,13 +72,7 @@ sealed case class BasicActor(
   
   override def isActor = true
   
-  lazy val schedule = {
-    val opt = members.find(m => m match {case sc: Schedule => true; case _ => false;})
-    opt match {
-      case Some(opt) => Some(opt.asInstanceOf[Schedule])
-      case None => None
-    }
-  }
+
 }
 
 sealed case class Network(

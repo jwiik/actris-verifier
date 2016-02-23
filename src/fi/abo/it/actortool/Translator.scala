@@ -445,32 +445,54 @@ class Translator(implicit bvMode: Boolean) {
     // Sub-actor executions
     val childActionProcs = new ListBuffer[Boogie.Proc]()
     //val actorVars = new ListBuffer[Declaration]()
-    val firingRules = new ListBuffer[Boogie.Expr]()
+    val nwFiringRules = new ListBuffer[Boogie.Expr]()
     for (inst <- entities) {
       val actor = inst.actor
-      for (d <- actor.members) d match {
-        //case d: Declaration => actorVars += d
-        case _ =>
+      
+      val orderedActions = new ListBuffer[(Action,List[Action])]()
+      actor.priority match {
+        case Some(pr) => {
+          for (name <- pr.order) {
+            // Assuming valid label
+            val act = actor.actions.find{ a => a.fullName == name }.get
+            orderedActions += (act -> orderedActions.toList.map {_._1})
+          }
+        }
+        case None =>
       }
-      for (m <- actor.members) m match {
-        case ca@Action(_,false,_,_,_,_,_,_,_) => { // Ignore init actions for now
+      
+      for (act <- actor.actions) {
+        if (! (orderedActions exists {case (a,_) => a == act})) {
+          orderedActions += (act -> List.empty)
+        }
+      }
+         
+      val actorFiringRulesNoPrio = collection.mutable.Map[Action,Boogie.Expr]()
+      val actorFiringRulesPrio = collection.mutable.Map[Action,Boogie.Expr]()
+      for ((ca,higherPrioAction) <- orderedActions) {
+        if (!ca.init) {
           val procName = prefix+nwa.fullName+Sep+actor.id+Sep+ca.fullName
-          val (subActorStmt,newVarDecls,firingRule) = 
-            transSubActionExecution(
-                inst, ca, networkRenamings, cInitAssumes, chInvs, sourceMap, targetMap)
+          
+          val prFiringRule = higherPrioAction map {a => actorFiringRulesNoPrio(a)}
+          
+          val (subActorStmt,newVarDecls,firingRulePrio,firingRuleNoPrio) = 
+            transSubActionExecution(inst, ca, networkRenamings, cInitAssumes, chInvs, sourceMap, targetMap, prFiringRule)
           val stmt = 
             procVars.toList :::
             newVarDecls :::
             subActorStmt
           childActionProcs += Boogie.Proc(Uniquifier.get(procName),Nil,Nil,Modifies,Nil,stmt)
-          firingRules += firingRule
+          actorFiringRulesNoPrio += (ca -> firingRuleNoPrio)
+          actorFiringRulesPrio += (ca -> firingRulePrio)
         }
-        case _ => 
       }
+      nwFiringRules ++= actorFiringRulesPrio.values
     }
     
+    
+    
     // Network action exit
-    val firingNeg = Boogie.UnaryExpr("!",firingRules.reduceLeft((a,b) => a || b)) 
+    val firingNeg = Boogie.UnaryExpr("!", nwFiringRules.reduceLeft((a,b) => a || b)) 
     val exitStmt =
       procVars.toList:::
       cInitAssumes:::
@@ -521,9 +543,9 @@ class Translator(implicit bvMode: Boolean) {
       networkRenamings: Map[String,String], // Channels and entities
       cInits: List[Boogie.Assume],
       chInvs: List[(ChannelInvariant,Boogie.Expr)],
-      //boogieProcVars: List[Boogie.LocalVar], 
       sourceMap: Map[PortRef,List[String]], 
-      targetMap: Map[PortRef,String]): (List[Boogie.Stmt],List[Boogie.LocalVar],Boogie.Expr) = {
+      targetMap: Map[PortRef,String],
+      priorityGuard: List[Boogie.Expr]): (List[Boogie.Stmt],List[Boogie.LocalVar],Boogie.Expr,Boogie.Expr) = {
     
     val actor = instance.actor
     val asgn = new ListBuffer[Boogie.Stmt]()
@@ -546,13 +568,6 @@ class Translator(implicit bvMode: Boolean) {
     asgn ++= cInits // Assumptions about initial state of channels
     asgn ++= (for ((_,chi) <- chInvs) yield bAssume(chi))  // Assume channel invariants
     
-//    val actorVarRenames = actorVars.map(av => {  // Add actor variables to variable declarations and renaming scheme
-//      val newName = "ActorVar"+Sep+av.id
-//      //newVars += bLocal(newName,type2BType(av.typ))
-//      (av.id,newName)
-//      //val declId = Id(av.id); declId.typ = av.typ
-//      //renameMap = renameMap + (declId -> Id(newName))
-//    }).toMap
     
     val actorRenamings = networkRenamings ++ actorParamRenames //++ actorVarRenames
     
@@ -588,8 +603,6 @@ class Translator(implicit bvMode: Boolean) {
       val newName = "ActionVar"+Sep+av.id
       newVars += bLocal(newName,type2BType(av.typ))
       (av.id,newName)
-      //val declId = Id(av.id); declId.typ = av.typ
-      //renameMap = renameMap + (declId -> Id(newName))
     }).toMap
     
     val renamedGuard = action.guard match {
@@ -624,11 +637,20 @@ class Translator(implicit bvMode: Boolean) {
     asgn += bAssume(stateInv)
     
     firingConds ++= stateGuards
-    val firingRule = {
-      if (!firingConds.isEmpty) firingConds.reduceLeft((a,b) => a && b) 
+    val firingCondsWithoutPrio = firingConds.toList
+    val firingCondsWithPrio = (priorityGuard map { x: Boogie.Expr => Boogie.UnaryExpr("!",x) }) ::: firingCondsWithoutPrio
+    
+    val firingRuleWithPrio = {
+      if (!firingCondsWithPrio.isEmpty) firingCondsWithPrio.reduceLeft((a,b) => a && b) 
       else Boogie.BoolLiteral(true)
     }
-    asgn += bAssume(firingRule)
+    
+    val firingRuleWithoutPrio = {
+      if (!firingCondsWithoutPrio.isEmpty) firingCondsWithoutPrio.reduceLeft((a,b) => a && b) 
+      else Boogie.BoolLiteral(true)
+    }
+    
+    asgn += bAssume(firingRuleWithPrio)
     
     for (ActorInvariant(e,_) <- actor.actorInvariants) {
       asgn += bAssume(transExpr(e)(actorRenamings))
@@ -637,9 +659,6 @@ class Translator(implicit bvMode: Boolean) {
     for (ipat <- action.inputPattern) {
       val cId = targetMap(PortRef(Some(instance.id),ipat.portId))
       for (v <- ipat.vars) {
-        //val inVar = ipat.portId + Sep + v.id
-        //renameMap = renameMap + (v -> Id(inVar))
-        //newVars += bLocal(inVar,type2BType(v.typ))
         asgn += Boogie.Assign(Boogie.VarExpr(patternVarRenamings(v.id)),bChannelIdx(cId,/*bStep(cId)+*/bRead(cId)))
         asgn += Boogie.Assign(bRead(cId),bRead(cId) plus bInt(1))
         asgn += Boogie.Assign(bCredit(cId),bCredit(cId) minus bInt(1))
@@ -647,13 +666,11 @@ class Translator(implicit bvMode: Boolean) {
     }
  
     for (pre <- action.requires) {
-      //val renamedPre = IdToIdReplacer.visitExpr(pre)(renameMap)
       asgn += bAssert(
           transExpr(pre)(actionRenamings),pre.pos,
           "Precondition might not hold for instance at " + instance.pos)
     }
     for (post <- action.ensures) {
-      //val renamedPost = IdToIdReplacer.visitExpr(post)(renameMap)
       asgn += bAssume(transExpr(post)(actionRenamings))
     }
     for (opat <- action.outputPattern) {
@@ -684,7 +701,7 @@ class Translator(implicit bvMode: Boolean) {
       bAssert(bChi,chi.pos,msg)
     })
             
-    (asgn.toList, newVars.toList, firingRule)
+    (asgn.toList, newVars.toList, firingRuleWithPrio, firingRuleWithoutPrio)
   }
   
   
