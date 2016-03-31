@@ -14,7 +14,7 @@ import java.io.File
 import scala.language.postfixOps
 
 class Parser extends StandardTokenParsers {
-  
+    
   def parseFile(file: File) = 
     phrase(programUnit)(new lexical.Scanner(new PagedSeqReader(PagedSeq fromFile file)))
   def Semi = ";" ?
@@ -38,7 +38,8 @@ class Parser extends StandardTokenParsers {
   lexical.reserved += ("actor", "network", "unit", "action", "true", "false", "int", "bool", "uint", "size", 
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
-                       "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority"
+                       "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
+                       "free"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -138,12 +139,14 @@ class Parser extends StandardTokenParsers {
     case exps => exps
   })
   
-  def actorInvDecl = positioned(("invariant" ~> expression) ^^ {
-    case expr => ActorInvariant(expr,false)
+  def actorInvDecl = positioned(( opt("free") ~ "invariant" ~ expression) ^^ {
+    case None ~ _ ~ expr => ActorInvariant(Assertion(expr,false),false)
+    case Some(_) ~ _ ~ expr => ActorInvariant(Assertion(expr,true),false)
   })
   
-  def chInvDecl = positioned(("chinvariant" ~> expression) ^^ {
-    case expr => ChannelInvariant(expr,false)
+  def chInvDecl = positioned(( opt("free") ~ "chinvariant" ~ expression) ^^ {
+    case None ~ _ ~ expr => ChannelInvariant(Assertion(expr,false),false)
+    case Some(_) ~ _ ~ expr => ChannelInvariant(Assertion(expr,true),false)
   })
   
   def varDecl = positioned((typeName ~ ident ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {

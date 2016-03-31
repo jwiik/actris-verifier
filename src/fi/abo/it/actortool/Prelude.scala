@@ -69,6 +69,8 @@ const unique this#: Actor;
 type List a = [@inttype@]a;
 var AT#intlst: List @inttype@;
 
+function AT#Min(x:int, y: int): int { if x <= y then x else y }
+
 """
 }
 

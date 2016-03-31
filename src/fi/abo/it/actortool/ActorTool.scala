@@ -56,7 +56,7 @@ object ActorTool {
     var aTiming = 2
     var aInferModules = List("default")
     var aBVMode = false
-    
+    var aSoundnessChecks = false
     
     lazy val help = {
       "actortool [option] <filename>+\n"

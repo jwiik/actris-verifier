@@ -139,7 +139,7 @@ object Resolver {
             case ac: Action => 
               resolveAction(ctx,ac,false)
               actions += ac
-            case ActorInvariant(e,_) => resolveExpr(ctx,e,BoolType)
+            case ActorInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
             case ci: ChannelInvariant =>
               return Errors(List((ci.pos, "Basic actors cannot have channel invariants")))
             case e: Entities =>
@@ -219,8 +219,8 @@ object Resolver {
               }
               case e: Entities =>  // Already handled
               case s: Structure => // Already handled 
-              case ActorInvariant(e,_) => resolveExpr(ctx,e,BoolType)
-              case ChannelInvariant(e,_) => resolveExpr(ctx,e,BoolType)
+              case ActorInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
+              case ChannelInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
               case d: Declaration => return Errors(List((d.pos, "Networks cannot have declarations")))
               case sch: Schedule => return Errors(List((sch.pos,"Networks cannot have action schedules")))
               case sch: Priority => return Errors(List((sch.pos,"Networks cannot have action priorities")))
@@ -530,6 +530,7 @@ object Resolver {
       case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("prev",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("tokens",params) => resolveDelayFunction(ctx, fa)
+      case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType.default,IntType.default,IntType.default))
       case fa@FunctionApp("state",params) => {
         if (params.size != 2) {
           ctx.error(fa.pos, "Expected two arguments")
@@ -756,6 +757,20 @@ object Resolver {
 //      ctx.error(fa.parameters(2).pos,"Expected: " + contentType + "found: " + initType.id)
 //    }
     BoolType
+  }
+  
+  def resolveSimpleFunction(ctx: Context, fa: FunctionApp, signature: List[Type]): Type = {
+    if (signature.size-1 != fa.parameters.size) {
+      ctx.error(fa.pos,"Function " + fa.name + " takes " + (signature.size-1) + " arguments")
+    }
+    val paramSig = signature.take(signature.size-1)
+    for ((sig,arg) <- (paramSig zip fa.parameters)) {
+      val argType = resolveExpr(ctx, arg)
+      if (sig != argType) ctx.error(arg.pos,"Wrong type " + argType + " for argument " + arg)
+      
+    }
+    fa.typ = signature.last
+    fa.typ
   }
   
   def isConstant(ctx: Context, id: Id) = id match {

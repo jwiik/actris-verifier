@@ -71,8 +71,6 @@ sealed case class BasicActor(
     extends Actor(annotations,id,parameters,inports,outports,members) {
   
   override def isActor = true
-  
-
 }
 
 sealed case class Network(
@@ -92,10 +90,10 @@ sealed case class Network(
   
   def channelInvariants = _inferredChannelInvariants:::userDefinedChannelInvariants
   
-  def addChannelInvariant(chi: Expr) { addChannelInvariants(List(chi)) }
+  def addChannelInvariant(chi: Expr, free: Boolean) { addChannelInvariants(List(chi), free) }
   
-  def addChannelInvariants(chis: List[Expr]) {
-    val newInvariants = chis map { x => ChannelInvariant(x,true) }
+  def addChannelInvariants(chis: List[Expr], free: Boolean) {
+    val newInvariants = chis map { x => ChannelInvariant(Assertion(x,free),true) }
     _inferredChannelInvariants = _inferredChannelInvariants:::newInvariants
   }
   
@@ -174,12 +172,18 @@ sealed case class Declaration(val id: String, val typ: Type,
   override def isDeclaration = true
 }
 
-sealed case class ActorInvariant(val expr: Expr, val generated: Boolean) extends Member {
-  override def isActorInvariant = true
+sealed case class Assertion(val expr: Expr, val free: Boolean) extends ASTNode {
+  
 }
 
-sealed case class ChannelInvariant(val expr: Expr, val generated: Boolean) extends Member {
+sealed case class ActorInvariant(val assertion: Assertion, val generated: Boolean) extends Member {
+  override def isActorInvariant = true
+  def expr = assertion.expr
+}
+
+sealed case class ChannelInvariant(val assertion: Assertion, val generated: Boolean) extends Member {
   override def isChannelInvariant = true
+  def expr = assertion.expr
 }
 
 sealed case class FunctionDecl(val name: String, val inputs: List[Declaration], val output: Type, val expr: Expr) extends Member {
@@ -432,8 +436,16 @@ sealed case class IntType(override val size: Int) extends AbstractIntType("int",
   override def isSignedInt = true
 }
 
+object IntType {
+  def default = IntType(32)
+}
+
 sealed case class UintType(override val size: Int) extends AbstractIntType("uint", size) {
   override def isUnsignedInt = true
+}
+
+object UintType {
+  def default = UintType(32)
 }
 
 case object BoolType extends Type("bool") {

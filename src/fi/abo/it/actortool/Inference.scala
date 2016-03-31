@@ -44,17 +44,18 @@ object StaticProperties extends InferenceModule {
   override val name = "basic-wf"
   
   def network(n: Network)(implicit ctx: Context) {
+    val soundnessChecks = false
     for (m <- n.members) m match {
       case Structure(connections) => {
         for (c <- connections) {
-          n.addChannelInvariant(AtMost(lit(0),rd(c.id)))
-          n.addChannelInvariant(AtMost(lit(0),urd(c.id)))
+          n.addChannelInvariant(AtMost(lit(0),rd(c.id)),!soundnessChecks)
+          n.addChannelInvariant(AtMost(lit(0),urd(c.id)),!soundnessChecks)
           c.from match {
-            case PortRef(None,x) => n.addChannelInvariant(Eq(tot(c.id),initial(c.id)))
+            case PortRef(None,x) => n.addChannelInvariant(Eq(tot(c.id),initial(c.id)),!soundnessChecks)
             case _ =>
           }
           c.to match {
-            case PortRef(None,x) => n.addChannelInvariant(Eq(rd(c.id),lit(0)))
+            case PortRef(None,x) => n.addChannelInvariant(Eq(rd(c.id),lit(0)),!soundnessChecks)
             case _ =>
           }
         }
@@ -81,7 +82,7 @@ object NWPreToInvariant extends InferenceModule {
         }
         val replMap = replacements.toMap
         val renamedReqs = action.requires map { p => IdReplacer.visitExpr(p)(replMap) } 
-        n.addChannelInvariants(renamedReqs)
+        n.addChannelInvariants(renamedReqs,false)
       }
     }
   }
@@ -192,8 +193,8 @@ object SDFClass extends InferenceModule {
         }
       } // for
     } // for
-    n.addChannelInvariants(countInvariants.toList)
-    n.addChannelInvariants(valueInvariants.toList)
+    n.addChannelInvariants(countInvariants.toList, false)
+    n.addChannelInvariants(valueInvariants.toList, false)
   } // def network
   
 }
