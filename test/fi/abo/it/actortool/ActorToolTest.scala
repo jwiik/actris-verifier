@@ -22,6 +22,7 @@ class ActorToolTestSuite extends FunSuite {
       val NoBplFile = true
       val BplFile = "out.bpl"
       val Timing = 2
+      val FixedBaseLength = 0
       val InferModules = List("default")
       val BVMode = false
     }

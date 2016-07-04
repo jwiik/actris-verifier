@@ -6,6 +6,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.File
 import java.io.FileWriter
+//import akka.actor.ActorSystem
 
 import scala.util.parsing.input.Position
 
@@ -38,9 +39,12 @@ object ActorTool {
     val BplFile: String
     val Timing: Int
     val BVMode: Boolean
+    val FixedBaseLength: Int
     val InferModules: List[String]
     final lazy val help = "Usage: actortool [option] <filename>+\n"
   }
+  
+  //val actorSystem = ActorSystem("actortool")
   
   def parseCommandLine(args: Array[String]): Option[CommandLineParameters] = {
 
@@ -57,6 +61,7 @@ object ActorTool {
     var aInferModules = List("default")
     var aBVMode = false
     var aSoundnessChecks = false
+    var aFixedBaseLength = 0
     
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -106,6 +111,20 @@ object ActorTool {
             case None => reportCommandLineError("parameter " + param + " takes a comma-separated list as parameter")
           }
         }
+        case Param("fixedBaseLength") => {
+          value match {
+            case Some(v) =>
+              try aFixedBaseLength = v.toInt
+              catch {
+                case e: NumberFormatException =>
+                  reportCommandLineError("parameter fixedBaseLength takes an integer as argument.")
+                  return None
+              }
+            case None =>
+              reportCommandLineError("parameter fixedBaseLength takes an integer as argument.")
+              return None
+          }
+        }
         case Param(x) => 
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -142,6 +161,7 @@ object ActorTool {
         val BplFile = aBplFile
         val Timing = aTiming
         val InferModules = aInferModules
+        val FixedBaseLength = aFixedBaseLength
         val BVMode = aBVMode
     })
   }
@@ -219,7 +239,7 @@ object ActorTool {
     
     if (!params.DoTranslate) return
     
-    val translator = new Translator()(params.BVMode);
+    val translator = new Translator(params.FixedBaseLength, params.BVMode);
     val bplProg =
       try {
         translator.translateProgram(program);

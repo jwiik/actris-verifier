@@ -14,11 +14,11 @@ object Resolver {
     def error(p: Position, msg: String)
     def lookUp(id: String): Option[Declaration] = None
     def currentAccessedElement: Option[Expr] = None
-    def actors = Map.empty[String,Actor]
+    def actors = Map.empty[String,DFActor]
     def lookupFunction(name: String): Option[FunctionDecl] = None
   }
   
-  sealed class RootContext(val parentCtx: Context, override val actors: Map[String,Actor]) extends Context(parentCtx) {
+  sealed class RootContext(val parentCtx: Context, override val actors: Map[String,DFActor]) extends Context(parentCtx) {
     val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
     override def lookUp(id: String): Option[Declaration] = None
@@ -38,13 +38,13 @@ object Resolver {
       val functions: Map[String,FunctionDecl]) extends ChildContext(parentCtx,vars) {
     
     private var channels = Map[String,Connection]()
-    private var entities = Map[String,Actor]()
+    private var entities = Map[String,DFActor]()
     
     def addChannels(channels: Map[String,Connection]) = {
       this.channels = channels
     }
     
-    def addEntities(entities: Map[String,Actor]) = {
+    def addEntities(entities: Map[String,DFActor]) = {
       this.entities = entities
     }
     
@@ -79,7 +79,7 @@ object Resolver {
   def resolve(prog: List[TopDecl]): ResolverOutcome = {
     var decls = Map[String,TopDecl]()
     
-    val actors: scala.collection.mutable.Map[String,Actor] = new scala.collection.mutable.HashMap()
+    val actors: scala.collection.mutable.Map[String,DFActor] = new scala.collection.mutable.HashMap()
     val units: scala.collection.mutable.Map[String,DataUnit] = new scala.collection.mutable.HashMap()
     
     for (decl <- prog) {
@@ -164,7 +164,7 @@ object Resolver {
         case n: Network => {
           var inports = Map[String,InPort]()
           var outports = Map[String,OutPort]()
-          var entities: Map[String,Actor] = null
+          var entities: Map[String,DFActor] = null
           for (p <- n.inports) {
             inports = inports + (p.id -> p)
           }
@@ -332,8 +332,8 @@ object Resolver {
     }
   }
   
-  def resolveEntities(ctx: ActorContext, e: Entities): Map[String,Actor] = {
-    val instances = scala.collection.mutable.HashMap[String,Actor]()
+  def resolveEntities(ctx: ActorContext, e: Entities): Map[String,DFActor] = {
+    val instances = scala.collection.mutable.HashMap[String,DFActor]()
     for (instance <- e.entities) {
       if (!(ctx.parentCtx.actors contains instance.actorId)) {
         ctx.error(instance.pos, "Unknown actor " + instance.actorId)
@@ -367,7 +367,7 @@ object Resolver {
     instances.toMap
   }
   
-  def resolveStructure(ctx: ActorContext, entities: Map[String,Actor], structure: Structure) = {
+  def resolveStructure(ctx: ActorContext, entities: Map[String,DFActor], structure: Structure) = {
     var channels = Map[String,Connection]()
     for (c <- structure.connections) {
       val from = c.from match {

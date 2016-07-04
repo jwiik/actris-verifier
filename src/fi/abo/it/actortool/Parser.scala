@@ -123,12 +123,14 @@ class Parser extends StandardTokenParsers {
       case actions => Priority(actions)
     })
   
-  def entityDecl = positioned(ident ~ ("=" ~> (ident ~ paramList)) ^^ {
-    case name ~ (actorId ~ params) => Instance(name,actorId,params)
+  def entityDecl = positioned(opt(annotation) ~ ident ~ ("=" ~> (ident ~ paramList)) ^^ {
+    case None ~ name ~ (actorId ~ params) => Instance(name,actorId,params,Nil)
+    case Some(annot) ~ name ~ (actorId ~ params) => Instance(name,actorId,params,List(annot))
   })
   
-  def connection = positioned(ident ~ (":" ~> portRef ~ ("-->" ~> portRef)) ^^ {
-    case id ~ (from ~ to) => Connection(id,from,to)
+  def connection = positioned(opt(annotation) ~ ident ~ (":" ~> portRef ~ ("-->" ~> portRef)) ^^ {
+    case None ~ id ~ (from ~ to) => Connection(id,from,to,Nil)
+    case Some(annot) ~ id ~ (from ~ to) => Connection(id,from,to,List(annot))
   })
   
   def transition = positioned(ident ~ ("(" ~> ident <~ ")") ~ ("-->" ~> ident) ^^ {

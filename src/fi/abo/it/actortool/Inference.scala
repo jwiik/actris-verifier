@@ -17,7 +17,8 @@ object Elements {
   def rd(id: String) = FunctionApp("rd",List(Id(id): Expr))
   def urd(id: String) = FunctionApp("urd",List(Id(id): Expr))
   def tot(id: String) = FunctionApp("tot",List(Id(id): Expr))
-  def initial(id: String) = FunctionApp("initial",List(Id(id): Expr))
+  //def initial(id: String) = FunctionApp("initial",List(Id(id): Expr))
+  def limit(id: String) = FunctionApp("limit",List(Id(id): Expr))
   def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(32); li}
 } 
 
@@ -51,7 +52,7 @@ object StaticProperties extends InferenceModule {
           n.addChannelInvariant(AtMost(lit(0),rd(c.id)),!soundnessChecks)
           n.addChannelInvariant(AtMost(lit(0),urd(c.id)),!soundnessChecks)
           c.from match {
-            case PortRef(None,x) => n.addChannelInvariant(Eq(tot(c.id),initial(c.id)),!soundnessChecks)
+            case PortRef(None,x) => n.addChannelInvariant(AtMost(tot(c.id),limit(c.id)),!soundnessChecks)
             case _ =>
           }
           c.to match {
@@ -103,7 +104,7 @@ object SDFClass extends InferenceModule {
     val delayedChannels =  {
       val buffer = new ListBuffer[(String,Expr)]
       TokensDefFinder.visitExpr(n.actorInvariants map {nwi => nwi.expr})(buffer);
-      (buffer map {case (ch,amount) => (ch,amount)}).toMap
+      buffer.toMap
     }
     
     val sdfAnnotEnts = 

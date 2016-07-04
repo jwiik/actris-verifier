@@ -2,10 +2,8 @@ package fi.abo.it.actortool
 
 import scala.util.parsing.input.Positional
 
-trait ASTNode extends Positional
-
-trait Annotatble {
-  val annotations: List[Annotation] 
+trait ASTNode extends Positional {
+  val annotations: List[Annotation] = Nil
   def hasAnnotation(name: String) = annotations.exists { a => a.name == name }
 }
 
@@ -23,11 +21,11 @@ sealed case class DataUnit(
   override def isUnit = true
 }
 
-sealed abstract class Actor(
+sealed abstract class DFActor(
     override val annotations: List[Annotation],
     override val id: String, val parameters: List[Declaration],
     val inports: List[InPort], val outports: List[OutPort], 
-    val members: List[Member]) extends TopDecl(id) with Annotatble {
+    val members: List[Member]) extends TopDecl(id) {
   
   def fullName: String = id
   
@@ -68,7 +66,7 @@ sealed case class BasicActor(
     override val id: String, override val parameters: List[Declaration], 
     override val inports: List[InPort], override val outports: List[OutPort], 
     override val members: List[Member]) 
-    extends Actor(annotations,id,parameters,inports,outports,members) {
+    extends DFActor(annotations,id,parameters,inports,outports,members) {
   
   override def isActor = true
 }
@@ -79,7 +77,7 @@ sealed case class Network(
     override val parameters: List[Declaration], 
     override val inports: List[InPort], 
     override val outports: List[OutPort], 
-    override val members: List[Member]) extends Actor(annotations,id,parameters,inports,outports,members) {
+    override val members: List[Member]) extends DFActor(annotations,id,parameters,inports,outports,members) {
   
   override def isNetwork = true
   
@@ -199,21 +197,21 @@ sealed case class Structure(val connections: List[Connection]) extends Member {
   
   def getInputChannel(portId: String) = connections.find {
     x => x match {
-      case Connection(_,PortRef(None,p),_) => p == portId
+      case Connection(_,PortRef(None,p),_,_) => p == portId
       case _ => false
     }
   }
   
   def getOutputChannel(portId: String) = connections.find {
     x => x match {
-      case Connection(_,_,PortRef(None,p)) => p == portId
+      case Connection(_,_,PortRef(None,p),_) => p == portId
       case _ => false
     }
   }
   
   def incomingConnection(entityId: String, portId: String) = connections.find { 
     x => x match {
-      case Connection(_,_,PortRef(Some(e),p)) => entityId == e && portId == p
+      case Connection(_,_,PortRef(Some(e),p),_) => entityId == e && portId == p
       case _ => false
     } 
   }
@@ -221,7 +219,7 @@ sealed case class Structure(val connections: List[Connection]) extends Member {
   def outgoingConnections(entityId: String, portId: String) = {
     val cons = connections.filter { 
       x => x match {
-        case Connection(_,PortRef(Some(e),p),_) => entityId == e && portId == p
+        case Connection(_,PortRef(Some(e),p),_,_) => entityId == e && portId == p
         case _ => false
       } 
     }
@@ -246,13 +244,20 @@ sealed case class Priority(val order: List[String]) extends Member {
   
 }
 
-sealed case class Instance(val id: String, val actorId: String, val arguments: List[Expr]) extends ASTNode {
-  var actor: Actor = null
+sealed case class Instance(
+    val id: String, val actorId: String, val arguments: List[Expr], 
+    override val annotations: List[Annotation]) extends ASTNode {
+
+  var actor: DFActor = null
 }
 
-sealed case class Connection(val id: String, val from: PortRef, val to: PortRef) extends ASTNode {
+sealed case class Connection(
+    val id: String, val from: PortRef, val to: PortRef, 
+    override val annotations: List[Annotation]) extends ASTNode {
+  
   var typ: Type = null
 }
+
 
 sealed case class Transition(action: String, from: String, to: String) extends ASTNode
 
@@ -466,7 +471,7 @@ case object UnknownType extends Type("unknown") {
 case class ChanType(contentType: Type) extends IndexedType("Chan",contentType,IntType(32)) {
   override def isChannel = true
 }
-case class ActorType(actor: Actor) extends Type("actor") {
+case class ActorType(actor: DFActor) extends Type("actor") {
   override def isActor = true
 }
 case class ListType(contentType: Type, val size: Int) extends IndexedType(

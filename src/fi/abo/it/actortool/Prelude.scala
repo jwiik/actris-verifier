@@ -61,11 +61,12 @@ type State;
 var M: MType;
 var C: CType;
 var R: CType;
-var C#init: CType;
+var L: CType;
 var St: [Actor]State;
+const Base#L: int;
+axiom 1 <= Base#L;
 
 const unique this#: Actor;
-
 type List a = [@inttype@]a;
 var AT#intlst: List @inttype@;
 

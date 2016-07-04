@@ -12,12 +12,14 @@ import fi.abo.it.actortool.Boogie.UnaryExpr
 
 class TranslationException(val pos: Position, val msg: String) extends Exception(msg)
 
-class Translator(implicit bvMode: Boolean) {
+class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
   
   final val Sep = "#"
   final val Modifies = List("C","R","M","St")
   
-  
+  object Annot {
+    final val Error = "error"
+  }
   
   object Uniquifier {
     private var i = -1
@@ -31,12 +33,13 @@ class Translator(implicit bvMode: Boolean) {
   
   object BMap extends Enumeration {
     type BMap = String
-    final val CInit = "C#init"
+    final val L = "L"
     final val C = "C"
     final val R = "R"
     final val M = "M"
     final val St = "St"
     final val This = "this#"
+    final val BaseL = "Base#L"
   }
   
   object BType {
@@ -79,16 +82,21 @@ class Translator(implicit bvMode: Boolean) {
   import Helper._
   import AstElement._
   
-  var currActor: Actor = null
-  var topDecls: Map[String,TopDecl] = null
-
   def translateProgram(decls: List[TopDecl]): List[Boogie.Decl] = {
-    topDecls = (for (d <- decls.filter(a => a.isInstanceOf[Actor])) yield (d.id, d)).toMap
-    decls flatMap {
+    
+    // Add axioms and assumptions
+    val initDecls =
+      if (fixedBaseLength > 0) List(Boogie.Axiom(bBaseL ==@ bInt(fixedBaseLength)))
+      else Nil
+      
+    val bProgram = decls flatMap {
       case a: BasicActor => translateActor(a)
       case n: Network => translateNetwork(n)
       case u: DataUnit => Nil
     }
+    
+    return initDecls:::bProgram
+      
   }
     
   def translateActor(actor: BasicActor): List[Boogie.Decl] = {
@@ -164,15 +172,15 @@ class Translator(implicit bvMode: Boolean) {
       }
     } // end for
     
-    val nonInitActions = actions.filter { a => !a.init }
-    if (nonInitActions.size > 1) {
-      val localVarDecls = localVarsMap.values.toList
-      val assertion = bAssert(Boogie.UnaryExpr("!", guards.reduceLeft((a,b) => (a && b))),actor.pos,
-          "The actions might not have mutually exclusive guards")
-      val stmt = localVarDecls:::portTokenVars:::List(assertion)
-      
-      decls += Boogie.Proc(Uniquifier.get(prefix+Sep+"GuardWD"),Nil,Nil,Modifies,Nil,stmt)
-    }
+//    val nonInitActions = actions.filter { a => !a.init }
+//    if (nonInitActions.size > 1) {
+//      val localVarDecls = localVarsMap.values.toList
+//      val assertion = bAssert(Boogie.UnaryExpr("!", guards.reduceLeft((a,b) => (a && b))),actor.pos,
+//          "The actions might not have mutually exclusive guards")
+//      val stmt = localVarDecls:::portTokenVars:::List(assertion)
+//      
+//      decls += Boogie.Proc(Uniquifier.get(prefix+Sep+"GuardWD"),Nil,Nil,Modifies,Nil,stmt)
+//    }
     
     bActorStates:::decls.toList
   }
@@ -400,8 +408,9 @@ class Translator(implicit bvMode: Boolean) {
     
     val renamings = networkRenamings ++ actionRenamings.toMap
     
-    val cInitAssumesBuffer = new ListBuffer[Boogie.Assume]
-    val readAssumesBuffer = new ListBuffer[Boogie.Assume]
+    val limitAssumesBuffer = new ListBuffer[Boogie.Assume]
+    val limitLoopCondBuffer = new ListBuffer[Boogie.Expr]
+    val assumesBuffer = new ListBuffer[Boogie.Assume]
     
     for (e <- entities) {
       constDecls += Boogie.Const(networkRenamings(e.id),true,BType.Actor)
@@ -410,16 +419,20 @@ class Translator(implicit bvMode: Boolean) {
       constDecls += Boogie.Const(networkRenamings(c.id),true,BType.Chan(type2BType(c.typ)))
       c.from match {
         case PortRef(None,p) =>
-          cInitAssumesBuffer += bAssume(bCredInit(networkRenamings(c.id)) ==@ bInt(nwa.portInputCount(p)))
-        case PortRef(_,_) => 
-          cInitAssumesBuffer += bAssume(bCredInit(networkRenamings(c.id)) ==@ bInt(0))
+          limitAssumesBuffer += bAssume(bCredInit(networkRenamings(c.id)) ==@ bInt(nwa.portInputCount(p))*bBaseL)
+          limitLoopCondBuffer += bTotal(networkRenamings(c.id)) < bCredInit(networkRenamings(c.id))
+        //case PortRef(_,_) => 
+        //  cInitAssumesBuffer += bAssume(bCredInit(networkRenamings(c.id)) ==@ bInt(0))
+        case _ =>
       }
-      readAssumesBuffer += bAssume(bRead(networkRenamings(c.id)) ==@ bInt(0))
+      assumesBuffer += bAssume(bRead(networkRenamings(c.id)) ==@ bInt(0))
+      assumesBuffer += bAssume(bCredit(networkRenamings(c.id)) ==@ bInt(0))
     }
     
     val constDecl = constDecls.toList
-    val cInitAssumes = cInitAssumesBuffer.toList
-    val readAssumes = readAssumesBuffer.toList
+    val cInitAssumes = limitAssumesBuffer.toList
+    val rcAssumes = assumesBuffer.toList
+    val limitLoopConds = limitLoopCondBuffer.toList
     
     var replacements = Map[Id,IndexAccessor]()
     for (ipat <- nwa.inputPattern) {
@@ -473,9 +486,9 @@ class Translator(implicit bvMode: Boolean) {
     val entryStmt = 
       procVars.toList :::
       cInitAssumes :::
-      readAssumes :::
+      rcAssumes :::
       //stepAssumes :::
-      List(bAssume(VarExpr("C#init") ==@ VarExpr("C"))) :::
+      //List(bAssume(VarExpr("C#init") ==@ VarExpr("C"))) :::
       (for (nwi <- nwInvs) yield Inhalator.visit(nwi, networkRenamings)).flatten :::
       nwPre:::
       (for ((chi,bChi) <- chInvs) yield {
@@ -537,11 +550,13 @@ class Translator(implicit bvMode: Boolean) {
     // Network action exit
     //val firingNeg = Boogie.UnaryExpr("!", nwFiringRules.reduceLeft((a,b) => a || b))
     val firingNegAssumes = nwFiringRuleList map { fr => bAssume(Boogie.UnaryExpr("!",fr)) }
-        
+    val limitNegAssumes = limitLoopConds map { c => bAssume(Boogie.UnaryExpr("!",c)) } 
+    
     val exitStmt =
       procVars.toList:::
       cInitAssumes:::
       (for ((_,chi) <- chInvs) yield bAssume(chi)):::
+      limitNegAssumes:::
       firingNegAssumes:::
       outputs:::
       (nwPost.map { case (pos,q) => bAssert(q,pos,"Network action postcondition might not hold") }) :::
@@ -557,7 +572,7 @@ class Translator(implicit bvMode: Boolean) {
                 ),
                 Boogie.Assign(
                   bCredit(Boogie.VarExpr(name)),
-                  bCredit(Boogie.VarExpr(name)) - bInt(nwa.portOutputCount(port))
+                  bCredit(Boogie.VarExpr(name)) - (bInt(nwa.portOutputCount(port))*bBaseL)
                 )
               )
           }
@@ -570,8 +585,10 @@ class Translator(implicit bvMode: Boolean) {
         c.to match {
           case PortRef(None,p) =>
             bAssert(bCredit(networkRenamings(c.id)) ==@ bInt(0),nwa.pos,"The network might not produce the specified number of tokens on output " + p)
-          case PortRef(_,_) => 
+          case PortRef(_,_) => {
+            
             bAssert(bCredit(networkRenamings(c.id)) ==@ bInt(0),nwa.pos,"The network might leave unread tokens on channel " + c.id)
+          }
        }
       })
     val exitProc = Boogie.Proc(Uniquifier.get(prefix+nwa.fullName+"#exit"),Nil,Nil,Modifies,Nil,exitStmt)
@@ -841,7 +858,7 @@ class Translator(implicit bvMode: Boolean) {
           case "rd" => bRead(transExpr(params(0)))
           case "urd" => bCredit(transExpr(params(0)))
           case "tot" => bRead(transExpr(params(0))) plus bCredit(transExpr(params(0)))
-          case "initial" => bCredInit(transExpr(params(0)))
+          case "limit" => bCredInit(transExpr(params(0)))
           case "next" => 
             val ch = transExpr(params(0))
             bChannelIdx(ch,bRead(ch))
@@ -986,8 +1003,8 @@ class Translator(implicit bvMode: Boolean) {
     def bCredit(connName: String) = (VarExpr(BMap.C) apply VarExpr(connName))
     def bCredit(channel: Boogie.Expr) = (VarExpr(BMap.C) apply channel)
     
-    def bCredInit(connName: String) = (VarExpr(BMap.CInit) apply VarExpr(connName))
-    def bCredInit(channel: Boogie.Expr) = (VarExpr(BMap.CInit) apply channel)
+    def bCredInit(connName: String) = (VarExpr(BMap.L) apply VarExpr(connName))
+    def bCredInit(channel: Boogie.Expr) = (VarExpr(BMap.L) apply channel)
     
     def bRead(connName: String) = (VarExpr(BMap.R) apply VarExpr(connName))
     def bRead(channel: Boogie.Expr) = (VarExpr(BMap.R) apply channel)
@@ -1003,6 +1020,7 @@ class Translator(implicit bvMode: Boolean) {
     def bState(id: String) = VarExpr(BMap.St) apply VarExpr(id)
     def bState(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
     val bThis = bState(BMap.This)
+    val bBaseL = VarExpr(BMap.BaseL)
     
     def bFun(id: String, arg: Boogie.Expr*) = Boogie.FunctionApp(id,arg.toList)
     
