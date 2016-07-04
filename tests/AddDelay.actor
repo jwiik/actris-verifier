@@ -11,7 +11,13 @@ end
 
 network Net int in ==> int out :
   
+  //spec in:[x1,x2] ==> out:[y]
+    //requires 0 <= x1 && 0 <= x2
+    // (forall i1, i2 :: i1 % 2 = 0 && i2 = i1+1 ==> 0 <= in[i1] && 0 <= in[i2])
+  //end
+  
   action in:[x] ==> out:[y] 
+    requires 0 < x
     ensures y = prev(c)+x || y = x
   end
   
