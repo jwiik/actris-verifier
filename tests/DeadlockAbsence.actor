@@ -1,0 +1,31 @@
+actor Route int in1, int in2 ==> int out1, int out2 :
+  action in1:[i] ==> out2:[i] end
+  action in2:[i] ==> out1:[i] end
+end
+
+@sdf
+actor Repeat int in ==> int out :
+  action in:[i] ==> out:[i] end
+end
+
+
+network Net int in ==> int out :
+  
+  action in:[x] ==> out:[y] end
+
+  chinvariant tot(b) = rd(a)
+  chinvariant tot(d) = rd(c)
+
+  entities
+    rou = Route();
+    rep = Repeat();
+  end
+  
+  structure
+    a: in --> rou.in1;
+    b: rou.out2 --> rep.in;
+    c: rep.out --> rou.in2;
+    d: rou.out1 --> out;
+  end
+
+end

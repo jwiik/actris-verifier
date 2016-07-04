@@ -1,0 +1,14 @@
+actor Test1 int in ==> int out :
+  action in:[i] ==> out:[i+i] end
+  action  ==> out:[1] end
+end
+
+actor Test2 int in ==> int out :
+  a: action in:[i] ==> out:[i+i] end
+  b: action in:[j,k] ==> out:[j+k] end
+  
+  schedule fsm s0:
+    s0 (a) --> s1;
+    s1 (b) --> s0;
+  end
+end

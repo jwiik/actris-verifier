@@ -1,0 +1,29 @@
+actor Split int in ==> int out1, int out2 :
+  action in:[i] ==> out1:[i]
+    guard 0 <= i
+  end
+  action in:[i] ==> out2:[i]
+    guard i < 0
+  end
+end
+
+network Net int in ==> int out1, int out2 :
+  
+  action in:[i] ==> out1:[i]
+    requires 0 <= i
+  end
+  action in:[i] ==> out2:[i]
+    requires i < 0
+  end
+
+  entities
+    spl = Split();
+  end
+  
+  structure
+    a: in --> spl.in;
+    b: spl.out1 --> out1;
+    c: spl.out2 --> out2;
+  end
+
+end
