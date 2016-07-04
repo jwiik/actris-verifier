@@ -1,0 +1,112 @@
+actor F int in, bool f ==> int out :
+  n: action in:[i] ==> out:[i] end
+  fail1: action in:[i], f:[t] ==> end
+  priority fail1 > n end
+end
+
+actor Split int in ==> int out1, int out2, bool fail1, bool fail2  :
+  action in:[i] ==> out1:[i], out2:[i], fail1:[true] end
+  action in:[i] ==> out1:[i], out2:[i], fail2:[true] end
+end
+
+actor Merge int in1, int in2, int s_in ==> int out, int s_out :
+    
+  read1: action in1:[i], s_in:[s] ==> out:[i], s_out:[s+1]
+    guard s = i
+  end
+  read2: action in2:[i], s_in:[s] ==> out:[i], s_out:[s+1] 
+    guard s = i
+  end
+  discard1: action in1:[i], s_in:[s] ==> s_out:[s]
+    guard s > i
+  end
+  discard2: action in2:[i], s_in:[s] ==> s_out:[s]
+    guard s > i
+  end
+end
+
+network Net int in ==> int out :
+  
+  free invariant tokens(m,1)
+  free invariant next(m) = 0
+  
+  chinvariant (forall int i :: 0 <= i && i < tot(a) ==> a[i] = i)
+  
+  chinvariant urd(m) = 1
+  chinvariant 0 <= next(m) && next(m) <= 3
+  
+  chinvariant tot(g)+tot(h) <= rd(a) // Maximum one failed actor per input token
+  
+  chinvariant tot(b) = rd(a) // total number of tokens on b = read tokens on a
+  chinvariant tot(c) = rd(a) // total number of tokens on c = read tokens on a
+  chinvariant urd(b) >= urd(g) // If there are unread fail tokens, there must be unread data tokens also
+  chinvariant urd(c) >= urd(h) // If there are unread fail tokens, there must be unread data tokens also
+  
+  chinvariant tot(d) <= rd(b) // There are less tokens on d than has been read on b
+  chinvariant tot(e) <= rd(c) // There are less tokens on e than has been read on c
+  
+  // The tokens on a,b and c are equal
+  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> b[i] = a[i] && c[i] = a[i])
+  
+  // a, b, c are all sequences n, n+1, n+2 ...
+  chinvariant (forall int i :: 1 <= i && i < tot(a) ==> a[i] = a[i-1]+1)
+  chinvariant (forall int i :: 1 <= i && i < tot(b) ==> b[i] = b[i-1]+1)
+  chinvariant (forall int i :: 1 <= i && i < tot(c) ==> c[i] = c[i-1]+1)
+  
+  // The last token produced on d/e is lte the last token consumed on b/c
+  chinvariant tot(d) > 0 ==> d[tot(d)-1] <= prev(b)
+  chinvariant tot(e) > 0 ==> e[tot(e)-1] <= prev(c)
+  
+  // Tokens on d, e are always greater than the token before, but we may miss some
+  chinvariant (forall int i :: 1 <= i && i < tot(d) ==> d[i] > d[i-1])
+  chinvariant (forall int i :: 1 <= i && i < tot(e) ==> e[i] > e[i-1])
+  
+  //free chinvariant (forall int i, int j :: 
+  //  1 <= i && i < tot(d) && 1 <= j && j < tot(e) ==> 
+  //    (d[i] = e[j] ==> d[i-1] = d[i]-1 || e[j-1] = e[j]-1)
+  //)
+  
+  free chinvariant (forall int i :: 0 <= i && i <= min(rd(a),rd(b)) ==>
+    (exists int j :: (0 <= j && j < tot(d) && d[j] = i) || (0 <= j && j < tot(e) && e[j] = i))  
+  )
+  
+  //free chinvariant next(m) < 3 ==> urd(d) > 0 || urd(e) > 0
+  //free chinvariant urd(d) > 0 ==> next(d) <= next(m)
+  //free chinvariant urd(e) > 0 ==> next(e) <= next(m)  
+  
+  //free chinvariant urd(d) > 0 && urd(e) > 0 ==> next(d) = next(m) || next(e) = next(m)
+  
+  chinvariant (forall int i :: 0 <= i && i < rd(d) ==> d[i] < next(m))
+  chinvariant (forall int i :: 0 <= i && i < rd(e) ==> e[i] < next(m))
+  
+  free chinvariant urd(d) > 0 || urd(e) > 0 ==> next(d) = next(m) || next(e) = next(m)
+  
+  chinvariant tot(f) = next(m)
+  chinvariant (forall int i :: 0 <= i && i < tot(f) ==> f[i] = i)
+    
+  action in:[x1,x2,x3] ==> out:[y1,y2,y3]
+    requires x1 = 0 && x2 = 1 && x3 = 2
+    ensures 0 <= tot(f)
+    ensures tot(f) <= 3
+  end
+  
+  entities
+    spl = Split();
+    f1 = F();
+    f2 = F();
+    mrg = Merge();
+  end
+  
+  structure
+    a: in --> spl.in;
+    b: spl.out1 --> f1.in;
+    c: spl.out2 --> f2.in;
+    d: f1.out --> mrg.in1;
+    e: f2.out --> mrg.in2;
+    f: mrg.out --> out;
+    g: spl.fail1 --> f1.f;
+    h: spl.fail2 --> f2.f;
+    m: mrg.s_out --> mrg.s_in;
+  end
+
+end

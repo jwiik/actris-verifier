@@ -1,0 +1,43 @@
+@sdf
+actor Rep int in ==> int out :
+  action in:[i] ==> out:[i] end
+end
+
+actor UnreliableRep int in, bool err ==> int out :
+  action in:[i] ==> out:[i] end
+  action in:[i], err:[e] ==> end
+end
+
+@sdf
+actor Dupl int in ==> int out :
+  action in:[i] ==> out:[i,i] end
+end
+
+actor Dec int in ==> int out :
+  action in:[i,j] ==> out:[i] end
+  action in:[i] ==> out:[i] end
+end
+
+
+
+network Net int in, bool err ==> int out :
+
+  action in:[x], err:[e] ==> out:[y] 
+    
+  end
+  
+  entities
+    rep = UnreliableRep();
+    dup = Dupl();
+    dec = Dec();
+  end
+  
+  structure
+    a: in --> dup.in;
+    @error b: err --> rep.err;
+    c: dup.out --> rep.in;
+    d: rep.out --> dec.in;
+    e: dec.out --> out;
+  end
+
+end

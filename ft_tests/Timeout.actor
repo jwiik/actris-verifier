@@ -1,0 +1,69 @@
+@sdf
+actor Rep int in ==> int out :
+  action in:[i] ==> out:[i] end
+end
+
+@sdf
+actor Split int in ==> int out1, int out2 :
+  action in:[i] ==> out1:[i], out2:[i] end
+end
+
+
+actor Adjudicator int x1, int x2, int c_in ==> int y, int c_out :
+
+  normal: action x1:[i], x2:[j], c_in:[c] ==> y:[i], c_out:[c+1]
+    guard i = j && i = c
+  end
+  
+  timeout: action x2:[j], c_in:[c] ==> y:[j], c_out:[c+1] end
+  
+  readoff: action x1:[i], c_in:[c] ==> c_out:[c]
+    guard i < c
+  end
+  
+  priority readoff > normal > timeout end 
+  
+end
+
+network Net int in ==> int out :
+
+  action in:[x1,x2] ==> out:[y1,y2]
+    requires x1 = 0 && x2 = 1
+    ensures y1 = x1 && y2 = x2
+  end
+  
+  invariant tokens(f,1)
+  free invariant next(f) = 0
+  
+  chinvariant tot(a) <= 2
+  chinvariant (forall int i :: 1 <= i && i < tot(a) ==> a[i] > a[i-1])
+  chinvariant (forall int i :: 1 <= i && i < tot(b) ==> b[i] > b[i-1])
+  chinvariant (forall int i :: 1 <= i && i < tot(c) ==> c[i] > c[i-1])
+  chinvariant (forall int i :: 1 <= i && i < tot(d) ==> d[i] > d[i-1])
+  chinvariant (forall int i :: 1 <= i && i < tot(e) ==> e[i] > e[i-1])
+  
+  chinvariant urd(f) = 1
+  chinvariant urd(g) = rd(e)
+  chinvariant rd(e) = next(f)
+  chinvariant rd(d) <= rd(e)
+  chinvariant 0 < rd(d) && 0 < rd(e) ==> prev(d) <= prev(e) 
+  chinvariant (forall int i :: 0 <= i && i < rd(e) ==> g[i] = e[i])
+  
+  entities
+    spl = Split();
+    pri = Rep();
+    sec = Rep();
+    adj = Adjudicator();
+  end
+  
+  structure
+    a: in --> spl.in;
+    b: spl.out1 --> pri.in;
+    c: spl.out2 --> sec.in;
+    d: pri.out --> adj.x1;
+    e: sec.out --> adj.x2;
+    f: adj.c_out --> adj.c_in;
+    g: adj.y --> out;
+  end
+
+end
