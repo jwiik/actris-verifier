@@ -15,7 +15,9 @@ actor Adjudicator int x1, int x2, int c_in ==> int y, int c_out :
     guard i = j && i = c
   end
   
-  timeout: action x2:[j], c_in:[c] ==> y:[j], c_out:[c+1] end
+  timeout: action x2:[j], c_in:[c] ==> y:[j], c_out:[c+1] 
+    //requires urd(x1) = 0
+  end
   
   readoff: action x1:[i], c_in:[c] ==> c_out:[c]
     guard i < c
@@ -27,20 +29,20 @@ end
 
 network Net int in ==> int out :
 
-  action in:[x1,x2] ==> out:[y1,y2]
-    requires x1 = 0 && x2 = 1
-    ensures y1 = x1 && y2 = x2
+  action in:[x1,x2,x3] ==> out:[y1,y2,y3]
+    requires x1 = 0 && x2 = 1 && x3 = 2
+    ensures y1 = x1 && y2 = x2 && y3 = x3
   end
   
   invariant tokens(f,1)
   free invariant next(f) = 0
   
-  chinvariant tot(a) <= 2
-  chinvariant (forall int i :: 1 <= i && i < tot(a) ==> a[i] > a[i-1])
-  chinvariant (forall int i :: 1 <= i && i < tot(b) ==> b[i] > b[i-1])
-  chinvariant (forall int i :: 1 <= i && i < tot(c) ==> c[i] > c[i-1])
-  chinvariant (forall int i :: 1 <= i && i < tot(d) ==> d[i] > d[i-1])
-  chinvariant (forall int i :: 1 <= i && i < tot(e) ==> e[i] > e[i-1])
+  chinvariant tot(a) <= 3
+  //chinvariant (forall int i :: 1 <= i && i < tot(a) ==> a[i] > a[i-1])
+  //chinvariant (forall int i :: 1 <= i && i < tot(b) ==> b[i] > b[i-1])
+  //chinvariant (forall int i :: 1 <= i && i < tot(c) ==> c[i] > c[i-1])
+  //chinvariant (forall int i :: 1 <= i && i < tot(d) ==> d[i] > d[i-1])
+  //chinvariant (forall int i :: 1 <= i && i < tot(e) ==> e[i] > e[i-1])
   
   chinvariant urd(f) = 1
   chinvariant urd(g) = rd(e)
