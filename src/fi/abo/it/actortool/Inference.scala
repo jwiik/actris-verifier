@@ -81,10 +81,11 @@ object NWPreToInvariant extends InferenceModule {
           val accessor = IndexAccessor(chId,lit(i)); accessor.typ = v.typ
           replacements += ((v,accessor))
         }
-        val replMap = replacements.toMap
-        val renamedReqs = action.requires map { p => IdReplacer.visitExpr(p)(replMap) } 
-        n.addChannelInvariants(renamedReqs,false)
+        
       }
+      val replMap = replacements.toMap
+      val renamedReqs = action.requires map { p => IdReplacer.visitExpr(p)(replMap) } 
+      n.addChannelInvariants(renamedReqs,false)
     }
   }
   
