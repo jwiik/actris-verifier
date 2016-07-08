@@ -3,7 +3,7 @@
 // Copyright (C) Microsoft Corporation.  All Rights Reserved.
 //
 //-----------------------------------------------------------------------------
-package fi.abo.it.actortool;
+package fi.abo.it.actortool.boogie
 
 import scala.util.parsing.input.Position
 import scala.util.parsing.input.NoPosition

@@ -52,6 +52,10 @@ object Resolver {
     
     override def lookUp(id: String): Option[Declaration] = {
       if (vars contains id) Some(vars(id))
+      else if (inports contains id)
+        Some(Declaration(id,ChanType(inports(id).portType),false,None))
+      else if (outports contains id)
+        Some(Declaration(id,ChanType(outports(id).portType),false,None))
       else if (channels contains id) 
         Some(Declaration(channels(id).id,ChanType(channels(id).typ),true,None))
       else if (entities contains id) 
@@ -162,6 +166,11 @@ object Resolver {
           }
         }  
         case n: Network => {
+
+          if (n.actions.size > 1) {
+            return Errors(List((n.pos, "Networks can have at most 1 action")))
+          }
+          
           var inports = Map[String,InPort]()
           var outports = Map[String,OutPort]()
           var entities: Map[String,DFActor] = null
@@ -298,7 +307,7 @@ object Resolver {
             case _ => resolveExpr(ctx,e,port.portType)
           }
         }
-        else {
+        else /* basic actor */ {
           val eType = resolveExpr(ctx,e)
           if (eType.isList) {
             if (outPat.exps.size != 1) {
@@ -500,10 +509,10 @@ object Resolver {
       case op: NotEq => resolveEqRelationalExpr(ctx, op)
       case q: Forall => resolveQuantifier(ctx,q)
       case q: Exists => resolveQuantifier(ctx,q)
-      case ite@IfThenElse(cond,then,els) =>
+      case ite@IfThenElse(cond,the,els) =>
         val tCond = resolveExpr(ctx, cond)
         if (!tCond.isBool) ctx.error(cond.pos, "Expected bool, found: " + tCond.id)
-        val tThen = resolveExpr(ctx, then)
+        val tThen = resolveExpr(ctx, the)
         val tElse = resolveExpr(ctx, els)
         if (tThen != tElse) ctx.error(exp.pos, "Illegal argument types: " + tThen.id + " and " + tElse.id)
         ite.typ = tThen
@@ -526,6 +535,8 @@ object Resolver {
       case fa@FunctionApp("rd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("sqn",params) => resolveSqnFunction(ctx, fa)
+      case fa@FunctionApp("currsqn",params) => resolveSqnFunction(ctx, fa)
       case fa@FunctionApp("initial",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("prev",params) => resolveChannelAccessFunction(ctx, fa)
@@ -711,14 +722,36 @@ object Resolver {
     quant.typ
   }
   
-  def resolveChannelCountFunction(ctx: Context, fa: FunctionApp): Type = {
+   def resolveChannelCountFunction(ctx: Context, fa: FunctionApp): Type = {
       if (fa.parameters.size != 1) {
         ctx.error(fa.pos,"Function " + fa.name + " takes exactly 1 argument")
         return IntType(32)
       }
+      val paramType1 = resolveExpr(ctx,fa.parameters(0))
+      if (!paramType1.isChannel) {
+        ctx.error(fa.parameters(0).pos,"The 1st argument to function " + fa.name + " must be a channel")
+      }
+      fa.typ = IntType(32)
+      IntType(32)
+  }
+  
+  def resolveSqnFunction(ctx: Context, fa: FunctionApp): Type = {
+      if (fa.parameters.size != 1) {
+        ctx.error(fa.pos,"Function " + fa.name + " takes 1 argument")
+        return IntType(32)
+      }
+
       val paramType = resolveExpr(ctx,fa.parameters(0))
-      if (!paramType.isChannel) {
-        ctx.error(fa.pos,"The argument to function " + fa.name + " must be a channel")
+      fa.name match {
+        case "sqn" =>
+          //if (!fa.parameters(0).isInstanceOf[IndexAccessor]) {
+          //  ctx.error(fa.parameters(0).pos, "The argument to sqn has to be a channel index accessor")
+          //}
+        case "currsqn" =>
+          resolveExpr(ctx,fa.parameters(0))
+          if (!paramType.isActor) {
+            ctx.error(fa.parameters(0).pos,"The argument to function " + fa.name + " must be an actor instance")
+          }
       }
       fa.typ = IntType(32)
       IntType(32)

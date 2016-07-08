@@ -1,21 +1,27 @@
-package fi.abo.it.actortool
+package fi.abo.it.actortool.boogie
 
 import scala.util.parsing.input.Position
 import scala.collection.mutable.ListBuffer
-import fi.abo.it.actortool.Boogie.DeclComment
-import fi.abo.it.actortool.Boogie.VarExpr
-import fi.abo.it.actortool.Boogie.MapSelect
-import fi.abo.it.actortool.Boogie.BType
-import fi.abo.it.actortool.Boogie.NamedType
-import fi.abo.it.actortool.Boogie.LocalVar
-import fi.abo.it.actortool.Boogie.UnaryExpr
+import fi.abo.it.actortool.boogie.Boogie.DeclComment
+import fi.abo.it.actortool.boogie.Boogie.VarExpr
+import fi.abo.it.actortool.boogie.Boogie.MapSelect
+import fi.abo.it.actortool.boogie.Boogie.BType
+import fi.abo.it.actortool.boogie.Boogie.NamedType
+import fi.abo.it.actortool.boogie.Boogie.LocalVar
+import fi.abo.it.actortool.boogie.Boogie.UnaryExpr
+import fi.abo.it.actortool.ActorTool.TranslationException
+import fi.abo.it.actortool._ 
 
-class TranslationException(val pos: Position, val msg: String) extends Exception(msg)
 
-class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
+class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvMode: Boolean) {  
   
-  final val Sep = "#"
-  final val Modifies = List("C","R","M","St")
+  import Helper._
+  import AstElement._
+  
+  
+  
+  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.St):::
+    (if (!ftMode) Nil else List(BMap.SqnCh, BMap.SqnActor))
   
   object Annot {
     final val Error = "error"
@@ -29,30 +35,6 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
   object GeneratedInvariantCount {
     private var i = -1
     def next = { i = i+1; "#"+(i.toString) }
-  }
-  
-  object BMap extends Enumeration {
-    type BMap = String
-    final val L = "L"
-    final val C = "C"
-    final val R = "R"
-    final val M = "M"
-    final val St = "St"
-    final val This = "this#"
-    final val BaseL = "Base#L"
-  }
-  
-  object BType {
-    def Chan(arg: BType) = Boogie.IndexedType("Chan", arg)
-    def M = NamedType("MType")
-    def C = NamedType("CType")
-    def Bool = NamedType("bool");
-    def Real = NamedType("real");
-    def Int = NamedType("int");
-    def BV(size: Int) = Boogie.BVType(size)
-    def State = NamedType("State")
-    def Actor = NamedType("Actor")
-    def List(cType: BType) = Boogie.IndexedType("List", cType)
   }
   
   object AstElement {
@@ -79,10 +61,11 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
     }
   }
   
-  import Helper._
-  import AstElement._
+  
   
   def translateProgram(decls: List[TopDecl]): List[Boogie.Decl] = {
+    
+    if (ftMode) BoogiePrelude.addComponent(SeqNumberingPL)
     
     // Add axioms and assumptions
     val initDecls =
@@ -106,6 +89,13 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
     val actorVars = new ListBuffer[Boogie.LocalVar]()
     
     val prefix = actor.id+Sep
+    
+    val portChans = 
+      ((for (p <- actor.inports) yield bLocal(p.id, type2BType(ChanType(p.portType))))
+      :::
+      (for (p <- actor.outports) yield bLocal(p.id, type2BType(ChanType(p.portType))))
+      )
+    
     val states = actor.schedule match {
       case Some(s) => 
         actorVars += bThisDecl
@@ -144,14 +134,10 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
     
     val guards = new ListBuffer[Boogie.Expr]()
     
-    val portTokenVars = for (ip <- actor.inports) yield {
-      bLocal(ip.portId+Sep+"NumRead",type2BType(IntType(32)))
-    }
-    
     val localVarsMap = scala.collection.mutable.HashMap.empty[String,Boogie.LocalVar]
     
     for (a <- actions) {
-      val (decl,guard,localVars) = translateActorAction(a,invariants.toList,actorVars.toList,actor.schedule,prefix)
+      val (decl,guard,localVars) = translateActorAction(a, portChans, invariants.toList,actorVars.toList,actor.schedule,prefix)
       decls ++= decl
       
       if (!a.init) {
@@ -187,35 +173,39 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
   
    def translateActorAction(
        a: Action, 
+       portChans: List[Boogie.LocalVar],
        invs: List[(ActorInvariant,Boogie.Expr)],
        actorVars: List[Boogie.LocalVar],
        schedule: Option[Schedule],
        prefix: String): (List[Boogie.Decl],List[Boogie.Expr],List[Boogie.LocalVar]) = {
      
-     val renamings = new ListBuffer[(String,String)]
+     val renamings = new ListBuffer[(Id,Expr)]
      
-     val inputVars = (for (inPat <- a.inputPattern) yield {
-       for ((v,i) <- inPat.vars.zipWithIndex) yield {
-         val name = "IV"+Sep+(inPat.portId)+Sep+i
-         renamings += ((v.id, name))
-         bLocal(name,v.typ)
+     for (inPat <- a.inputPattern) {
+       for ((v,i) <- inPat.vars.zipWithIndex) {
+         //val name = "IV"+Sep+(inPat.portId)+Sep+i
+         val id = Id(inPat.portId); id.typ = ChanType(v.typ)
+         renamings += ((Id(v.id), IndexAccessor(id, IntLiteral(i))))
+         //bLocal(name,v.typ)
        }
-     }).flatten
+     }
      
      val actionVars = for (v <- a.variables) yield {
        val name = "ActionVar"+Sep+v.id
-       renamings += ((v.id, name))
+       renamings += ((Id(v.id), Id(name)))
        bLocal(name,v.typ)
      }
      
      val renameMap = renamings.toMap
      
      val invAssumes = for ((pos,i) <- invs) yield Helper.bAssume(i)
-     val preCondAssumes = for (p <- a.requires) yield Helper.bAssume(transExpr(p)(renameMap))
+     val preCondAssumes = for (p <- a.requires) yield {
+       Helper.bAssume(transExprNoRename( IdReplacer.visitExpr(p)(renameMap) ))
+     }
      
      val guards = a.guard match {
        case None => Nil
-       case Some(e) => List(transExpr(e)(renameMap))
+       case Some(e) => List(transExprNoRename( IdReplacer.visitExpr(e)(renameMap) ))
      }
      
      val guardAssume = guards map {g => bAssume(g)}
@@ -235,7 +225,7 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
      
      val body = a.body match {
        case None => List(bAssume(Boogie.BoolLiteral(true)))
-       case Some(b) => transStmt(b)(renameMap) 
+       case Some(b) => transStmtNoRename( IdReplacer.visitStmt(b)(renameMap) )
      }
      val stateUpdates = transitions match {
        case Nil => Nil
@@ -247,11 +237,12 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
        else bAssume(bInv)
      }
      val postCondAsserts = for (q <- a.ensures) yield {
-       bAssert(transExpr(q)(renameMap),q.pos,"Action postcondition might not hold")
+       bAssert(transExprNoRename(IdReplacer.visitExpr(q)(renameMap)), q.pos, "Action postcondition might not hold")
      }
      val stmt =
+       portChans:::
        actorVars:::
-       inputVars:::
+       //inputVars:::
        actionVars:::
        invAssumes:::
        preCondAssumes:::
@@ -261,7 +252,7 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
        stateUpdates:::
        postCondAsserts:::
        invAsserts
-     (List(Boogie.Proc(Uniquifier.get(prefix+a.fullName),Nil,Nil,Modifies,Nil,stmt)),stateGuard::guards,actorVars:::inputVars)
+     (List(Boogie.Proc(Uniquifier.get(prefix+a.fullName),Nil,Nil,Modifies,Nil,stmt)),stateGuard::guards,actorVars/*:::inputVars*/)
    }
   
   def translateNetwork(network: Network): List[Boogie.Decl] = {
@@ -477,6 +468,12 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
       }).flatten
     }).flatten
     
+    val actorSqnAssumes =
+      if (ftMode) {
+        entities map { e => bAssume(bSqnAct(renamings(e.id)) ==@ bInt(0)) }
+      }
+      else Nil
+    
     val nwPre = for (p <- nwa.requires) yield 
       bAssume(transExpr(IdReplacer.visitExpr(p)(replacements))(renamings))
     val nwPost = for (q <- nwa.ensures) yield 
@@ -485,6 +482,7 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
     // Network action entry
     val entryStmt = 
       procVars.toList :::
+      actorSqnAssumes :::
       cInitAssumes :::
       rcAssumes :::
       //stepAssumes :::
@@ -636,7 +634,7 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
     newVars += bLocal(nextState,BType.State)
     
     val firingConds = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
-    val replacements = scala.collection.mutable.HashMap.empty[Id,IndexAccessor]
+    val replacements = scala.collection.mutable.HashMap.empty[Id,Expr]
     
     for (ipat <- action.inputPattern) {
       val cId = targetMap(PortRef(Some(instance.id),ipat.portId))
@@ -735,12 +733,18 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
     for (post <- action.ensures) {
       asgn += bAssume(transExpr(post)(actionRenamings))
     }
+    
+    val instanceBName = actionRenamings(instance.id)
+    
     for (opat <- action.outputPattern) {
       val cIds = sourceMap(PortRef(Some(instance.id),opat.portId))
       for (cId <- cIds) {
         for (e <- opat.exps) {
           //val renamedExp = IdToIdReplacer.visitExpr(e)(renameMap)
-          asgn += Boogie.Assign(bChannelIdx(cId,/*bStep(cId)+*/bRead(cId) plus bCredit(cId)),transExpr(e)(actionRenamings))
+          asgn += Boogie.Assign(bChannelIdx(cId,bRead(cId) plus bCredit(cId)),transExpr(e)(actionRenamings))
+          if (ftMode) {
+            asgn += Boogie.Assign(bSqnCh(cId,bRead(cId) plus bCredit(cId)),bSqnAct(Boogie.VarExpr( instanceBName )))
+          }
           asgn += Boogie.Assign(bCredit(cId),bCredit(cId) plus bInt(1))
         }
       }
@@ -755,7 +759,9 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
       asgn += Boogie.Assign(bState(networkRenamings(instance.id)), Boogie.VarExpr(nextState))
     }
     
-
+    if (ftMode) {
+      asgn += Boogie.Assign(bSqnAct(instanceBName),bSqnAct(instanceBName) plus bInt(1))
+    }
     
     asgn ++= (for ((chi,bChi) <- chInvs) yield {
       val baseMsg = 
@@ -768,159 +774,7 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
     (asgn.toList, newVars.toList, firingRuleWithPrio, firingRuleWithoutPrio)
   }
   
-  
-  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,String]): List[Boogie.Stmt] = {
-    val bStmts = new ListBuffer[Boogie.Stmt]()
-    for (s <- stmts) {
-      bStmts ++= (s match {
-        case Assign(id,exp) => List(Boogie.Assign(transExpr(id),transExpr(exp)))
-        case IndexAssign(id,idx,exp) => List(Boogie.AssignMap(transExpr(id),transExpr(idx),transExpr(exp)))
-        case Assert(e) => List(bAssert(transExpr(e), e.pos, "Condition might not hold"))
-        case Assume(e) => List(bAssume(transExpr(e)))
-        case Havoc(ids) => for (i <- ids) yield { Boogie.Havoc(transExpr(i)) }
-        case IfElse(ifCond,ifStmt,elseIfs,elseStmt) => {
-          if (!elseIfs.isEmpty) {
-            throw new RuntimeException("If-statements with else-if branches not supported yet")
-          }
-          List(Boogie.If(transExpr(ifCond),transStmt(ifStmt),transStmt(elseStmt)))
-        }
-        case While(_,_,_) =>
-          throw new RuntimeException("Loops not supported yet")
-          
-      })
-    }
-    bStmts.toList
-  }
-  
-  def transExpr(exp: Expr)(implicit renamings: Map[String,String]): Boogie.Expr = {
-    exp match {
-      case And(e1,e2) => transExpr(e1) && transExpr(e2)
-      case Or(e1,e2) => transExpr(e1) || transExpr(e2)
-      case Implies(e1,e2) => transExpr(e1) ==> transExpr(e2)
-      case Iff(e1,e2) => transExpr(e1) <==> transExpr(e2)
-      case Not(e) => UnaryExpr("!",transExpr(e)) 
-      case Less(e1,e2) =>
-        if (bvMode) bFun("AT#BvUlt",transExpr(e1),transExpr(e2)) 
-        else transExpr(e1) < transExpr(e2)
-      case Greater(e1,e2) => transExpr(e1) > transExpr(e2)
-      case AtLeast(e1,e2) => transExpr(e1) >= transExpr(e2)
-      case AtMost(e1,e2) => 
-        if (bvMode) bFun("AT#BvUle",transExpr(e1),transExpr(e2)) 
-        else transExpr(e1) <= transExpr(e2)
-      case Eq(e1,e2) => transExpr(e1) ==@ transExpr(e2)
-      case NotEq(e1,e2) => transExpr(e1) !=@ transExpr(e2)
-      case Plus(e1,e2) => 
-        if (bvMode) bFun("AT#BvAdd",transExpr(e1),transExpr(e2)) 
-        else transExpr(e1) + transExpr(e2)
-      case Minus(e1,e2) =>
-        if (bvMode) bFun("AT#BvSub",transExpr(e1),transExpr(e2)) 
-        else transExpr(e1) - transExpr(e2)
-      case Times(e1,e2) => transExpr(e1) * transExpr(e2)
-      case Div(e1,e2) => 
-        BoogiePrelude.addComponent(DivModAbsPL)
-        Boogie.FunctionApp("AT#Div",List(transExpr(e1),transExpr(e2)))
-        //transExpr(e1) / transExpr(e2)
-      case Mod(e1,e2) =>
-        BoogiePrelude.addComponent(DivModAbsPL)
-        Boogie.FunctionApp("AT#Mod",List(transExpr(e1),transExpr(e2)))
-        //transExpr(e1) % transExpr(e2)
-      case RShift(e1,e2) =>
-        BoogiePrelude.addComponent(BitwisePL)
-        Boogie.FunctionApp("AT#RShift",List(transExpr(e1),transExpr(e2)))
-      case LShift(e1,e2) =>
-        BoogiePrelude.addComponent(BitwisePL)
-        Boogie.FunctionApp("AT#LShift",List(transExpr(e1),transExpr(e2)))
-      case BWAnd(e1,e2) =>
-        BoogiePrelude.addComponent(BitwisePL)
-        Boogie.FunctionApp("AT#BvAnd",List(transExpr(e1),transExpr(e2)))
-      case UnMinus(e) => UnaryExpr("-",transExpr(e))
-      case IfThenElse(c,e1,e2) => Boogie.Ite(transExpr(c),transExpr(e1),transExpr(e2))
-      case Forall(vars,e,pat) => 
-        Boogie.Forall(Nil,
-          for (v <- vars) yield Boogie.BVar(v.id,type2BType(v.typ)),
-          pat match {
-            case None => Nil
-            case Some(p) => List(Boogie.Trigger(List(transExpr(p))))
-          },
-          transExpr(e)
-        )
-      case Exists(vars,e,pat) => 
-        Boogie.Exists(Nil,
-          for (v <- vars) yield Boogie.BVar(v.id,type2BType(v.typ)),
-          pat match {
-            case None => Nil
-            case Some(p) => List(Boogie.Trigger(List(transExpr(p))))
-          },
-          transExpr(e)
-        )
-      case fa@FunctionApp(name,params) => {
-        name match {
-          case "rd" => bRead(transExpr(params(0)))
-          case "urd" => bCredit(transExpr(params(0)))
-          case "tot" => bRead(transExpr(params(0))) plus bCredit(transExpr(params(0)))
-          case "limit" => bCredInit(transExpr(params(0)))
-          case "next" => 
-            val ch = transExpr(params(0))
-            bChannelIdx(ch,bRead(ch))
-          case "prev" => 
-            val ch = transExpr(params(0))
-            bChannelIdx(ch,bRead(ch) minus bInt(1))
-          case "tokens" =>
-            // Happens if tokens function is used in an invalid position (not inhaled/exhaled)
-            throw new TranslationException(fa.pos, "Function tokens used in invalid position") 
-          case "state" => {
-            val actor = params(0).typ.asInstanceOf[ActorType].actor
-            val id = params(1).asInstanceOf[Id].id
-            bState(transExpr(params(0))) ==@ Boogie.VarExpr(actor.fullName+Sep+id)
-          }
-          case "min" => {
-            Boogie.FunctionApp("AT#Min", params.map(p => transExpr(p)))
-          }
-          case x => {
-            // User-defined function
-            val args = params.map(p => transExpr(p))
-            Boogie.FunctionApp("UDef"+Sep+x, args)
-          }
-        }
-      }
-      case IndexAccessor(e,i) => {
-        val tExpr = transExpr(e)
-        val index = transExpr(i)
-        if (e.typ.isChannel) bChannelIdx(tExpr,index)
-        else tExpr apply transExpr(i)
-      }
-      case ListLiteral(lst) => {
-        var listlit: Boogie.Expr = intlst
-        var i = 0
-        for (e <- lst) {
-          val transE = transExpr(e)
-          listlit = Boogie.MapStore(listlit,bInt(i),transE)
-          i = i+1
-        }
-        listlit
-      }
 
-      case il@IntLiteral(i) =>
-        if (bvMode) {
-          assert(il.typ != null)
-          val size = il.typ.asInstanceOf[AbstractIntType].size
-          Boogie.BVLiteral(i.toString,32)
-        }
-        else bInt(i)
-        
-        
-      case HexLiteral(x) => {
-        val bigInt = x.toList.map("0123456789abcdef".indexOf(_)).map(BigInt(_)).reduceLeft(_ * 16 + _)
-        bInt(bigInt.toString) // To decimal conversion
-      }
-      case BoolLiteral(b) => Boogie.BoolLiteral(b)
-      case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
-      case Id(id) => renamings.get(id) match {
-        case None => Boogie.VarExpr(id)
-        case Some(newId) => Boogie.VarExpr(newId)
-      } 
-    }
-  }
   
   object Inhalator extends Halator(true)
   object Exhalator extends Halator(false)
@@ -960,72 +814,15 @@ class Translator(val fixedBaseLength: Int, implicit val bvMode: Boolean) {
   
   }
   
-  object Helper {
-    import Boogie.Expr
-    
-    def type2BType(t: Type)(implicit bvMode: Boolean): Boogie.BType = {
-      assert(t != null)
-      t match {
-        case IntType(x) => if (bvMode) BType.BV(32) else BType.Int // BType.BV(x)
-        case BoolType => BType.Bool
-        case FloatType => BType.Real
-        case HalfType => BType.Real
-        case UintType(_) => if (bvMode) BType.BV(32) else BType.Int // BType.BV(x)
-        case ChanType(contentType) => BType.Chan(type2BType(contentType))
-        case ActorType(_) => BType.Actor
-        case ListType(contentType,_) => BType.List(type2BType(contentType))
-        case UnknownType =>
-          assert(false, "Unknown types should not occur during the translation")
-          null
-      }
-    }
-    
-    def bLocal(id: String, tp: Type)(implicit bvMode: Boolean) = new Boogie.LocalVar(id, type2BType(tp))
-    def bLocal(id: String, tp: BType) = new Boogie.LocalVar(id, tp)
-    def bThisDecl = bLocal(BMap.This,BType.Actor)
-    
-    def bBool(b: Boolean) = Boogie.BoolLiteral(b)
-    
-    def bInt(i: Int)(implicit bvMode: Boolean): Boogie.Expr = bInt(i.toString)
-    
-    def bInt(i: String)(implicit bvMode: Boolean) = {
-      if (bvMode) Boogie.BVLiteral(i, 32)
-      else Boogie.IntLiteral(i)
-    }
-    
-    def bVar(id: String) = Boogie.VarExpr(id)
-    
-    def bAssert(e: Expr, pos: Position, msg: String) = new Boogie.Assert(e, pos, msg)
-    def bAssert(e: Expr) = new Boogie.Assert(e,null,"Condition might not hold") 
-    def bAssume(e: Expr) = Boogie.Assume(e)
-    def bAssert2Assume(assert: Boogie.Assert) = new Boogie.Assume(assert.e)
-   
-    def bCredit(connName: String) = (VarExpr(BMap.C) apply VarExpr(connName))
-    def bCredit(channel: Boogie.Expr) = (VarExpr(BMap.C) apply channel)
-    
-    def bCredInit(connName: String) = (VarExpr(BMap.L) apply VarExpr(connName))
-    def bCredInit(channel: Boogie.Expr) = (VarExpr(BMap.L) apply channel)
-    
-    def bRead(connName: String) = (VarExpr(BMap.R) apply VarExpr(connName))
-    def bRead(channel: Boogie.Expr) = (VarExpr(BMap.R) apply channel)
-    
-    def bTotal(connName: String) = (bRead(connName) plus bCredit(connName))
-    def bTotal(channel: Boogie.Expr) = (bRead(channel) plus bCredit(channel))
-    
-    def bChannel(connName: String): Expr = (VarExpr(BMap.M) apply VarExpr(connName))
-    def bChannelIdx(connName: String, ind: Boogie.Expr): Expr = ((VarExpr(BMap.M) apply VarExpr(connName)) apply ind)
-    def bChannel(channel: Boogie.Expr): Expr = (VarExpr(BMap.M) apply channel)
-    def bChannelIdx(channel: Boogie.Expr, ind: Boogie.Expr): Expr = ((VarExpr(BMap.M) apply channel) apply ind)
-    
-    def bState(id: String) = VarExpr(BMap.St) apply VarExpr(id)
-    def bState(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
-    val bThis = bState(BMap.This)
-    val bBaseL = VarExpr(BMap.BaseL)
-    
-    def bFun(id: String, arg: Boogie.Expr*) = Boogie.FunctionApp(id,arg.toList)
-    
-    val intlst = VarExpr("AT#intlst");
+  val stmtTranslator = new StmtExpTranslator(ftMode, bvMode); 
+  
+  def transExprNoRename(exp: Expr): Boogie.Expr = transExpr(exp)(Map.empty)
+  
+  def transExpr(exp: Expr)(implicit renamings: Map[String,String]): Boogie.Expr = stmtTranslator.transExpr(exp)
+  
+  def transStmtNoRename(stmt: List[Stmt]): List[Boogie.Stmt] = transStmt(stmt)(Map.empty)
+  
+  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,String]): List[Boogie.Stmt] = stmtTranslator.transStmt(stmts)
 
-  }
   
 }

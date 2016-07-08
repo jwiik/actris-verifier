@@ -17,21 +17,21 @@ object Elements {
   def rd(id: String) = FunctionApp("rd",List(Id(id): Expr))
   def urd(id: String) = FunctionApp("urd",List(Id(id): Expr))
   def tot(id: String) = FunctionApp("tot",List(Id(id): Expr))
-  //def initial(id: String) = FunctionApp("initial",List(Id(id): Expr))
   def limit(id: String) = FunctionApp("limit",List(Id(id): Expr))
+  def sqnAcc(acc: IndexAccessor) = FunctionApp("sqn", List(acc: Expr))
   def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(32); li}
 } 
 
 import Elements._
 
 object Inferencer {
-  final val Modules = List(StaticProperties,NWPreToInvariant,SDFClass).map(m => (m.name,m)).toMap
+  final val Modules = List(StaticProperties,NWPreToInvariant,SDFClass,FTProperties).map(m => (m.name,m)).toMap
   private val DefaultModules = Set(StaticProperties,NWPreToInvariant,SDFClass)
       
-  def infer(program: List[TopDecl], modules: List[String]) = {
+  def infer(program: List[TopDecl], modules: List[String], ftMode: Boolean) = {
     val inferenceModules = modules match {
       case Nil => DefaultModules
-      case List("default") => DefaultModules
+      case List("default") => if (!ftMode) DefaultModules else DefaultModules ++ Set(FTProperties)
       case list => (StaticProperties::(list map { l => Modules(l) })).toSet
     }
     
@@ -201,11 +201,36 @@ object SDFClass extends InferenceModule {
   
 }
 
+object FTProperties extends InferenceModule {
+  override val name = "ft-properties"
+  
+  val quantVar = Id("idx$"); quantVar.typ = IntType(32)
+  val soundnessChecks = true
+  
+  override def network(n: Network)(implicit ctx: Context) {
+    val action = n.actions(0)
+    for (ipat <- action.inputPattern) {
+      val channel = n.structure.get.getInputChannel(ipat.portId).get
+      
+      val lowBound = lit(0)
+      val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot(channel.id)))
+      val cId = Id(channel.id); cId.typ = ChanType(ipat.vars(0).typ)
+      val accessor = IndexAccessor(cId,quantVar); accessor.typ = ipat.vars(0).typ
+      val sqn = sqnAcc(accessor); sqn.typ = IntType(32)
+      val quantExp = Implies(quantBounds,Eq(sqn,quantVar))
+      n.addChannelInvariant(Forall(List(quantVar),quantExp), !soundnessChecks)
+      
+    }
+    
+  }
+}
+
 abstract class InferenceModule {
   
   val name: String
   
   final def infer(decl: TopDecl): InferenceOutcome = {
+    
     val ctx = new Context
     decl match {
       case n: Network => network(n)(ctx)

@@ -39,7 +39,7 @@ object BoogiePrelude {
 sealed abstract class PreludeComponent {
   // determines the order in which the components are output
   def compare(that: PreludeComponent): Boolean = {
-    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,DivModAbsPL,BitwisePL,FooterPL)
+    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,SeqNumberingPL,DivModAbsPL,BitwisePL,FooterPL)
     if (!order.contains(this)) false
     else order.indexOf(this) < order.indexOf(that)
   }
@@ -71,7 +71,15 @@ type List a = [@inttype@]a;
 var AT#intlst: List @inttype@;
 
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
+"""
+}
 
+object SeqNumberingPL extends PreludeComponent {
+  val text = 
+"""
+// -- Sequence numbering for FT ----------------------------------
+var SqnCh: <a>[Chan a][@inttype@]int;
+var SqnAct: [Actor]int;
 """
 }
 

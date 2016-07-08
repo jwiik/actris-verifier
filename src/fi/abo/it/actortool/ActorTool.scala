@@ -6,11 +6,21 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.File
 import java.io.FileWriter
-//import akka.actor.ActorSystem
-
 import scala.util.parsing.input.Position
+import fi.abo.it.actortool.boogie.Boogie
+import fi.abo.it.actortool.boogie.BoogieVerifier
 
 object ActorTool {
+  
+  abstract class Verifier[U,T] {
+    def translateProgram(decls: List[TopDecl]): U
+    def verify(input: U): T
+    def translateAndVerify(decls: List[TopDecl]): T = verify(translateProgram(decls))
+  }
+  
+  class TranslationException(val pos: Position, val msg: String) extends Exception(msg) {
+    //def this(pos: Position, msg: String) = this(pos, msg)
+  }
   
   final val Param = "(?:[-/])(.*)".r
   
@@ -40,6 +50,7 @@ object ActorTool {
     val Timing: Int
     val BVMode: Boolean
     val FixedBaseLength: Int
+    val FTMode: Boolean
     val InferModules: List[String]
     final lazy val help = "Usage: actortool [option] <filename>+\n"
   }
@@ -62,6 +73,7 @@ object ActorTool {
     var aBVMode = false
     var aSoundnessChecks = false
     var aFixedBaseLength = 0
+    var aFTMode = false
     
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -83,6 +95,7 @@ object ActorTool {
         case Param("noTranslate") => aDoTranslate = false
         case Param("noVerify") => aDoVerify = false
         case Param("bvMode") => aBVMode = true
+        case Param("ftMode") => aFTMode = true
         case Param("timings") => {
           value match {
             case Some(v) =>
@@ -163,6 +176,7 @@ object ActorTool {
         val InferModules = aInferModules
         val FixedBaseLength = aFixedBaseLength
         val BVMode = aBVMode
+        val FTMode = aFTMode
     })
   }
   
@@ -232,71 +246,77 @@ object ActorTool {
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
-    if (params.DoInfer) Inferencer.infer(program,params.InferModules)
+    if (params.DoInfer) Inferencer.infer(program,params.InferModules,params.FTMode)
     
     timings += (Step.Infer -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
     if (!params.DoTranslate) return
     
-    val translator = new Translator(params.FixedBaseLength, params.BVMode);
+    //val translator = new Translator(params.FixedBaseLength, params.FTMode, params.BVMode);
+    
+    val verifier = new BoogieVerifier(params)
+    
     val bplProg =
       try {
-        translator.translateProgram(program);
+        verifier.translateProgram(program);
       } catch {
         case ex: TranslationException => reportError(ex.pos,ex.msg)
         return
       }
+      
     timings += (Step.Translation -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
     if (!params.DoVerify) return
     
-		val boogiePath = params.BoogiePath
-		val boogieArgs = params.BoogieArgs
-		if (params.BVMode) BoogiePrelude.addComponent(BitwisePL)
-    val bplText = BoogiePrelude.get(params.BVMode) + (bplProg map Boogie.Print).foldLeft(""){ (a, b) => a + b };
-    val bplFilename = if (params.NoBplFile) "stdin.bpl" else params.BplFile
-    if (params.PrintProgram) println(bplText)
-    if (!params.NoBplFile) writeFile(bplFilename, bplText);
+    verifier.verify(bplProg)
     
-    val boogie = Runtime.getRuntime.exec(boogiePath + " /errorTrace:0 " + boogieArgs + " stdin.bpl")
-    
-    val output = boogie.getOutputStream()
-    output.write(bplText.getBytes)
-    output.close
-    
-    // terminate boogie if interrupted
-    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable() {
-      def run {
-        boogie.destroy
-      }
-    }))
-    // the process blocks until we exhaust input and error streams 
-    // (this extra thread reads all from error stream, and buffers it)
-    val errorReadingThread = new Thread(new Runnable() {
-      def run {
-        val err = new BufferedReader(new InputStreamReader(boogie.getErrorStream))
-        var line = err.readLine;
-        while(line!=null) {Console.err.println(line); Console.err.flush; line = err.readLine}
-      }
-    });
-    errorReadingThread.start()
-    val input = new BufferedReader(new InputStreamReader(boogie.getInputStream))
-    var line = input.readLine()
-    var previousLine = null: String
-    val boogieOutput: ListBuffer[String] = new ListBuffer()
-    while (line!=null){
-      if (previousLine != null) println
-      Console.out.print(line)
-      Console.out.flush
-      boogieOutput += line
-      previousLine = line
-      line = input.readLine()
-    }
-    boogie.waitFor
-    input.close
-    Console.out.println
+//		val boogiePath = params.BoogiePath
+//		val boogieArgs = params.BoogieArgs
+//		if (params.BVMode) BoogiePrelude.addComponent(BitwisePL)
+//    val bplText = BoogiePrelude.get(params.BVMode) + (bplProg map Boogie.Print).foldLeft(""){ (a, b) => a + b };
+//    val bplFilename = if (params.NoBplFile) "stdin.bpl" else params.BplFile
+//    if (params.PrintProgram) println(bplText)
+//    if (!params.NoBplFile) writeFile(bplFilename, bplText);
+//    
+//    val boogie = Runtime.getRuntime.exec(boogiePath + " /errorTrace:0 " + boogieArgs + " stdin.bpl")
+//    
+//    val output = boogie.getOutputStream()
+//    output.write(bplText.getBytes)
+//    output.close
+//    
+//    // terminate boogie if interrupted
+//    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable() {
+//      def run {
+//        boogie.destroy
+//      }
+//    }))
+//    // the process blocks until we exhaust input and error streams 
+//    // (this extra thread reads all from error stream, and buffers it)
+//    val errorReadingThread = new Thread(new Runnable() {
+//      def run {
+//        val err = new BufferedReader(new InputStreamReader(boogie.getErrorStream))
+//        var line = err.readLine;
+//        while(line!=null) {Console.err.println(line); Console.err.flush; line = err.readLine}
+//      }
+//    });
+//    errorReadingThread.start()
+//    val input = new BufferedReader(new InputStreamReader(boogie.getInputStream))
+//    var line = input.readLine()
+//    var previousLine = null: String
+//    val boogieOutput: ListBuffer[String] = new ListBuffer()
+//    while (line!=null){
+//      if (previousLine != null) println
+//      Console.out.print(line)
+//      Console.out.flush
+//      boogieOutput += line
+//      previousLine = line
+//      line = input.readLine()
+//    }
+//    boogie.waitFor
+//    input.close
+//    Console.out.println
     
     timings += (Step.Verification -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
