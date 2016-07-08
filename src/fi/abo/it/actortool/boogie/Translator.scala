@@ -391,11 +391,8 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       procVars += bLocal(newName,type2BType(v.typ))
       actionRenamings += ((v.id,newName))
     }
-    for (placeHolder <- nwa.placeHolderVars) {
-      val newName = "ActionPH"+Sep+placeHolder.id
-      procVars += bLocal(newName,type2BType(placeHolder.typ))
-      actionRenamings += ((placeHolder.id,newName))
-    }
+    
+
     
     val renamings = networkRenamings ++ actionRenamings.toMap
     
@@ -426,6 +423,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
     val limitLoopConds = limitLoopCondBuffer.toList
     
     var replacements = Map[Id,IndexAccessor]()
+    
     for (ipat <- nwa.inputPattern) {
       assert(sourceMap(PortRef(None,ipat.portId)).size == 1)
       val inChan = Id(sourceMap(PortRef(None,ipat.portId))(0))
@@ -437,6 +435,17 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
         replacements = replacements + (v -> acc)
         i = i+1
       }
+    }
+    
+    for ((decl,portId,index) <- nwa.placeHolderVars) {
+      val outChan = Id(targetMap(PortRef(None,portId))); outChan.typ = ChanType(decl.typ)
+      val acc = IndexAccessor(outChan,IntLiteral(index))
+      Resolver.resolveExpr(acc)
+      replacements = replacements + (Id(decl.id) -> acc)
+      /*val newName = "ActionPH"+Sep+placeHolder.id
+      procVars += bLocal(newName,type2BType(placeHolder.typ))
+      actionRenamings += ((placeHolder.id,newName))*/
+      
     }
 
     val outputs = (for (opat <- nwa.outputPattern) yield {
@@ -450,18 +459,19 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
         Resolver.resolveExpr(acc)
         
         val stmts =
-          if (e.isInstanceOf[Id] && (nwa.placeHolderVars exists { _.id == e.asInstanceOf[Id].id  })) {
+          if (e.isInstanceOf[Id] && (nwa.placeHolderVars exists {case (d,p,i) => d.id == e.asInstanceOf[Id].id  })) {
             // If this is an action variable it will be used as a placeholder
-            val v = transExpr(e)(renamings)
-            List(Boogie.Assign(v,transExpr(acc)(renamings)))
+//            val v = transExpr(e)(renamings)
+//            List(Boogie.Assign(v,transExpr(acc)(renamings)))
+            Nil
           }
           else {
-            val name = prefix+opat.portId+Sep+i
+            /*val name = prefix+opat.portId+Sep+i
             procVars += bLocal(name,type2BType(e.typ))
-            val v = VarExpr(name)
+            val v = VarExpr(name)*/
             List(
-                Boogie.Assign(v,transExpr(acc)(renamings)),
-                bAssert(v ==@ transExpr(renamedExp)(renamings),e.pos,"Network output might not conform to the specified action output"))    
+                /*Boogie.Assign(v,transExpr(acc)(renamings)),*/
+                bAssert(transExpr(acc)(renamings) ==@ transExpr(renamedExp)(renamings),e.pos,"Network output might not conform to the specified action output"))    
           }
         i = i+1
         stmts
@@ -665,6 +675,8 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       (av.id,newName)
     }).toMap
     
+    val replacementMap = replacements.toMap
+    
     val renamedGuard = action.guard match {
       case None =>
       case Some(g) =>
@@ -716,6 +728,13 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       asgn += bAssume(transExpr(e.expr)(actorRenamings))
     }
     
+    for (pre <- action.requires) {
+      val replacedPre = IdReplacer.visitExpr(pre)(replacementMap)
+      asgn += bAssert(
+          transExpr(replacedPre)(actionRenamings),pre.pos,
+          "Precondition might not hold for instance at " + instance.pos)
+    }
+    
     for (ipat <- action.inputPattern) {
       val cId = targetMap(PortRef(Some(instance.id),ipat.portId))
       for (v <- ipat.vars) {
@@ -725,11 +744,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       }
     }
  
-    for (pre <- action.requires) {
-      asgn += bAssert(
-          transExpr(pre)(actionRenamings),pre.pos,
-          "Precondition might not hold for instance at " + instance.pos)
-    }
+    
     for (post <- action.ensures) {
       asgn += bAssume(transExpr(post)(actionRenamings))
     }

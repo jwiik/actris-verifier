@@ -293,14 +293,14 @@ object Resolver {
       }
       val port = actorCtx.outports(outPat.portId)
       assert(port.portType != null)
-      for (e <- outPat.exps) {
+      for ((e,i) <- (outPat.exps zipWithIndex) ) {
         if (nwAction) {
           e match {
             case id@Id(name) => ctx.lookUp(name) match {
               case None => 
                 val decl = Declaration(name,port.portType,false,None)
                 vars = vars + (name -> decl)
-                action.addPlaceHolderVar(decl)
+                action.addPlaceHolderVar(decl,outPat.portId,i)
                 id.typ = port.portType
               case Some(_) => resolveExpr(ctx,e,port.portType)
             }

@@ -106,7 +106,6 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "sqn" => {
             if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
             val t = transExpr(params(0))
-            Console.println(fa+ " :: " + t)
             val accessor = params(0).asInstanceOf[IndexAccessor]
             val channel = transExpr(accessor.exp)
             val index = transExpr(accessor.suffix)

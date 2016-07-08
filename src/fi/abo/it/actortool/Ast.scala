@@ -139,10 +139,10 @@ sealed case class Action(
 
  //var transitions: List[(String,String)] = Nil
   
-  private var _placeHolderVars: List[Declaration] = Nil
+  private var _placeHolderVars: List[(Declaration,String,Int)] = Nil
   
   def placeHolderVars = _placeHolderVars
-  def addPlaceHolderVar(d: Declaration) = _placeHolderVars = _placeHolderVars:::List(d)
+  def addPlaceHolderVar(d: Declaration, portId: String, ind: Int) = _placeHolderVars = _placeHolderVars:::List((d,portId,ind))
   //def placeHolderVars_= (list: List[Declaration]) = _placeHolderVars = list
   
   
