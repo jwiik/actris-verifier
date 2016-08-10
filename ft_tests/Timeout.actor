@@ -11,17 +11,17 @@ end
 
 actor Adjudicator int x1, int x2, int c_in ==> int y, int c_out :
 
-  normal: action x1:[i], x2:[j], c_in:[c] ==> y:[i], c_out:[c+1]
-    guard i = j && i = c
+  normal: primary action x1:[i], x2:[j], c_in:[c] ==> y:[i], c_out:[c+1]
+    guard sqn(i) = sqn(j) && sqn(i) = c
   end
   
-  timeout: action x2:[j], c_in:[c] ==> y:[j], c_out:[c+1] 
-    //requires urd(x1) = 0
+  timeout: error action x2:[j], c_in:[c] ==> y:[j], c_out:[c+1] end
+  
+  readoff: recovery action x1:[i], c_in:[c] ==> c_out:[c]
+    guard sqn(i) < c
   end
   
-  readoff: action x1:[i], c_in:[c] ==> c_out:[c]
-    guard i < c
-  end
+  initialize ==> c_out:[0] end
   
   priority readoff > normal > timeout end 
   
@@ -29,25 +29,33 @@ end
 
 network Net int in ==> int out :
 
-  action in:[x1,x2,x3] ==> out:[y1,y2,y3]
-    requires x1 = 0 && x2 = 1 && x3 = 2
-    ensures y1 = x1 && y2 = x2 && y3 = x3
+  action in:1 ==> out:1
+    ensures (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
+    ensures (forall int i :: 0 <= i && i < tot(g) ==> g[i] = a[i])
   end
   
   invariant tokens(f,1)
-  free invariant next(f) = 0
+  invariant rd(e) = next(f)
   
-  chinvariant tot(a) <= 3
-  //chinvariant (forall int i :: 1 <= i && i < tot(a) ==> a[i] > a[i-1])
-  //chinvariant (forall int i :: 1 <= i && i < tot(b) ==> b[i] > b[i-1])
-  //chinvariant (forall int i :: 1 <= i && i < tot(c) ==> c[i] > c[i-1])
-  //chinvariant (forall int i :: 1 <= i && i < tot(d) ==> d[i] > d[i-1])
-  //chinvariant (forall int i :: 1 <= i && i < tot(e) ==> e[i] > e[i-1])
+  chinvariant currsqn(spl) = rd(a)
+  chinvariant currsqn(pri) = rd(b)
+  chinvariant currsqn(sec) = rd(c)
+  chinvariant currsqn(adj) = rd(e)
+  
+  chinvariant (forall int i :: 0 <= i && i < tot(a) ==> sqn(a[i]) = i)
+  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> sqn(b[i]) = i)
+  chinvariant (forall int i :: 0 <= i && i < tot(c) ==> sqn(c[i]) = i)
+  chinvariant (forall int i :: 0 <= i && i < tot(d) ==> sqn(d[i]) = i)
+  chinvariant (forall int i :: 0 <= i && i < tot(e) ==> sqn(e[i]) = i)
+  chinvariant (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
   
   chinvariant urd(f) = 1
   chinvariant urd(g) = rd(e)
   chinvariant rd(e) = next(f)
-  chinvariant rd(d) <= rd(e)
+  chinvariant (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
+  
+  
+  //chinvariant rd(d) <= rd(e)
   chinvariant 0 < rd(d) && 0 < rd(e) ==> prev(d) <= prev(e) 
   chinvariant (forall int i :: 0 <= i && i < rd(e) ==> g[i] = e[i])
   

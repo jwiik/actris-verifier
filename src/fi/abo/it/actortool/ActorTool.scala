@@ -27,7 +27,8 @@ object ActorTool {
   object Step extends Enumeration {
     type Step = Value
     val Parse = Value("Parse")
-    val Resolve = Value("Analysis")
+    val Desugar = Value("Desugar")
+    val Resolve = Value("Typecheck")
     val Infer = Value("Inference")
     val Translation = Value("Translation")
     val Verification = Value("Verification")
@@ -225,12 +226,16 @@ object ActorTool {
 //    timings += (Step.Init -> (System.nanoTime - tmpTime))
 //    tmpTime = System.nanoTime
     
-    val program = parsePrograms(params) match {
+    var program = parsePrograms(params) match {
       case Some(p) => p
       case None => return //illegal program, errors have already been displayed
     }
     
     timings += (Step.Parse -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
+    
+    //program = Desugar.desugar(program)
+    timings += (Step.Desugar -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
     if (program.isEmpty) return // Error message has already been displayed

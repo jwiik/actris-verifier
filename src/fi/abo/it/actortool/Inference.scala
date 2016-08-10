@@ -13,14 +13,7 @@ class Context {
   def outcome: InferenceOutcome = { if (errors.isEmpty) Success() else Errors(errors.toList) }
 }
 
-object Elements {
-  def rd(id: String) = FunctionApp("rd",List(Id(id): Expr))
-  def urd(id: String) = FunctionApp("urd",List(Id(id): Expr))
-  def tot(id: String) = FunctionApp("tot",List(Id(id): Expr))
-  def limit(id: String) = FunctionApp("limit",List(Id(id): Expr))
-  def sqnAcc(acc: IndexAccessor) = FunctionApp("sqn", List(acc: Expr))
-  def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(32); li}
-} 
+
 
 import Elements._
 
@@ -212,6 +205,8 @@ object FTProperties extends InferenceModule {
     for (ipat <- action.inputPattern) {
       val channel = n.structure.get.getInputChannel(ipat.portId).get
       
+      // Generate chinvariant: forall i . 0 <= i && i < tot(a) ==> sqn(a[i]) = i
+      // where a is a network input channel
       val lowBound = lit(0)
       val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot(channel.id)))
       val cId = Id(channel.id); cId.typ = ChanType(ipat.vars(0).typ)

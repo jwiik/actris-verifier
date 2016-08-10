@@ -6,6 +6,15 @@ import scala.collection.mutable.ListBuffer
  * @author Jonatan Wiik
  */
 
+object Elements {
+  def rd(id: String) = FunctionApp("rd",List(Id(id): Expr))
+  def urd(id: String) = FunctionApp("urd",List(Id(id): Expr))
+  def tot(id: String) = FunctionApp("tot",List(Id(id): Expr))
+  def limit(id: String) = FunctionApp("limit",List(Id(id): Expr))
+  def sqnAcc(acc: IndexAccessor) = FunctionApp("sqn", List(acc: Expr))
+  def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(32); li}
+} 
+
 object TypeUtil {
 
   def getLub(t1: Type, t2: Type): Option[Type] = {

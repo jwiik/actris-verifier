@@ -774,7 +774,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       asgn += Boogie.Assign(bState(networkRenamings(instance.id)), Boogie.VarExpr(nextState))
     }
     
-    if (ftMode) {
+    if (ftMode && action.aClass != ActionClass.Recovery) {
       asgn += Boogie.Assign(bSqnAct(instanceBName),bSqnAct(instanceBName) plus bInt(1))
     }
     
@@ -821,8 +821,9 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
         }
         case x => {
           if (inhale) buffer += bAssume(transExpr(x)) 
-          else buffer += 
-            (if (!free) bAssert(transExpr(x), x.pos, msg) else bAssume(transExpr(x)))
+          if (!free) {
+            buffer += bAssert(transExpr(x), x.pos, msg)
+          }
         }
       }
     }

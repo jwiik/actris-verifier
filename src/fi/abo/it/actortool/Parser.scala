@@ -39,7 +39,7 @@ class Parser extends StandardTokenParsers {
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
-                       "free"
+                       "free", "primary", "error", "recovery"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -159,6 +159,7 @@ class Parser extends StandardTokenParsers {
    
   def actionDecl: Parser[Action] = positioned(
     (((ident <~ ":")?) ~ 
+        opt(actionClass) ~
         ("action" | "initialize") ~ 
         repsep(inputPattern,",") ~ 
         ("==>" ~> repsep(outputPattern,",")) ~
@@ -168,22 +169,52 @@ class Parser extends StandardTokenParsers {
         ("ensures" ~> expression *) ~
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
-      case (id ~ "action" ~ inputs ~ outputs ~ guard ~ vars ~ requires ~ ensures  ~ stmt) => 
-        Action(id,false,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
-      case (id ~ "initialize" ~ inputs ~ outputs ~ guard ~ vars ~ requires ~ ensures  ~ stmt) => 
-        Action(id,true,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
+          case (id ~ cl ~ label ~ inputs ~ outputs ~ guard ~ vars ~ requires ~ ensures  ~ stmt) => 
+            val init = label == "initialize"
+            val actClass = cl match {
+              case Some("primary") => ActionClass.Primary
+              case Some("error") => ActionClass.Error
+              case Some("recovery") => ActionClass.Recovery
+              case None => ActionClass.Normal
+              case Some(x) => 
+                // Should not happen
+                throw new RuntimeException("Invalid keyword: " + x)
+            }
+            Action(id,actClass,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
     }
   )
   
-  def inputPattern = positioned((ident ~ (":" ~> "[" ~> repsep(identifier,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
+  def actionClass = ("primary" | "error" | "recovery")
+  
+  def inputPattern = inputPatternRng | inputPatternNum
+  
+  def inputPatternRng = positioned(
+      (ident ~ (":" ~> "[" ~> repsep(identifier,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
     case (port ~ vars ~ Some(rep)) => InputPattern(port, vars, rep.toInt)
     case (port ~ vars ~ None) => InputPattern(port, vars, 1)
   })
   
-  def outputPattern = positioned((ident ~ (":" ~> "[" ~> repsep(expression,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
+  def inputPatternNum = positioned(
+      (ident ~ (":" ~> numericLit) ~ opt("repeat" ~> numericLit)) ^^ {
+    case (port ~ num ~ Some(rep)) =>
+      InputPattern(port, varList(port+"$v",num.toInt), rep.toInt)
+    case (port ~ num ~ None) => 
+      InputPattern(port, varList(port+"v",num.toInt), 1)
+  })
+  
+  def outputPattern = outputPatternRng | outputPatternNum
+  
+  def outputPatternRng = positioned((ident ~ (":" ~> "[" ~> repsep(expression,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
     case (port ~ exps ~ Some(rep)) => OutputPattern(port, exps, rep.toInt)
     case (port ~ exps ~ None) => OutputPattern(port, exps, 1)
-  })  
+  })
+  
+  def outputPatternNum = positioned((ident ~ (":" ~> numericLit) ~ opt("repeat" ~> numericLit)) ^^ {
+    case (port ~ num ~ Some(rep)) => OutputPattern(port, varList(port+"$v",num.toInt), rep.toInt)
+    case (port ~ num ~ None) => OutputPattern(port, varList(port+"$v",num.toInt), 1)
+  })
+  
+  def varList(prefix: String, length: Int) = for (i <- List.range(0,length)) yield Id(prefix+"$"+i)
 
   
   def expression: Parser[Expr] = positioned(iffExpr) 

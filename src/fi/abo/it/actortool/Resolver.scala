@@ -208,7 +208,7 @@ object Resolver {
                     
           for (m <- n.members) {
             m match {
-              case ac@Action(lbl,init,inPat,outPat,guard,pres,posts,vars,body) => {
+              case ac@Action(_,_,_,_,_,guard,_,_,vars,body) => {
                 guard match {
                   case Some(g) => 
                     return Errors(List((g.pos,"Network actions are not allowed to have guards")))
@@ -535,6 +535,7 @@ object Resolver {
       case fa@FunctionApp("rd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("limit",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("sqn",params) => resolveSqnFunction(ctx, fa)
       case fa@FunctionApp("currsqn",params) => resolveSqnFunction(ctx, fa)
       case fa@FunctionApp("initial",params) => resolveChannelCountFunction(ctx, fa)

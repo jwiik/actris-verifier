@@ -1,0 +1,31 @@
+@sdf
+actor Add int in1, int in2 ==> int out :
+  action in1:[i], in2:[j] ==> out:[i+j] 
+    requires sqn(i) = sqn(j)
+  end
+end
+
+network Net int in1, int in2 ==> int out :
+  
+  action in1:1, in2:1 ==> out:1
+    requires (forall int i :: 0 <= i && i < limit(a) ==> 0 <= a[i])
+    requires (forall int i :: 0 <= i && i < limit(b) ==> 0 <= b[i])
+    ensures (forall int i :: 0 <= i && i < tot(c) ==> 0 <= c[i])
+    ensures (forall int i :: 0 <= i && i < tot(c) ==> sqn(c[i]) = i)
+  end
+  
+  chinvariant currsqn(add) = rd(a)
+  chinvariant (forall int i :: 0 <= i && i < tot(a) ==> sqn(a[i]) = sqn(b[i]))
+  chinvariant (forall int i :: 0 <= i && i < rd(a) ==> sqn(a[i]) = sqn(c[i]))
+
+  entities
+    add = Add();
+  end
+  
+  structure
+    a: in1 --> add.in1;
+    b: in2 --> add.in2;
+    c: add.out --> out;
+  end
+
+end
