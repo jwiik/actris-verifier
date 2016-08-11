@@ -110,8 +110,65 @@ procedure Net#init#6()
   assume R[Net#f] == 0;
   assume C[Net#g] == 0;
   assume R[Net#g] == 0;
+  assume SqnAct[Net#spl] == 0;
+  assume SqnAct[Net#pri] == 0;
+  assume SqnAct[Net#sec] == 0;
+  assume SqnAct[Net#adj] == 0;
   M[Net#f][R[Net#f] + C[Net#f]] := 0;
   C[Net#f] := C[Net#f] + 1;
+  assert {:msg "  Network initialization might not establish the channel invariant"} R[Net#a] == (R[Net#b] + C[Net#b]);
+  assert {:msg "  Network initialization might not establish the channel invariant"} R[Net#a] == (R[Net#c] + C[Net#c]);
+  assert {:msg "  Network initialization might not establish the channel invariant"} R[Net#b] == (R[Net#d] + C[Net#d]);
+  assert {:msg "  Network initialization might not establish the channel invariant"} R[Net#c] == (R[Net#e] + C[Net#e]);
+  assert {:msg "  Network initialization might not establish the channel invariant"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
+  );
+  assert {:msg "  Network initialization might not establish the channel invariant"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
+  );
+  assert {:msg "  Network initialization might not establish the channel invariant"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
+  );
+  assert {:msg "  Network initialization might not establish the channel invariant"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
+  );
+  assert {:msg "  Network initialization might not establish the channel invariant"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
+  );
+  assert {:msg "  40.15: Network initialization might not establish the channel invariant"} SqnAct[Net#spl] == R[Net#a];
+  assert {:msg "  41.15: Network initialization might not establish the channel invariant"} SqnAct[Net#pri] == R[Net#b];
+  assert {:msg "  42.15: Network initialization might not establish the channel invariant"} SqnAct[Net#sec] == R[Net#c];
+  assert {:msg "  43.15: Network initialization might not establish the channel invariant"} SqnAct[Net#adj] == R[Net#e];
+  assert {:msg "  45.16: Network initialization might not establish the channel invariant"} (forall i: int :: 
+    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
+  );
+  assert {:msg "  46.16: Network initialization might not establish the channel invariant"} (forall i: int :: 
+    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
+  );
+  assert {:msg "  47.16: Network initialization might not establish the channel invariant"} (forall i: int :: 
+    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
+  );
+  assert {:msg "  48.16: Network initialization might not establish the channel invariant"} (forall i: int :: 
+    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
+  );
+  assert {:msg "  49.16: Network initialization might not establish the channel invariant"} (forall i: int :: 
+    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
+  );
+  assert {:msg "  50.16: Network initialization might not establish the channel invariant"} (forall i: int :: 
+    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
+  );
+  assert {:msg "  52.15: Network initialization might not establish the channel invariant"} C[Net#f] == 1;
+  assert {:msg "  53.15: Network initialization might not establish the channel invariant"} (R[Net#g] + C[Net#g]) == R[Net#e];
+  assert {:msg "  54.15: Network initialization might not establish the channel invariant"} R[Net#e] == M[Net#f][R[Net#f]];
+  assert {:msg "  55.16: Network initialization might not establish the channel invariant"} (forall i: int :: 
+    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
+  );
+  if ((0 < R[Net#d]) && (0 < R[Net#e])) {
+    assert {:msg "  57.42: Network initialization might not establish the channel invariant"} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
+  }
+  assert {:msg "  58.16: Network initialization might not establish the channel invariant"} (forall i: int :: 
+    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
+  );
   C[Net#f] := C[Net#f] - 1;
   assert {:msg "  38.13: Network initialization might not establish the network invariant"} R[Net#e] == M[Net#f][R[Net#f]];
 }
@@ -129,10 +186,6 @@ const unique Net#g: Chan (int);
 procedure Net#anon$3#entry#7()
   modifies C, R, M, St, SqnCh, SqnAct;
 {
-  assume SqnAct[Net#spl] == 0;
-  assume SqnAct[Net#pri] == 0;
-  assume SqnAct[Net#sec] == 0;
-  assume SqnAct[Net#adj] == 0;
   assume L[Net#a] == (1 * Base#L);
   assume C[Net#a] == 0;
   assume C[Net#b] == 0;
@@ -143,7 +196,6 @@ procedure Net#anon$3#entry#7()
   assume C[Net#g] == 0;
   C[Net#f] := C[Net#f] + 1;
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  38.13: Invariant might not hold"} R[Net#e] == M[Net#f][R[Net#f]];
   assume 0 <= R[Net#a];
   assume 0 <= C[Net#a];
   assume (R[Net#a] + C[Net#a]) <= L[Net#a];
@@ -161,107 +213,56 @@ procedure Net#anon$3#entry#7()
   assume 0 <= C[Net#g];
   assume R[Net#g] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  Invariant might not hold"} R[Net#a] == (R[Net#b] + C[Net#b]);
   assume R[Net#a] == (R[Net#c] + C[Net#c]);
-  assert {:msg "  Invariant might not hold"} R[Net#a] == (R[Net#c] + C[Net#c]);
   assume R[Net#b] == (R[Net#d] + C[Net#d]);
-  assert {:msg "  Invariant might not hold"} R[Net#b] == (R[Net#d] + C[Net#d]);
   assume R[Net#c] == (R[Net#e] + C[Net#e]);
-  assert {:msg "  Invariant might not hold"} R[Net#c] == (R[Net#e] + C[Net#e]);
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
-  );
-  assert {:msg "  Invariant might not hold"} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
   );
-  assert {:msg "  Invariant might not hold"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
-  );
-  assert {:msg "  Invariant might not hold"} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "  Invariant might not hold"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
-  );
-  assert {:msg "  Invariant might not hold"} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
   );
   assume SqnAct[Net#spl] == R[Net#a];
-  assert {:msg "  40.15: Invariant might not hold"} SqnAct[Net#spl] == R[Net#a];
   assume SqnAct[Net#pri] == R[Net#b];
-  assert {:msg "  41.15: Invariant might not hold"} SqnAct[Net#pri] == R[Net#b];
   assume SqnAct[Net#sec] == R[Net#c];
-  assert {:msg "  42.15: Invariant might not hold"} SqnAct[Net#sec] == R[Net#c];
   assume SqnAct[Net#adj] == R[Net#e];
-  assert {:msg "  43.15: Invariant might not hold"} SqnAct[Net#adj] == R[Net#e];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
-  );
-  assert {:msg "  45.16: Invariant might not hold"} (forall i: int :: 
     (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
   );
-  assert {:msg "  46.16: Invariant might not hold"} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
-  );
-  assert {:msg "  47.16: Invariant might not hold"} (forall i: int :: 
     (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
   );
-  assert {:msg "  48.16: Invariant might not hold"} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
-  );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
   );
-  assert {:msg "  49.16: Invariant might not hold"} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  50.16: Invariant might not hold"} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   assume C[Net#f] == 1;
-  assert {:msg "  52.15: Invariant might not hold"} C[Net#f] == 1;
   assume (R[Net#g] + C[Net#g]) == R[Net#e];
-  assert {:msg "  53.15: Invariant might not hold"} (R[Net#g] + C[Net#g]) == R[Net#e];
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  54.15: Invariant might not hold"} R[Net#e] == M[Net#f][R[Net#f]];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  55.16: Invariant might not hold"} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   if ((0 < R[Net#d]) && (0 < R[Net#e])) {
     assume M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
-    assert {:msg "  57.42: Invariant might not hold"} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
   }
   assume (forall i: int :: 
-    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
-  );
-  assert {:msg "  58.16: Invariant might not hold"} (forall i: int :: 
     (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
   );
   assert {:msg "  Channel invariant might not hold on action entry (#0)"} R[Net#a] == (R[Net#b] + C[Net#b]);
@@ -341,107 +342,56 @@ procedure Net#anon$3#Split#anon$1#8()
   assume 0 <= C[Net#g];
   assume R[Net#g] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  "} R[Net#a] == (R[Net#b] + C[Net#b]);
   assume R[Net#a] == (R[Net#c] + C[Net#c]);
-  assert {:msg "  "} R[Net#a] == (R[Net#c] + C[Net#c]);
   assume R[Net#b] == (R[Net#d] + C[Net#d]);
-  assert {:msg "  "} R[Net#b] == (R[Net#d] + C[Net#d]);
   assume R[Net#c] == (R[Net#e] + C[Net#e]);
-  assert {:msg "  "} R[Net#c] == (R[Net#e] + C[Net#e]);
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
   );
   assume SqnAct[Net#spl] == R[Net#a];
-  assert {:msg "  40.15: "} SqnAct[Net#spl] == R[Net#a];
   assume SqnAct[Net#pri] == R[Net#b];
-  assert {:msg "  41.15: "} SqnAct[Net#pri] == R[Net#b];
   assume SqnAct[Net#sec] == R[Net#c];
-  assert {:msg "  42.15: "} SqnAct[Net#sec] == R[Net#c];
   assume SqnAct[Net#adj] == R[Net#e];
-  assert {:msg "  43.15: "} SqnAct[Net#adj] == R[Net#e];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
-  );
-  assert {:msg "  45.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
   );
-  assert {:msg "  46.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
-  );
-  assert {:msg "  47.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
   );
-  assert {:msg "  48.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
-  );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
   );
-  assert {:msg "  49.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  50.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   assume C[Net#f] == 1;
-  assert {:msg "  52.15: "} C[Net#f] == 1;
   assume (R[Net#g] + C[Net#g]) == R[Net#e];
-  assert {:msg "  53.15: "} (R[Net#g] + C[Net#g]) == R[Net#e];
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  54.15: "} R[Net#e] == M[Net#f][R[Net#f]];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  55.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   if ((0 < R[Net#d]) && (0 < R[Net#e])) {
     assume M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
-    assert {:msg "  57.42: "} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
   }
   assume (forall i: int :: 
-    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
-  );
-  assert {:msg "  58.16: "} (forall i: int :: 
     (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
   );
   assume true;
@@ -533,107 +483,56 @@ procedure Net#anon$3#Rep#anon$0#9()
   assume 0 <= C[Net#g];
   assume R[Net#g] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  "} R[Net#a] == (R[Net#b] + C[Net#b]);
   assume R[Net#a] == (R[Net#c] + C[Net#c]);
-  assert {:msg "  "} R[Net#a] == (R[Net#c] + C[Net#c]);
   assume R[Net#b] == (R[Net#d] + C[Net#d]);
-  assert {:msg "  "} R[Net#b] == (R[Net#d] + C[Net#d]);
   assume R[Net#c] == (R[Net#e] + C[Net#e]);
-  assert {:msg "  "} R[Net#c] == (R[Net#e] + C[Net#e]);
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
   );
   assume SqnAct[Net#spl] == R[Net#a];
-  assert {:msg "  40.15: "} SqnAct[Net#spl] == R[Net#a];
   assume SqnAct[Net#pri] == R[Net#b];
-  assert {:msg "  41.15: "} SqnAct[Net#pri] == R[Net#b];
   assume SqnAct[Net#sec] == R[Net#c];
-  assert {:msg "  42.15: "} SqnAct[Net#sec] == R[Net#c];
   assume SqnAct[Net#adj] == R[Net#e];
-  assert {:msg "  43.15: "} SqnAct[Net#adj] == R[Net#e];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
-  );
-  assert {:msg "  45.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
   );
-  assert {:msg "  46.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
-  );
-  assert {:msg "  47.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
   );
-  assert {:msg "  48.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
-  );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
   );
-  assert {:msg "  49.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  50.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   assume C[Net#f] == 1;
-  assert {:msg "  52.15: "} C[Net#f] == 1;
   assume (R[Net#g] + C[Net#g]) == R[Net#e];
-  assert {:msg "  53.15: "} (R[Net#g] + C[Net#g]) == R[Net#e];
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  54.15: "} R[Net#e] == M[Net#f][R[Net#f]];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  55.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   if ((0 < R[Net#d]) && (0 < R[Net#e])) {
     assume M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
-    assert {:msg "  57.42: "} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
   }
   assume (forall i: int :: 
-    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
-  );
-  assert {:msg "  58.16: "} (forall i: int :: 
     (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
   );
   assume true;
@@ -722,107 +621,56 @@ procedure Net#anon$3#Rep#anon$0#10()
   assume 0 <= C[Net#g];
   assume R[Net#g] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  "} R[Net#a] == (R[Net#b] + C[Net#b]);
   assume R[Net#a] == (R[Net#c] + C[Net#c]);
-  assert {:msg "  "} R[Net#a] == (R[Net#c] + C[Net#c]);
   assume R[Net#b] == (R[Net#d] + C[Net#d]);
-  assert {:msg "  "} R[Net#b] == (R[Net#d] + C[Net#d]);
   assume R[Net#c] == (R[Net#e] + C[Net#e]);
-  assert {:msg "  "} R[Net#c] == (R[Net#e] + C[Net#e]);
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
   );
   assume SqnAct[Net#spl] == R[Net#a];
-  assert {:msg "  40.15: "} SqnAct[Net#spl] == R[Net#a];
   assume SqnAct[Net#pri] == R[Net#b];
-  assert {:msg "  41.15: "} SqnAct[Net#pri] == R[Net#b];
   assume SqnAct[Net#sec] == R[Net#c];
-  assert {:msg "  42.15: "} SqnAct[Net#sec] == R[Net#c];
   assume SqnAct[Net#adj] == R[Net#e];
-  assert {:msg "  43.15: "} SqnAct[Net#adj] == R[Net#e];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
-  );
-  assert {:msg "  45.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
   );
-  assert {:msg "  46.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
-  );
-  assert {:msg "  47.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
   );
-  assert {:msg "  48.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
-  );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
   );
-  assert {:msg "  49.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  50.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   assume C[Net#f] == 1;
-  assert {:msg "  52.15: "} C[Net#f] == 1;
   assume (R[Net#g] + C[Net#g]) == R[Net#e];
-  assert {:msg "  53.15: "} (R[Net#g] + C[Net#g]) == R[Net#e];
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  54.15: "} R[Net#e] == M[Net#f][R[Net#f]];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  55.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   if ((0 < R[Net#d]) && (0 < R[Net#e])) {
     assume M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
-    assert {:msg "  57.42: "} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
   }
   assume (forall i: int :: 
-    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
-  );
-  assert {:msg "  58.16: "} (forall i: int :: 
     (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
   );
   assume true;
@@ -912,107 +760,56 @@ procedure Net#anon$3#Adjudicator#readoff#11()
   assume 0 <= C[Net#g];
   assume R[Net#g] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  "} R[Net#a] == (R[Net#b] + C[Net#b]);
   assume R[Net#a] == (R[Net#c] + C[Net#c]);
-  assert {:msg "  "} R[Net#a] == (R[Net#c] + C[Net#c]);
   assume R[Net#b] == (R[Net#d] + C[Net#d]);
-  assert {:msg "  "} R[Net#b] == (R[Net#d] + C[Net#d]);
   assume R[Net#c] == (R[Net#e] + C[Net#e]);
-  assert {:msg "  "} R[Net#c] == (R[Net#e] + C[Net#e]);
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
   );
   assume SqnAct[Net#spl] == R[Net#a];
-  assert {:msg "  40.15: "} SqnAct[Net#spl] == R[Net#a];
   assume SqnAct[Net#pri] == R[Net#b];
-  assert {:msg "  41.15: "} SqnAct[Net#pri] == R[Net#b];
   assume SqnAct[Net#sec] == R[Net#c];
-  assert {:msg "  42.15: "} SqnAct[Net#sec] == R[Net#c];
   assume SqnAct[Net#adj] == R[Net#e];
-  assert {:msg "  43.15: "} SqnAct[Net#adj] == R[Net#e];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
-  );
-  assert {:msg "  45.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
   );
-  assert {:msg "  46.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
-  );
-  assert {:msg "  47.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
   );
-  assert {:msg "  48.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
-  );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
   );
-  assert {:msg "  49.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  50.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   assume C[Net#f] == 1;
-  assert {:msg "  52.15: "} C[Net#f] == 1;
   assume (R[Net#g] + C[Net#g]) == R[Net#e];
-  assert {:msg "  53.15: "} (R[Net#g] + C[Net#g]) == R[Net#e];
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  54.15: "} R[Net#e] == M[Net#f][R[Net#f]];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  55.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   if ((0 < R[Net#d]) && (0 < R[Net#e])) {
     assume M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
-    assert {:msg "  57.42: "} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
   }
   assume (forall i: int :: 
-    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
-  );
-  assert {:msg "  58.16: "} (forall i: int :: 
     (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
   );
   assume SqnCh[Net#d][R[Net#d] - 0] < M[Net#f][R[Net#f] - 0];
@@ -1106,107 +903,56 @@ procedure Net#anon$3#Adjudicator#normal#12()
   assume 0 <= C[Net#g];
   assume R[Net#g] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  "} R[Net#a] == (R[Net#b] + C[Net#b]);
   assume R[Net#a] == (R[Net#c] + C[Net#c]);
-  assert {:msg "  "} R[Net#a] == (R[Net#c] + C[Net#c]);
   assume R[Net#b] == (R[Net#d] + C[Net#d]);
-  assert {:msg "  "} R[Net#b] == (R[Net#d] + C[Net#d]);
   assume R[Net#c] == (R[Net#e] + C[Net#e]);
-  assert {:msg "  "} R[Net#c] == (R[Net#e] + C[Net#e]);
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
   );
   assume SqnAct[Net#spl] == R[Net#a];
-  assert {:msg "  40.15: "} SqnAct[Net#spl] == R[Net#a];
   assume SqnAct[Net#pri] == R[Net#b];
-  assert {:msg "  41.15: "} SqnAct[Net#pri] == R[Net#b];
   assume SqnAct[Net#sec] == R[Net#c];
-  assert {:msg "  42.15: "} SqnAct[Net#sec] == R[Net#c];
   assume SqnAct[Net#adj] == R[Net#e];
-  assert {:msg "  43.15: "} SqnAct[Net#adj] == R[Net#e];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
-  );
-  assert {:msg "  45.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
   );
-  assert {:msg "  46.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
-  );
-  assert {:msg "  47.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
   );
-  assert {:msg "  48.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
-  );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
   );
-  assert {:msg "  49.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  50.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   assume C[Net#f] == 1;
-  assert {:msg "  52.15: "} C[Net#f] == 1;
   assume (R[Net#g] + C[Net#g]) == R[Net#e];
-  assert {:msg "  53.15: "} (R[Net#g] + C[Net#g]) == R[Net#e];
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  54.15: "} R[Net#e] == M[Net#f][R[Net#f]];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  55.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   if ((0 < R[Net#d]) && (0 < R[Net#e])) {
     assume M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
-    assert {:msg "  57.42: "} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
   }
   assume (forall i: int :: 
-    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
-  );
-  assert {:msg "  58.16: "} (forall i: int :: 
     (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
   );
   assume (SqnCh[Net#d][R[Net#d] - 0] == SqnCh[Net#e][R[Net#e] - 0]) && (SqnCh[Net#d][R[Net#d] - 0] == M[Net#f][R[Net#f] - 0]);
@@ -1306,107 +1052,56 @@ procedure Net#anon$3#Adjudicator#timeout#13()
   assume 0 <= C[Net#g];
   assume R[Net#g] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  "} R[Net#a] == (R[Net#b] + C[Net#b]);
   assume R[Net#a] == (R[Net#c] + C[Net#c]);
-  assert {:msg "  "} R[Net#a] == (R[Net#c] + C[Net#c]);
   assume R[Net#b] == (R[Net#d] + C[Net#d]);
-  assert {:msg "  "} R[Net#b] == (R[Net#d] + C[Net#d]);
   assume R[Net#c] == (R[Net#e] + C[Net#e]);
-  assert {:msg "  "} R[Net#c] == (R[Net#e] + C[Net#e]);
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
   );
   assume SqnAct[Net#spl] == R[Net#a];
-  assert {:msg "  40.15: "} SqnAct[Net#spl] == R[Net#a];
   assume SqnAct[Net#pri] == R[Net#b];
-  assert {:msg "  41.15: "} SqnAct[Net#pri] == R[Net#b];
   assume SqnAct[Net#sec] == R[Net#c];
-  assert {:msg "  42.15: "} SqnAct[Net#sec] == R[Net#c];
   assume SqnAct[Net#adj] == R[Net#e];
-  assert {:msg "  43.15: "} SqnAct[Net#adj] == R[Net#e];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
-  );
-  assert {:msg "  45.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
   );
-  assert {:msg "  46.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
-  );
-  assert {:msg "  47.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
   );
-  assert {:msg "  48.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
-  );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
   );
-  assert {:msg "  49.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  50.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   assume C[Net#f] == 1;
-  assert {:msg "  52.15: "} C[Net#f] == 1;
   assume (R[Net#g] + C[Net#g]) == R[Net#e];
-  assert {:msg "  53.15: "} (R[Net#g] + C[Net#g]) == R[Net#e];
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  54.15: "} R[Net#e] == M[Net#f][R[Net#f]];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  55.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   if ((0 < R[Net#d]) && (0 < R[Net#e])) {
     assume M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
-    assert {:msg "  57.42: "} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
   }
   assume (forall i: int :: 
-    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
-  );
-  assert {:msg "  58.16: "} (forall i: int :: 
     (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
   );
   assume true;
@@ -1499,107 +1194,56 @@ procedure Net#anon$3#exit#14()
   assume 0 <= C[Net#g];
   assume R[Net#g] == 0;
   assume R[Net#a] == (R[Net#b] + C[Net#b]);
-  assert {:msg "  "} R[Net#a] == (R[Net#b] + C[Net#b]);
   assume R[Net#a] == (R[Net#c] + C[Net#c]);
-  assert {:msg "  "} R[Net#a] == (R[Net#c] + C[Net#c]);
   assume R[Net#b] == (R[Net#d] + C[Net#d]);
-  assert {:msg "  "} R[Net#b] == (R[Net#d] + C[Net#d]);
   assume R[Net#c] == (R[Net#e] + C[Net#e]);
-  assert {:msg "  "} R[Net#c] == (R[Net#e] + C[Net#e]);
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#b] + C[Net#b])) ==> (M[Net#b][idx$] == M[Net#a][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#c] + C[Net#c])) ==> (M[Net#c][idx$] == M[Net#a][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#d] + C[Net#d])) ==> (M[Net#d][idx$] == M[Net#b][idx$])
   );
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "  "} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#e] + C[Net#e])) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
-  );
-  assert {:msg "  "} (forall idx$: int :: 
     (0 <= idx$) && (idx$ < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][idx$] == idx$)
   );
   assume SqnAct[Net#spl] == R[Net#a];
-  assert {:msg "  40.15: "} SqnAct[Net#spl] == R[Net#a];
   assume SqnAct[Net#pri] == R[Net#b];
-  assert {:msg "  41.15: "} SqnAct[Net#pri] == R[Net#b];
   assume SqnAct[Net#sec] == R[Net#c];
-  assert {:msg "  42.15: "} SqnAct[Net#sec] == R[Net#c];
   assume SqnAct[Net#adj] == R[Net#e];
-  assert {:msg "  43.15: "} SqnAct[Net#adj] == R[Net#e];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
-  );
-  assert {:msg "  45.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#a] + C[Net#a])) ==> (SqnCh[Net#a][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
   );
-  assert {:msg "  46.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#b] + C[Net#b])) ==> (SqnCh[Net#b][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
-  );
-  assert {:msg "  47.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#c] + C[Net#c])) ==> (SqnCh[Net#c][i] == i)
   );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
   );
-  assert {:msg "  48.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#d] + C[Net#d])) ==> (SqnCh[Net#d][i] == i)
-  );
   assume (forall i: int :: 
     (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
   );
-  assert {:msg "  49.16: "} (forall i: int :: 
-    (0 <= i) && (i < (R[Net#e] + C[Net#e])) ==> (SqnCh[Net#e][i] == i)
-  );
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  50.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   assume C[Net#f] == 1;
-  assert {:msg "  52.15: "} C[Net#f] == 1;
   assume (R[Net#g] + C[Net#g]) == R[Net#e];
-  assert {:msg "  53.15: "} (R[Net#g] + C[Net#g]) == R[Net#e];
   assume R[Net#e] == M[Net#f][R[Net#f]];
-  assert {:msg "  54.15: "} R[Net#e] == M[Net#f][R[Net#f]];
   assume (forall i: int :: 
-    (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
-  );
-  assert {:msg "  55.16: "} (forall i: int :: 
     (0 <= i) && (i < (R[Net#g] + C[Net#g])) ==> (SqnCh[Net#g][i] == i)
   );
   if ((0 < R[Net#d]) && (0 < R[Net#e])) {
     assume M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
-    assert {:msg "  57.42: "} M[Net#d][R[Net#d] - 1] <= M[Net#e][R[Net#e] - 1];
   }
   assume (forall i: int :: 
-    (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
-  );
-  assert {:msg "  58.16: "} (forall i: int :: 
     (0 <= i) && (i < R[Net#e]) ==> (M[Net#g][i] == M[Net#e][i])
   );
   assume !((R[Net#a] + C[Net#a]) < L[Net#a]);

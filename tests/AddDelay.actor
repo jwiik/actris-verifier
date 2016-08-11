@@ -16,15 +16,20 @@ network Net int in ==> int out :
     // (forall i1, i2 :: i1 % 2 = 0 && i2 = i1+1 ==> 0 <= in[i1] && 0 <= in[i2])
   //end
   
-  action in:[x] ==> out:[y] 
-    requires 0 < x
-    ensures y = prev(c)+x || y = x
+  action in:1 ==> out:1
+    requires (forall int i :: 0 <= i && i < limit(in) ==> 0 < in[i])
+    ensures (forall int i :: 1 <= i && i < tot(out) ==> out[i] = in[i]+out[i-1])
   end
   
-  invariant tokens(b,1)
-  invariant next(b) = prev(c) || next(b) = 0
+  //action in:[x] ==> out:[y] 
+  //  requires 0 < x
+  //  ensures y = prev(c)+x || y = x
+  //end
   
-  chinvariant b[0] = c[-1] || b[0] = 0
+  invariant tokens(b,1)
+  //invariant next(b) = prev(c) || next(b) = 0
+  
+  //chinvariant b[0] = c[-1] || b[0] = 0
   
   entities
     add = Add();
