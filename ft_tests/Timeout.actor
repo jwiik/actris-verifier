@@ -50,12 +50,10 @@ network Net int in ==> int out :
   chinvariant (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
   
   chinvariant urd(f) = 1
-  chinvariant urd(g) = rd(e)
+  chinvariant tot(g) = rd(e)
   chinvariant rd(e) = next(f)
   chinvariant (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
   
-  
-  //chinvariant rd(d) <= rd(e)
   chinvariant 0 < rd(d) && 0 < rd(e) ==> prev(d) <= prev(e) 
   chinvariant (forall int i :: 0 <= i && i < rd(e) ==> g[i] = e[i])
   

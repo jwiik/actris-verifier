@@ -280,8 +280,6 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       (buffer.toMap,decls.toList)
     }
     
-    val bChInvs = for (chi <- chInvariants) yield ((chi,transExpr(chi.expr)(networkRenamings)))
-    
     val (sourceMap,targetMap) = {
       val source = scala.collection.mutable.HashMap.empty[PortRef,List[String]]
       val target = scala.collection.mutable.HashMap.empty[PortRef,String]
@@ -292,12 +290,12 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       }
       (source.toMap,target.toMap)
     }
-    decls ++= translateNetworkInit(nwInvariants, bChInvs, networkRenamings, 
+    decls ++= translateNetworkInit(nwInvariants, chInvariants, networkRenamings, 
         sourceMap, targetMap, entities, connections, network.id+Sep)
 
     for (a <- actions) {
       decls ++= translateNetworkAction(
-          a,nwInvariants,bChInvs,networkRenamings,sourceMap,targetMap,
+          a,nwInvariants,chInvariants,networkRenamings,sourceMap,targetMap,
           entities,connections,subactorVarDecls,network.id+Sep)
     }
 
@@ -306,7 +304,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
   
   def translateNetworkInit(
        nwInvs: List[ActorInvariant],
-       chInvs: List[(ChannelInvariant,Boogie.Expr)],
+       chInvs: List[ChannelInvariant],
        networkRenamings: Map[String,String], // Channels and entities
        sourceMap: Map[PortRef,List[String]],
        targetMap: Map[PortRef,String],
@@ -371,7 +369,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
   def translateNetworkAction(
        nwa: Action, 
        nwInvs: List[ActorInvariant],
-       chInvs: List[(ChannelInvariant,Boogie.Expr)],
+       chInvs: List[ChannelInvariant],
        networkRenamings: Map[String,String], // Channels and entities
        sourceMap: Map[PortRef,List[String]],
        targetMap: Map[PortRef,String],
@@ -409,11 +407,8 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
         case PortRef(None,p) =>
           limitAssumesBuffer += bAssume(bCredInit(networkRenamings(c.id)) ==@ bInt(nwa.portInputCount(p))*bBaseL)
           limitLoopCondBuffer += bTotal(networkRenamings(c.id)) < bCredInit(networkRenamings(c.id))
-        //case PortRef(_,_) => 
-        //  cInitAssumesBuffer += bAssume(bCredInit(networkRenamings(c.id)) ==@ bInt(0))
         case _ =>
       }
-      assumesBuffer += bAssume(bRead(networkRenamings(c.id)) ==@ bInt(0))
       assumesBuffer += bAssume(bCredit(networkRenamings(c.id)) ==@ bInt(0))
     }
     
@@ -441,11 +436,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       val outChan = Id(targetMap(PortRef(None,portId))); outChan.typ = ChanType(decl.typ)
       val acc = IndexAccessor(outChan,IntLiteral(index))
       Resolver.resolveExpr(acc)
-      replacements = replacements + (Id(decl.id) -> acc)
-      /*val newName = "ActionPH"+Sep+placeHolder.id
-      procVars += bLocal(newName,type2BType(placeHolder.typ))
-      actionRenamings += ((placeHolder.id,newName))*/
-      
+      replacements = replacements + (Id(decl.id) -> acc)      
     }
 
     val outputs = (for (opat <- nwa.outputPattern) yield {
@@ -460,18 +451,11 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
         
         val stmts =
           if (e.isInstanceOf[Id] && (nwa.placeHolderVars exists {case (d,p,i) => d.id == e.asInstanceOf[Id].id  })) {
-            // If this is an action variable it will be used as a placeholder
-//            val v = transExpr(e)(renamings)
-//            List(Boogie.Assign(v,transExpr(acc)(renamings)))
             Nil
           }
           else {
-            /*val name = prefix+opat.portId+Sep+i
-            procVars += bLocal(name,type2BType(e.typ))
-            val v = VarExpr(name)*/
-            List(
-                /*Boogie.Assign(v,transExpr(acc)(renamings)),*/
-                bAssert(transExpr(acc)(renamings) ==@ transExpr(renamedExp)(renamings),e.pos,"Network output might not conform to the specified action output"))    
+            List(bAssert(transExpr(acc)(renamings) ==@ transExpr(renamedExp)(renamings),
+                e.pos,"Network output might not conform to the specified action output"))    
           }
         i = i+1
         stmts
@@ -489,6 +473,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
     val nwPost = for (q <- nwa.ensures) yield 
       (q.pos,transExpr(IdReplacer.visitExpr(q)(replacements))(renamings))
 
+      
     // Network action entry
     val entryStmt = 
       procVars.toList :::
@@ -498,12 +483,17 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       //stepAssumes :::
       //List(bAssume(VarExpr("C#init") ==@ VarExpr("C"))) :::
       (for (nwi <- nwInvs) yield Inhalator.visit(nwi, networkRenamings)).flatten :::
+      (for (chi <- chInvs) yield Inhalator.visit(chi, networkRenamings)).flatten :::
       nwPre:::
-      (for ((chi,bChi) <- chInvs) yield {
-        val baseMsg = "Channel invariant might not hold on action entry"
-        val msg = baseMsg + " (" + GeneratedInvariantCount.next + ")"
-        if (!chi.assertion.free) bAssert(bChi,chi.pos,msg) else bAssume(bChi)
-      })
+      (for (chi <- chInvs) yield {
+        if (!chi.assertion.free) {
+          val baseMsg = "Channel invariant might not hold on action entry"
+          val msg = baseMsg + " (" + GeneratedInvariantCount.next + ")"
+          Exhalator.visit(chi,msg,renamings)
+        }
+        else Nil
+        //if (!chi.assertion.free) bAssert(bChi,chi.pos,msg) else bAssume(bChi)
+      }).flatten
     val initProc = Boogie.Proc(Uniquifier.get(prefix+nwa.fullName+"#entry"),Nil,Nil,Modifies,Nil,entryStmt)
     
     // Sub-actor executions
@@ -563,7 +553,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
     val exitStmt =
       procVars.toList:::
       cInitAssumes:::
-      (for ((_,chi) <- chInvs) yield bAssume(chi)):::
+      (for (chi <- chInvs) yield Inhalator.visit(chi,"",renamings)).flatten:::
       limitNegAssumes:::
       firingNegAssumes:::
       outputs:::
@@ -587,6 +577,10 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
           case _ => Nil
         }
       }).flatten:::
+      //
+      (for (chi <- chInvs) yield 
+        Exhalator.visit(chi,"The network might not preserve the channel invariant",networkRenamings)).flatten :::
+      //
       (for (nwi <- nwInvs) yield 
         Exhalator.visit(nwi,"The network might not preserve the network invariant",networkRenamings)).flatten :::
       (for (c <- connections) yield {
@@ -612,7 +606,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       action: Action, 
       networkRenamings: Map[String,String], // Channels and entities
       cInits: List[Boogie.Assume],
-      chInvs: List[(ChannelInvariant,Boogie.Expr)],
+      chInvs: List[ChannelInvariant],
       sourceMap: Map[PortRef,List[String]], 
       targetMap: Map[PortRef,String],
       priorityGuard: List[Boogie.Expr]): (List[Boogie.Stmt],List[Boogie.LocalVar],Boogie.Expr,Boogie.Expr) = {
@@ -636,7 +630,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
     }
     
     asgn ++= cInits // Assumptions about initial state of channels
-    asgn ++= (for ((_,chi) <- chInvs) yield bAssume(chi))  // Assume channel invariants
+    asgn ++= (for (chi <- chInvs) yield Inhalator.visit(chi, "", networkRenamings)).flatten  // Assume channel invariants
     
     
     val actorRenamings = networkRenamings ++ actorParamRenames //++ actorVarRenames
@@ -778,13 +772,18 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       asgn += Boogie.Assign(bSqnAct(instanceBName),bSqnAct(instanceBName) plus bInt(1))
     }
     
-    asgn ++= (for ((chi,bChi) <- chInvs) yield {
-      val baseMsg = 
-        "Action at " + action.pos + " ('" + action.fullName + "') for actor instance '" + 
-        instance.id + "' might not preserve the channel invariant"
-      val msg = baseMsg + " (" + GeneratedInvariantCount.next + ")"
-      if (!chi.assertion.free) bAssert(bChi,chi.pos,msg) else bAssume(bChi)
-    })
+    asgn ++= (for (chi <- chInvs) yield {
+      if (!chi.assertion.free) {
+        val baseMsg = 
+          "Action at " + action.pos + " ('" + action.fullName + "') for actor instance '" + 
+          instance.id + "' might not preserve the channel invariant"
+        val msg = baseMsg + " (" + GeneratedInvariantCount.next + ")"
+        Exhalator.visit(chi, msg, networkRenamings)
+      }
+      else {
+        Nil
+      }
+    }).flatten
             
     (asgn.toList, newVars.toList, firingRuleWithPrio, firingRuleWithoutPrio)
   }
@@ -797,10 +796,19 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
   abstract class Halator(val inhale: Boolean) {
     import Helper._
     
+    def visit(inv: ChannelInvariant, renamings: Map[String,String]): List[Boogie.Stmt] = 
+      visit(inv, "Invariant might not hold", renamings)
+    
     def visit(inv: ActorInvariant, renamings: Map[String,String]): List[Boogie.Stmt] = 
       visit(inv, "Invariant might not hold", renamings)
     
     def visit(inv: ActorInvariant, msg: String, renamings: Map[String,String]): List[Boogie.Stmt] = {
+      val buffer = new ListBuffer[Boogie.Stmt]
+      visit(inv.expr, inv.assertion.free)(buffer,msg,renamings);
+      buffer.toList
+    }
+    
+    def visit(inv: ChannelInvariant, msg: String, renamings: Map[String,String]): List[Boogie.Stmt] = {
       val buffer = new ListBuffer[Boogie.Stmt]
       visit(inv.expr, inv.assertion.free)(buffer,msg,renamings);
       buffer.toList
