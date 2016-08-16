@@ -48,10 +48,10 @@ object StaticProperties extends InferenceModule {
             case PortRef(None,x) => n.addChannelInvariant(AtMost(tot(c.id),limit(c.id)),!soundnessChecks)
             case _ =>
           }
-          c.to match {
-            case PortRef(None,x) => n.addChannelInvariant(Eq(rd(c.id),lit(0)),!soundnessChecks)
-            case _ =>
-          }
+//          c.to match {
+//            case PortRef(None,x) => n.addChannelInvariant(Eq(rd(c.id),lit(0)),!soundnessChecks)
+//            case _ =>
+//          }
         }
       }
       case _ =>

@@ -384,7 +384,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
     }
     for (chi <- chInvs) {
       asgn ++= Exhalator.visit(
-          chi, "Network initialization might not establish the channel invariant", networkRenamings)
+          chi, "Network initialization might not establish the channel invariant (" + GeneratedInvariantCount.next + ")", networkRenamings)
     }
     for (nwi <- nwInvs) {
       asgn ++= Exhalator.visit(
@@ -603,7 +603,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       }).flatten:::
       //
       (for (chi <- chInvs) yield 
-        Exhalator.visit(chi,"The network might not preserve the channel invariant",networkRenamings)).flatten :::
+        Exhalator.visit(chi,"The network might not preserve the channel invariant (" + GeneratedInvariantCount.next + ")"  ,networkRenamings)).flatten :::
       //
       (for (nwi <- nwInvs) yield 
         Exhalator.visit(nwi,"The network might not preserve the network invariant",networkRenamings)).flatten :::

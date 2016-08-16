@@ -131,6 +131,7 @@ object Count {
 }
 
 object ActionClass extends Enumeration {
+  type ActionClass = Value
   val Normal, Primary, Error, Recovery = Value
 }
 
