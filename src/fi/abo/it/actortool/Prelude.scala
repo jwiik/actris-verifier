@@ -62,7 +62,9 @@ var M: MType;
 var C: CType;
 var R: CType;
 var L: CType;
+var I: CType;
 var St: [Actor]State;
+
 const Base#L: int;
 axiom 1 <= Base#L;
 

@@ -101,24 +101,21 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         name match {
           case "rd" => bRead(transExpr(params(0)))
           case "urd" => bCredit(transExpr(params(0)))
-          case "tot" => bRead(transExpr(params(0))) plus bCredit(transExpr(params(0)))
-          case "limit" => bCredInit(transExpr(params(0)))
+          case "tot" => bTotal(transExpr(params(0)))
+          case "limit" => bLimit(transExpr(params(0)))
+          case "init" => bI(transExpr(params(0)))
           case "sqn" => {
-            if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
+            if (!ftMode) 
+              throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
             val t = transExpr(params(0))
             val accessor = params(0).asInstanceOf[IndexAccessor]
             val channel = transExpr(accessor.exp)
             val index = transExpr(accessor.suffix)
-            bSqn(channel,index)
-            
-            //bSqnAct(transExpr(params(0)))
-            
-            //if (params.size == 2) bSqnCh(transExpr(params(0)),transExpr(params(1)))
-            //else /* == 1 */ bSqnAct(transExpr(params(0)))
-            
+            bSqnCh(channel,index)
           }
           case "currsqn" => {
-            if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
+            if (!ftMode) 
+              throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
             bSqnAct(transExpr(params(0)))
           }
           case "next" => 

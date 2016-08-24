@@ -41,18 +41,18 @@ object StaticProperties extends InferenceModule {
     val soundnessChecks = false
     for (m <- n.members) m match {
       case Structure(connections) => {
-        for (c <- connections) {
-          n.addChannelInvariant(AtMost(lit(0),rd(c.id)),!soundnessChecks)
-          n.addChannelInvariant(AtMost(lit(0),urd(c.id)),!soundnessChecks)
-          c.from match {
-            case PortRef(None,x) => n.addChannelInvariant(AtMost(tot(c.id),limit(c.id)),!soundnessChecks)
-            case _ =>
-          }
+//        for (c <- connections) {
+//          n.addChannelInvariant(AtMost(lit(0),rd(c.id)),!soundnessChecks)
+//          n.addChannelInvariant(AtMost(lit(0),urd(c.id)),!soundnessChecks)
+//          c.from match {
+//            case PortRef(None,x) => n.addChannelInvariant(AtMost(tot(c.id),limit(c.id)),!soundnessChecks)
+//            case _ =>
+//          }
 //          c.to match {
 //            case PortRef(None,x) => n.addChannelInvariant(Eq(rd(c.id),lit(0)),!soundnessChecks)
 //            case _ =>
 //          }
-        }
+//        }
       }
       case _ =>
     }
