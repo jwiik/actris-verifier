@@ -125,7 +125,7 @@ object IdToIdReplacer extends ASTReplacingVisitor[Id, Id] {
 object TokensDefFinder extends ASTVisitor[ListBuffer[(String, Expr)]] {
   override def visitExpr(expr: Expr)(implicit info: ListBuffer[(String, Expr)]) {
     expr match {
-      case delay @ FunctionApp("tokens", params) => {
+      case delay @ FunctionApp("delay", params) => {
         val (ch, amount) = (params(0), params(1))
         info += ((ch.asInstanceOf[Id].id, amount))
       }

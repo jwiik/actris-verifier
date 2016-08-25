@@ -454,8 +454,8 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
       c.from match {
         case PortRef(None,p) =>
           limitAssumesBuffer += bAssume(bLimit(networkRenamings(c.id)) ==@ bInt(nwa.portInputCount(p))*bBaseL)
-          limitAssumesBuffer += bAssume(bR(networkRenamings(c.id)) - bI(networkRenamings(c.id)) <= bLimit(networkRenamings(c.id)))
-          limitLoopCondBuffer += bR(networkRenamings(c.id)) - bI(networkRenamings(c.id)) < bLimit(networkRenamings(c.id))
+          limitAssumesBuffer += bAssume(bC(networkRenamings(c.id)) - bI(networkRenamings(c.id)) <= bLimit(networkRenamings(c.id)))
+          limitLoopCondBuffer += bC(networkRenamings(c.id)) - bI(networkRenamings(c.id)) < bLimit(networkRenamings(c.id))
         case _ =>
       }
 //      c.to match {
@@ -880,7 +880,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
           visit(right, free)(branchBuffer,msg,renamings)
           buffer += Boogie.If(transExpr(left),branchBuffer.toList,List.empty) 
         }
-        case FunctionApp("tokens",params) => {
+        case FunctionApp("delay",params) => {
           val chCredit = bC(transExpr(params(0)))
           if (inhale) {
             buffer += Boogie.Assign(chCredit, chCredit + transExpr(params(1)))
@@ -889,7 +889,7 @@ class Translator(val fixedBaseLength: Int, val ftMode: Boolean, implicit val bvM
             buffer += Boogie.Assign(chCredit, chCredit - transExpr(params(1)))
           }
         }
-        case FunctionApp("credit", params) => {
+        case FunctionApp("crd", params) => {
           if (inhale) {
             val chC = bC(transExpr(params(0)))
             buffer += Boogie.Assign(chC, chC + transExpr(params(1)))

@@ -542,7 +542,8 @@ object Resolver {
       case fa@FunctionApp("init",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("prev",params) => resolveChannelAccessFunction(ctx, fa)
-      case fa@FunctionApp("tokens",params) => resolveDelayFunction(ctx, fa)
+      case fa@FunctionApp("delay",params) => resolveDelayFunction(ctx, fa)
+      case fa@FunctionApp("credit",params) => resolveDelayFunction(ctx, fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType.default,IntType.default,IntType.default))
       case fa@FunctionApp("state",params) => {
         if (params.size != 2) {
@@ -775,7 +776,7 @@ object Resolver {
   
   def resolveDelayFunction(ctx: Context, fa: FunctionApp): Type = {
     if (fa.parameters.size != 2) {
-        ctx.error(fa.pos,"Function " + fa.name + " takes exactly 3 argument")
+        ctx.error(fa.pos,"Function " + fa.name + " takes exactly 2 argument")
         return BoolType
     }
     val paramType = resolveExpr(ctx,fa.parameters(0))
@@ -784,13 +785,8 @@ object Resolver {
     }
     val amountType = resolveExpr(ctx,fa.parameters(1))
     if (!amountType.isInt) {
-      ctx.error(fa.parameters(1).pos,"The second argument to function " + fa.name + " must be a integer")
+      ctx.error(fa.parameters(1).pos,"The second argument to function " + fa.name + " must be an integer")
     }
-//    val contentType = paramType.asInstanceOf[ChanType].contentType
-//    val initType = resolveExpr(ctx,fa.parameters(2))
-//    if (initType != contentType) {
-//      ctx.error(fa.parameters(2).pos,"Expected: " + contentType + "found: " + initType.id)
-//    }
     BoolType
   }
   
