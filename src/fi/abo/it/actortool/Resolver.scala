@@ -543,7 +543,7 @@ object Resolver {
       case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("prev",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("delay",params) => resolveDelayFunction(ctx, fa)
-      case fa@FunctionApp("credit",params) => resolveDelayFunction(ctx, fa)
+      //case fa@FunctionApp("credit",params) => resolveDelayFunction(ctx, fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType.default,IntType.default,IntType.default))
       case fa@FunctionApp("state",params) => {
         if (params.size != 2) {

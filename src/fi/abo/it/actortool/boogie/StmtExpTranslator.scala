@@ -126,7 +126,10 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
             bChannelIdx(ch,bRead(ch) minus bInt(1))
           case "tokens" =>
             // Happens if tokens function is used in an invalid position (not inhaled/exhaled)
-            throw new TranslationException(fa.pos, "Function tokens used in invalid position") 
+            throw new TranslationException(fa.pos, "Function 'tokens' used in invalid position")
+          case "credit" =>
+            // Happens if tokens function is used in an invalid position (not inhaled/exhaled)
+            throw new TranslationException(fa.pos, "Function 'credit' used in invalid position")
           case "state" => {
             val actor = params(0).typ.asInstanceOf[ActorType].actor
             val id = params(1).asInstanceOf[Id].id
