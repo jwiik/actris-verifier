@@ -7,11 +7,50 @@ import scala.collection.mutable.ListBuffer
  */
 
 object Elements {
-  def rd(id: String) = FunctionApp("rd",List(Id(id): Expr))
-  def urd(id: String) = FunctionApp("urd",List(Id(id): Expr))
-  def tot(id: String) = FunctionApp("tot",List(Id(id): Expr))
-  def limit(id: String) = FunctionApp("limit",List(Id(id): Expr))
-  def sqnAcc(acc: IndexAccessor) = FunctionApp("sqn", List(acc: Expr))
+  def rd(id: String) = {
+    val fa = FunctionApp("rd",List(Id(id): Expr))
+    fa.typ = IntType(32)
+    fa
+  }
+  def urd(id: String) = {
+    val fa = FunctionApp("urd",List(Id(id): Expr))
+    fa.typ = IntType(32)
+    fa
+  }
+  def tot(id: String) = {
+    val fa = FunctionApp("tot",List(Id(id): Expr))
+    fa.typ = IntType(32)
+    fa
+  }
+  def limit(id: String) = {
+    val fa = FunctionApp("limit",List(Id(id): Expr))
+    fa.typ = IntType(32)
+    fa
+  }
+  def init(id: String) = {
+    val fa = FunctionApp("init",List(Id(id): Expr))
+    fa.typ = IntType(32)
+    fa
+  }
+  def sqnAcc(acc: IndexAccessor) = {
+    val fa = FunctionApp("sqn", List(acc: Expr))
+    fa.typ = IntType(32)
+    fa
+  }
+  
+  def ch(name: String, carriedType: Type) = {
+    val i = Id(name)
+    i.typ = ChanType(carriedType)
+    i
+  }
+  
+  def chAcc(ch: Id, idx: Expr) = {
+    val t = ch.typ.asInstanceOf[ChanType].contentType
+    val ia = IndexAccessor(ch,idx)
+    ia.typ = t
+    ia
+  }
+  
   def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(32); li}
 } 
 

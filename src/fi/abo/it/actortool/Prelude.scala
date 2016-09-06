@@ -66,7 +66,7 @@ var I: CType;
 var St: [Actor]State;
 
 const Base#L: int;
-axiom 1 <= Base#L;
+axiom 0 <= Base#L;
 
 const unique this#: Actor;
 type List a = [@inttype@]a;
