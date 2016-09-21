@@ -13,7 +13,8 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Boogie.Decl], Unit] {
   
   def translateProgram(decls: List[TopDecl]): List[Boogie.Decl] = {
-    val translator = new Translator(params.FixedBaseLength, params.FTMode, params.BVMode)
+    
+    val translator = new Translator(params.FixedBaseLength, params.FTMode, params.SmokeTest, params.BVMode)
     translator.translateProgram(decls)
   }
   
@@ -52,16 +53,40 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
     var line = input.readLine()
     var previousLine = null: String
     val boogieOutput: ListBuffer[String] = new ListBuffer()
-    while (line!=null){
-      if (previousLine != null) println
-      Console.out.print(line)
-      Console.out.flush
+    while (line != null) {
+      if (!(line.startsWith("[") && line.endsWith("]"))) {
+        if (previousLine != null) println
+        Console.out.print(line)
+        Console.out.flush
+      }
       boogieOutput += line
       previousLine = line
       line = input.readLine()
     }
     boogie.waitFor
     input.close
+    
+    if (params.SmokeTest) {
+      println
+      for (d <- bplProg) {
+        d match {
+          case p: Boogie.Proc => {
+            var found = false
+            for (line <- boogieOutput) {
+              if (line.startsWith("[") && line.endsWith("]")) {
+                if (line.substring(1, line.length-1) == p.id) found = true
+              }
+            }
+            if (!found) {
+              Console.out.println("Smoke test failed for Boogie procedure '" + p.id + "'")
+            }
+          }
+          case _ =>
+        }
+      }
+      println("Smoke test finished")
+    }
+    
     Console.out.println
   }
   

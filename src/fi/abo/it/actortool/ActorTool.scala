@@ -53,6 +53,8 @@ object ActorTool {
     val FixedBaseLength: Int
     val FTMode: Boolean
     val InferModules: List[String]
+    val SmokeTest: Boolean
+    val ReplaceMaps: Boolean
     final lazy val help = "Usage: actortool [option] <filename>+\n"
   }
   
@@ -75,6 +77,8 @@ object ActorTool {
     var aSoundnessChecks = false
     var aFixedBaseLength = 0
     var aFTMode = false
+    var aSmokeTest = false
+    var aReplaceMaps = false
     
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -139,6 +143,8 @@ object ActorTool {
               return None
           }
         }
+        case Param("smokeTest") => aSmokeTest = true
+        case Param("replaceMaps") => aReplaceMaps = true
         case Param(x) => 
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -178,6 +184,8 @@ object ActorTool {
         val FixedBaseLength = aFixedBaseLength
         val BVMode = aBVMode
         val FTMode = aFTMode
+        val SmokeTest = aSmokeTest
+        val ReplaceMaps = aReplaceMaps
     })
   }
   

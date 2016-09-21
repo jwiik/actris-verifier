@@ -167,9 +167,9 @@ object Resolver {
         }  
         case n: Network => {
 
-          if (n.actions.size > 1) {
-            return Errors(List((n.pos, "Networks can have at most 1 action")))
-          }
+//          if (n.actions.size > 1) {
+//            return Errors(List((n.pos, "Networks can have at most 1 action")))
+//          }
           
           var inports = Map[String,InPort]()
           var outports = Map[String,OutPort]()
@@ -267,6 +267,12 @@ object Resolver {
         v.typ = actorCtx.inports(inPat.portId).portType
         vars = vars + (d.id -> d)
       }
+      
+//      inPat.repeat match {
+//        case Some(r) => resolveExpr(actorCtx, r, IntType(32))
+//        case None =>
+//      }
+      
     }
     for (v <- action.variables) {
       if (vars contains v.id) actorCtx.error(v.pos, "Variable name already used: " + v.id)
@@ -310,17 +316,18 @@ object Resolver {
         else /* basic actor */ {
           val eType = resolveExpr(ctx,e)
           if (eType.isList) {
-            if (outPat.exps.size != 1) {
-              ctx.error(e.pos, "Output patterns using lists must have length 1")
-            }
-            val listType = eType.asInstanceOf[ListType]
-            if (outPat.repeat > listType.size) {
-              ctx.error(e.pos, "Repeat value cannot be larger than the list used")
-            }
-            if (!TypeUtil.isCompatible(listType.contentType, port.portType)) {
-              ctx.error(e.pos, "List content has type " + listType.contentType.id + 
-                  ", which does not match port type" + port.portType.id)
-            }
+            assert(false);
+//            if (outPat.exps.size != 1) {
+//              ctx.error(e.pos, "Output patterns using lists must have length 1")
+//            }
+//            val listType = eType.asInstanceOf[ListType]
+//            if (outPat.repeat > listType.size) {
+//              ctx.error(e.pos, "Repeat value cannot be larger than the list used")
+//            }
+//            if (!TypeUtil.isCompatible(listType.contentType, port.portType)) {
+//              ctx.error(e.pos, "List content has type " + listType.contentType.id + 
+//                  ", which does not match port type" + port.portType.id)
+//            }
           }
           else {
             if (!TypeUtil.isCompatible(eType, port.portType)) {
@@ -329,6 +336,11 @@ object Resolver {
             }
           }
         }
+        
+//        outPat.repeat match {
+//          case Some(r) => resolveExpr(ctx, r, IntType(32))
+//          case None =>
+//        }
       }
     }
     
@@ -535,13 +547,12 @@ object Resolver {
       case fa@FunctionApp("rd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot",params) => resolveChannelCountFunction(ctx, fa)
-      case fa@FunctionApp("limit",params) => resolveChannelCountFunction(ctx, fa)
-      case fa@FunctionApp("initrd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("sqn",params) => resolveSqnFunction(ctx, fa)
       case fa@FunctionApp("currsqn",params) => resolveSqnFunction(ctx, fa)
       case fa@FunctionApp("init",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("prev",params) => resolveChannelAccessFunction(ctx, fa)
+      case fa@FunctionApp("last",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("delay",params) => resolveDelayFunction(ctx, fa)
       //case fa@FunctionApp("credit",params) => resolveDelayFunction(ctx, fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType.default,IntType.default,IntType.default))
@@ -761,14 +772,21 @@ object Resolver {
   }
   
   def resolveChannelAccessFunction(ctx: Context, fa: FunctionApp): Type = {
-    if (fa.parameters.size != 1) {
-      ctx.error(fa.pos,"Function " + fa.name + " takes exactly 1 argument")
+    if (fa.parameters.size != 1 && fa.parameters.size != 2) {
+      ctx.error(fa.pos,"Function " + fa.name + " takes 1 or 2 arguments")
       return UnknownType
     }
     val paramType = resolveExpr(ctx,fa.parameters(0))
     if (!paramType.isChannel) {
-      ctx.error(fa.pos,"The argument to function " + fa.name + " must be a channel")
+      ctx.error(fa.pos,"The first argument to function " + fa.name + " must be a channel")
       return UnknownType
+    }
+    if (fa.parameters.size == 2) {
+      val offsetType = resolveExpr(ctx,fa.parameters(1))
+      if (!offsetType.isInt) {
+        ctx.error(fa.pos,"The second argument to function " + fa.name + " must be an integer")
+        return UnknownType
+      }
     }
     fa.typ = paramType.asInstanceOf[ChanType].contentType
     fa.typ

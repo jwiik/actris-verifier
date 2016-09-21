@@ -78,7 +78,7 @@ object NWPreToInvariant extends InferenceModule {
       }
       val replMap = replacements.toMap
       val renamedReqs = action.requires map { p => IdReplacer.visitExpr(p)(replMap) } 
-      n.addChannelInvariants(renamedReqs,false)
+      //n.addChannelInvariants(renamedReqs,false)
     }
   }
   

@@ -81,18 +81,16 @@ sealed case class Network(
   
   override def isNetwork = true
   
-  private lazy val userDefinedChannelInvariants = 
+  private var _channelInvariants: List[ChannelInvariant] = 
     for (m <- members.filter{ x => x.isChannelInvariant}) yield { m.asInstanceOf[ChannelInvariant] }
   
-  private var _inferredChannelInvariants: List[ChannelInvariant] = Nil
-  
-  def channelInvariants = _inferredChannelInvariants:::userDefinedChannelInvariants
+  def channelInvariants = _channelInvariants
   
   def addChannelInvariant(chi: Expr, free: Boolean) { addChannelInvariants(List(chi), free) }
   
   def addChannelInvariants(chis: List[Expr], free: Boolean) {
     val newInvariants = chis map { x => ChannelInvariant(Assertion(x,free),true) }
-    _inferredChannelInvariants = _inferredChannelInvariants:::newInvariants
+    _channelInvariants = _channelInvariants:::newInvariants
   }
   
   lazy val entities: Option[Entities] = {
@@ -263,6 +261,16 @@ sealed case class Connection(
     override val annotations: List[Annotation]) extends ASTNode {
   
   var typ: Type = null
+  
+  def isInput = from match {
+    case PortRef(None,_) => true
+    case PortRef(Some(_),_) => false
+  }
+  
+  def isOutput = to match {
+    case PortRef(None,_) => true
+    case PortRef(Some(_),_) => false
+  }
 }
 
 

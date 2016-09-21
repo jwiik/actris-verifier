@@ -257,7 +257,7 @@ object Boogie {
    case Comment(msg) => indent +  "// " +  msg + nl
    case assert@Assert(e) =>
      // JW: Removed handling for rise4fun etc and improved hadnling of asserts without position
-     val pos = "  " + 
+     val pos = "" + 
       (if (assert.pos != null) 
         (assert.pos match {
          case NoPosition => ""

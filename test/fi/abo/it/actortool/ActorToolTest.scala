@@ -26,6 +26,8 @@ class ActorToolTestSuite extends FunSuite {
       val InferModules = List("default")
       val BVMode = false
       val FTMode = false
+      val SmokeTest = false
+      val ReplaceMaps = false
     }
     
     ActorTool.verify(params)

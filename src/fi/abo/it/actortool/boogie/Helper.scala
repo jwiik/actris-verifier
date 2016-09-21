@@ -40,7 +40,6 @@ object BType {
 }
 
 object Helper {
-  import Boogie.Expr
   
   final val Sep = "#"
   
@@ -61,78 +60,64 @@ object Helper {
     }
   }
   
-  def bLocal(id: String, tp: Type)(implicit bvMode: Boolean) = new Boogie.LocalVar(id, type2BType(tp))
-  def bLocal(id: String, tp: BType) = new Boogie.LocalVar(id, tp)
-  def bThisDecl = bLocal(BMap.This,BType.Actor)
+  def Local(id: String, tp: Type)(implicit bvMode: Boolean) = new Boogie.LocalVar(id, type2BType(tp))
+  def Local(id: String, tp: BType) = new Boogie.LocalVar(id, tp)
+  def ThisDecl = Local(BMap.This,BType.Actor)
   
-  def bBool(b: Boolean) = Boogie.BoolLiteral(b)
+  def Bool(b: Boolean) = Boogie.BoolLiteral(b)
   
-  def bInt(i: Int)(implicit bvMode: Boolean): Boogie.Expr = bInt(i.toString)
+  def Int(i: Int)(implicit bvMode: Boolean): Boogie.Expr = Int(i.toString)
   
-  def bInt(i: String)(implicit bvMode: Boolean) = {
+  def Int(i: String)(implicit bvMode: Boolean) = {
     if (bvMode) Boogie.BVLiteral(i, 32)
     else Boogie.IntLiteral(i)
   }
   
-  def bVar(id: String) = Boogie.VarExpr(id)
+  def Var(id: String) = Boogie.VarExpr(id)
   
-  def bAssert(e: Expr, pos: Position, msg: String) = new Boogie.Assert(e, pos, msg)
-  def bAssert(e: Expr) = new Boogie.Assert(e,null,"Condition might not hold") 
-  def bAssume(e: Expr) = Boogie.Assume(e)
-  def bAssert2Assume(assert: Boogie.Assert) = new Boogie.Assume(assert.e)
+  def Assert(e: Boogie.Expr, pos: Position, msg: String) = new Boogie.Assert(e, pos, msg)
+  def Assert(e: Boogie.Expr, msg: String) = new Boogie.Assert(e, null, msg)
+  def Assert(e: Boogie.Expr) = new Boogie.Assert(e,null,"Condition might not hold") 
+  def Assume(e: Boogie.Expr) = Boogie.Assume(e)
+  def Assert2Assume(assert: Boogie.Assert) = new Boogie.Assume(assert.e)
  
-  def bC(channel: Boogie.Expr) = (VarExpr(BMap.C) apply channel)
-  def bR(channel: Boogie.Expr) = (VarExpr(BMap.R) apply channel)
-  def bI(channel: Boogie.Expr) = (VarExpr(BMap.I) apply channel)
-  def bL(channel: Boogie.Expr) = (VarExpr(BMap.L) apply channel)
+  def C(channel: Boogie.Expr) = (VarExpr(BMap.C) apply channel)
+  def R(channel: Boogie.Expr) = (VarExpr(BMap.R) apply channel)
+  def I(channel: Boogie.Expr) = (VarExpr(BMap.I) apply channel)
   
-  def bR(channel: String): Boogie.MapSelect = bR(Boogie.VarExpr(channel))
-  def bC(channel: String): Boogie.MapSelect = bC(Boogie.VarExpr(channel))
-  def bI(channel: String): Boogie.MapSelect = bI(Boogie.VarExpr(channel))
-  def bL(channel: String): Boogie.MapSelect = bL(Boogie.VarExpr(channel))
+  def R(channel: String): Boogie.Expr = R(Boogie.VarExpr(channel))
+  def C(channel: String): Boogie.Expr = C(Boogie.VarExpr(channel))
+  def I(channel: String): Boogie.Expr = I(Boogie.VarExpr(channel))
   
-  def bCredit(connName: String): Boogie.Expr = bCredit(VarExpr(connName)): Boogie.Expr
-  //def bCredit(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.C) apply channel)
-  def bCredit(channel: Boogie.Expr): Boogie.Expr = 
-    (VarExpr(BMap.C) apply channel) - (VarExpr(BMap.R) apply channel)
+  def Credit(channel: String): Boogie.Expr = C(channel) - R(channel)
+  def Credit(channel: Boogie.Expr): Boogie.Expr = C(channel) - R(channel)
   
-  def bLimit(connName: String): Boogie.Expr = bLimit(VarExpr(connName)): Boogie.Expr
-  def bLimit(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.L) apply channel)
+  def Read(channel: String): Boogie.Expr = R(channel)
+  def Read(channel: Boogie.Expr): Boogie.Expr = R(channel)
   
-  def bRead(connName: String): Boogie.Expr = bRead(VarExpr(connName))
-  //def bRead(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.R) apply channel)
-  def bRead(channel: Boogie.Expr): Boogie.Expr = 
-    (VarExpr(BMap.R) apply channel) //- (VarExpr(BMap.I) apply channel)
+  def Total(channel: String)(implicit bvMode: Boolean): Boogie.Expr = C(channel)
+  def Total(channel: Boogie.Expr)(implicit bvMode: Boolean): Boogie.Expr = C(channel)
   
-  def bTotal(connName: String)(implicit bvMode: Boolean): Boogie.Expr = bTotal(VarExpr(connName))
-  def bTotal(channel: Boogie.Expr)(implicit bvMode: Boolean): Boogie.Expr = 
-    (VarExpr(BMap.C) apply channel) //- (VarExpr(BMap.I) apply channel)
-  //  (bRead(channel) plus bCredit(channel))
+  def SqnCh(connName: String, ind: Boogie.Expr): Boogie.Expr = SqnCh(VarExpr(connName),ind)
+  def SqnCh(channel: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnCh) apply channel) apply ind
   
-  def bSqnCh(connName: String, ind: Boogie.Expr): Boogie.Expr = 
-    bSqnCh(VarExpr(connName),ind)
-  def bSqnCh(channel: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = 
-    (VarExpr(BMap.SqnCh) apply channel) apply ind
+  def SqnAct(actorName: String): Boogie.Expr = SqnAct(VarExpr(actorName))
+  def SqnAct(actor: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnActor) apply actor)
   
-  def bSqnAct(actorName: String): Boogie.Expr = bSqnAct(VarExpr(actorName))
-  def bSqnAct(actor: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnActor) apply actor)
-  
-  //def bSqn(ch: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnCh) apply ch) apply ind
-  
-  def bChannel(connName: String): Expr = (VarExpr(BMap.M) apply VarExpr(connName))
-  def bChannelIdx(connName: String, ind: Boogie.Expr): Expr = 
+  def Channel(connName: String): Boogie.Expr = (VarExpr(BMap.M) apply VarExpr(connName))
+  def ChannelIdx(connName: String, ind: Boogie.Expr): Boogie.Expr = 
     ((VarExpr(BMap.M) apply VarExpr(connName)) apply ind)
-  def bChannel(channel: Boogie.Expr): Expr = (VarExpr(BMap.M) apply channel)
-  def bChannelIdx(channel: Boogie.Expr, ind: Boogie.Expr): Expr = 
+  def Channel(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.M) apply channel)
+  def ChannelIdx(channel: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = 
     ((VarExpr(BMap.M) apply channel) apply ind)
   
-  def bState(id: String) = VarExpr(BMap.St) apply VarExpr(id)
-  def bState(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
-  val bThis = bState(BMap.This)
-  val bBaseL = VarExpr(BMap.BaseL)
+  def State(id: String) = VarExpr(BMap.St) apply VarExpr(id)
+  def State(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
   
-  def bFun(id: String, arg: Boogie.Expr*) = Boogie.FunctionApp(id,arg.toList)
+  def Fun(id: String, arg: Boogie.Expr*) = Boogie.FunctionApp(id,arg.toList)
   
+  val This = State(BMap.This)
+  val BaseL = VarExpr(BMap.BaseL)
   val intlst = VarExpr("AT#intlst");
-
+  
 }
