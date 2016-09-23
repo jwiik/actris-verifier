@@ -151,11 +151,11 @@ object SDFClass extends InferenceModule {
             val inRate = action.portInputCount(ip.portId)
             val inChan = n.structure.get.incomingConnection(e.id, ip.portId).get
             val ratedTot = 
-              if (inRate == 1) tot(oc.id)
-              else Times(lit(inRate),tot(oc.id))
+              if (inRate == 1) tot0(oc.id)
+              else Times(lit(inRate),tot0(oc.id))
             val ratedRd =
-              if (outRate == 1) rd(inChan.id)
-              else Times(lit(outRate),rd(inChan.id))
+              if (outRate == 1) rd0(inChan.id)
+              else Times(lit(outRate),rd0(inChan.id))
             
             val ratedDelayedTot = 
               if (delayedChannels contains oc.id) Minus(ratedTot,delayedChannels(oc.id))
@@ -171,7 +171,7 @@ object SDFClass extends InferenceModule {
               case None => lit(0)
               case Some(d) => d
             }
-            val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot(oc.id)))
+            val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(oc.id)))
             val bounds = // If there is more than one output we need differentiate with mod
               if (1 < outFuncs.size) And(quantBounds,Eq(Mod(quantVar,lit(outRate)),lit(k)))
               else quantBounds
@@ -208,7 +208,7 @@ object FTProperties extends InferenceModule {
       // Generate chinvariant: forall i . 0 <= i && i < tot(a) ==> sqn(a[i]) = i
       // where a is a network input channel
       val lowBound = lit(0)
-      val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot(channel.id)))
+      val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(channel.id)))
       val cId = Id(channel.id); cId.typ = ChanType(ipat.vars(0).typ)
       val accessor = IndexAccessor(cId,quantVar); accessor.typ = ipat.vars(0).typ
       val sqn = sqnAcc(accessor); sqn.typ = IntType(32)

@@ -12,6 +12,11 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
   
   val B = Helper
   
+//  class RootContext(val startNode: ASTNode) extends Context(null, startNode)
+//  class Context(val parentCtx: Context, val parentNode: ASTNode) {
+//    def 
+//  }
+  
   
   def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,String]): List[Boogie.Stmt] = {
     val bStmts = new ListBuffer[Boogie.Stmt]()
@@ -100,11 +105,15 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         )
       case fa@FunctionApp(name,params) => {
         name match {
-          case "rd" => B.Read(transExpr(params(0)))
-          case "urd" => B.Credit(transExpr(params(0)))
-          case "tot" => B.Total(transExpr(params(0)))
-//          case "limit" => bLimit(transExpr(params(0)))
-          case "init" => B.I(transExpr(params(0)))
+          case "rd0" => B.R(transExpr(params(0)))
+          case "urd" => B.C(transExpr(params(0))) - B.R(transExpr(params(0)))
+          case "tot0" => B.C(transExpr(params(0)))
+          case "rd@" => B.R(transExpr(params(0))) - B.I(transExpr(params(0)))
+          case "tot@" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
+          case "rd" => B.R(transExpr(params(0))) - B.I(transExpr(params(0)))
+          case "tot" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
+          case "str" => B.I(transExpr(params(0)))
+          case "@" => B.I(transExpr(params(0)))
           case "sqn" => {
             if (!ftMode) 
               throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
@@ -131,6 +140,15 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
             val ch = transExpr(params(0))
             if (fa.parameters.size > 1) B.ChannelIdx(ch,B.C(ch) minus transExpr(params(1)))
             else B.ChannelIdx(ch,B.C(ch) minus B.Int(1))
+          case "history" => 
+            val ch = transExpr(params(0))
+            generateRangePredicate(params, B.Int(0), B.I(ch))
+          case "current" => 
+            val ch = transExpr(params(0))
+            generateRangePredicate(params, B.I(ch), B.C(ch))
+          case "every" => 
+            val ch = transExpr(params(0))
+            generateRangePredicate(params, B.Int(0), B.C(ch)) 
           case "tokens" =>
             // Happens if tokens function is used in an invalid position (not inhaled/exhaled)
             throw new TranslationException(fa.pos, "Function 'tokens' used in invalid position")
@@ -184,10 +202,38 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       }
       case BoolLiteral(b) => Boogie.BoolLiteral(b)
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
+      case sm@SpecialMarker(mark) => {
+        mark match {
+          case "@" => {
+            val accessorName = sm.extraData("accessor").asInstanceOf[String]
+            B.I(renamings(accessorName))
+          }
+          case _ => throw new RuntimeException()
+        }
+      }
       case Id(id) => renamings.get(id) match {
         case None => Boogie.VarExpr(id)
         case Some(newId) => Boogie.VarExpr(newId)
       } 
+    }
+  }
+  
+  def generateRangePredicate(params: List[Expr], start: Boogie.Expr, end: Boogie.Expr)(implicit renamings: Map[String,String]) = {
+    if (params.size == 2) {
+      val ch = transExpr(params(0))
+      val ind = transExpr(params(1))
+      start <= ind && ind < end
+    }
+    else if (params.size == 4) {
+      val ch = transExpr(params(0))
+      val ind = transExpr(params(1))
+      val off1 = transExpr(params(2))
+      val off2 = transExpr(params(3))
+      start+off1 <= ind && ind < end-off2
+    }
+    else {
+      // Should have been caught in resolver already
+      throw new RuntimeException()
     }
   }
 }

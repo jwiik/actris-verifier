@@ -1,14 +1,10 @@
 package fi.abo.it.actortool.boogie
 
 import scala.util.parsing.input.Position
-//import fi.abo.it.actortool.boogie.Boogie
-//import fi.abo.it.actortool.boogie.Boogie.DeclComment
+
 import fi.abo.it.actortool.boogie.Boogie.VarExpr
-import fi.abo.it.actortool.boogie.Boogie.MapSelect
 import fi.abo.it.actortool.boogie.Boogie.BType
 import fi.abo.it.actortool.boogie.Boogie.NamedType
-//import fi.abo.it.actortool.boogie.Boogie.LocalVar
-//import fi.abo.it.actortool.boogie.Boogie.UnaryExpr
 import fi.abo.it.actortool._
 
 
@@ -23,7 +19,7 @@ object BMap extends Enumeration {
   final val SqnCh = "SqnCh"
   final val SqnActor = "SqnAct"
   final val This = "this#"
-  final val BaseL = "Base#L"
+//  final val BaseL = "Base#L"
 }
 
 object BType {
@@ -81,9 +77,9 @@ object Helper {
   def Assume(e: Boogie.Expr) = Boogie.Assume(e)
   def Assert2Assume(assert: Boogie.Assert) = new Boogie.Assume(assert.e)
  
-  def C(channel: Boogie.Expr) = (VarExpr(BMap.C) apply channel)
-  def R(channel: Boogie.Expr) = (VarExpr(BMap.R) apply channel)
-  def I(channel: Boogie.Expr) = (VarExpr(BMap.I) apply channel)
+  def C(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.C) apply channel)
+  def R(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.R) apply channel)
+  def I(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.I) apply channel)
   
   def R(channel: String): Boogie.Expr = R(Boogie.VarExpr(channel))
   def C(channel: String): Boogie.Expr = C(Boogie.VarExpr(channel))
@@ -117,7 +113,7 @@ object Helper {
   def Fun(id: String, arg: Boogie.Expr*) = Boogie.FunctionApp(id,arg.toList)
   
   val This = State(BMap.This)
-  val BaseL = VarExpr(BMap.BaseL)
+  //val BaseL = VarExpr(BMap.BaseL)
   val intlst = VarExpr("AT#intlst");
   
 }

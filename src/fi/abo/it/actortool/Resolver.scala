@@ -10,7 +10,7 @@ object Resolver {
   case class Success() extends ResolverOutcome
   case class Errors(ss: List[(Position,String)]) extends ResolverOutcome
   
-  sealed abstract class Context(val parent: Context) {
+  sealed abstract class Context(val parentNode: ASTNode, val parentCtx: Context) {
     def error(p: Position, msg: String)
     def lookUp(id: String): Option[Declaration] = None
     def currentAccessedElement: Option[Expr] = None
@@ -18,7 +18,7 @@ object Resolver {
     def lookupFunction(name: String): Option[FunctionDecl] = None
   }
   
-  sealed class RootContext(val parentCtx: Context, override val actors: Map[String,DFActor]) extends Context(parentCtx) {
+  sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor]) extends Context(parentNode, null) {
     val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
     override def lookUp(id: String): Option[Declaration] = None
@@ -26,16 +26,16 @@ object Resolver {
   
   sealed class EmptyContext extends RootContext(null,Map.empty)
   
-  sealed abstract class ChildContext(val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentCtx) {
+  sealed abstract class ChildContext(override val parentNode: ASTNode, override val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
     override def error(p: Position, msg: String) = parentCtx.error(p,msg)
     override def lookupFunction(name: String): Option[FunctionDecl] = parentCtx.lookupFunction(name)
   }
   
-  sealed class ActorContext(
+  sealed class ActorContext(val actor: DFActor,
       override val parentCtx: RootContext, override val vars: Map[String,Declaration], 
       val inports: Map[String,InPort], val outports: Map[String,OutPort], 
-      val functions: Map[String,FunctionDecl]) extends ChildContext(parentCtx,vars) {
+      val functions: Map[String,FunctionDecl]) extends ChildContext(actor,parentCtx,vars) {
     
     private var channels = Map[String,Connection]()
     private var entities = Map[String,DFActor]()
@@ -69,16 +69,12 @@ object Resolver {
     }
   }
   
+  sealed class ActionContext(val action: Action, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
   
-  sealed class ActionContext(override val parentCtx: Context, 
-      override val vars: Map[String,Declaration]) extends ChildContext(parentCtx,vars)
+  sealed class BasicContext(val action: ASTNode, override val parentCtx: Context) extends ChildContext(action, parentCtx, Map.empty)
   
-  sealed class QuantifierContext(override val parentCtx: Context, 
-      override val vars: Map[String,Declaration]) extends ChildContext(parentCtx,vars)
-  
-  sealed class AccessorContext(override val parentCtx: Context, accessor: Expr) extends ChildContext(parentCtx,Map.empty) {
-    override def currentAccessedElement = Some(accessor)
-  }
+  sealed class QuantifierContext(val quantifier: Quantifier, override val parentCtx: Context, 
+      override val vars: Map[String,Declaration]) extends ChildContext(quantifier,parentCtx,vars)
 
   def resolve(prog: List[TopDecl]): ResolverOutcome = {
     var decls = Map[String,TopDecl]()
@@ -135,7 +131,7 @@ object Resolver {
             case _ =>
           }
           
-          val ctx = new ActorContext(rootCtx, vars.toMap, inports.toMap, outports.toMap, functions.toMap)
+          val ctx = new ActorContext(a, rootCtx, vars.toMap, inports.toMap, outports.toMap, functions.toMap)
           var schedule: Option[Schedule] = None
           var priority: Option[Priority] = None
           val actions = new ListBuffer[Action]()
@@ -181,7 +177,7 @@ object Resolver {
             outports = outports + (p.id -> p)
           }
           
-          val ctx = new ActorContext(rootCtx, Map.empty, inports, outports, Map.empty) 
+          val ctx = new ActorContext(n, rootCtx, Map.empty, inports, outports, Map.empty) 
 
           var hasEntities, hasStructure = false
           var channels = Map.empty[String,Connection]
@@ -279,7 +275,7 @@ object Resolver {
       vars = vars + (v.id -> v)
     } 
     
-    val ctx = new ActionContext(actorCtx,vars)
+    val ctx = new ActionContext(action, actorCtx,vars)
     action.guard match {
       case Some(g) => resolveExpr(ctx, g, BoolType)
       case None =>
@@ -344,7 +340,7 @@ object Resolver {
       }
     }
     
-    val postCtx = new ActionContext(actorCtx,vars)
+    val postCtx = new ActionContext(action,actorCtx,vars)
     for (post <- action.ensures) resolveExpr(postCtx, post, BoolType)
     
     action.body match {
@@ -489,7 +485,8 @@ object Resolver {
     }
   }
   
-  def resolveExpr(ctx: Context, exp: Expr): Type = {
+  def resolveExpr(parentCtx: Context, exp: Expr): Type = {
+    val ctx = new BasicContext(exp, parentCtx)
     exp match {
       case op: Plus => resolveNumericBinaryExpr(ctx, op)
       case op: Minus => resolveNumericBinaryExpr(ctx, op)
@@ -531,30 +528,36 @@ object Resolver {
         tThen
       case ac@IndexAccessor(e1,e2) =>
         val tExp = resolveExpr(ctx,e1)
-        val accessorCtx = new AccessorContext(ctx,e1)
         if (!tExp.isIndexed) {
           ctx.error(e1.pos, "Expected indexed type, found: " + tExp.id)
           UnknownType
         } 
         else {
           val indexedType = tExp.asInstanceOf[IndexedType]
-          val tInd = resolveExpr(accessorCtx,e2)
+          val tInd = resolveExpr(ctx,e2)
           if (!TypeUtil.isCompatible(tInd,indexedType.indexType)) 
             ctx.error(e2.pos, "Expected " + indexedType.indexType.id + ", found: " + tInd.id)
           ac.typ = indexedType.resultType
           indexedType.resultType
         }
-      case fa@FunctionApp("rd",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("rd0",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("tot0",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("rd@",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("tot@",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("rd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("sqn",params) => resolveSqnFunction(ctx, fa)
       case fa@FunctionApp("currsqn",params) => resolveSqnFunction(ctx, fa)
-      case fa@FunctionApp("init",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("str",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("@",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("prev",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("last",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("delay",params) => resolveDelayFunction(ctx, fa)
-      //case fa@FunctionApp("credit",params) => resolveDelayFunction(ctx, fa)
+      case fa@FunctionApp("history",params) => resolveBoundPredicate(ctx,fa)
+      case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
+      case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType.default,IntType.default,IntType.default))
       case fa@FunctionApp("state",params) => {
         if (params.size != 2) {
@@ -640,6 +643,22 @@ object Resolver {
       case l@IntLiteral(n) => l.typ = TypeUtil.createIntOrUint(n); l.typ
       case hx@HexLiteral(x) => hx.typ = UintType(x.length*4); hx.typ
       case l@FloatLiteral(_) => throw new IllegalArgumentException()
+      case sm@SpecialMarker(m) => {
+        m match {
+          case "@" => {
+            val accessor = findParentAccessor(ctx)
+            accessor match {
+              case Some(ac) => {
+                if (ac.exp.isInstanceOf[Id]) sm.addExtraData("accessor", ac.exp.asInstanceOf[Id].id)
+                else ctx.error(sm.pos, "Marker '" + m + "' used with invalid accessor")
+              }
+              case None => ctx.error(sm.pos, "Marker '" + m + "' used in invalid position")
+            }
+            IntType.default
+          }
+          case _ => throw new IllegalArgumentException()
+        }
+      }
       case v@Id(id) =>
         if (v.typ != null) {
           v.typ
@@ -656,6 +675,18 @@ object Resolver {
           }
         }
         
+    }
+  }
+  
+  def findParentAccessor(ctx: Context): Option[IndexAccessor] = {
+    val node = ctx.parentNode
+    ctx.parentCtx.parentNode match {
+      case ac: IndexAccessor => Some(ac)
+      case _ => {
+        if (ctx.parentCtx.parentNode.isInstanceOf[Expr]) findParentAccessor(ctx.parentCtx)
+        else None
+      }
+      
     }
   }
   
@@ -725,7 +756,7 @@ object Resolver {
     for (d <- quant.vars) {
       decls = decls + (d.id -> d)
     }
-    val quantCtx = new QuantifierContext(ctx, decls)
+    val quantCtx = new QuantifierContext(quant, ctx, decls)
     val t = resolveExpr(quantCtx, quant.expr)
     if (!t.isBool) ctx.error(quant.expr.pos, "Expected type bool: " + quant.expr)
     quant.pattern match {
@@ -736,39 +767,74 @@ object Resolver {
     quant.typ
   }
   
-   def resolveChannelCountFunction(ctx: Context, fa: FunctionApp): Type = {
-      if (fa.parameters.size != 1) {
-        ctx.error(fa.pos,"Function " + fa.name + " takes exactly 1 argument")
-        return IntType(32)
+  def resolveChannelCountFunction(ctx: Context, fa: FunctionApp): Type = {
+    if (fa.parameters.size != 1) {
+      ctx.error(fa.pos,"Function " + fa.name + " takes exactly 1 argument")
+      return IntType(32)
+    }
+    val paramType1 = resolveExpr(ctx,fa.parameters(0))
+    if (!paramType1.isChannel) {
+      ctx.error(fa.parameters(0).pos,"The 1st argument to function " + fa.name + " must be a channel")
+    }
+    fa.typ = IntType(32)
+    IntType(32)
+  }
+   
+  def resolveBoundPredicate(ctx: Context, fa: FunctionApp): Type = {
+    if (fa.parameters.size < 2) {
+      ctx.error(fa.pos,"Function " + fa.name + " takes at least 2 arguments")
+      return BoolType
+    }
+    val paramType1 = resolveExpr(ctx,fa.parameters(0))
+    if (!paramType1.isChannel) {
+      ctx.error(fa.parameters(0).pos,"The 1st argument to function " + fa.name + " must be a channel")
+    }
+    
+    val paramType2 = resolveExpr(ctx,fa.parameters(1))
+    if (!paramType2.isInt) {
+      ctx.error(fa.parameters(0).pos,"The 2nd argument to function " + fa.name + " must be an integer")
+    }
+    
+    if (fa.parameters.size > 2) {
+      if (fa.parameters.size != 4) {
+        ctx.error(fa.pos,"Expected 4 arguments to function " + fa.name + "")
+        return BoolType
       }
-      val paramType1 = resolveExpr(ctx,fa.parameters(0))
-      if (!paramType1.isChannel) {
-        ctx.error(fa.parameters(0).pos,"The 1st argument to function " + fa.name + " must be a channel")
+      
+      val paramType3 = resolveExpr(ctx,fa.parameters(2))
+      if (!paramType3.isInt) {
+        ctx.error(fa.parameters(0).pos,"The 3rd argument to function " + fa.name + " must be an integer")
       }
-      fa.typ = IntType(32)
-      IntType(32)
+      val paramType4 = resolveExpr(ctx,fa.parameters(3))
+      if (!paramType4.isInt) {
+        ctx.error(fa.parameters(0).pos,"The 4th argument to function " + fa.name + " must be an integer")
+      }
+    }
+    
+    fa.typ = BoolType
+    BoolType
   }
   
   def resolveSqnFunction(ctx: Context, fa: FunctionApp): Type = {
-      if (fa.parameters.size != 1) {
-        ctx.error(fa.pos,"Function " + fa.name + " takes 1 argument")
-        return IntType(32)
-      }
+    if (fa.parameters.size != 1) {
+      ctx.error(fa.pos,"Function " + fa.name + " takes 1 argument")
+      return IntType(32)
+    }
 
-      val paramType = resolveExpr(ctx,fa.parameters(0))
-      fa.name match {
-        case "sqn" =>
-          //if (!fa.parameters(0).isInstanceOf[IndexAccessor]) {
-          //  ctx.error(fa.parameters(0).pos, "The argument to sqn has to be a channel index accessor")
-          //}
-        case "currsqn" =>
-          resolveExpr(ctx,fa.parameters(0))
-          if (!paramType.isActor) {
-            ctx.error(fa.parameters(0).pos,"The argument to function " + fa.name + " must be an actor instance")
-          }
-      }
-      fa.typ = IntType(32)
-      IntType(32)
+    val paramType = resolveExpr(ctx,fa.parameters(0))
+    fa.name match {
+      case "sqn" =>
+        //if (!fa.parameters(0).isInstanceOf[IndexAccessor]) {
+        //  ctx.error(fa.parameters(0).pos, "The argument to sqn has to be a channel index accessor")
+        //}
+      case "currsqn" =>
+        resolveExpr(ctx,fa.parameters(0))
+        if (!paramType.isActor) {
+          ctx.error(fa.parameters(0).pos,"The argument to function " + fa.name + " must be an actor instance")
+        }
+    }
+    fa.typ = IntType(32)
+    IntType(32)
   }
   
   def resolveChannelAccessFunction(ctx: Context, fa: FunctionApp): Type = {
@@ -834,42 +900,45 @@ object Resolver {
   def resolveStmt(ctx: Context, stmts: List[Stmt]): Unit =
     for (stmt <- stmts) resolveStmt(ctx, stmt)
   
-  def resolveStmt(ctx: Context, stmt: Stmt): Unit = stmt match {
-    case Assign(id,exp) =>
-      if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
-      val it = resolveExpr(ctx,id)
-      val et = resolveExpr(ctx, exp)
-      if (!TypeUtil.isCompatible(it, et)) 
-        ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable of type " + it.id)
-    case IndexAssign(id,idx,exp) =>
-      if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
-      val it = resolveExpr(ctx,id)
-      val et = resolveExpr(ctx, exp)
-      val xt = resolveExpr(ctx,idx)
-      if (!it.isList) {
-        ctx.error(id.pos,  id.id + " is not a list."); return
-      }
-      else {
-        if (!TypeUtil.isCompatible(it.asInstanceOf[ListType].contentType,et)) {
-          ctx.error(id.pos, "Cannot assign a value of type " + et.id + " to a list of type " + it.id); return
+  def resolveStmt(parentCtx: Context, stmt: Stmt): Unit = {
+    val ctx = new BasicContext(stmt,parentCtx)
+    stmt match {
+      case Assign(id,exp) =>
+        if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
+        val it = resolveExpr(ctx,id)
+        val et = resolveExpr(ctx, exp)
+        if (!TypeUtil.isCompatible(it, et)) 
+          ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable of type " + it.id)
+      case IndexAssign(id,idx,exp) =>
+        if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
+        val it = resolveExpr(ctx,id)
+        val et = resolveExpr(ctx, exp)
+        val xt = resolveExpr(ctx,idx)
+        if (!it.isList) {
+          ctx.error(id.pos,  id.id + " is not a list."); return
         }
-      }
-      if (!xt.isInt) ctx.error(idx.pos, "List indices must be integers.")
-    case While(cond,invs,body) =>
-      resolveExpr(ctx,cond,BoolType)
-      for (i <- invs) resolveExpr(ctx,i,BoolType)
-      resolveStmt(ctx,body)
-    case IfElse(ifCond,ifStmt,elseIfs,elseStmt) =>
-      resolveExpr(ctx,ifCond,BoolType)
-      resolveStmt(ctx,ifStmt)
-      for (elseIf <- elseIfs) {
-        resolveExpr(ctx,elseIf.cond,BoolType)
-        resolveStmt(ctx,elseIf.stmt)
-      }
-      resolveStmt(ctx,elseStmt)
-    case Havoc(vars) => for (v <- vars) resolveExpr(ctx,v)
-    case Assert(e) => resolveExpr(ctx,e,BoolType)
-    case Assume(e) => resolveExpr(ctx,e,BoolType)
-    
+        else {
+          if (!TypeUtil.isCompatible(it.asInstanceOf[ListType].contentType,et)) {
+            ctx.error(id.pos, "Cannot assign a value of type " + et.id + " to a list of type " + it.id); return
+          }
+        }
+        if (!xt.isInt) ctx.error(idx.pos, "List indices must be integers.")
+      case While(cond,invs,body) =>
+        resolveExpr(ctx,cond,BoolType)
+        for (i <- invs) resolveExpr(ctx,i,BoolType)
+        resolveStmt(ctx,body)
+      case IfElse(ifCond,ifStmt,elseIfs,elseStmt) =>
+        resolveExpr(ctx,ifCond,BoolType)
+        resolveStmt(ctx,ifStmt)
+        for (elseIf <- elseIfs) {
+          resolveExpr(ctx,elseIf.cond,BoolType)
+          resolveStmt(ctx,elseIf.stmt)
+        }
+        resolveStmt(ctx,elseStmt)
+      case Havoc(vars) => for (v <- vars) resolveExpr(ctx,v)
+      case Assert(e) => resolveExpr(ctx,e,BoolType)
+      case Assume(e) => resolveExpr(ctx,e,BoolType)
+      
+    }
   }
 }

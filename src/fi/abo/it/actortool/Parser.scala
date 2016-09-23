@@ -306,9 +306,17 @@ class Parser extends StandardTokenParsers {
     case a0 ~ Some(a1) => PortRef(Some(a0),a1)
   })
   
-  def functionApp: Parser[Expr] = positioned(
-      (ident ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
-        case (id ~ params) => FunctionApp(id,params)
+  def functionApp = (functionAppSpecialMarker | functionAppStandard)
+  
+  def functionAppStandard: Parser[Expr] = positioned(
+      (ident ~ opt(atMarker) ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
+        case (id ~ None ~ params) => FunctionApp(id,params)
+        case (id ~ Some(sm) ~ params) => FunctionApp(id+sm.value,params)
+      })
+      
+  def functionAppSpecialMarker: Parser[Expr] = positioned(
+      (atMarker ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
+        case (SpecialMarker(m) ~ params) => FunctionApp(m,params)
       })
   
   def listLiteral: Parser[Expr] = positioned(
@@ -324,6 +332,7 @@ class Parser extends StandardTokenParsers {
   def atom: Parser[Expr] = positioned(
     boolLiteral | 
     identifier |
+    atMarker |
     hexaNumericLit ^^ { case n => HexLiteral(n) } |
     numericLit ^^ { case n => IntLiteral(n.toInt) }
   )
@@ -337,6 +346,8 @@ class Parser extends StandardTokenParsers {
     "true" ^^^ BoolLiteral(true) |
     "false" ^^^ BoolLiteral(false)
   )
+  
+  def atMarker = positioned("@" ^^^ SpecialMarker("@"))
     
   def identifier = positioned(ident ^^ Id)
   

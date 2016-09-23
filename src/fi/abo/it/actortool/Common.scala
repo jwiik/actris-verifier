@@ -7,28 +7,23 @@ import scala.collection.mutable.ListBuffer
  */
 
 object Elements {
-  def rd(id: String) = {
-    val fa = FunctionApp("rd",List(Id(id): Expr))
+  def rd0(id: String) = {
+    val fa = FunctionApp("rd0",List(Id(id): Expr))
     fa.typ = IntType(32)
     fa
   }
-  def urd(id: String) = {
-    val fa = FunctionApp("urd",List(Id(id): Expr))
-    fa.typ = IntType(32)
-    fa
-  }
-  def tot(id: String) = {
-    val fa = FunctionApp("tot",List(Id(id): Expr))
-    fa.typ = IntType(32)
-    fa
-  }
-  def limit(id: String) = {
-    val fa = FunctionApp("limit",List(Id(id): Expr))
+//  def urd(id: String) = {
+//    val fa = FunctionApp("urd",List(Id(id): Expr))
+//    fa.typ = IntType(32)
+//    fa
+//  }
+  def tot0(id: String) = {
+    val fa = FunctionApp("tot0",List(Id(id): Expr))
     fa.typ = IntType(32)
     fa
   }
   def init(id: String) = {
-    val fa = FunctionApp("init",List(Id(id): Expr))
+    val fa = FunctionApp("str",List(Id(id): Expr))
     fa.typ = IntType(32)
     fa
   }
@@ -254,6 +249,7 @@ abstract class ASTVisitor[T] {
       case hxl: HexLiteral =>
       case bl: BoolLiteral =>
       case fl: FloatLiteral =>
+      case sm: SpecialMarker =>
     }
   }
 
@@ -327,6 +323,7 @@ abstract class ASTReplacingVisitor[A <: ASTNode, B <: ASTNode] {
       case hxl: HexLiteral  => hxl
       case bl: BoolLiteral  => bl
       case fl: FloatLiteral => fl
+      case sm: SpecialMarker => sm 
     }
     newExpr.typ = expr.typ
     newExpr
