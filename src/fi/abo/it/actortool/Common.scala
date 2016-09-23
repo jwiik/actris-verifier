@@ -22,7 +22,7 @@ object Elements {
     fa.typ = IntType(32)
     fa
   }
-  def init(id: String) = {
+  def str(id: String) = {
     val fa = FunctionApp("str",List(Id(id): Expr))
     fa.typ = IntType(32)
     fa

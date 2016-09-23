@@ -140,17 +140,6 @@ sealed case class Action(
     val requires: List[Expr], val ensures: List[Expr], variables: List[Declaration],
     val body: Option[List[Stmt]]) extends Member {
   
-  
-
- //var transitions: List[(String,String)] = Nil
-  
-  private var _placeHolderVars: List[(Declaration,String,Int)] = Nil
-  
-  def placeHolderVars = _placeHolderVars
-  def addPlaceHolderVar(d: Declaration, portId: String, ind: Int) = _placeHolderVars = _placeHolderVars:::List((d,portId,ind))
-  //def placeHolderVars_= (list: List[Declaration]) = _placeHolderVars = list
-  
-  
   override def isAction = true
   
   def portInputCount(portId: String) = portInputPattern(portId) match {
@@ -408,6 +397,15 @@ sealed case class IntLiteral(val value: Int) extends Literal
 sealed case class BoolLiteral(val value: Boolean) extends Literal
 sealed case class FloatLiteral(val value: String) extends Literal
 sealed case class HexLiteral(val value: String) extends Literal
+
+sealed case class SpecialMarker(val value: String) extends Expr {
+  private var data: Map[String,Object] = Map.empty
+  
+  def addExtraData(name: String, obj: Object) {
+    data = data + (name -> obj)
+  }
+  def extraData: Map[String,Object] = data 
+}
 
 sealed abstract class Stmt extends ASTNode
 sealed case class Assign(val id: Id, val expr: Expr) extends Stmt

@@ -299,11 +299,7 @@ object Resolver {
         if (nwAction) {
           e match {
             case id@Id(name) => ctx.lookUp(name) match {
-              case None => 
-                val decl = Declaration(name,port.portType,false,None)
-                vars = vars + (name -> decl)
-                action.addPlaceHolderVar(decl,outPat.portId,i)
-                id.typ = port.portType
+              case None => // Do nothing, this is just a dummy variable
               case Some(_) => resolveExpr(ctx,e,port.portType)
             }
             case _ => resolveExpr(ctx,e,port.portType)
