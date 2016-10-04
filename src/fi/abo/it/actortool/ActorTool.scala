@@ -259,7 +259,13 @@ object ActorTool {
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
-    if (params.DoInfer) Inferencer.infer(program,params.InferModules,params.FTMode)
+    if (params.DoInfer) {
+      Inferencer.infer(program,params.InferModules,params.FTMode) match {
+        case Inferencer.Errors(msgs) =>
+          msgs foreach { case (pos,msg) => reportError(pos, msg) }; return
+        case Inferencer.Success() =>
+      }
+    }
     
     timings += (Step.Infer -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime

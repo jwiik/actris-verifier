@@ -55,10 +55,10 @@ sealed abstract class DFActor(
     }
   }
   
-  def hasInport(id: String) = inports.exists(p => p.portId == id)
-  def hasOutport(id: String) = outports.exists(p => p.portId == id)
-  def getInport(id: String) = inports.find(p => p.portId == id)
-  def getOutport(id: String) = outports.find(p => p.portId == id)
+  def hasInport(id: String) = inports.exists(p => p.id == id)
+  def hasOutport(id: String) = outports.exists(p => p.id == id)
+  def getInport(id: String) = inports.find(p => p.id == id)
+  def getOutport(id: String) = outports.find(p => p.id == id)
 }
 
 sealed case class BasicActor(
@@ -272,20 +272,20 @@ sealed abstract class Port(val id: String, val portType: Type) extends ASTNode {
   def outPort = false
 }
 
-sealed case class InPort(val portId: String, override val portType: Type) extends Port(portId,portType) {
+sealed case class InPort(override val id: String, override val portType: Type) extends Port(id,portType) {
   override def inPort = true
 }
 
-sealed case class OutPort(val portId: String, override val portType: Type) extends Port(portId,portType) {
+sealed case class OutPort(override val id: String, override val portType: Type) extends Port(id,portType) {
   override def outPort = true
 }
 
-sealed abstract class Pattern(val portId: String) extends ASTNode
+sealed abstract class Pattern(val portId: String, val list: List[Expr], val repeat: Int) extends ASTNode
 
-sealed case class InputPattern(override val portId: String, val vars: List[Id], repeat: Int) extends Pattern(portId) {
+sealed case class InputPattern(override val portId: String, val vars: List[Id], override val repeat: Int) extends Pattern(portId,vars,repeat) {
   def numConsumed = vars.size
 }
-sealed case class OutputPattern(override val portId: String, val exps: List[Expr], repeat: Int) extends Pattern(portId) {
+sealed case class OutputPattern(override val portId: String, val exps: List[Expr], override val repeat: Int) extends Pattern(portId,exps,repeat) {
   def numProduced = exps.size
 }
 

@@ -18,9 +18,7 @@ class Parser extends StandardTokenParsers {
   def parseFile(file: File) = 
     phrase(programUnit)(new lexical.Scanner(new PagedSeqReader(PagedSeq fromFile file)))
   def Semi = ";" ?
-  
-  case class PositionedString(v: String) extends Positional
-  
+    
   class LexerWithHex extends StdLexical {    
     lazy val hexDigits = "0123456789abcdefABCDEF".toArray.toSet
     def hexDigit = elem("hex digit",  hexDigits.contains(_))

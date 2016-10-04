@@ -37,6 +37,11 @@ object BType {
 
 object Helper {
   
+  object AssertCount {
+    private var i = -1
+    def next = { i = i+1; "#"+(i.toString) }
+  }
+  
   final val Sep = "#"
   
   def type2BType(t: Type)(implicit bvMode: Boolean): Boogie.BType = {
@@ -71,9 +76,10 @@ object Helper {
   
   def Var(id: String) = Boogie.VarExpr(id)
   
-  def Assert(e: Boogie.Expr, pos: Position, msg: String) = new Boogie.Assert(e, pos, msg)
-  def Assert(e: Boogie.Expr, msg: String) = new Boogie.Assert(e, null, msg)
-  def Assert(e: Boogie.Expr) = new Boogie.Assert(e,null,"Condition might not hold") 
+  def Assert(e: Boogie.Expr, pos: Position, msg: String): Boogie.Assert = 
+    new Boogie.Assert(e, pos, msg + " (" + AssertCount.next + ")")
+  def Assert(e: Boogie.Expr, msg: String): Boogie.Assert = Assert(e, null, msg)
+  def Assert(e: Boogie.Expr): Boogie.Assert = Assert(e,null,"Condition might not hold") 
   def Assume(e: Boogie.Expr) = Boogie.Assume(e)
   def Assert2Assume(assert: Boogie.Assert) = new Boogie.Assume(assert.e)
  

@@ -381,8 +381,21 @@ object Resolver {
   }
   
   def resolveStructure(ctx: ActorContext, entities: Map[String,DFActor], structure: Structure) = {
+    val usedPorts = new ListBuffer[PortRef]()
     var channels = Map[String,Connection]()
     for (c <- structure.connections) {
+      if (usedPorts contains(c.from)) {
+        ctx.error(c.from.pos, "The port has multiple connections")
+      }
+      else {
+        usedPorts += c.from
+      }
+      if (usedPorts contains(c.to)) {
+        ctx.error(c.to.pos, "The port has multiple connections")
+      }
+      else {
+        usedPorts += c.to
+      }
       val from = c.from match {
         case PortRef(Some(a),p) =>
           entities.get(a) match {
@@ -555,6 +568,36 @@ object Resolver {
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType.default,IntType.default,IntType.default))
+      case fa@FunctionApp("variable",params) => {
+        if (params.size != 2) {
+          ctx.error(fa.pos, "Expected two arguments")
+          UnknownType
+        }
+        else {
+          val tActor = resolveExpr(ctx,params(0))
+          if (!tActor.isActor) {
+            ctx.error(fa.pos, "The first argument must be an actor instance")
+            UnknownType
+          }
+          else {
+            val name = params(1) match {
+              case Id(id) => id
+              case x => 
+                ctx.error(x.pos, "The second argument to 'variable' must be a state identifier")
+                return UnknownType
+            }
+            val actorDecl = tActor.asInstanceOf[ActorType].actor 
+            val varDecl = actorDecl.variables.find { d => d.id == name }
+            varDecl match {
+              case Some(v) => 
+                v.typ
+              case None =>
+                ctx.error(fa.pos, "Actor " + actorDecl.id + " does not declare any variable named '" + name + "'")
+                UnknownType
+            }
+          }
+        }
+      }
       case fa@FunctionApp("state",params) => {
         if (params.size != 2) {
           ctx.error(fa.pos, "Expected two arguments")

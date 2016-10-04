@@ -98,17 +98,8 @@ object BitwisePL extends PreludeComponent {
   
   val text =
 """
-function {:bvbuiltin "bvand"} AT#BvAnd(a: bv32, b: bv32): bv32;
-function {:bvbuiltin "bvadd"} AT#BvAdd(a: bv32, b: bv32): bv32;
-function {:bvbuiltin "bvsub"} AT#BvSub(a: bv32, b: bv32): bv32;
-function {:bvbuiltin "bvule"} AT#BvUle(a: bv32, b: bv32): bool;
-function {:bvbuiltin "bvult"} AT#BvUlt(a: bv32, b: bv32): bool;
-function AT#RShift(bv32,bv32): int;
-function AT#LShift(bv32,bv32): int;
-"""
-  
-  val old = 
-"""
+function AT#BvAnd(a: int, b: int): int;
+
 function AT#RShift(int, int): int;
 function AT#LShift(int, int): int;
 axiom (forall a: int :: (
@@ -119,8 +110,20 @@ axiom (forall a: int :: (
   AT#RShift(a,5) == AT#Div(a,32) &&
   AT#RShift(a,6) == AT#Div(a,64) &&
   AT#RShift(a,7) == AT#Div(a,128) &&
-  AT#RShift(a,8) == AT#Div(a,256)
-)); 
+  AT#RShift(a,8) == AT#Div(a,256) &&
+  AT#RShift(a,9) == AT#Div(a,512)
+));
+axiom (forall a: int :: (
+  AT#LShift(a,1) == a * 2 &&
+  AT#LShift(a,2) == a * 4 &&
+  AT#LShift(a,3) == a * 8 &&
+  AT#LShift(a,4) == a * 16 &&
+  AT#LShift(a,5) == a * 32 &&
+  AT#LShift(a,6) == a * 64 &&
+  AT#LShift(a,7) == a * 128 &&
+  AT#LShift(a,8) == a * 256 &&
+  AT#LShift(a,9) == a * 512
+));
 """
 }
 

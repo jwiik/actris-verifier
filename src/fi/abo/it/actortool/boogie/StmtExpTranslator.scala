@@ -163,6 +163,11 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "min" => {
             Boogie.FunctionApp("AT#Min", params.map(p => transExpr(p)))
           }
+          case "variable" => {
+            //Boogie.VarExpr(renamings(params(1).asInstanceOf[Id].id))
+            
+            Boogie.VarExpr("AV" + B.Sep + params(0).asInstanceOf[Id].id + B.Sep + params(1).asInstanceOf[Id].id)
+          }
           case x => {
             // User-defined function
             val args = params.map(p => transExpr(p))
@@ -197,7 +202,8 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         
         
       case HexLiteral(x) => {
-        val bigInt = x.toList.map("0123456789abcdef".indexOf(_)).map(BigInt(_)).reduceLeft(_ * 16 + _)
+        //val bigInt = x.toList.map("0123456789abcdef".indexOf(_)).map(BigInt(_)).reduceLeft(_ * 16 + _)
+        val bigInt = Integer.parseInt(x, 16)
         B.Int(bigInt.toString) // To decimal conversion
       }
       case BoolLiteral(b) => Boogie.BoolLiteral(b)
