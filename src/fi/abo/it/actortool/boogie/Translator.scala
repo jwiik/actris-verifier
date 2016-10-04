@@ -549,14 +549,6 @@ class Translator(
     val procVars = new ListBuffer[Boogie.LocalVar]
     
     procVars ++= subactorVarDecls
-    
-    
-//    val actionRenamings = new ListBuffer[(String,String)]
-//    for (v <- nwa.variables) {
-//      val newName = "ActionVar"+B.Sep+v.id
-//      procVars += B.Local(newName,B.type2BType(v.typ))
-//      actionRenamings += ((v.id,newName))
-//    }
 
     val renamings = networkRenamings
     
@@ -696,26 +688,8 @@ class Translator(
         
     asgn ++= basicAssumes
             
-//    val parameterNames = instance.actor.parameters.map(p => p.id)
-//    
-//    val actorParamRenames = instance.actor.parameters.map(p => {
-//      val newName = "AP"+B.Sep+p.id
-//      newVars += B.Local(newName,B.type2BType(p.typ))
-//      (p.id,newName)
-//    }).toMap
-//    
-//    val actorVars = 
-//      (for (v <- instance.actor.variables) yield {
-//        (v.id, "AV"+B.Sep+instance.id+B.Sep+v.id)
-//      }).toMap
-//    
-//    for ((name,value) <- (parameterNames zip instance.arguments)) {
-//      asgn += B.Assume(B.Var(actorParamRenames(name)) ==@ transExpr(value)(renamings))
-//    }
     
     asgn ++= (for (chi <- chInvs) yield Inhalator.visit(chi,networkRenamings1)).flatten  // Assume channel invariants
-    
-    //val actorRenamings = networkRenamings ++ actorParamRenames ++ actorVars
     
     newVars += B.Local(nextState,BType.State)
     
@@ -743,16 +717,6 @@ class Translator(
         (v.id,inVar)
       }
     }).flatten.toMap
-    
-//    val outportRenames = (for (outExp <- action.outputPattern) yield {
-//      (outExp.portId, sourceMap(PortRef(Some(instance.id),outExp.portId)))
-//    }).toMap
-    
-//    val actionRenamings = actorRenamings ++ patternVarRenamings ++ outportRenames ++ action.variables.map(av => {
-//      val newName = "ActionVar"+B.Sep+av.id
-//      newVars += B.Local(newName,B.type2BType(av.typ))
-//      (av.id,newName)
-//    }).toMap
     
     val renamings = networkRenamings1 ++ entityRenamings ++ patternVarRenamings
 
