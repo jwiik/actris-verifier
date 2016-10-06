@@ -35,7 +35,8 @@ object BType {
   def List(cType: BType) = Boogie.IndexedType("List", cType)
 }
 
-object Helper {
+
+object B {
   
   object AssertCount {
     private var i = -1

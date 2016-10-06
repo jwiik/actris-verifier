@@ -9,9 +9,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
     /*
    * Translation of statements and expressions
    */
-  
-  val B = Helper
-  
+    
 //  class RootContext(val startNode: ASTNode) extends Context(null, startNode)
 //  class Context(val parentCtx: Context, val parentNode: ASTNode) {
 //    def 
