@@ -1,0 +1,45 @@
+actor RW() int in ==> int out :
+    
+    invariant step = 0 || step = 1
+    invariant step = 1 <==> rd0(in) = tot0(out)
+    invariant step = 0 <==> rd0(in) = tot0(out)+1
+        
+    int step;
+    int data;
+	
+	init: initialize ==> do step := 1 end
+    
+	read: action in:[ data_in ] ==>
+	  guard step = 1
+	  do step := 0; data := data + data_in;
+	end
+   
+	write: action ==> out:[ data ]
+	  guard step = 0
+	  do step := 1;
+	end
+	
+	priority
+		write > read
+	end
+	
+end
+
+network Net int in ==> int out :
+  
+  action in:1 ==> out:1 end
+  
+  chinvariant variable(rw,step) = 1 || variable(rw,step) = 0
+  chinvariant variable(rw,step) = 1 <==> rd(a) = tot(b)
+  chinvariant variable(rw,step) = 0 <==> rd(a) = tot(b)+1
+  
+  entities
+    rw = RW();
+  end
+  
+  structure
+    a: in --> rw.in;
+    b: rw.out --> out;
+  end
+  
+end
