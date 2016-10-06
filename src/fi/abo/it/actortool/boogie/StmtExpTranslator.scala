@@ -163,9 +163,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "min" => {
             Boogie.FunctionApp("AT#Min", params.map(p => transExpr(p)))
           }
-          case "variable" => {
-            //Boogie.VarExpr(renamings(params(1).asInstanceOf[Id].id))
-            
+          case "subvar" => {
             Boogie.VarExpr("AV" + B.Sep + params(0).asInstanceOf[Id].id + B.Sep + params(1).asInstanceOf[Id].id)
           }
           case x => {

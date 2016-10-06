@@ -16,6 +16,7 @@ object Resolver {
     def currentAccessedElement: Option[Expr] = None
     def actors = Map.empty[String,DFActor]
     def lookupFunction(name: String): Option[FunctionDecl] = None
+    def containerActor: Option[DFActor] = None
   }
   
   sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor]) extends Context(parentNode, null) {
@@ -30,6 +31,8 @@ object Resolver {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
     override def error(p: Position, msg: String) = parentCtx.error(p,msg)
     override def lookupFunction(name: String): Option[FunctionDecl] = parentCtx.lookupFunction(name)
+    override def containerActor = parentCtx.containerActor
+    
   }
   
   sealed class ActorContext(val actor: DFActor,
@@ -67,6 +70,8 @@ object Resolver {
       if (functions contains name) Some(functions(name))
       else parentCtx.lookupFunction(name)
     }
+    
+    override def containerActor = Some(actor)
   }
   
   sealed class ActionContext(val action: Action, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
@@ -568,7 +573,7 @@ object Resolver {
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType.default,IntType.default,IntType.default))
-      case fa@FunctionApp("variable",params) => {
+      case fa@FunctionApp("subvar",params) => {
         if (params.size != 2) {
           ctx.error(fa.pos, "Expected two arguments")
           UnknownType
