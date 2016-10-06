@@ -33,20 +33,6 @@ class Translator(
     def get(id: String) = { i = i+1; id+B.Sep+(i.toString) }
   }
   
-//  class OldReplacer extends ASTReplacingVisitor[FunctionApp,Id] {
-//    override def visitExpr(expr: Expr)(implicit map: Map[FunctionApp,Id]): Expr = {
-//      expr match {
-//        case FunctionApp("old",params) => {
-//          val id = params(0).asInstanceOf[Id]
-//          val oldId = Id(id.id + B.Sep + "old")
-//          oldId.typ = id.typ
-//          oldId
-//        }
-//        case _ => super.visitExpr(expr)
-//      }
-//    }
-//  }
-  
   def translateProgram(decls: List[TopDecl]): List[Boogie.Decl] = {
     
     if (ftMode) BoogiePrelude.addComponent(SeqNumberingPL)
@@ -103,29 +89,8 @@ class Translator(
     //val oldAssigns = new ListBuffer[Boogie.Assign]()
     for (decl <- actor.variables) {
       val newName = decl.id
-      //val oldName = decl.id+B.Sep+"old"
       actorVars  += B.Local(newName,decl.typ)
-      //actorVars  += B.Local(oldName,decl.typ)
-      //oldAssigns += Boogie.Assign(Boogie.VarExpr(oldName),Boogie.VarExpr(newName))
     }
-    
-//    for (m <- actor.members) {
-//      m match {
-//        case inv: ActorInvariant => {
-//          invariants += ((inv,transExpr(inv.expr)(Map.empty)))
-//        }
-//        case Declaration(id,t,_,_) => {
-//          actorVars += B.Local(id,t)
-//          actorVars += B.Local(id+B.Sep+"old",t)
-//        }
-//        case FunctionDecl(name,ins,out,body) => {
-//          val func = Boogie.Function(
-//              actor.id+B.Sep+name, ins.map(i => Boogie.BVar(i.id,B.type2BType(i.typ))), 
-//              Boogie.BVar("out"+B.Sep, B.type2BType(out)))
-//        }
-//        case _ =>
-//      }
-//    }
     
     val basicAssumes = {
       (for (p <- actor.inports ::: actor.outports) yield {
@@ -581,9 +546,6 @@ class Translator(
     
     val boogieProcs = new ListBuffer[Boogie.Proc]()
     
-//    boogieProcs += transNetworkEntry(
-//        nwa, basicAssumes, nwInvs, chInvs, renamings, connections, procVars.toList, prefix)
-    
     for (ipat <- nwa.inputPattern) {
       val stmt = translateNetworkInput(nwa, ipat, nwvs)
       boogieProcs += createBoogieProc(Uniquifier.get(nwvs.namePrefix+nwa.fullName+B.Sep+"input"+B.Sep+ipat.portId),stmt)
@@ -591,34 +553,9 @@ class Translator(
     
     boogieProcs += transNetworkExit(nwa, nwvs, subactorFiringRules)
     
-    // The complete list of Boogie procedure generated for this network action
     boogieProcs.toList
   }
   
-//  def transNetworkEntry(
-//        nwa: Action,
-//        basicAssumes: List[Boogie.Assume],
-//        nwInvs: List[ActorInvariant],
-//        chInvs: List[ChannelInvariant],
-//        renamings: Map[String,String], // Channels and entities
-//        connections: List[Connection],
-//        procVars: List[Boogie.LocalVar],
-//        prefix: String) = {
-//    
-//    val entryStmt = 
-//      procVars.toList :::
-//      basicAssumes:::
-//      List(B.Assume(Boogie.VarExpr(BMap.I) ==@ Boogie.VarExpr(BMap.R))) :::
-//      (for (c <- connections) yield {
-//        B.Assume(B.R(renamings(c.id)) ==@ B.C(renamings(c.id)))
-//      }) :::
-//      (for (nwi <- nwInvs) yield 
-//        Inhalator.visit(nwi,"",renamings)).flatten :::
-//      (for (chi <- chInvs) yield 
-//        Inhalator.visit(chi,""  ,renamings)).flatten
-//        
-//      createBoogieProc(Uniquifier.get(prefix+nwa.fullName+"#entry"),entryStmt)
-//  }
   
   def transNetworkExit(nwa: Action, nwvs: NetworkVerificationStructure, subactorFiringRules: List[Boogie.Expr]) = {
     // Network action exit
