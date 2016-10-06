@@ -8,6 +8,8 @@ import fi.abo.it.actortool.boogie.Boogie.NamedType
 import fi.abo.it.actortool._
 
 
+
+
 object BMap extends Enumeration {
   type BMap = String
   final val L = "L"
@@ -35,8 +37,15 @@ object BType {
   def List(cType: BType) = Boogie.IndexedType("List", cType)
 }
 
+case class BDecl(val name: String, val decl: Boogie.LocalVar) {
+  def this(name1: String, typ: Type) = this(name1, B.Local(name1, B.type2BType(typ)))
+}
+object BDecl {
+  def apply(name1: String, typ: Type) = new BDecl(name1,typ)
+}
 
 object B {
+  
   
   object AssertCount {
     private var i = -1
@@ -45,14 +54,14 @@ object B {
   
   final val Sep = "#"
   
-  def type2BType(t: Type)(implicit bvMode: Boolean): Boogie.BType = {
+  def type2BType(t: Type): Boogie.BType = {
     assert(t != null)
     t match {
-      case IntType(x) => if (bvMode) BType.BV(32) else BType.Int // BType.BV(x)
+      case IntType(x) =>  BType.Int // BType.BV(x)
       case BoolType => BType.Bool
       case FloatType => BType.Real
       case HalfType => BType.Real
-      case UintType(_) => if (bvMode) BType.BV(32) else BType.Int // BType.BV(x)
+      case UintType(_) => BType.Int // BType.BV(x)
       case ChanType(contentType) => BType.Chan(type2BType(contentType))
       case ActorType(_) => BType.Actor
       case ListType(contentType,_) => BType.List(type2BType(contentType))
@@ -68,11 +77,10 @@ object B {
   
   def Bool(b: Boolean) = Boogie.BoolLiteral(b)
   
-  def Int(i: Int)(implicit bvMode: Boolean): Boogie.Expr = Int(i.toString)
+  def Int(i: Int): Boogie.Expr = Int(i.toString)
   
-  def Int(i: String)(implicit bvMode: Boolean) = {
-    if (bvMode) Boogie.BVLiteral(i, 32)
-    else Boogie.IntLiteral(i)
+  def Int(i: String) = {
+    Boogie.IntLiteral(i)
   }
   
   def Var(id: String) = Boogie.VarExpr(id)

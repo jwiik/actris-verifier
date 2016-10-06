@@ -23,8 +23,6 @@ class Translator(
   val Inhalator = new Inhalator(stmtTranslator)
   val Exhalator = new Exhalator(stmtTranslator)
   
-
-
   final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I, BMap.St):::
     (if (!ftMode) Nil else List(BMap.SqnCh, BMap.SqnActor))
   
@@ -64,7 +62,7 @@ class Translator(
   def translateActor(avs: ActorVerificationStructure): List[Boogie.Decl] = {    
     val decls = new ListBuffer[Boogie.Decl]()
     val guards = new ListBuffer[Boogie.Expr]()
-        
+    
     for (a <- avs.actions) {
       val (decl,guard) = translateActorAction(a, avs)
       decls ++= decl
@@ -91,7 +89,11 @@ class Translator(
     
     val nonInitActions = avs.actions.filter { a => !a.init }
     if (nonInitActions.size > 1) {
-      val stmt = avs.channelDecls ::: avs.actorVarDecls :::createMEAssertionsRec(avs.entity,guards)
+      
+      val decls = 
+        (avs.channelDecls map { _.decl }) ::: (avs.actorVarDecls map { _.decl }) ::: List(B.Assume(avs.uniquenessCondition))
+      
+      val stmt = decls :::createMEAssertionsRec(avs.entity,guards)
       Some(createBoogieProc(Uniquifier.get(avs.namePrefix+B.Sep+"GuardWD"), stmt))
     }
     else None
@@ -123,8 +125,10 @@ class Translator(
       readTokensRules += B.Int(inPat.vars.size) <= B.C(inPat.portId)-B.R(inPat.portId)
     }
     
-    asgn ++= avs.channelDecls
-    asgn ++= avs.actorVarDecls
+    asgn ++= avs.channelDecls map { _.decl }
+    asgn ++= avs.actorVarDecls map { _.decl }
+    asgn += B.Assume(avs.uniquenessCondition)
+    
     if (a.init) {
       asgn ++= avs.initAssumes
     }
@@ -218,14 +222,6 @@ class Translator(
       
   def translateNetwork(nwvs: NetworkVerificationStructure): List[Boogie.Decl] = {
     val decls = new ListBuffer[Boogie.Decl]()
-    val constDecls = new ListBuffer[Boogie.Const]
-    
-    for (e <- nwvs.entities) {
-      constDecls += Boogie.Const(nwvs.nwRenamings(e.id),true,BType.Actor)
-    }
-    for (c <- nwvs.connections) {
-      constDecls += Boogie.Const(nwvs.nwRenamings(c.id),true,BType.Chan(B.type2BType(c.typ)))
-    }
     
     decls ++= translateNetworkInit(nwvs)
     
@@ -236,7 +232,7 @@ class Translator(
       decls ++= translateNetworkAction(a,nwvs,subActorFiringRules)
     }
 
-    constDecls.toList:::decls.toList
+    decls.toList
   }
   
 
@@ -247,7 +243,9 @@ class Translator(
     val asgn = new ListBuffer[Boogie.Stmt]
     val vars = new ListBuffer[Boogie.LocalVar]
     
-    asgn ++= nwvs.subactorVarDecls
+    asgn ++= (nwvs.entityDecls map { _.decl })
+    asgn ++= nwvs.subactorVarDecls map { _.decl }
+    asgn ++= nwvs.uniquenessConditions map {B.Assume(_)}
     asgn ++= nwvs.basicAssumes
     
     for (c <- nwvs.connections) {
@@ -352,7 +350,9 @@ class Translator(
           val (subActorStmt,newVarDecls,firingRulePrio,firingRuleNoPrio) = 
             transSubActionExecution(inst, ca, nwvs, prFiringRule)
           val stmt = 
-            nwvs.subactorVarDecls:::
+            (nwvs.entityDecls map { _.decl }) :::
+            (nwvs.subactorVarDecls  map { _.decl }):::
+            (nwvs.uniquenessConditions map {B.Assume(_)}) :::
             newVarDecls :::
             subActorStmt
           boogieProcs += createBoogieProc(Uniquifier.get(procName),stmt)
@@ -398,7 +398,9 @@ class Translator(
     val firingNegAssumes = subactorFiringRules map { fr => B.Assume(Boogie.UnaryExpr("!",fr)) }
     
     val exitStmt =
-      nwvs.subactorVarDecls:::
+      (nwvs.entityDecls map { _.decl }) :::
+      (nwvs.subactorVarDecls  map { _.decl }):::
+      (nwvs.uniquenessConditions map {B.Assume(_)}) :::
       nwvs.basicAssumes:::
       (for (chi <- nwvs.chInvariants) yield Inhalator.visit(chi,nwvs.nwRenamings)).flatten:::
       inputBounds:::
@@ -448,7 +450,7 @@ class Translator(
     val actor = instance.actor
     val asgn = new ListBuffer[Boogie.Stmt]()
     val newVars = new ListBuffer[Boogie.LocalVar]()
-        
+    
     asgn ++= nwvs.basicAssumes
             
     
@@ -616,7 +618,9 @@ class Translator(
     
     
     val asgn = new ListBuffer[Boogie.Stmt]()
-    asgn ++= nwvs.subactorVarDecls
+    asgn ++= (nwvs.entityDecls map { _.decl })
+    asgn ++= nwvs.subactorVarDecls  map { _.decl }
+    asgn ++= (nwvs.uniquenessConditions map { B.Assume(_) })
     asgn ++= nwvs.basicAssumes
     
     asgn += B.Assume(B.C(nwvs.nwRenamings(pattern.portId)) < B.Int(pattern.vars.size))
@@ -646,7 +650,6 @@ class Translator(
       else stmt
     Boogie.Proc(name,Nil,Nil,Modifies,Nil,body)
   }
-  
   
   def transExprNoRename(exp: Expr): Boogie.Expr = transExpr(exp)(Map.empty)
   

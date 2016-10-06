@@ -6,16 +6,10 @@ import fi.abo.it.actortool.boogie.Boogie.UnaryExpr
 import fi.abo.it.actortool.ActorTool.TranslationException
 
 class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
-    /*
+  /*
    * Translation of statements and expressions
    */
-    
-//  class RootContext(val startNode: ASTNode) extends Context(null, startNode)
-//  class Context(val parentCtx: Context, val parentNode: ASTNode) {
-//    def 
-//  }
-  
-  
+
   def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,String]): List[Boogie.Stmt] = {
     val bStmts = new ListBuffer[Boogie.Stmt]()
     for (s <- stmts) {

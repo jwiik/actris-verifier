@@ -5,6 +5,18 @@ import scala.collection.mutable.ListBuffer
 
 trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] {
   def buildStructure(entity: T): V
+  
+  protected def createUniquenessCondition(names: List[String]): List[Boogie.Expr] = {
+    names match {
+      case first::rest => {
+        val conditions = for (c <- rest) yield {
+          Boogie.VarExpr(first) !=@ Boogie.VarExpr(c)
+        }
+        conditions:::createUniquenessCondition(rest)
+      }
+      case Nil => Nil
+    }
+  }
 }
 
 class ActorVerificationStructureBuilder(implicit val bvMode: Boolean) 
@@ -13,17 +25,22 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
     
     val prefix = actor.id+B.Sep
+        
+    val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
+    val uniquenessConidition = createUniquenessCondition(portChans map { _.name }).reduceLeft((a,b) => (a && b))
     
-    val portChans = 
-      ((for (p <- actor.inports) yield B.Local(p.id, B.type2BType(ChanType(p.portType))))
-      :::
-      (for (p <- actor.outports) yield B.Local(p.id, B.type2BType(ChanType(p.portType))))
-      )
+//    val portChans = 
+//      ((for (p <- actor.inports) yield BDecl(p.id, ChanType(p.portType)))
+//      :::
+//      (for (p <- actor.outports) yield BDecl(p.id, ChanType(p.portType))))
       
-    val actorVars = new ListBuffer[Boogie.LocalVar]()
+      
+      
+    val actorVars = new ListBuffer[BDecl]()
+    
     val states = actor.schedule match {
       case Some(s) => 
-        actorVars += B.ThisDecl
+        actorVars += BDecl("this#", B.ThisDecl)
         s.states
       case None => Nil
     }
@@ -45,7 +62,7 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
     //val oldAssigns = new ListBuffer[Boogie.Assign]()
     for (decl <- actor.variables) {
       val newName = decl.id
-      actorVars  += B.Local(newName,decl.typ)
+      actorVars  += BDecl(newName,decl.typ)
     }
     
     val basicAssumes = {
@@ -69,6 +86,7 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
         list.map {x => B.Assume(x)}
       }).flatten
     
+      
     return new ActorVerificationStructure(
         actor,
         actor.actions,
@@ -77,6 +95,7 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
         actor.actorInvariants,
         portChans,
         actorVars.toList,
+        uniquenessConidition,
         actor.schedule,
         states,
         bActorStates,
@@ -85,6 +104,8 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
         initAssumes,
         prefix)
   }
+  
+  
   
 }
 
@@ -101,7 +122,12 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     val namePrefix = network.id+B.Sep
     
     val buffer = new ListBuffer[(String,String)]
-    for (c <- connections) buffer += ((c.id,namePrefix+c.id))
+    
+    val chanDecls = new ListBuffer[BDecl]
+    for (c <- connections) {
+      buffer += ((c.id,namePrefix+c.id))
+      chanDecls += BDecl(namePrefix+c.id,ChanType(c.typ))
+    }
     
     // Add input/output port names as synonyms to the connected channels
     for (ip <- network.inports) {
@@ -132,10 +158,11 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     
     val entitySpecificRenames = new ListBuffer[(Instance,Map[String,String])]
     val entitySpecificVariables = new ListBuffer[(Instance,List[String])]
-    val subactorVarDecls = new ListBuffer[Boogie.LocalVar]
+    val subactorVarDecls = new ListBuffer[BDecl]
 
     val renameBuffer = new ListBuffer[(String,String)]()
     
+    val entityDecls = new ListBuffer[BDecl]
     for (e <- entities) {
       val variables = new ListBuffer[String]()
       val actor = e.actor
@@ -154,21 +181,27 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
       
       for (p <- actor.parameters) {
         val newName = "AP"+B.Sep+e.id+B.Sep+p.id
-        subactorVarDecls += B.Local(newName,B.type2BType(p.typ))
+        subactorVarDecls += BDecl(newName,p.typ)
         renameBuffer += ((p.id,newName))
       }
       
       for (v <- actor.variables) {
         val newName = "AV"+B.Sep+e.id+B.Sep+v.id
-        subactorVarDecls += B.Local(newName,B.type2BType(v.typ))
+        subactorVarDecls += BDecl(newName,v.typ)
         variables += newName
         renameBuffer += ((v.id,newName))
       }
       
       entitySpecificVariables += ((e,variables.toList))
       entitySpecificRenames += ((e,renameBuffer.toMap))
-      
+      entityDecls += BDecl(namePrefix+e.id, ActorType(e.actor))
     }
+    
+    val chanDeclList = chanDecls.toList
+    val entityDeclList = entityDecls.toList
+    val uniquenessConidition1 = createUniquenessCondition(entityDeclList map { _.name }).reduceLeft((a,b) => (a && b))
+    val uniquenessConidition2 = createUniquenessCondition(chanDeclList map { _.name }).reduceLeft((a,b) => (a && b))
+    val uniquenessConditions = List(uniquenessConidition1,uniquenessConidition2)
     
     val networkRenamings = buffer.toMap
     val entityRenamings = entitySpecificRenames.toMap
@@ -185,10 +218,23 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
         (list1 ::: list2).map(x => B.Assume(x))
       }).flatten
       
-      
     new NetworkVerificationStructure(
-        network, actions, nwInvariants, chInvariants, connections, entities, sourceMap, targetMap, 
-        networkRenamings, entityRenamings, entityVariables, subactorVarDecls.toList, basicAssumes, namePrefix)
+        network, 
+        actions, 
+        nwInvariants, 
+        chInvariants, 
+        connections, 
+        entities, 
+        sourceMap, 
+        targetMap, 
+        networkRenamings, 
+        entityRenamings, 
+        entityVariables,
+        entityDeclList:::chanDeclList,
+        subactorVarDecls.toList,
+        uniquenessConditions,
+        basicAssumes,
+        namePrefix)
   }
   
 }

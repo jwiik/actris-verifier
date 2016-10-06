@@ -300,7 +300,7 @@ object Resolver {
       }
       val port = actorCtx.outports(outPat.portId)
       assert(port.portType != null)
-      for ((e,i) <- (outPat.exps zipWithIndex) ) {
+      for ((e,i) <- (outPat.exps.zipWithIndex) ) {
         if (nwAction) {
           e match {
             case id@Id(name) => ctx.lookUp(name) match {
@@ -314,17 +314,6 @@ object Resolver {
           val eType = resolveExpr(ctx,e)
           if (eType.isList) {
             assert(false);
-//            if (outPat.exps.size != 1) {
-//              ctx.error(e.pos, "Output patterns using lists must have length 1")
-//            }
-//            val listType = eType.asInstanceOf[ListType]
-//            if (outPat.repeat > listType.size) {
-//              ctx.error(e.pos, "Repeat value cannot be larger than the list used")
-//            }
-//            if (!TypeUtil.isCompatible(listType.contentType, port.portType)) {
-//              ctx.error(e.pos, "List content has type " + listType.contentType.id + 
-//                  ", which does not match port type" + port.portType.id)
-//            }
           }
           else {
             if (!TypeUtil.isCompatible(eType, port.portType)) {
@@ -334,10 +323,6 @@ object Resolver {
           }
         }
         
-//        outPat.repeat match {
-//          case Some(r) => resolveExpr(ctx, r, IntType(32))
-//          case None =>
-//        }
       }
     }
     
