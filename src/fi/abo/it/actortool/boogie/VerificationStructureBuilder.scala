@@ -33,9 +33,7 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
 //      ((for (p <- actor.inports) yield BDecl(p.id, ChanType(p.portType)))
 //      :::
 //      (for (p <- actor.outports) yield BDecl(p.id, ChanType(p.portType))))
-      
-      
-      
+            
     val actorVars = new ListBuffer[BDecl]()
     
     val states = actor.schedule match {
@@ -64,6 +62,8 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
       val newName = decl.id
       actorVars  += BDecl(newName,decl.typ)
     }
+    
+    val actorParamDecls = actor.parameters map {p => BDecl(p.id,p.typ)}
     
     val basicAssumes = {
       (for (p <- actor.inports ::: actor.outports) yield {
@@ -95,6 +95,7 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
         actor.actorInvariants,
         portChans,
         actorVars.toList,
+        actorParamDecls,
         uniquenessConidition,
         actor.schedule,
         states,
@@ -199,9 +200,13 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     
     val chanDeclList = chanDecls.toList
     val entityDeclList = entityDecls.toList
-    val uniquenessConidition1 = createUniquenessCondition(entityDeclList map { _.name }).reduceLeft((a,b) => (a && b))
-    val uniquenessConidition2 = createUniquenessCondition(chanDeclList map { _.name }).reduceLeft((a,b) => (a && b))
-    val uniquenessConditions = List(uniquenessConidition1,uniquenessConidition2)
+    val uniquenessConidition1 = 
+      if (entityDeclList.size > 1) List(createUniquenessCondition(entityDeclList map { _.name }).reduceLeft((a,b) => (a && b)))
+      else Nil
+    val uniquenessConidition2 = 
+      if (chanDeclList.size > 1) List(createUniquenessCondition(chanDeclList map { _.name }).reduceLeft((a,b) => (a && b)))
+      else Nil
+    val uniquenessConditions = uniquenessConidition1 ::: uniquenessConidition2
     
     val networkRenamings = buffer.toMap
     val entityRenamings = entitySpecificRenames.toMap

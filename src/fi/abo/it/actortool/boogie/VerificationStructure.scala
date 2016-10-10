@@ -14,6 +14,7 @@ class ActorVerificationStructure(
     val invariants: List[ActorInvariant],
     val channelDecls: List[BDecl],
     val actorVarDecls: List[BDecl],
+    val actorParamDecls: List[BDecl],
     val uniquenessCondition: Boogie.Expr,
     val schedule: Option[Schedule],
     val actorStates: List[String],

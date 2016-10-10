@@ -17,12 +17,15 @@ object Resolver {
     def actors = Map.empty[String,DFActor]
     def lookupFunction(name: String): Option[FunctionDecl] = None
     def containerActor: Option[DFActor] = None
+    def lookupEntity(id: String): Option[Instance] = None
+    def lookupChannel(id: String): Option[Connection] = None
+    def lookupInport(id: String): Option[InPort] = None
+    def lookupOutport(id: String): Option[OutPort] = None
   }
   
   sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor]) extends Context(parentNode, null) {
     val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
-    override def lookUp(id: String): Option[Declaration] = None
   }
   
   sealed class EmptyContext extends RootContext(null,Map.empty)
@@ -32,7 +35,10 @@ object Resolver {
     override def error(p: Position, msg: String) = parentCtx.error(p,msg)
     override def lookupFunction(name: String): Option[FunctionDecl] = parentCtx.lookupFunction(name)
     override def containerActor = parentCtx.containerActor
-    
+    override def lookupEntity(id: String) = parentCtx.lookupEntity(id)
+    override def lookupChannel(id: String) = parentCtx.lookupChannel(id)
+    override def lookupInport(id: String) = parentCtx.lookupInport(id)
+    override def lookupOutport(id: String) = parentCtx.lookupOutport(id)
   }
   
   sealed class ActorContext(val actor: DFActor,
@@ -41,17 +47,20 @@ object Resolver {
       val functions: Map[String,FunctionDecl]) extends ChildContext(actor,parentCtx,vars) {
     
     private var channels = Map[String,Connection]()
-    private var entities = Map[String,DFActor]()
+    private var entities = Map[String,Instance]()
     
     def addChannels(channels: Map[String,Connection]) = {
       this.channels = channels
     }
     
-    def addEntities(entities: Map[String,DFActor]) = {
+    def addEntities(entities: Map[String,Instance]) = {
       this.entities = entities
     }
     
-    def getEntity(id: String) = entities.get(id)
+    override def lookupEntity(id: String) = entities.get(id)
+    override def lookupChannel(id: String) = channels.get(id)
+    override def lookupInport(id: String) = inports.get(id)
+    override def lookupOutport(id: String) = outports.get(id)
     
     override def lookUp(id: String): Option[Declaration] = {
       if (vars contains id) Some(vars(id))
@@ -62,7 +71,7 @@ object Resolver {
       else if (channels contains id) 
         Some(Declaration(channels(id).id,ChanType(channels(id).typ),true,None))
       else if (entities contains id) 
-        Some(Declaration(entities(id).id,ActorType(entities(id)),true,None))
+        Some(Declaration(entities(id).id,ActorType(entities(id).actor),true,None))
       else  parentCtx.lookUp(id)
     }
     
@@ -174,7 +183,7 @@ object Resolver {
           
           var inports = Map[String,InPort]()
           var outports = Map[String,OutPort]()
-          var entities: Map[String,DFActor] = null
+          var entities: Map[String,Instance] = null
           for (p <- n.inports) {
             inports = inports + (p.id -> p)
           }
@@ -335,8 +344,8 @@ object Resolver {
     }
   }
   
-  def resolveEntities(ctx: ActorContext, e: Entities): Map[String,DFActor] = {
-    val instances = scala.collection.mutable.HashMap[String,DFActor]()
+  def resolveEntities(ctx: ActorContext, e: Entities): Map[String,Instance] = {
+    val instances = scala.collection.mutable.HashMap[String,Instance]()
     for (instance <- e.entities) {
       if (!(ctx.parentCtx.actors contains instance.actorId)) {
         ctx.error(instance.pos, "Unknown actor " + instance.actorId)
@@ -363,14 +372,13 @@ object Resolver {
         ctx.error(instance.pos, "Instance id already used " + instance.id)
         return instances.toMap
       }
-      
       instance.actor = actor
-      instances += (instance.id -> actor)
+      instances += (instance.id -> instance)
     }
     instances.toMap
   }
   
-  def resolveStructure(ctx: ActorContext, entities: Map[String,DFActor], structure: Structure) = {
+  def resolveStructure(ctx: ActorContext, entities: Map[String,Instance], structure: Structure) = {
     val usedPorts = new ListBuffer[PortRef]()
     var channels = Map[String,Connection]()
     for (c <- structure.connections) {
@@ -392,8 +400,8 @@ object Resolver {
             case None =>
               ctx.error(c.from.pos, "Unknown actor: " + a)
               None
-            case Some(actor) =>
-              actor.getOutport(p)
+            case Some(entity) =>
+              entity.actor.getOutport(p)
           }
         case PortRef(None,p) =>
           ctx.inports.get(p) match {
@@ -409,8 +417,8 @@ object Resolver {
             case None =>
               ctx.error(c.to.pos, "Unknown actor: " + a)
               None
-            case Some(actor) =>
-              actor.getInport(p)
+            case Some(entity) =>
+              entity.actor.getInport(p)
           }
         case PortRef(None,p) =>
           ctx.outports.get(p) match {
@@ -673,20 +681,16 @@ object Resolver {
       case hx@HexLiteral(x) => hx.typ = UintType(x.length*4); hx.typ
       case l@FloatLiteral(_) => throw new IllegalArgumentException()
       case sm@SpecialMarker(m) => {
-        m match {
-          case "@" => {
-            val accessor = findParentAccessor(ctx)
-            accessor match {
-              case Some(ac) => {
-                if (ac.exp.isInstanceOf[Id]) sm.addExtraData("accessor", ac.exp.asInstanceOf[Id].id)
-                else ctx.error(sm.pos, "Marker '" + m + "' used with invalid accessor")
-              }
-              case None => ctx.error(sm.pos, "Marker '" + m + "' used in invalid position")
-            }
-            IntType.default
+        val accessor = findParentAccessor(ctx)
+        accessor match {
+          case Some(ac) => {
+            if (ac.exp.isInstanceOf[Id]) sm.addExtraData("accessor", ac.exp.asInstanceOf[Id].id)
+            else ctx.error(sm.pos, "Marker '" + m + "' used with invalid accessor")
           }
-          case _ => throw new IllegalArgumentException()
+          case None => ctx.error(sm.pos, "Marker '" + m + "' used in invalid position")
         }
+        IntType.default
+
       }
       case v@Id(id) =>
         if (v.typ != null) {
@@ -796,15 +800,33 @@ object Resolver {
     quant.typ
   }
   
+  val totFuncs = Set("tot", "tot0")
   def resolveChannelCountFunction(ctx: Context, fa: FunctionApp): Type = {
     if (fa.parameters.size != 1) {
       ctx.error(fa.pos,"Function " + fa.name + " takes exactly 1 argument")
       return IntType(32)
     }
-    val paramType1 = resolveExpr(ctx,fa.parameters(0))
+    val param = fa.parameters(0)
+    val paramType1 = resolveExpr(ctx,param)
     if (!paramType1.isChannel) {
       ctx.error(fa.parameters(0).pos,"The 1st argument to function " + fa.name + " must be a channel")
     }
+    
+    // It is unsound to use tot on input channels. Check for such cases and fail.
+    if (totFuncs contains fa.name) { 
+      ctx.lookupChannel(param.asInstanceOf[Id].id) match {
+        case Some(c) => 
+          if (c.isInput) ctx.error(fa.pos, "Function '" + fa.name + "' cannot be used on input channels")
+        case None => 
+      }
+      ctx.lookupInport(param.asInstanceOf[Id].id) match {
+        case Some(c) => ctx.error(fa.pos, "Function '" + fa.name + "' cannot be used on input channels")
+        case None => 
+      }
+    }
+    
+    
+    
     fa.typ = IntType(32)
     IntType(32)
   }

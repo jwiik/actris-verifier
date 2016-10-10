@@ -37,7 +37,7 @@ class Parser extends StandardTokenParsers {
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
-                       "free", "primary", "error", "recovery"
+                       "free", "primary", "error", "recovery", "next"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -307,13 +307,13 @@ class Parser extends StandardTokenParsers {
   def functionApp = (functionAppSpecialMarker | functionAppStandard)
   
   def functionAppStandard: Parser[Expr] = positioned(
-      (ident ~ opt(atMarker) ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
+      (ident ~ opt(marker) ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
         case (id ~ None ~ params) => FunctionApp(id,params)
         case (id ~ Some(sm) ~ params) => FunctionApp(id+sm.value,params)
       })
       
   def functionAppSpecialMarker: Parser[Expr] = positioned(
-      (atMarker ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
+      (marker ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
         case (SpecialMarker(m) ~ params) => FunctionApp(m,params)
       })
   
@@ -330,7 +330,7 @@ class Parser extends StandardTokenParsers {
   def atom: Parser[Expr] = positioned(
     boolLiteral | 
     identifier |
-    atMarker |
+    marker |
     hexaNumericLit ^^ { case n => HexLiteral(n) } |
     numericLit ^^ { case n => IntLiteral(n.toInt) }
   )
@@ -345,7 +345,7 @@ class Parser extends StandardTokenParsers {
     "false" ^^^ BoolLiteral(false)
   )
   
-  def atMarker = positioned("@" ^^^ SpecialMarker("@"))
+  def marker = positioned( ("@" | "next") ^^ { case n => SpecialMarker(n) } )
     
   def identifier = positioned(ident ^^ Id)
   

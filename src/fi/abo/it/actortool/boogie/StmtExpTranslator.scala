@@ -199,12 +199,11 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       case BoolLiteral(b) => Boogie.BoolLiteral(b)
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
       case sm@SpecialMarker(mark) => {
+        val name = sm.extraData("accessor").asInstanceOf[String]
+        val accessorName = renamings.getOrElse(name, name)
         mark match {
-          case "@" => {
-            val accessorName = sm.extraData("accessor").asInstanceOf[String]
-            B.I(renamings(accessorName))
-          }
-          case _ => throw new RuntimeException()
+          case "@" => B.I(accessorName)
+          case "next" => B.R(accessorName)
         }
       }
       case Id(id) => renamings.get(id) match {
