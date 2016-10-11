@@ -24,6 +24,8 @@ class ActorVerificationStructure(
     val initAssumes: List[Boogie.Assume],
     val namePrefix: String) extends VerificationStructure[BasicActor]
 
+
+
 class NetworkVerificationStructure(
     val entity: Network,
     val actions: List[Action],
@@ -34,10 +36,14 @@ class NetworkVerificationStructure(
     val sourceMap: Map[PortRef,String],
     val targetMap: Map[PortRef,String],
     val nwRenamings: Map[String,String],
-    val entityRenamings: Map[Instance, Map[String, String]],
-    val entityVariables: Map[Instance, List[String]],
+    val entityData: Map[Instance,EntityData],
+    //val entityRenamings1: Map[Instance, Map[String, String]],
+    //val entityVariables1: Map[Instance, List[String]],
     val entityDecls: List[BDecl],
     val subactorVarDecls: List[BDecl],
     val uniquenessConditions: List[Boogie.Expr],
     val basicAssumes: List[Boogie.Assume],
     val namePrefix: String) extends VerificationStructure[Network]
+
+class EntityData(val declarations: List[BDecl], val renamings: Map[String,String], val variables: List[String], val actionData: Map[Action,ActionData])
+class ActionData(val declarations: List[BDecl], val renamings: Map[String,String], val replacements: Map[Id,Expr])

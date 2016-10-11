@@ -39,6 +39,8 @@ sealed abstract class DFActor(
     members.filter { x => x.isActorInvariant } map { x => x.asInstanceOf[ActorInvariant] }
   }
   
+  lazy val publicActorInvariants = actorInvariants.filter { x => x.public }
+  
   lazy val schedule = {
     val opt = members.find(m => m match {case sc: Schedule => true; case _ => false;})
     opt match {
@@ -164,16 +166,20 @@ sealed case class Declaration(val id: String, val typ: Type,
   override def isDeclaration = true
 }
 
-sealed case class Assertion(val expr: Expr, val free: Boolean) extends ASTNode {
-  
-}
+sealed case class Assertion(val expr: Expr, val free: Boolean) extends ASTNode
 
-sealed case class ActorInvariant(val assertion: Assertion, val generated: Boolean) extends Member {
+sealed abstract class Invariant(val assertion: Assertion, val generated: Boolean) extends Member
+
+sealed case class ActorInvariant(
+    override val assertion: Assertion, 
+    override val generated: Boolean, 
+    val public: Boolean) extends Invariant(assertion,generated) {
+  
   override def isActorInvariant = true
   def expr = assertion.expr
 }
 
-sealed case class ChannelInvariant(val assertion: Assertion, val generated: Boolean) extends Member {
+sealed case class ChannelInvariant(override val assertion: Assertion, override val generated: Boolean) extends Invariant(assertion,generated) {
   override def isChannelInvariant = true
   def expr = assertion.expr
 }

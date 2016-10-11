@@ -261,7 +261,7 @@ class Translator(
       
       val actor = inst.actor
       
-      val renamings = nwvs.nwRenamings ++  nwvs.entityRenamings(inst)
+      val renamings = nwvs.nwRenamings ++  nwvs.entityData(inst).renamings
       
       val parameterNames = actor.parameters map {x => Id(x.id)}
       for ((name,value) <- (parameterNames zip inst.arguments)) {
@@ -443,34 +443,33 @@ class Translator(
       instance: Instance, 
       action: Action, 
       nwvs: NetworkVerificationStructure,
-      priorityGuard: List[Boogie.Expr]): (List[Boogie.Stmt],List[Boogie.LocalVar],Boogie.Expr,Boogie.Expr) = {
+      higherPriorityGuards: List[Boogie.Expr]): (List[Boogie.Stmt],List[Boogie.LocalVar],Boogie.Expr,Boogie.Expr) = {
     
     val actor = instance.actor
     val asgn = new ListBuffer[Boogie.Stmt]()
     val newVars = new ListBuffer[Boogie.LocalVar]()
     
     asgn ++= nwvs.basicAssumes
-            
-    
     asgn ++= (for (chi <- nwvs.chInvariants) yield BAssume(chi,nwvs.nwRenamings))  // Assume channel invariants
     
     newVars += B.Local(nextState,BType.State)
     
-    val firingConds = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
+    val firingCondsBuffer = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
     val replacements = scala.collection.mutable.HashMap.empty[Id,Expr]
     
     for (ipat <- action.inputPattern) {
       val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
-      val cond = B.Int(ipat.numConsumed) lte B.Credit(cId)
+      firingCondsBuffer += B.Int(ipat.numConsumed) lte B.Credit(cId)
       
-      val offset = ipat.vars.size-1
-      for (v <- ipat.vars) yield {
+      for ((v,ind) <- ipat.vars.zipWithIndex) {
         val c = Elements.ch(cId,v.typ)
-        val acc = Elements.chAcc(c,Minus(Elements.rd0(c.id),IntLiteral(offset)))
+        val index = 
+          if (ind == 0) Elements.rd0(c.id) 
+          else Minus(Elements.rd0(c.id),IntLiteral(ind))
+        val acc = Elements.chAcc(c,index)
         replacements += (v -> acc)
       }
-      
-      firingConds += cond
+
     }
     
     val patternVarRenamings = (for (ipat <- action.inputPattern) yield {
@@ -481,7 +480,7 @@ class Translator(
       }
     }).flatten.toMap
     
-    val renamings = nwvs.nwRenamings ++ nwvs.entityRenamings(instance) ++ patternVarRenamings
+    val renamings = nwvs.nwRenamings ++ nwvs.entityData(instance).renamings ++ patternVarRenamings
 
     
     val replacementMap = replacements.toMap
@@ -491,58 +490,34 @@ class Translator(
       case Some(g) =>
         val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
         val transGuard = transExpr(renamedGuard)(renamings)
-        asgn += B.Assume(transGuard)
-        firingConds += transGuard
+        //asgn += B.Assume(transGuard)
+        firingCondsBuffer += transGuard
     }
     
-//    val states = actor match {
-//      case ba: BasicActor => {
-//        ba.schedule match {
-//          case Some(schedule) => schedule.transitionsOnAction(action.fullName)
-//          case None => Nil
-//        }
-//      }
-//      case nw: Network => Nil
-//    }
-//    
-//    val stateGuards = 
-//      for ((f,t) <- states) yield {
-//        (B.State(renamings(instance.id)) ==@ Boogie.VarExpr(actor.id+B.Sep+f))
-//      }
-//    
-//        
-//    val stateInv = {
-//      if (!stateGuards.isEmpty) stateGuards.reduceLeft((a,b) => a || b)
-//      else Boogie.BoolLiteral(true)
-//    }
-//    asgn += B.Assume(stateInv)
-    
-//    firingConds ++= stateGuards
-    val firingCondsWithoutPrio = firingConds.toList
-    val firingCondsWithPrio = (priorityGuard map { x: Boogie.Expr => Boogie.UnaryExpr("!",x) }) ::: firingCondsWithoutPrio
+    val firingCondsWithoutPrio = firingCondsBuffer.toList
+    val firingCondsWithPrio = (higherPriorityGuards map { x: Boogie.Expr => Boogie.UnaryExpr("!",x) }) ::: firingCondsWithoutPrio
     
     val firingRuleWithPrio = {
-      if (!firingCondsWithPrio.isEmpty) firingCondsWithPrio.reduceLeft((a,b) => a && b) 
+      if (!firingCondsWithPrio.isEmpty) {
+        firingCondsWithPrio.reduceLeft((a,b) => a && b) 
+      }
       else Boogie.BoolLiteral(true)
     }
     
     val firingRuleWithoutPrio = {
-      if (!firingCondsWithoutPrio.isEmpty) firingCondsWithoutPrio.reduceLeft((a,b) => a && b) 
+      if (!firingCondsWithoutPrio.isEmpty) {
+        firingCondsWithoutPrio.reduceLeft((a,b) => a && b) 
+      }
       else Boogie.BoolLiteral(true)
     }
     
     asgn += B.Assume(firingRuleWithPrio)
     
-    for (ActorInvariant(e,_) <- actor.actorInvariants) {
+    for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
       asgn += B.Assume(transExpr(e.expr)(renamings))
     }
     
-    for (pre <- action.requires) {
-      val replacedPre = IdReplacer.visitExpr(pre)(replacementMap)
-      asgn += B.Assert(
-          transExpr(replacedPre)(renamings),pre.pos,
-          "Precondition might not hold for instance at " + instance.pos)
-    }
+    val publicInvs = actor.publicActorInvariants map { a => (a.assertion.expr.pos, transExpr(a.assertion.expr)(renamings)) }
     
     for (ipat <- action.inputPattern) {
       var repeats = 0
@@ -556,7 +531,13 @@ class Translator(
       }
     }
     
-    for (ev <- nwvs.entityVariables(instance)) {
+    for (pre <- action.requires) {
+      asgn += B.Assert(
+          transExpr(pre)(renamings),pre.pos,
+          "Precondition might not hold for instance at " + instance.pos)
+    }
+    
+    for (ev <- nwvs.entityData(instance).variables) {
       asgn += Boogie.Havoc(Boogie.VarExpr(ev))
     }
         
@@ -579,19 +560,10 @@ class Translator(
       asgn += B.Assume(transExpr(post)(renamings))
     }
     
-//    val nextStateExp =
-//      for ((f,t) <- states) yield {
-//        (Boogie.VarExpr(nextState) ==@ Boogie.VarExpr(actor.id+B.Sep+t))
-//      }
-//    if (!nextStateExp.isEmpty) {
-//      asgn += B.Assume(nextStateExp.reduceLeft((a,b) => a || b))
-//      asgn += Boogie.Assign(B.State(renamings(instance.id)), Boogie.VarExpr(nextState))
-//    }
-//    
     if (ftMode && action.aClass != ActionClass.Recovery) {
       asgn += Boogie.Assign(B.SqnAct(renamings(instance.id)),B.SqnAct(renamings(instance.id)) plus B.Int(1))
     }
-    for (ActorInvariant(e,_) <- actor.actorInvariants) {
+    for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
       asgn += B.Assume(transExpr(e.expr)(renamings))
     }
     asgn ++= (for (chi <- nwvs.chInvariants) yield {

@@ -37,7 +37,7 @@ class Parser extends StandardTokenParsers {
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
-                       "free", "primary", "error", "recovery", "next"
+                       "free", "primary", "error", "recovery", "next", "public"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -90,7 +90,8 @@ class Parser extends StandardTokenParsers {
     case (tName ~ id) => OutPort(id,tName)
   })
   
-  def actorMember: Parser[Member] = positioned(actorInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl)
+  def actorMember: Parser[Member] = 
+    positioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl)
   
   def networkMember: Parser[Member] = positioned(
       actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl)
@@ -139,9 +140,10 @@ class Parser extends StandardTokenParsers {
     case exps => exps
   })
   
-  def actorInvDecl = positioned(( opt("free") ~ "invariant" ~ expression) ^^ {
-    case None ~ _ ~ expr => ActorInvariant(Assertion(expr,false),false)
-    case Some(_) ~ _ ~ expr => ActorInvariant(Assertion(expr,true),false)
+  def actorInvDecl = positioned((opt("free") ~ opt("public") ~ "invariant" ~ expression) ^^ {
+    case free ~ public ~ _ ~ expr => {
+      ActorInvariant(Assertion(expr, free.isDefined),false, public.isDefined)
+    }
   })
   
   def chInvDecl = positioned(( opt("free") ~ "chinvariant" ~ expression) ^^ {

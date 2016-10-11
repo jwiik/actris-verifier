@@ -153,9 +153,9 @@ object Resolver {
             case ac: Action => 
               resolveAction(ctx,ac,false)
               actions += ac
-            case ActorInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
-            case ci: ChannelInvariant =>
-              return Errors(List((ci.pos, "Basic actors cannot have channel invariants")))
+            case ActorInvariant(Assertion(e,_),_,_) => resolveExpr(ctx,e,BoolType)
+            case ChannelInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
+              //return Errors(List((ci.pos, "Basic actors cannot have channel invariants")))
             case e: Entities =>
               return Errors(List((e.pos, "Basic actors cannot have a entities block")))
             case s: Structure =>
@@ -238,7 +238,7 @@ object Resolver {
               }
               case e: Entities =>  // Already handled
               case s: Structure => // Already handled 
-              case ActorInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
+              case ActorInvariant(Assertion(e,_),_,_) => resolveExpr(ctx,e,BoolType)
               case ChannelInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
               case d: Declaration => return Errors(List((d.pos, "Networks cannot have declarations")))
               case sch: Schedule => return Errors(List((sch.pos,"Networks cannot have action schedules")))
