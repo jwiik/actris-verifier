@@ -168,7 +168,9 @@ sealed case class Declaration(val id: String, val typ: Type,
 
 sealed case class Assertion(val expr: Expr, val free: Boolean) extends ASTNode
 
-sealed abstract class Invariant(val assertion: Assertion, val generated: Boolean) extends Member
+sealed abstract class Invariant(val assertion: Assertion, val generated: Boolean) extends Member {
+  def expr = assertion.expr
+}
 
 sealed case class ActorInvariant(
     override val assertion: Assertion, 
@@ -176,12 +178,10 @@ sealed case class ActorInvariant(
     val public: Boolean) extends Invariant(assertion,generated) {
   
   override def isActorInvariant = true
-  def expr = assertion.expr
 }
 
 sealed case class ChannelInvariant(override val assertion: Assertion, override val generated: Boolean) extends Invariant(assertion,generated) {
   override def isChannelInvariant = true
-  def expr = assertion.expr
 }
 
 sealed case class FunctionDecl(val name: String, val inputs: List[Declaration], val output: Type, val expr: Expr) extends Member {

@@ -220,7 +220,7 @@ class Translator(
       
   def translateNetwork(nwvs: NetworkVerificationStructure): List[Boogie.Decl] = {
     val decls = new ListBuffer[Boogie.Decl]()
-    
+
     decls ++= translateNetworkInit(nwvs)
     
     val (subActorProcs, subActorFiringRules) = translateSubActorExecutions(nwvs)
@@ -261,7 +261,7 @@ class Translator(
       
       val actor = inst.actor
       
-      val renamings = nwvs.nwRenamings ++  nwvs.entityData(inst).renamings
+      val renamings = nwvs.instanceRenamings(inst)
       
       val parameterNames = actor.parameters map {x => Id(x.id)}
       for ((name,value) <- (parameterNames zip inst.arguments)) {
@@ -279,7 +279,7 @@ class Translator(
         }
       }
       
-      for (inv <- actor.actorInvariants) {
+      for (inv <- actor.publicActorInvariants) {
         asgn += B.Assume(transExpr(inv.expr)(renamings))
       }
       
@@ -292,10 +292,14 @@ class Translator(
       }
     }
     for (chi <- nwvs.chInvariants) {
-      asgn += BAssert(chi, "Network initialization might not establish the channel invariant", nwvs.nwRenamings)
+      asgn += BAssert(chi, "Initialization of network '" + nwvs.entity.id + "' might not establish the channel invariant", nwvs.nwRenamings)
     }
+    
+    for ((subi,renames) <- nwvs.publicSubInvariants) {
+      asgn += BAssert(subi, "Initialization of network '" + nwvs.entity.id + "' might not establish the sub-actor invariant", renames)
+    }
+    
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
-
     for (nwi <- nwvs.nwInvariants) {
       asgn ++= Exhalator.visit(
           nwi, "Network initialization might not establish the network invariant", nwvs.nwRenamings)
@@ -303,7 +307,7 @@ class Translator(
     
     val emptyChans = (for (c <- nwvs.connections) yield {
       B.Assert(B.Credit(nwvs.nwRenamings(c.id)) ==@ B.Int(0), c.pos, 
-          "The initialization might unspecified tokens on channel " + c.id)
+          "The initialization might produce unspecified tokens on channel " + c.id)
     })
     
     asgn ++= emptyChans
@@ -345,13 +349,13 @@ class Translator(
           
           val prFiringRule = higherPrioAction map {a => actorFiringRulesNoPrio(a)}
           
-          val (subActorStmt,newVarDecls,firingRulePrio,firingRuleNoPrio) = 
+          val (subActorStmt,firingRulePrio,firingRuleNoPrio) = 
             transSubActionExecution(inst, ca, nwvs, prFiringRule)
           val stmt = 
             (nwvs.entityDecls map { _.decl }) :::
             (nwvs.subactorVarDecls  map { _.decl }):::
             (nwvs.uniquenessConditions map {B.Assume(_)}) :::
-            newVarDecls :::
+            (nwvs.entityData(inst).actionData(ca).declarations  map { _.decl }) :::
             subActorStmt
           boogieProcs += createBoogieProc(Uniquifier.get(procName),stmt)
           actorFiringRulesNoPrio += (ca -> firingRuleNoPrio)
@@ -443,54 +447,29 @@ class Translator(
       instance: Instance, 
       action: Action, 
       nwvs: NetworkVerificationStructure,
-      higherPriorityGuards: List[Boogie.Expr]): (List[Boogie.Stmt],List[Boogie.LocalVar],Boogie.Expr,Boogie.Expr) = {
+      higherPriorityGuards: List[Boogie.Expr]): (List[Boogie.Stmt],Boogie.Expr,Boogie.Expr) = {
     
     val actor = instance.actor
-    val asgn = new ListBuffer[Boogie.Stmt]()
-    val newVars = new ListBuffer[Boogie.LocalVar]()
-    
+    val asgn = new ListBuffer[Boogie.Stmt]()    
     asgn ++= nwvs.basicAssumes
     asgn ++= (for (chi <- nwvs.chInvariants) yield BAssume(chi,nwvs.nwRenamings))  // Assume channel invariants
-    
-    newVars += B.Local(nextState,BType.State)
-    
+        
     val firingCondsBuffer = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
-    val replacements = scala.collection.mutable.HashMap.empty[Id,Expr]
-    
+
     for (ipat <- action.inputPattern) {
       val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
       firingCondsBuffer += B.Int(ipat.numConsumed) lte B.Credit(cId)
-      
-      for ((v,ind) <- ipat.vars.zipWithIndex) {
-        val c = Elements.ch(cId,v.typ)
-        val index = 
-          if (ind == 0) Elements.rd0(c.id) 
-          else Minus(Elements.rd0(c.id),IntLiteral(ind))
-        val acc = Elements.chAcc(c,index)
-        replacements += (v -> acc)
-      }
-
     }
     
-    val patternVarRenamings = (for (ipat <- action.inputPattern) yield {
-      for (v <- ipat.vars) yield {
-        val inVar = ipat.portId + B.Sep + v.id
-        newVars += B.Local(inVar,B.type2BType(v.typ))
-        (v.id,inVar)
-      }
-    }).flatten.toMap
+    val renamings = nwvs.subActionRenamings(instance, action)
     
-    val renamings = nwvs.nwRenamings ++ nwvs.entityData(instance).renamings ++ patternVarRenamings
-
-    
-    val replacementMap = replacements.toMap
+    val replacementMap = nwvs.entityData(instance).actionData(action).replacements
     
     val renamedGuard = action.guard match {
       case None =>
       case Some(g) =>
         val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
         val transGuard = transExpr(renamedGuard)(renamings)
-        //asgn += B.Assume(transGuard)
         firingCondsBuffer += transGuard
     }
     
@@ -524,7 +503,7 @@ class Translator(
       while (repeats < ipat.repeat) {
         val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
         for (v <- ipat.vars) {
-          asgn += Boogie.Assign(Boogie.VarExpr(patternVarRenamings(v.id)),B.ChannelIdx(cId,B.Read(cId)))
+          asgn += Boogie.Assign(Boogie.VarExpr(renamings(v.id)),B.ChannelIdx(cId,B.Read(cId)))
           asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
         }
         repeats = repeats+1
@@ -578,7 +557,7 @@ class Translator(
       }
     }).flatten
             
-    (asgn.toList, newVars.toList, firingRuleWithPrio, firingRuleWithoutPrio)
+    (asgn.toList, firingRuleWithPrio, firingRuleWithoutPrio)
   }
   
   
@@ -621,7 +600,7 @@ class Translator(
   
   def BAssume(chi: ChannelInvariant, renamings: Map[String,String]) = B.Assume(transExpr(chi.expr)(renamings))
   
-  def BAssert(chi: ChannelInvariant, msg: String, renamings: Map[String,String]) = 
+  def BAssert(chi: Invariant, msg: String, renamings: Map[String,String]) = 
     B.Assert(transExpr(chi.expr)(renamings), chi.expr.pos, msg)
   
   def transExprNoRename(exp: Expr): Boogie.Expr = transExpr(exp)(Map.empty)

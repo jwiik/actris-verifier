@@ -205,6 +205,18 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
       entityDecls += BDecl(namePrefix+e.id, ActorType(e.actor))
       
     }
+    val entityData = entityDataBuffer.toMap
+    val networkRenamings = buffer.toMap
+
+    val publicInvs = 
+      entities flatMap { 
+        entity => {
+          for (inv <- entity.actor.publicActorInvariants) yield {
+            val renamings = networkRenamings ++ entityData(entity).renamings
+            (inv,renamings)
+          }
+        }
+      }
     
     val chanDeclList = chanDecls.toList
     val entityDeclList = entityDecls.toList
@@ -216,10 +228,6 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
       if (chanDeclList.size > 1) List(createUniquenessCondition(chanDeclList map { _.name }).reduceLeft((a,b) => (a && b)))
       else Nil
     val uniquenessConditions = uniquenessConidition1 ::: uniquenessConidition2
-    
-    val networkRenamings = buffer.toMap
-//    val entityRenamings = entitySpecificRenames.toMap
-//    val entityVariables = entitySpecificVariables.toMap
     
     val basicAssumes =
       (for (c <- connections) yield {
@@ -236,15 +244,14 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
         network, 
         actions, 
         nwInvariants, 
-        chInvariants, 
+        chInvariants,
+        publicInvs,
         connections, 
         entities, 
         sourceMap, 
         targetMap, 
         networkRenamings, 
-        //entityRenamings, 
-        //entityVariables,
-        entityDataBuffer.toMap,
+        entityData,
         entityDeclList:::chanDeclList,
         subactorVarDecls.toList,
         uniquenessConditions,

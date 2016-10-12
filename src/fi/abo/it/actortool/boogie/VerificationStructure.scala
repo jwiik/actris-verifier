@@ -31,6 +31,7 @@ class NetworkVerificationStructure(
     val actions: List[Action],
     val nwInvariants: List[ActorInvariant],
     val chInvariants: List[ChannelInvariant],
+    val publicSubInvariants: List[(ActorInvariant,Map[String,String])],
     val connections: List[Connection],
     val entities: List[Instance],
     val sourceMap: Map[PortRef,String],
@@ -43,7 +44,22 @@ class NetworkVerificationStructure(
     val subactorVarDecls: List[BDecl],
     val uniquenessConditions: List[Boogie.Expr],
     val basicAssumes: List[Boogie.Assume],
-    val namePrefix: String) extends VerificationStructure[Network]
+    val namePrefix: String) extends VerificationStructure[Network] {
+  
+  def instanceRenamings(instance: Instance) = nwRenamings ++ entityData(instance).renamings
+  
+  def subActionRenamings(instance: Instance, action: Action) = 
+    instanceRenamings(instance) ++ entityData(instance).actionData(action).renamings
+  
+}
 
-class EntityData(val declarations: List[BDecl], val renamings: Map[String,String], val variables: List[String], val actionData: Map[Action,ActionData])
-class ActionData(val declarations: List[BDecl], val renamings: Map[String,String], val replacements: Map[Id,Expr])
+class EntityData(
+    val declarations: List[BDecl], 
+    val renamings: Map[String,String], 
+    val variables: List[String], 
+    val actionData: Map[Action,ActionData])
+    
+class ActionData(
+    val declarations: List[BDecl], 
+    val renamings: Map[String,String], 
+    val replacements: Map[Id,Expr])
