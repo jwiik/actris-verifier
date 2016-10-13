@@ -65,26 +65,13 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
     
     val actorParamDecls = actor.parameters map {p => BDecl(p.id,p.typ)}
     
-    val basicAssumes = {
-      (for (p <- actor.inports ::: actor.outports) yield {
-        val name = p.id
-        val list = List(
-          //B.Int(0) <= B.I(name),
-          //B.I(name) <= B.R(name),
-          B.Int(0) <= B.R(name),
-          B.R(name) <= B.C(name))
-        list.map {x => B.Assume(x)}
-      }).flatten
-    }
+    val basicAssumes =
+      (actor.inports map { p => B.Assume(B.Int(0) <= B.R(p.id)) }) :::
+      (actor.outports map { p => B.Assume(B.Int(0) <= B.C(p.id)) })
     
     val initAssumes = 
-      (for (p <- actor.inports ::: actor.outports) yield {
-        val name = p.id
-        val list = List(
-          B.R(name) ==@ B.Int(0),
-          B.C(name) ==@ B.Int(0))
-        list.map {x => B.Assume(x)}
-      }).flatten
+      (actor.inports map { p => B.Assume(B.R(p.id) ==@ B.Int(0)) }) :::
+      (actor.outports map { p => B.Assume(B.C(p.id) ==@ B.Int(0)) })
     
       
     return new ActorVerificationStructure(

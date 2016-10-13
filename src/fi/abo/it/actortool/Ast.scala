@@ -29,15 +29,27 @@ sealed abstract class DFActor(
   
   def fullName: String = id
   
+  private var _invariants: List[ActorInvariant] = 
+    for (m <- members.filter{ x => x.isActorInvariant}) yield { m.asInstanceOf[ActorInvariant] }
+  
+  def actorInvariants = _invariants
+  
+  def addInvariant(invs: Expr, free: Boolean) { addInvariants(List(invs), free) }
+  
+  def addInvariants(invs: List[Expr], free: Boolean) {
+    val newInvariants = invs map { x => ActorInvariant(Assertion(x,free),true,true) }
+    _invariants = _invariants:::newInvariants
+  }
+  
   lazy val actions: List[Action] =
     members.filter { x => x.isAction } map { x => x.asInstanceOf[Action] }
   
   lazy val variables: List[Declaration] = 
     members.filter { x => x.isDeclaration } map { x => x.asInstanceOf[Declaration] }
   
-  lazy val actorInvariants: List[ActorInvariant] = {
-    members.filter { x => x.isActorInvariant } map { x => x.asInstanceOf[ActorInvariant] }
-  }
+//  lazy val actorInvariants: List[ActorInvariant] = {
+//    members.filter { x => x.isActorInvariant } map { x => x.asInstanceOf[ActorInvariant] }
+//  }
   
   lazy val publicActorInvariants = actorInvariants.filter { x => x.public }
   
@@ -217,7 +229,7 @@ sealed case class Structure(val connections: List[Connection]) extends Member {
   }
   
   def outgoingConnections(entityId: String, portId: String) = {
-    val cons = connections.filter { 
+    val cons = connections.find { 
       x => x match {
         case Connection(_,PortRef(Some(e),p),_,_) => entityId == e && portId == p
         case _ => false

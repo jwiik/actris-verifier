@@ -64,11 +64,14 @@ class Translator(
     val guards = new ListBuffer[Boogie.Expr]()
     var inpatDecls = Map.empty[String,BDecl]
     
+    decls += translateActorInit(avs)
+    
     for (a <- avs.actions) {
-      val (decl,guard,renames) = translateActorAction(a, avs)
-      decls ++= decl
-      inpatDecls = inpatDecls ++ renames
       if (!a.init) {
+        val (decl,guard,renames) = translateActorAction(a, avs)
+        decls ++= decl
+        inpatDecls = inpatDecls ++ renames
+      
         // And together the input pattern expressions and the guard expression
         if (!guard.isEmpty) {
           guards += guard.reduceLeft((a,b) => (a && b))
@@ -118,6 +121,47 @@ class Translator(
     }
   }
   
+  def translateActorInit(avs: ActorVerificationStructure) = {
+    val asgn = new ListBuffer[Boogie.Stmt]
+    asgn ++= avs.channelDecls map { _.decl }
+    asgn ++= avs.actorVarDecls map { _.decl }
+    asgn ++= avs.actorParamDecls map { _.decl }
+    asgn += B.Assume(avs.uniquenessCondition)
+    asgn ++= avs.initAssumes
+    
+    val initAction = avs.actions.find { x => x.init } 
+    initAction match {
+      case Some(a) => {
+        asgn ++= 
+          (a.body match {
+            case None => List(B.Assume(Boogie.BoolLiteral(true)))
+            case Some(b) => transStmt( b )(Map.empty)
+          })
+        asgn ++= (for (q <- a.ensures) yield {
+          B.Assert(transExpr(q)(Map.empty), q.pos, "Action postcondition might not hold")
+        })
+     
+        for (opat <- a.outputPattern) {
+          val cId = opat.portId
+          for (v <- opat.exps) {
+            asgn += Boogie.Assign(B.ChannelIdx(cId, B.C(cId)), transExpr(v)(Map.empty))
+            asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
+          }
+        }
+      }
+      case None =>
+    }
+    
+
+    
+    for (inv <- avs.invariants) {
+      if (!inv.assertion.free) 
+        asgn += B.Assert(transExpr(inv.expr)(Map.empty),inv.expr.pos, "Initialization might not establish the invariant")
+    }
+    
+    createBoogieProc(Uniquifier.get(avs.namePrefix+"init"),asgn.toList)
+  }
+  
   def translateActorAction(a: Action, avs: ActorVerificationStructure): (List[Boogie.Decl],List[Boogie.Expr],Map[String,BDecl]) = {
      
     val asgn = new ListBuffer[Boogie.Stmt]
@@ -148,12 +192,12 @@ class Translator(
      
      if (!a.init) {
        // Assume invariants
-       asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(renamings)))
+       asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(Map.empty)))
      }
-     avs.allowedStateInv match {
-       case Some(e) => asgn += B.Assume(e)
-       case None =>
-     }
+//     avs.allowedStateInv match {
+//       case Some(e) => asgn += B.Assume(e)
+//       case None =>
+//     }
      
      val guards =
        (a.guard match {
@@ -161,14 +205,14 @@ class Translator(
          case Some(e) => List(transExpr(e)(renamings))
        })
      
-     val transitions = avs.schedule match {
-       case Some(sched) => sched.transitionsOnAction(a.fullName)
-       case None => Nil
-     }
-     val stateGuards = for ((f,t) <- transitions) yield {
-       (B.This ==@ Boogie.VarExpr(avs.namePrefix+f)) : Boogie.Expr
-     }
-     val stateGuard = if (stateGuards.isEmpty) Nil else List(stateGuards.reduceLeft((a,b) => (a || b)))
+//     val transitions = avs.schedule match {
+//       case Some(sched) => sched.transitionsOnAction(a.fullName)
+//       case None => Nil
+//     }
+//     val stateGuards = for ((f,t) <- transitions) yield {
+//       (B.This ==@ Boogie.VarExpr(avs.namePrefix+f)) : Boogie.Expr
+//     }
+//     val stateGuard = if (stateGuards.isEmpty) Nil else List(stateGuards.reduceLeft((a,b) => (a || b)))
      
      for (ipat <- a.inputPattern) {
        val cId = ipat.portId
@@ -179,7 +223,7 @@ class Translator(
      }
      
      asgn ++= (for (p <- a.requires) yield {B.Assume(transExpr(p)(renamings)) })
-     asgn ++= stateGuard map {x => B.Assume(x)}
+//     asgn ++= stateGuard map {x => B.Assume(x)}
      asgn ++= guards map {g => B.Assume(g)}
      
      asgn ++= 
@@ -188,12 +232,12 @@ class Translator(
          case Some(b) => transStmt( b )(renamings)
        })
      
-     asgn ++= 
-       (transitions match {
-         case Nil => Nil
-         case List((f,t)) => List(Boogie.Assign(B.This, Boogie.VarExpr(avs.namePrefix+t)))
-         case _ => assert(false); Nil
-       })
+//     asgn ++= 
+//       (transitions match {
+//         case Nil => Nil
+//         case List((f,t)) => List(Boogie.Assign(B.This, Boogie.VarExpr(avs.namePrefix+t)))
+//         case _ => assert(false); Nil
+//       })
      
      asgn ++= (for (q <- a.ensures) yield {
        B.Assert(transExpr(q)(renamings), q.pos, "Action postcondition might not hold")
@@ -206,14 +250,14 @@ class Translator(
          asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
        }
      }
-     asgn ++= (for (inv <- avs.invariants) yield {
-       if (!inv.assertion.free) B.Assert(transExpr(inv.expr)(renamings),inv.expr.pos, "Action at " + a.pos + " might not preserve invariant")
-       else B.Assume(transExpr(inv.expr)(renamings))
-     })
+     for (inv <- avs.invariants) {
+       if (!inv.assertion.free) 
+         asgn += B.Assert(transExpr(inv.expr)(Map.empty),inv.expr.pos, "Action at " + a.pos + " might not preserve invariant")
+     }
      
      val proc = createBoogieProc(Uniquifier.get(avs.namePrefix+a.fullName),asgn.toList)
      
-     (List(proc), readTokensRules.toList:::stateGuard:::guards, inpatDeclBuffer.toMap)
+     (List(proc), readTokensRules.toList:::/*stateGuard:::*/guards, inpatDeclBuffer.toMap)
    }
   
 
@@ -295,9 +339,9 @@ class Translator(
       asgn += BAssert(chi, "Initialization of network '" + nwvs.entity.id + "' might not establish the channel invariant", nwvs.nwRenamings)
     }
     
-    for ((subi,renames) <- nwvs.publicSubInvariants) {
-      asgn += BAssert(subi, "Initialization of network '" + nwvs.entity.id + "' might not establish the sub-actor invariant", renames)
-    }
+//    for ((subi,renames) <- nwvs.publicSubInvariants) {
+//      asgn += BAssert(subi, "Initialization of network '" + nwvs.entity.id + "' might not establish the sub-actor invariant", renames)
+//    }
     
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
     for (nwi <- nwvs.nwInvariants) {
@@ -399,49 +443,52 @@ class Translator(
     
     val firingNegAssumes = subactorFiringRules map { fr => B.Assume(Boogie.UnaryExpr("!",fr)) }
     
-    val exitStmt =
-      (nwvs.entityDecls map { _.decl }) :::
-      (nwvs.subactorVarDecls  map { _.decl }):::
-      (nwvs.uniquenessConditions map {B.Assume(_)}) :::
-      nwvs.basicAssumes:::
-      (for (chi <- nwvs.chInvariants) yield BAssume(chi,nwvs.nwRenamings)):::
-      inputBounds:::
-      (nwPre.map { case (_,r) => B.Assume(r) }) :::
-      firingNegAssumes:::
-      //outputs:::
-      (nwPost.map { case (pos,q) => B.Assert(q,pos,"Network action postcondition might not hold") }) :::
-      (for (c <- nwvs.connections) yield {
-        c.to match {
-          // Match network output channels
-          case pf@PortRef(None,port) => {
-            val name = nwvs.targetMap(pf)
-            List(Boogie.Assign(B.R(Boogie.VarExpr(name)), B.R(Boogie.VarExpr(name)) +  (B.Int(nwa.portOutputCount(port)))))
-          }
-          case _ => Nil
+    val asgn = new ListBuffer[Boogie.Stmt]
+    
+    asgn ++= (nwvs.entityDecls map { _.decl })
+    asgn ++= (nwvs.subactorVarDecls  map { _.decl })
+    asgn ++= (nwvs.uniquenessConditions map {B.Assume(_)})
+    asgn ++= nwvs.basicAssumes
+    for (chi <- nwvs.chInvariants) {
+      asgn += BAssume(chi,nwvs.nwRenamings)
+    }
+    for ((pinv,renames) <- nwvs.publicSubInvariants) {
+      asgn += BAssume(pinv, renames)
+    }
+    asgn ++= inputBounds
+    asgn ++= (nwPre.map { case (_,r) => B.Assume(r) })
+    asgn ++= firingNegAssumes
+    asgn ++= (nwPost.map { case (pos,q) => B.Assert(q,pos,"Network action postcondition might not hold") })
+    for (c <- nwvs.connections) {
+      c.to match {
+        // Match network output channels
+        case pf@PortRef(None,port) => {
+          val name = nwvs.targetMap(pf)
+          asgn += Boogie.Assign(B.R(Boogie.VarExpr(name)), B.R(Boogie.VarExpr(name)) +  (B.Int(nwa.portOutputCount(port))))
         }
-      }).flatten:::
-      //
-      List(Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))) :::
-      //
-      (for (chi <- nwvs.chInvariants) yield 
-        BAssert(chi,"The network might not preserve the channel invariant"  ,nwvs.nwRenamings)) :::
-      //
-      (for (nwi <- nwvs.nwInvariants) yield 
-        Exhalator.visit(nwi,"The network might not preserve the network invariant",nwvs.nwRenamings)).flatten :::
-      (for (c <- nwvs.connections) yield {
-        if (c.isOutput) {
-          B.Assert(B.C(nwvs.nwRenamings(c.id)) ==@ B.R(nwvs.nwRenamings(c.id)),nwa.pos,"The network might not produce the specified number of tokens on output " + c.to.name)
-        }
-        else {
-          B.Assert(B.C(nwvs.nwRenamings(c.id)) ==@ B.R(nwvs.nwRenamings(c.id)),nwa.pos,"The network might leave unread tokens on channel " + c.id)
-        }
-      })
-    createBoogieProc(Uniquifier.get(nwvs.namePrefix+nwa.fullName+"#exit"),exitStmt)
+        case _ =>
+      }
+    }
+    asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
+    for (chi <- nwvs.chInvariants) {
+      asgn += BAssert(chi,"The network might not preserve the channel invariant"  ,nwvs.nwRenamings)
+    }
+//    for ((pinv,renames) <- nwvs.publicSubInvariants) {
+//      val msg = "The network might not preserve the  sub-invariant"
+//      asgn += BAssert(pinv, msg, renames)
+//    }
+    for (nwi <- nwvs.nwInvariants) {
+      asgn ++= Exhalator.visit(nwi,"The network might not preserve the network invariant",nwvs.nwRenamings)
+    }
+    for (c <- nwvs.connections) {
+      val msg =
+        if (c.isOutput) "The network might not produce the specified number of tokens on output " + c.to.name
+        else "The network might leave unread tokens on channel " + c.id
+      asgn += B.Assert(B.C(nwvs.nwRenamings(c.id)) ==@ B.R(nwvs.nwRenamings(c.id)),nwa.pos, msg)
+    } 
+    
+    createBoogieProc(Uniquifier.get(nwvs.namePrefix+nwa.fullName+"#exit"),asgn.toList)
   }
-  
-  val nextState = "St#next"
-  
-  
   
   def transSubActionExecution(
       instance: Instance, 
@@ -453,6 +500,10 @@ class Translator(
     val asgn = new ListBuffer[Boogie.Stmt]()    
     asgn ++= nwvs.basicAssumes
     asgn ++= (for (chi <- nwvs.chInvariants) yield BAssume(chi,nwvs.nwRenamings))  // Assume channel invariants
+    
+    for ((pinv,renames) <- nwvs.publicSubInvariants) {
+      asgn += BAssume(pinv, renames)
+    }
         
     val firingCondsBuffer = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
 
@@ -495,9 +546,7 @@ class Translator(
     for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
       asgn += B.Assume(transExpr(e.expr)(renamings))
     }
-    
-    val publicInvs = actor.publicActorInvariants map { a => (a.assertion.expr.pos, transExpr(a.assertion.expr)(renamings)) }
-    
+      
     for (ipat <- action.inputPattern) {
       var repeats = 0
       while (repeats < ipat.repeat) {
@@ -545,24 +594,28 @@ class Translator(
     for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
       asgn += B.Assume(transExpr(e.expr)(renamings))
     }
-    asgn ++= (for (chi <- nwvs.chInvariants) yield {
+    
+    for (chi <- nwvs.chInvariants) {
       if (!chi.assertion.free) {
         val msg = 
-          "Action at " + action.pos + " ('" + action.fullName + "') for actor instance '" + 
-          instance.id + "' might not preserve the channel invariant"
-        List(BAssert(chi, msg, nwvs.nwRenamings))
+            "Action at " + action.pos + " ('" + action.fullName + "') for actor instance '" + 
+            instance.id + "' might not preserve the channel invariant"
+        asgn += BAssert(chi, msg, nwvs.nwRenamings)
       }
-      else {
-        Nil
-      }
-    }).flatten
-            
+    }
+    
+//    for ((pinv,renames) <- nwvs.publicSubInvariants) {
+//      val msg = 
+//            "Action at " + action.pos + " ('" + action.fullName + "') for actor instance '" + 
+//            instance.id + "' might not preserve the sub-actor invariant"
+//      asgn += BAssert(pinv, msg, renames)
+//    }
+    
     (asgn.toList, firingRuleWithPrio, firingRuleWithoutPrio)
   }
   
   
   def translateNetworkInput(action: Action, pattern: InputPattern, nwvs: NetworkVerificationStructure) = {
-    
     
     val asgn = new ListBuffer[Boogie.Stmt]()
     asgn ++= (nwvs.entityDecls map { _.decl })
@@ -574,6 +627,10 @@ class Translator(
 
     for (chi <- nwvs.chInvariants) {
       asgn += BAssume(chi, nwvs.nwRenamings)
+    }
+    
+    for ((pinv,renames) <- nwvs.publicSubInvariants) {
+      asgn += BAssume(pinv, renames)
     }
 
     asgn += Boogie.Assign(
@@ -587,6 +644,9 @@ class Translator(
     for (chi <- nwvs.chInvariants) {
       asgn += BAssert(chi, "Channel invariant might be falsified by network input", nwvs.nwRenamings)
     }
+//    for ((pinv,renames) <- nwvs.publicSubInvariants) {
+//      asgn += BAssert(pinv, "Sub-actor invariant might be falsified by input on network '" + nwvs.entity.id + "'" , renames)
+//    }
 
     asgn.toList
   }
@@ -598,7 +658,7 @@ class Translator(
     Boogie.Proc(name,Nil,Nil,Modifies,Nil,body)
   }
   
-  def BAssume(chi: ChannelInvariant, renamings: Map[String,String]) = B.Assume(transExpr(chi.expr)(renamings))
+  def BAssume(chi: Invariant, renamings: Map[String,String]) = B.Assume(transExpr(chi.expr)(renamings))
   
   def BAssert(chi: Invariant, msg: String, renamings: Map[String,String]) = 
     B.Assert(transExpr(chi.expr)(renamings), chi.expr.pos, msg)

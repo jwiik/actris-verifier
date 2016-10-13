@@ -16,8 +16,8 @@ object Inferencer {
     def outcome: InferenceOutcome = { if (errors.isEmpty) Success() else Errors(errors.toList) }
   }
   
-  final val Modules = List(StaticClass,NWPreToInvariant,FTProperties).map(m => (m.name,m)).toMap
-  private val DefaultModules = Set(StaticClass,NWPreToInvariant)
+  final val Modules = List(StaticClass,BulletInvariants,NWPreToInvariant,FTProperties).map(m => (m.name,m)).toMap
+  private val DefaultModules = Set(StaticClass,BulletInvariants,NWPreToInvariant)
       
   def infer(program: List[TopDecl], modules: List[String], ftMode: Boolean): InferenceOutcome = {
     val inferenceModules = modules match {
@@ -51,7 +51,7 @@ object Inferencer {
       }
     }
     
-    def network(n: Network)(implicit ctx: Context): Unit = {
+    override def network(n: Network)(implicit ctx: Context): Unit = {
       if (n.inports.size != 1) return
       val inport = n.inports(0)
       
@@ -74,13 +74,117 @@ object Inferencer {
     
   }
   
-  object StaticClass extends InferenceModule {
+  object StaticClass extends StaticPropertyInferenceModule {
     override val name = "sdf-annot"
     
     val StaticAnnot = "static"
+    val NoInferAnnot = "noinfer"
     val quantVar = Id("idx$"); quantVar.typ = IntType(32)
+    
+    override def actor(actor: BasicActor)(implicit ctx: Context): Unit = {
+      val countInvariants = new ListBuffer[Expr]
+      val valueInvariants = new ListBuffer[Expr]
+      
+      val static = isStatic(actor)
+      if (actor.hasAnnotation(StaticAnnot) && !static) {
+        ctx.error(actor.pos, "Actor '" + actor.id + "' is marked as static but cannot be verified to conform to the restrictions")
+      }
+      
+      if (!static || actor.hasAnnotation(NoInferAnnot)) return
+      
+      val action = actor.actions.filter{ a => !a.init }(0)
+      val initAction = actor.actions.find{ a => a.init }
+      
+      val delayedChannels = initAction match {
+        case Some(a) => {
+          (a.outputPattern map { p => (p.portId, p.exps.size) }).toMap
+        }
+        case None => Map.empty[String,Int]
+      }
+        
+      for (op <- actor.outports) {
+        
+        val outRate = action.portOutputCount(op.id)
+          
+        val replacements = {
+          val inputs = (for (ipat <- action.inputPattern) yield {
+            val inRate = action.portInputCount(ipat.portId)
+            var i = 0
+            for (v <- ipat.vars) yield {
+              val cId = Id(ipat.portId); cId.typ = ChanType(v.typ)
+              val rated = (inRate,outRate) match {
+                case (1,1) => quantVar
+                case (x,1) => Times(lit(x),quantVar)
+                case (1,y) => Div(quantVar,lit(y))
+                case (x,y) => Times(Div(lit(x),lit(y)),quantVar)
+              }
+              val idx = if (i == 0) rated else Plus(rated,lit(i))
+              val delayAdjustedIdx =
+                if (delayedChannels contains op.id) Minus(idx,lit(delayedChannels(op.id)))
+                else idx
+              val acc = IndexAccessor(cId,delayAdjustedIdx)
+              acc.typ = v.typ
+              i = i+1
+              (v -> acc)
+            }
+          }).flatten
+          //val params = (for ((p,a) <- (e.actor.parameters zip e.arguments)) yield {(Id(p.id) -> a)})
+          (inputs/*:::params*/).toMap
+        }
+        
+        for (ip <- actor.inports) {
+          val inRate = action.portInputCount(ip.id)
+          val ratedTot = 
+            if (inRate == 1) tot0(op.id)
+            else Times(lit(inRate),tot0(op.id))
+          
+          val ratedRd =
+            if (outRate == 1) rd0(ip.id)
+            else Times(lit(outRate),rd0(ip.id))
+          
+          val ratedDelayedTot = 
+            if (delayedChannels contains op.id) Minus(ratedTot,lit(delayedChannels(op.id)))
+            else ratedTot
+            
+          countInvariants += Eq(ratedRd,ratedDelayedTot)
+        }
+        
+        val outFuncs = action.portOutputPattern(op.id).get.exps
+        var k = 0
+        for (fk <- outFuncs) {
+          val lowBound = delayedChannels.get(op.id) match {
+            case None => lit(0)
+            case Some(d) => lit(d)
+          }
+          val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(op.id)))
+          val bounds = // If there is more than one output we need differentiate with mod
+            if (1 < outFuncs.size) And(quantBounds,Eq(Mod(quantVar,lit(outRate)),lit(k)))
+            else quantBounds
+          
+          val fkRenamed = IdReplacer.visitExpr(fk)(replacements)
+          val cId = Id(op.id); cId.typ = ChanType(fk.typ)
+          val acc = IndexAccessor(cId,quantVar); acc.typ = fk.typ
+          
+          val quantExp = Implies(bounds,Eq(acc,fkRenamed))
+          
+          valueInvariants += Forall(List(quantVar), quantExp)
+          k = k+1
+        }
+      } // for
+      
+      actor.addInvariants(countInvariants.toList, false)
+      actor.addInvariants(valueInvariants.toList, false)
+      
+    }
+  }
   
-    def network(n: Network)(implicit ctx: Context) = {
+  object BulletInvariants extends StaticPropertyInferenceModule {
+    override val name = "bullet-invariants"
+    
+    val StaticAnnot = "static"
+    val NoInferAnnot = "noinfer"
+  
+    override def network(n: Network)(implicit ctx: Context) = {
       
       val countInvariants = new ListBuffer[Expr]
       val valueInvariants = new ListBuffer[Expr]
@@ -112,128 +216,26 @@ object Inferencer {
           
           val outRate = action.portOutputCount(op.id)
           
-          val outChans = n.structure.get.outgoingConnections(e.id, op.id)
-          
-          for (oc <- outChans) {
+          val outChan = n.structure.get.outgoingConnections(e.id, op.id).get
             
-            val replacements = {
-              val inputs = (for (ipat <- action.inputPattern) yield {
-                val inRate = action.portInputCount(ipat.portId)
-                val inChan = n.structure.get.incomingConnection(e.id, ipat.portId).get
-                var i = 0
-                for (v <- ipat.vars) yield {
-                  val cId = Id(inChan.id); cId.typ = ChanType(v.typ)
-                  val rated = (inRate,outRate) match {
-                    case (1,1) => quantVar
-                    case (x,1) => Times(lit(x),quantVar)
-                    case (1,y) => Div(quantVar,lit(y))
-                    case (x,y) => Times(Div(lit(x),lit(y)),quantVar)
-                  }
-                  val idx = if (i == 0) rated else Plus(rated,lit(i))
-                  val delayAdjustedIdx =
-                    if (delayedChannels contains oc.id) Minus(idx,delayedChannels(oc.id))
-                    else idx
-                  val acc = IndexAccessor(cId,delayAdjustedIdx)
-                  acc.typ = v.typ
-                  i = i+1
-                  (v -> acc)
-                }
-              }).flatten
-              val params = (for ((p,a) <- (e.actor.parameters zip e.arguments)) yield {(Id(p.id) -> a)})
-              (inputs:::params).toMap
-            }
+          for (ip <- e.actor.inports) {
+            val inRate = action.portInputCount(ip.id)
+            val inChan = n.structure.get.incomingConnection(e.id, ip.id).get
             
-            for (ip <- e.actor.inports) {
-              val inRate = action.portInputCount(ip.id)
-              val inChan = n.structure.get.incomingConnection(e.id, ip.id).get
-              val ratedTot = 
-                if (inRate == 1) tot0(oc.id)
-                else Times(lit(inRate),tot0(oc.id))
+            val ratedAt1 = 
+              if (inRate == 1) str(outChan.id)
+              else Times(lit(inRate),str(outChan.id))
               
-              val ratedRd =
-                if (outRate == 1) rd0(inChan.id)
-                else Times(lit(outRate),rd0(inChan.id))
+            val ratedAt2 = 
+              if (outRate == 1) str(inChan.id)
+              else Times(lit(inRate),str(inChan.id))
               
-              val ratedDelayedTot = 
-                if (delayedChannels contains oc.id) Minus(ratedTot,delayedChannels(oc.id))
-                else ratedTot
-                
-              countInvariants += Eq(ratedRd,ratedDelayedTot)
-              
-              val ratedAt1 = 
-                if (inRate == 1) str(oc.id)
-                else Times(lit(inRate),str(oc.id))
-                
-              val ratedAt2 = 
-                if (outRate == 1) str(inChan.id)
-                else Times(lit(inRate),str(inChan.id))
-                
-              countInvariants += Eq(ratedAt1,ratedAt2)
-            }
-            
-            val outFuncs = action.portOutputPattern(op.id).get.exps
-            var k = 0
-            for (fk <- outFuncs) {
-              val lowBound = delayedChannels.get(oc.id) match {
-                case None => str(oc.id)
-                case Some(d) => Plus(str(oc.id),d)
-              }
-              val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(oc.id)))
-              val bounds = // If there is more than one output we need differentiate with mod
-                if (1 < outFuncs.size) And(quantBounds,Eq(Mod(quantVar,lit(outRate)),lit(k)))
-                else quantBounds
-              
-              val fkRenamed = IdReplacer.visitExpr(fk)(replacements)
-              val cId = Id(oc.id); cId.typ = ChanType(fk.typ)
-              val acc = IndexAccessor(cId,quantVar); acc.typ = fk.typ
-              
-              val quantExp = Implies(bounds,Eq(acc,fkRenamed))
-              
-              valueInvariants += Forall(List(quantVar), quantExp)
-              k = k+1
-            }
+            countInvariants += Eq(ratedAt1,ratedAt2)
           }
         } // for
       } // for
       n.addChannelInvariants(countInvariants.toList, false)
-      n.addChannelInvariants(valueInvariants.toList, false)
     } // def network
-    
-    
-    def isStatic(actor: DFActor): Boolean = {
-      
-      if (actor.isInstanceOf[Network]) return false
-      
-      var portRates = Map[String,Int]()
-      
-      val ports = (actor.inports:::actor.outports map { _.id }).toSet
-      
-      for (action <- actor.actions.filter { !_.init }) {
-        
-        var seenPorts = ports
-        
-        for (pat <- action.inputPattern ::: action.outputPattern) {
-          seenPorts = seenPorts - pat.portId
-          portRates.get(pat.portId) match {
-            case Some(rate) =>
-              if (pat.list.size != rate) return false
-            case None =>
-              portRates += (pat.portId -> pat.list.size)
-          }
-        }
-        
-        for (p <- seenPorts) {
-          portRates.get(p) match {
-            case Some(rate) =>
-              if (0 != rate) return false
-            case None =>
-              portRates += (p -> 0)
-          }
-        }
-      }
-      return true
-    }
-    
   }
   
   object FTProperties extends InferenceModule {
@@ -266,17 +268,47 @@ object Inferencer {
     
     val name: String
     
-    val NoInferAnnot = "noinfer"
-    
     final def infer(ctx: Context, decl: TopDecl) = {
       decl match {
         case n: Network => network(n)(ctx)
+        case a: BasicActor => actor(a)(ctx)
         case _ =>
       }
       ctx.outcome
     }
     
-    def network(n: Network)(implicit ctx: Context)
+    def network(n: Network)(implicit ctx: Context): Unit = {}
+    def actor(a: BasicActor)(implicit ctx: Context): Unit = {}
+  }
+  
+  abstract class StaticPropertyInferenceModule extends InferenceModule {
+    def isStatic(actor: DFActor): Boolean = {
+      if (actor.isInstanceOf[Network]) return false
+      var portRates = Map[String,Int]()
+      val ports = (actor.inports:::actor.outports map { _.id }).toSet
+      for (action <- actor.actions.filter { !_.init }) {
+        var seenPorts = ports
+        for (pat <- action.inputPattern ::: action.outputPattern) {
+          seenPorts = seenPorts - pat.portId
+          portRates.get(pat.portId) match {
+            case Some(rate) =>
+              if (pat.list.size != rate) return false
+            case None =>
+              portRates += (pat.portId -> pat.list.size)
+          }
+        }
+        
+        for (p <- seenPorts) {
+          portRates.get(p) match {
+            case Some(rate) =>
+              if (0 != rate) return false
+            case None =>
+              portRates += (p -> 0)
+          }
+        }
+      }
+      return true
+    }
   }
 
 }
