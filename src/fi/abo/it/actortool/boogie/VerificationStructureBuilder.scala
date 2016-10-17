@@ -6,12 +6,15 @@ import scala.collection.mutable.ListBuffer
 trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] {
   def buildStructure(entity: T): V
   
-  protected def createUniquenessCondition(names: List[String]): List[Boogie.Expr] = {
+  protected def createUniquenessCondition(names: List[BDecl]): List[Boogie.Expr] = {
     names match {
       case first::rest => {
-        val conditions = for (c <- rest) yield {
-          Boogie.VarExpr(first) !=@ Boogie.VarExpr(c)
+        val conditions = rest flatMap { 
+          c => if (first.decl.x.t == c.decl.x.t) List(Boogie.VarExpr(first.name) !=@ Boogie.VarExpr(c.name)) else Nil
         }
+//        val conditions = for (c <- rest) yield {
+//          Boogie.VarExpr(first.name) !=@ Boogie.VarExpr(c.name)
+//        }
         conditions:::createUniquenessCondition(rest)
       }
       case Nil => Nil
@@ -27,7 +30,7 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
     val prefix = actor.id+B.Sep
         
     val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
-    val uniquenessConidition = createUniquenessCondition(portChans map { _.name }).reduceLeft((a,b) => (a && b))
+    val uniquenessConidition = createUniquenessCondition(portChans).reduceLeft((a,b) => (a && b))
     
 //    val portChans = 
 //      ((for (p <- actor.inports) yield BDecl(p.id, ChanType(p.portType)))
@@ -153,33 +156,35 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     for (e <- entities) {
       //val entitySpecificRenames = new ListBuffer[Map[String,String]]
       //val entitySpecificVariables = new ListBuffer[List[String]]
-      val variables = new ListBuffer[String]()
-      val renameBuffer = new ListBuffer[(String,String)]()
+      val variables = new ListBuffer[String]
+      val renameBuffer = new ListBuffer[(String,Expr)]
       val actor = e.actor
+      
+      val parameterArguments = actor.parameters.zip(e.arguments).map{ case (d,e) => (d.id,e) }.toMap
       
       buffer += ((e.id,namePrefix+e.id))
      
       for (p <- actor.inports) {
         val newName = targetMap(PortRef(Some(e.id),p.id))
-        renameBuffer += ((p.id,newName))
+        renameBuffer += ((p.id,Id(newName)))
       }
       
       for (p <- actor.outports) {
         val newName = sourceMap(PortRef(Some(e.id),p.id))
-        renameBuffer += ((p.id,newName))
+        renameBuffer += ((p.id,Id(newName)))
       }
       
       for (p <- actor.parameters) {
-        val newName = "AP"+B.Sep+e.id+B.Sep+p.id
-        subactorVarDecls += BDecl(newName,p.typ)
-        renameBuffer += ((p.id,newName))
+        //val newName = "AP"+B.Sep+e.id+B.Sep+p.id
+        //subactorVarDecls += BDecl(newName,p.typ)
+        renameBuffer += ((p.id,parameterArguments(p.id)))
       }
       
       for (v <- actor.variables) {
         val newName = "AV"+B.Sep+e.id+B.Sep+v.id
         subactorVarDecls += BDecl(newName,v.typ)
         variables += newName
-        renameBuffer += ((v.id,newName))
+        renameBuffer += ((v.id,Id(newName)))
       }
       
       val actionData = (actor.actions map { a => (a,collectEntityData(e,a,targetMap)) }).toMap
@@ -193,8 +198,11 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
       
     }
     val entityData = entityDataBuffer.toMap
-    val networkRenamings = buffer.toMap
-
+    
+    val tempRenames = buffer.toMap
+    
+    val networkRenamings = buffer.map{ case (s1,s2) => (s1,Id(s2)) }.toMap
+    
     val publicInvs = 
       entities flatMap { 
         entity => {
@@ -209,16 +217,18 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     val entityDeclList = entityDecls.toList
     
     val uniquenessConidition1 = 
-      if (entityDeclList.size > 1) List(createUniquenessCondition(entityDeclList map { _.name }).reduceLeft((a,b) => (a && b)))
+      if (entityDeclList.size > 1) List(createUniquenessCondition(entityDeclList).reduceLeft((a,b) => (a && b)))
       else Nil
     val uniquenessConidition2 = 
-      if (chanDeclList.size > 1) List(createUniquenessCondition(chanDeclList map { _.name }).reduceLeft((a,b) => (a && b)))
+      if (chanDeclList.size > 1) List(createUniquenessCondition(chanDeclList).reduceLeft((a,b) => (a && b)))
       else Nil
     val uniquenessConditions = uniquenessConidition1 ::: uniquenessConidition2
     
+    
+    
     val basicAssumes =
       (for (c <- connections) yield {
-        val name = networkRenamings(c.id)
+        val name = tempRenames(c.id)
         val list1 = List(
           B.Int(0) <= B.I(name),
           B.I(name) <= B.R(name),
@@ -226,7 +236,9 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
         val list2 = (if (c.isOutput) List(B.I(name) ==@ B.R(name)) else Nil)
         (list1 ::: list2).map(x => B.Assume(x))
       }).flatten
-      
+    
+    
+    
     new NetworkVerificationStructure(
         network, 
         actions, 
@@ -268,7 +280,7 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
       for (v <- ipat.vars) yield {
         val inVar = ipat.portId + B.Sep + v.id
         vars += BDecl(inVar,B.Local(inVar,B.type2BType(v.typ)))
-        (v.id,inVar)
+        (v.id,Id(inVar))
       }
     }).flatten.toMap
     

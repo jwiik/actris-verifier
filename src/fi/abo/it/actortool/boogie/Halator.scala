@@ -6,6 +6,7 @@ import fi.abo.it.actortool.ChannelInvariant
 import fi.abo.it.actortool.And
 import fi.abo.it.actortool.Implies
 import fi.abo.it.actortool.FunctionApp
+import fi.abo.it.actortool.Id
 import fi.abo.it.actortool.Expr
 
 class Inhalator(expTranslator: StmtExpTranslator) extends Halator(expTranslator, true, false)
@@ -13,32 +14,32 @@ class Exhalator(expTranslator: StmtExpTranslator) extends Halator(expTranslator,
 
 abstract class Halator(val trans: StmtExpTranslator, val inhale: Boolean, val subAction: Boolean) {
     
-  def visit(inv: ChannelInvariant, renamings: Map[String,String]): List[Boogie.Stmt] = 
+  def visit(inv: ChannelInvariant, renamings: Map[String,Expr]): List[Boogie.Stmt] = 
     visit(inv, "Invariant might not hold", renamings)
   
-  def visit(inv: ActorInvariant, renamings: Map[String,String]): List[Boogie.Stmt] = 
+  def visit(inv: ActorInvariant, renamings: Map[String,Expr]): List[Boogie.Stmt] = 
     visit(inv, "Invariant might not hold", renamings)
   
-  def visit(inv: ActorInvariant, msg: String, renamings: Map[String,String]): List[Boogie.Stmt] = {
+  def visit(inv: ActorInvariant, msg: String, renamings: Map[String,Expr]): List[Boogie.Stmt] = {
     val buffer = new ListBuffer[Boogie.Stmt]
     visit(inv.expr, inv.assertion.free)(buffer,msg,renamings);
     buffer.toList
   }
   
-  def visit(inv: ChannelInvariant, msg: String, renamings: Map[String,String]): List[Boogie.Stmt] = {
+  def visit(inv: ChannelInvariant, msg: String, renamings: Map[String,Expr]): List[Boogie.Stmt] = {
     val buffer = new ListBuffer[Boogie.Stmt]
     visit(inv.expr, inv.assertion.free)(buffer,msg,renamings);
     buffer.toList
   }
   
-  def visit(e: Expr, msg: String, renamings: Map[String,String]): List[Boogie.Stmt] = {
+  def visit(e: Expr, msg: String, renamings: Map[String,Expr]): List[Boogie.Stmt] = {
     val buffer = new ListBuffer[Boogie.Stmt]
     visit(e, false)(buffer,msg,renamings);
     buffer.toList
   }
   
   def visit(expr: Expr, free: Boolean)(
-      implicit buffer: ListBuffer[Boogie.Stmt], msg: String, renamings: Map[String,String]) {
+      implicit buffer: ListBuffer[Boogie.Stmt], msg: String, renamings: Map[String,Expr]) {
     expr match {
       case And(left,right) => visit(left, free); visit(right, free)
       case Implies(left,right) => {

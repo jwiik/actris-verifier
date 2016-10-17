@@ -31,12 +31,12 @@ class NetworkVerificationStructure(
     val actions: List[Action],
     val nwInvariants: List[ActorInvariant],
     val chInvariants: List[ChannelInvariant],
-    val publicSubInvariants: List[(ActorInvariant,Map[String,String])],
+    val publicSubInvariants: List[(ActorInvariant,Map[String,Expr])],
     val connections: List[Connection],
     val entities: List[Instance],
     val sourceMap: Map[PortRef,String],
     val targetMap: Map[PortRef,String],
-    val nwRenamings: Map[String,String],
+    val nwRenamings: Map[String,Expr],
     val entityData: Map[Instance,EntityData],
     //val entityRenamings1: Map[Instance, Map[String, String]],
     //val entityVariables1: Map[Instance, List[String]],
@@ -55,11 +55,11 @@ class NetworkVerificationStructure(
 
 class EntityData(
     val declarations: List[BDecl], 
-    val renamings: Map[String,String], 
-    val variables: List[String], 
+    val renamings: Map[String,Expr], 
+    val variables: List[String],
     val actionData: Map[Action,ActionData])
     
 class ActionData(
     val declarations: List[BDecl], 
-    val renamings: Map[String,String], 
+    val renamings: Map[String,Id], 
     val replacements: Map[Id,Expr])

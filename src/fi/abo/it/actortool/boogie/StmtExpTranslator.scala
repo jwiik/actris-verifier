@@ -10,7 +10,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
    * Translation of statements and expressions
    */
 
-  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,String]): List[Boogie.Stmt] = {
+  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = {
     val bStmts = new ListBuffer[Boogie.Stmt]()
     for (s <- stmts) {
       bStmts ++= (s match {
@@ -34,7 +34,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
   }
   
   
-  def transExpr(exp: Expr)(implicit renamings: Map[String,String]): Boogie.Expr = {
+  def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
     exp match {
       case And(e1,e2) => transExpr(e1) && transExpr(e2)
       case Or(e1,e2) => transExpr(e1) || transExpr(e2)
@@ -200,7 +200,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
       case sm@SpecialMarker(mark) => {
         val name = sm.extraData("accessor").asInstanceOf[String]
-        val accessorName = renamings.getOrElse(name, name)
+        val accessorName = transExpr(renamings.getOrElse(name, name))
         mark match {
           case "@" => B.I(accessorName)
           case "next" => B.R(accessorName)
@@ -208,12 +208,15 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       }
       case Id(id) => renamings.get(id) match {
         case None => Boogie.VarExpr(id)
-        case Some(newId) => Boogie.VarExpr(newId)
+        case Some(replacement) => replacement match {
+          case Id(newId) => Boogie.VarExpr(newId)
+          case x: Expr => transExpr(x)
+        }
       } 
     }
   }
   
-  def generateRangePredicate(params: List[Expr], start: Boogie.Expr, end: Boogie.Expr)(implicit renamings: Map[String,String]) = {
+  def generateRangePredicate(params: List[Expr], start: Boogie.Expr, end: Boogie.Expr)(implicit renamings: Map[String,Expr]) = {
     if (params.size == 2) {
       val ch = transExpr(params(0))
       val ind = transExpr(params(1))
