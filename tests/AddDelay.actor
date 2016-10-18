@@ -1,10 +1,13 @@
-@sdf
 actor Add int in1, int in2 ==> int out :
   action in1:[i], in2:[j] ==> out:[i+j] end
 end
 
-@sdf
+actor Split int in ==> int out1, int out2 :
+  action in:[i] ==> out1:[i], out2:[i] end
+end
+
 actor Delay(int k) int in ==> int out :
+  public invariant out[0] = k
   initialize ==> out:[k] end
   action in:[i] ==> out:[i] end
 end
@@ -12,26 +15,28 @@ end
 network Net int in ==> int out :
   
   action in:1 ==> out:1
-    requires (forall int i :: 0 <= i && i < tot(in) ==> 0 < in[i])
+    requires 0 <= in[@]
     ensures out[0] = in[0]
-    ensures (forall int i :: 1 <= i && i < tot(out) ==> out[i] = in[i]+out[i-1])
+    ensures 0 < @(out) ==> out[@] = out[@-1]+in[@]
   end
   
-  invariant tokens(b,1)
+  invariant delay(b,1)
   
-  chinvariant init(a) = init(c)
-  chinvariant b[0] = 0
+  chinvariant 0 < @(out) ==> out[0] = in[0]
+  chinvariant 0 < @(out) ==> out[@-1] = b[@]
   
   entities
     add = Add();
     del = Delay(0);
+    spl = Split();
   end
   
   structure
     a: in --> add.in1;
     b: del.out --> add.in2;
-    c: add.out --> out;
-    d: add.out --> del.in;
+    c: add.out --> spl.in;
+    d: spl.out1 --> out;
+    e: spl.out2 --> del.in;
   end
 
 end

@@ -1,0 +1,29 @@
+@static
+actor AddSeq int in ==> int out :
+  action in:[i,j,k,l] ==> out:[i+j+k+l] end
+end
+
+@static
+actor Mod4 int in ==> int out :
+  action in:[i] ==> out:[i%4] end
+end
+
+network SumMod4 int in ==> int out :
+  
+  action in:64 ==> out:16
+    requires (forall int i :: current(in,i)  ==> in[i]%2 = 1)
+    ensures  (forall int i :: current(out,i) ==> out[i] = 0 || out[i] = 2)
+  end
+  
+  entities
+    add = AddSeq();
+    mod = Mod4();
+  end
+  
+  structure
+    a: in --> add.in;
+    b: add.out --> mod.in;
+    c: mod.out --> out;
+  end
+  
+end

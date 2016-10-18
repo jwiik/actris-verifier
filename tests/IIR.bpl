@@ -9,22 +9,23 @@ type State;
 
 var M: MType;
 var C: CType;
-var R: CType; 
-var N: CType;
-var C#init: CType;
+var R: CType;
+var I: CType;
 var St: [Actor]State;
 
 const unique this#: Actor;
-
 type List a = [int]a;
 var AT#intlst: List int;
 
+function AT#Min(x:int, y: int): int { if x <= y then x else y }
 
 function AT#Abs(x: int): int { if 0 <= x then x else -x }
 function AT#Div(int, int): int;
 function AT#Mod(int, int): int;
 axiom (forall a,b: int :: AT#Div(a,b)*b + AT#Mod(a,b) == a);
 axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
+
+function AT#BvAnd(a: int, b: int): int;
 
 function AT#RShift(int, int): int;
 function AT#LShift(int, int): int;
@@ -36,50 +37,286 @@ axiom (forall a: int :: (
   AT#RShift(a,5) == AT#Div(a,32) &&
   AT#RShift(a,6) == AT#Div(a,64) &&
   AT#RShift(a,7) == AT#Div(a,128) &&
-  AT#RShift(a,8) == AT#Div(a,256)
+  AT#RShift(a,8) == AT#Div(a,256) &&
+  AT#RShift(a,9) == AT#Div(a,512)
+));
+axiom (forall a: int :: (
+  AT#LShift(a,1) == a * 2 &&
+  AT#LShift(a,2) == a * 4 &&
+  AT#LShift(a,3) == a * 8 &&
+  AT#LShift(a,4) == a * 16 &&
+  AT#LShift(a,5) == a * 32 &&
+  AT#LShift(a,6) == a * 64 &&
+  AT#LShift(a,7) == a * 128 &&
+  AT#LShift(a,8) == a * 256 &&
+  AT#LShift(a,9) == a * 512
 ));
 
 // ---------------------------------------------------------------
 // -- End of prelude ---------------------------------------------
 // ---------------------------------------------------------------
 
-procedure add#anon$0#0()
-  modifies C, R, M, St;
+procedure add#init#0()
+  modifies C, R, M, I, St;
 {
-  var IV#in1#i: int;
-  var IV#in2#j: int;
-  assume true;
+  var in1: Chan (int);
+  var in2: Chan (int);
+  var out: Chan (int);
+  assume (in1 != in2) && (in1 != out) && (in2 != out);
+  assume R[in1] == 0;
+  assume R[in2] == 0;
+  assume C[out] == 0;
+  assert {:msg "Initialization might not establish the invariant (#0)"} R[in1] == C[out];
+  assert {:msg "Initialization might not establish the invariant (#1)"} R[in2] == C[out];
+  assert {:msg "Initialization might not establish the invariant (#2)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in1][idx$] + M[in2][idx$]))
+  );
 }
-procedure delay#anon$1#1()
-  modifies C, R, M, St;
+procedure add#anon$0#1()
+  modifies C, R, M, I, St;
 {
+  var in1: Chan (int);
+  var in2: Chan (int);
+  var out: Chan (int);
+  var in1#0: int;
+  var in2#0: int;
+  assume (in1 != in2) && (in1 != out) && (in2 != out);
+  assume 0 <= R[in1];
+  assume 0 <= R[in2];
+  assume 0 <= C[out];
+  assume R[in1] == C[out];
+  assume R[in2] == C[out];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in1][idx$] + M[in2][idx$]))
+  );
+  in1#0 := M[in1][R[in1]];
+  R[in1] := R[in1] + 1;
+  in2#0 := M[in2][R[in2]];
+  R[in2] := R[in2] + 1;
   assume true;
+  M[out][C[out]] := in1#0 + in2#0;
+  C[out] := C[out] + 1;
+  assert {:msg "Action at 2.3 might not preserve invariant (#3)"} R[in1] == C[out];
+  assert {:msg "Action at 2.3 might not preserve invariant (#4)"} R[in2] == C[out];
+  assert {:msg "Action at 2.3 might not preserve invariant (#5)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in1][idx$] + M[in2][idx$]))
+  );
 }
-procedure delay#anon$2#2()
-  modifies C, R, M, St;
+procedure delay#init#2()
+  modifies C, R, M, I, St;
 {
-  var IV#in#i: int;
+  var in: Chan (int);
+  var out: Chan (int);
+  var k: int;
+  assume in != out;
+  assume R[in] == 0;
+  assume C[out] == 0;
   assume true;
+  M[out][C[out]] := k;
+  C[out] := C[out] + 1;
+  assert {:msg "Initialization might not establish the invariant (#6)"} R[in] == (C[out] - 1);
+  assert {:msg "Initialization might not establish the invariant (#7)"} (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == M[in][idx$ - 1])
+  );
 }
-procedure mulc#anon$3#3()
-  modifies C, R, M, St;
+procedure delay#anon$2#3()
+  modifies C, R, M, I, St;
 {
-  var IV#in#i: int;
+  var in: Chan (int);
+  var out: Chan (int);
+  var k: int;
+  var in#0: int;
+  assume in != out;
+  assume 0 <= R[in];
+  assume 0 <= C[out];
+  assume R[in] == (C[out] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == M[in][idx$ - 1])
+  );
+  in#0 := M[in][R[in]];
+  R[in] := R[in] + 1;
   assume true;
+  M[out][C[out]] := in#0;
+  C[out] := C[out] + 1;
+  assert {:msg "Action at 7.3 might not preserve invariant (#8)"} R[in] == (C[out] - 1);
+  assert {:msg "Action at 7.3 might not preserve invariant (#9)"} (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == M[in][idx$ - 1])
+  );
 }
-procedure rshift#anon$4#4()
-  modifies C, R, M, St;
+procedure mulc#init#4()
+  modifies C, R, M, I, St;
 {
-  var IV#in#i: int;
+  var in: Chan (int);
+  var out: Chan (int);
+  var c: int;
+  assume in != out;
+  assume R[in] == 0;
+  assume C[out] == 0;
+  assert {:msg "Initialization might not establish the invariant (#10)"} R[in] == C[out];
+  assert {:msg "Initialization might not establish the invariant (#11)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (c * M[in][idx$]))
+  );
+}
+procedure mulc#anon$3#5()
+  modifies C, R, M, I, St;
+{
+  var in: Chan (int);
+  var out: Chan (int);
+  var c: int;
+  var in#0: int;
+  assume in != out;
+  assume 0 <= R[in];
+  assume 0 <= C[out];
+  assume R[in] == C[out];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (c * M[in][idx$]))
+  );
+  in#0 := M[in][R[in]];
+  R[in] := R[in] + 1;
   assume true;
+  M[out][C[out]] := c * in#0;
+  C[out] := C[out] + 1;
+  assert {:msg "Action at 11.3 might not preserve invariant (#12)"} R[in] == C[out];
+  assert {:msg "Action at 11.3 might not preserve invariant (#13)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (c * M[in][idx$]))
+  );
 }
-procedure iir#init#5()
-  modifies C, R, M, St;
+procedure rshift#init#6()
+  modifies C, R, M, I, St;
 {
-  var ActorParam#del1#k: int;
-  var ActorParam#mul1#c: int;
-  var ActorParam#mul2#c: int;
-  var ActorParam#rsh1#s: int;
+  var in: Chan (int);
+  var out: Chan (int);
+  var s: int;
+  assume in != out;
+  assume R[in] == 0;
+  assume C[out] == 0;
+  assert {:msg "Initialization might not establish the invariant (#14)"} R[in] == C[out];
+  assert {:msg "Initialization might not establish the invariant (#15)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#RShift(M[in][idx$], s))
+  );
+}
+procedure rshift#anon$4#7()
+  modifies C, R, M, I, St;
+{
+  var in: Chan (int);
+  var out: Chan (int);
+  var s: int;
+  var in#0: int;
+  assume in != out;
+  assume 0 <= R[in];
+  assume 0 <= C[out];
+  assume R[in] == C[out];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#RShift(M[in][idx$], s))
+  );
+  in#0 := M[in][R[in]];
+  R[in] := R[in] + 1;
+  assume true;
+  M[out][C[out]] := AT#RShift(in#0, s);
+  C[out] := C[out] + 1;
+  assert {:msg "Action at 15.3 might not preserve invariant (#16)"} R[in] == C[out];
+  assert {:msg "Action at 15.3 might not preserve invariant (#17)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#RShift(M[in][idx$], s))
+  );
+}
+procedure split#init#8()
+  modifies C, R, M, I, St;
+{
+  var in: Chan (int);
+  var out1: Chan (int);
+  var out2: Chan (int);
+  assume (in != out1) && (in != out2) && (out1 != out2);
+  assume R[in] == 0;
+  assume C[out1] == 0;
+  assume C[out2] == 0;
+  assert {:msg "Initialization might not establish the invariant (#18)"} R[in] == C[out1];
+  assert {:msg "Initialization might not establish the invariant (#19)"} R[in] == C[out2];
+  assert {:msg "Initialization might not establish the invariant (#20)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$] == M[in][idx$])
+  );
+  assert {:msg "Initialization might not establish the invariant (#21)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$] == M[in][idx$])
+  );
+}
+procedure split#anon$5#9()
+  modifies C, R, M, I, St;
+{
+  var in: Chan (int);
+  var out1: Chan (int);
+  var out2: Chan (int);
+  var in#0: int;
+  assume (in != out1) && (in != out2) && (out1 != out2);
+  assume 0 <= R[in];
+  assume 0 <= C[out1];
+  assume 0 <= C[out2];
+  assume R[in] == C[out1];
+  assume R[in] == C[out2];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$] == M[in][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$] == M[in][idx$])
+  );
+  in#0 := M[in][R[in]];
+  R[in] := R[in] + 1;
+  assume true;
+  M[out1][C[out1]] := in#0;
+  C[out1] := C[out1] + 1;
+  M[out2][C[out2]] := in#0;
+  C[out2] := C[out2] + 1;
+  assert {:msg "Action at 19.3 might not preserve invariant (#22)"} R[in] == C[out1];
+  assert {:msg "Action at 19.3 might not preserve invariant (#23)"} R[in] == C[out2];
+  assert {:msg "Action at 19.3 might not preserve invariant (#24)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$] == M[in][idx$])
+  );
+  assert {:msg "Action at 19.3 might not preserve invariant (#25)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$] == M[in][idx$])
+  );
+}
+procedure iir#init#10()
+  modifies C, R, M, I, St;
+{
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
   assume C[iir#a] == 0;
   assume R[iir#a] == 0;
   assume C[iir#b] == 0;
@@ -94,682 +331,1051 @@ procedure iir#init#5()
   assume R[iir#f] == 0;
   assume C[iir#g] == 0;
   assume R[iir#g] == 0;
-  assume ActorParam#del1#k == 0;
-  M[iir#f][R[iir#f] + C[iir#f]] := ActorParam#del1#k;
+  assume C[iir#h] == 0;
+  assume R[iir#h] == 0;
+  assume 0 == 0;
+  M[iir#f][C[iir#f]] := 0;
   C[iir#f] := C[iir#f] + 1;
-  assume ActorParam#mul1#c == 85;
-  assume ActorParam#mul2#c == 171;
-  assume ActorParam#rsh1#s == 8;
-  assert {:msg "  Network initialization might not establish the network invariant"} iir#f == 1;
-  assert {:msg "  Network initialization might not establish the network invariant"} M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume 85 == 85;
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume 171 == 171;
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume 8 == 8;
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assert {:msg "31.15: Initialization of network 'iir' might not establish the channel invariant (#26)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: Initialization of network 'iir' might not establish the channel invariant (#27)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#28)"} I[iir#f] == I[iir#e];
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#29)"} I[iir#b] == I[iir#a];
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#30)"} I[iir#e] == I[iir#d];
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#31)"} I[iir#g] == I[iir#c];
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#32)"} I[iir#c] == I[iir#b];
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#33)"} I[iir#c] == I[iir#f];
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#34)"} I[iir#d] == I[iir#g];
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#35)"} I[iir#h] == I[iir#g];
+  assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#36)"} true;
+  I := R;
+  C[iir#f] := C[iir#f] - 1;
+  assert {:msg "44.5: The initialization might produce unspecified tokens on channel a (#37)"} (C[iir#a] - R[iir#a]) == 0;
+  assert {:msg "45.5: The initialization might produce unspecified tokens on channel b (#38)"} (C[iir#b] - R[iir#b]) == 0;
+  assert {:msg "46.5: The initialization might produce unspecified tokens on channel c (#39)"} (C[iir#c] - R[iir#c]) == 0;
+  assert {:msg "47.5: The initialization might produce unspecified tokens on channel d (#40)"} (C[iir#d] - R[iir#d]) == 0;
+  assert {:msg "48.5: The initialization might produce unspecified tokens on channel e (#41)"} (C[iir#e] - R[iir#e]) == 0;
+  assert {:msg "49.5: The initialization might produce unspecified tokens on channel f (#42)"} (C[iir#f] - R[iir#f]) == 0;
+  assert {:msg "50.5: The initialization might produce unspecified tokens on channel g (#43)"} (C[iir#g] - R[iir#g]) == 0;
+  assert {:msg "51.5: The initialization might produce unspecified tokens on channel h (#44)"} (C[iir#h] - R[iir#h]) == 0;
 }
-const unique iir#del1: Actor;
-const unique iir#mul1: Actor;
-const unique iir#mul2: Actor;
-const unique iir#rsh1: Actor;
-const unique iir#add1: Actor;
-const unique iir#a: Chan (int);
-const unique iir#b: Chan (int);
-const unique iir#c: Chan (int);
-const unique iir#d: Chan (int);
-const unique iir#e: Chan (int);
-const unique iir#f: Chan (int);
-const unique iir#g: Chan (int);
-procedure iir#anon$5#entry#6()
-  modifies C, R, M, St;
+procedure iir##delay#anon$2#11()
+  modifies C, R, M, I, St;
 {
-  var iir#out#0: int;
-  assume C#init[iir#a] == 1;
-  assume C#init[iir#b] == 0;
-  assume C#init[iir#c] == 0;
-  assume C#init[iir#d] == 0;
-  assume C#init[iir#e] == 0;
-  assume C#init[iir#g] == 0;
-  assume R[iir#a] == 0;
-  assume R[iir#b] == 0;
-  assume R[iir#c] == 0;
-  assume R[iir#d] == 0;
-  assume R[iir#e] == 0;
-  assume R[iir#f] == 0;
-  assume R[iir#g] == 0;
-  assume C#init == C;
-  assume iir#f == 1;
-  assume M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #0)"} 0 <= R[iir#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #1)"} 0 <= C[iir#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #2)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #3)"} 0 <= R[iir#b];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #4)"} 0 <= C[iir#b];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #5)"} 0 <= R[iir#c];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #6)"} 0 <= C[iir#c];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #7)"} 0 <= R[iir#d];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #8)"} 0 <= C[iir#d];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #9)"} 0 <= R[iir#e];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #10)"} 0 <= C[iir#e];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #11)"} 0 <= R[iir#f];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #12)"} 0 <= C[iir#f];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #13)"} 0 <= R[iir#g];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #14)"} 0 <= C[iir#g];
-  assert {:msg "  Channel invariant might not hold on action entry (generated #15)"} R[iir#g] == 0;
-  assert {:msg "  Channel invariant might not hold on action entry (generated #16)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #17)"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #18)"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #19)"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #20)"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #21)"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #22)"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Channel invariant might not hold on action entry (generated #23)"} (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
-  );
-  assert {:msg "  Channel invariant might not hold on action entry (generated #24)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assert {:msg "  Channel invariant might not hold on action entry (generated #25)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assert {:msg "  Channel invariant might not hold on action entry (generated #26)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Channel invariant might not hold on action entry (generated #27)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Channel invariant might not hold on action entry (generated #28)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assert {:msg "  28.3: Channel invariant might not hold on action entry"} (171 * M[iir#g][-1]) == M[iir#f][0];
-}
-procedure iir#anon$5#delay#anon$2#7()
-  modifies C, R, M, St;
-{
-  var ActorParam#k: int;
-  var St#next: State;
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
   var in#i: int;
-  assume ActorParam#k == 0;
-  assume C#init[iir#a] == 1;
-  assume C#init[iir#b] == 0;
-  assume C#init[iir#c] == 0;
-  assume C#init[iir#d] == 0;
-  assume C#init[iir#e] == 0;
-  assume C#init[iir#g] == 0;
-  assume 0 <= R[iir#a];
-  assume 0 <= C[iir#a];
-  assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assume 0 <= R[iir#b];
-  assume 0 <= C[iir#b];
-  assume 0 <= R[iir#c];
-  assume 0 <= C[iir#c];
-  assume 0 <= R[iir#d];
-  assume 0 <= C[iir#d];
-  assume 0 <= R[iir#e];
-  assume 0 <= C[iir#e];
-  assume 0 <= R[iir#f];
-  assume 0 <= C[iir#f];
-  assume 0 <= R[iir#g];
-  assume 0 <= C[iir#g];
-  assume R[iir#g] == 0;
-  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assume (171 * M[iir#g][-1]) == M[iir#f][0];
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
   assume true;
-  assume 1 <= C[iir#e];
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assume 1 <= (C[iir#e] - R[iir#e]);
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
   in#i := M[iir#e][R[iir#e]];
   R[iir#e] := R[iir#e] + 1;
-  C[iir#e] := C[iir#e] - 1;
-  M[iir#f][R[iir#f] + C[iir#f]] := in#i;
+  M[iir#f][C[iir#f]] := in#i;
   C[iir#f] := C[iir#f] + 1;
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #29)"} 0 <= R[iir#a];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #30)"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #31)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #32)"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #33)"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #34)"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #35)"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #36)"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #37)"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #38)"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #39)"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #40)"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #41)"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #42)"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #43)"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #44)"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #45)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #46)"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #47)"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #48)"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #49)"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #50)"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #51)"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #52)"} (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
   );
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #53)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #54)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #55)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #56)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 9.3 might not preserve the channel invariant (generated #57)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assert {:msg "  28.3: Sub-actor action at 9.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "31.15: Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#45)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#46)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#47)"} I[iir#f] == I[iir#e];
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#48)"} I[iir#b] == I[iir#a];
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#49)"} I[iir#e] == I[iir#d];
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#50)"} I[iir#g] == I[iir#c];
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#51)"} I[iir#c] == I[iir#b];
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#52)"} I[iir#c] == I[iir#f];
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#53)"} I[iir#d] == I[iir#g];
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#54)"} I[iir#h] == I[iir#g];
+  assert {:msg "Action at 7.3 ('anon$2') for actor instance 'del1' might not preserve the channel invariant (#55)"} true;
 }
-procedure iir#anon$5#mulc#anon$3#8()
-  modifies C, R, M, St;
+procedure iir##mulc#anon$3#12()
+  modifies C, R, M, I, St;
 {
-  var ActorParam#c: int;
-  var St#next: State;
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
   var in#i: int;
-  assume ActorParam#c == 85;
-  assume C#init[iir#a] == 1;
-  assume C#init[iir#b] == 0;
-  assume C#init[iir#c] == 0;
-  assume C#init[iir#d] == 0;
-  assume C#init[iir#e] == 0;
-  assume C#init[iir#g] == 0;
-  assume 0 <= R[iir#a];
-  assume 0 <= C[iir#a];
-  assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assume 0 <= R[iir#b];
-  assume 0 <= C[iir#b];
-  assume 0 <= R[iir#c];
-  assume 0 <= C[iir#c];
-  assume 0 <= R[iir#d];
-  assume 0 <= C[iir#d];
-  assume 0 <= R[iir#e];
-  assume 0 <= C[iir#e];
-  assume 0 <= R[iir#f];
-  assume 0 <= C[iir#f];
-  assume 0 <= R[iir#g];
-  assume 0 <= C[iir#g];
-  assume R[iir#g] == 0;
-  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assume (171 * M[iir#g][-1]) == M[iir#f][0];
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
   assume true;
-  assume 1 <= C[iir#a];
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assume 1 <= (C[iir#a] - R[iir#a]);
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
   in#i := M[iir#a][R[iir#a]];
   R[iir#a] := R[iir#a] + 1;
-  C[iir#a] := C[iir#a] - 1;
-  M[iir#b][R[iir#b] + C[iir#b]] := ActorParam#c * in#i;
+  M[iir#b][C[iir#b]] := 85 * in#i;
   C[iir#b] := C[iir#b] + 1;
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #58)"} 0 <= R[iir#a];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #59)"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #60)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #61)"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #62)"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #63)"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #64)"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #65)"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #66)"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #67)"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #68)"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #69)"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #70)"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #71)"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #72)"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #73)"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #74)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #75)"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #76)"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #77)"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #78)"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #79)"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #80)"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #81)"} (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
   );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #82)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #83)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #84)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #85)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #86)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assert {:msg "  28.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "31.15: Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#56)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#57)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#58)"} I[iir#f] == I[iir#e];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#59)"} I[iir#b] == I[iir#a];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#60)"} I[iir#e] == I[iir#d];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#61)"} I[iir#g] == I[iir#c];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#62)"} I[iir#c] == I[iir#b];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#63)"} I[iir#c] == I[iir#f];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#64)"} I[iir#d] == I[iir#g];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#65)"} I[iir#h] == I[iir#g];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul1' might not preserve the channel invariant (#66)"} true;
 }
-procedure iir#anon$5#mulc#anon$3#9()
-  modifies C, R, M, St;
+procedure iir##mulc#anon$3#13()
+  modifies C, R, M, I, St;
 {
-  var ActorParam#c: int;
-  var St#next: State;
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
   var in#i: int;
-  assume ActorParam#c == 171;
-  assume C#init[iir#a] == 1;
-  assume C#init[iir#b] == 0;
-  assume C#init[iir#c] == 0;
-  assume C#init[iir#d] == 0;
-  assume C#init[iir#e] == 0;
-  assume C#init[iir#g] == 0;
-  assume 0 <= R[iir#a];
-  assume 0 <= C[iir#a];
-  assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assume 0 <= R[iir#b];
-  assume 0 <= C[iir#b];
-  assume 0 <= R[iir#c];
-  assume 0 <= C[iir#c];
-  assume 0 <= R[iir#d];
-  assume 0 <= C[iir#d];
-  assume 0 <= R[iir#e];
-  assume 0 <= C[iir#e];
-  assume 0 <= R[iir#f];
-  assume 0 <= C[iir#f];
-  assume 0 <= R[iir#g];
-  assume 0 <= C[iir#g];
-  assume R[iir#g] == 0;
-  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assume (171 * M[iir#g][-1]) == M[iir#f][0];
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
   assume true;
-  assume 1 <= C[iir#d];
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assume 1 <= (C[iir#d] - R[iir#d]);
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
   in#i := M[iir#d][R[iir#d]];
   R[iir#d] := R[iir#d] + 1;
-  C[iir#d] := C[iir#d] - 1;
-  M[iir#e][R[iir#e] + C[iir#e]] := ActorParam#c * in#i;
+  M[iir#e][C[iir#e]] := 171 * in#i;
   C[iir#e] := C[iir#e] + 1;
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #87)"} 0 <= R[iir#a];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #88)"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #89)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #90)"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #91)"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #92)"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #93)"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #94)"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #95)"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #96)"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #97)"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #98)"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #99)"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #100)"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #101)"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #102)"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #103)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #104)"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #105)"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #106)"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #107)"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #108)"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #109)"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #110)"} (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
   );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #111)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #112)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #113)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #114)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 14.3 might not preserve the channel invariant (generated #115)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assert {:msg "  28.3: Sub-actor action at 14.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "31.15: Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#67)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#68)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#69)"} I[iir#f] == I[iir#e];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#70)"} I[iir#b] == I[iir#a];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#71)"} I[iir#e] == I[iir#d];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#72)"} I[iir#g] == I[iir#c];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#73)"} I[iir#c] == I[iir#b];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#74)"} I[iir#c] == I[iir#f];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#75)"} I[iir#d] == I[iir#g];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#76)"} I[iir#h] == I[iir#g];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'mul2' might not preserve the channel invariant (#77)"} true;
 }
-procedure iir#anon$5#rshift#anon$4#10()
-  modifies C, R, M, St;
+procedure iir##rshift#anon$4#14()
+  modifies C, R, M, I, St;
 {
-  var ActorParam#s: int;
-  var St#next: State;
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
   var in#i: int;
-  assume ActorParam#s == 8;
-  assume C#init[iir#a] == 1;
-  assume C#init[iir#b] == 0;
-  assume C#init[iir#c] == 0;
-  assume C#init[iir#d] == 0;
-  assume C#init[iir#e] == 0;
-  assume C#init[iir#g] == 0;
-  assume 0 <= R[iir#a];
-  assume 0 <= C[iir#a];
-  assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assume 0 <= R[iir#b];
-  assume 0 <= C[iir#b];
-  assume 0 <= R[iir#c];
-  assume 0 <= C[iir#c];
-  assume 0 <= R[iir#d];
-  assume 0 <= C[iir#d];
-  assume 0 <= R[iir#e];
-  assume 0 <= C[iir#e];
-  assume 0 <= R[iir#f];
-  assume 0 <= C[iir#f];
-  assume 0 <= R[iir#g];
-  assume 0 <= C[iir#g];
-  assume R[iir#g] == 0;
-  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assume (171 * M[iir#g][-1]) == M[iir#f][0];
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
   assume true;
-  assume 1 <= C[iir#c];
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assume 1 <= (C[iir#c] - R[iir#c]);
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
   in#i := M[iir#c][R[iir#c]];
   R[iir#c] := R[iir#c] + 1;
-  C[iir#c] := C[iir#c] - 1;
-  M[iir#d][R[iir#d] + C[iir#d]] := AT#RShift(in#i, ActorParam#s);
-  C[iir#d] := C[iir#d] + 1;
-  M[iir#g][R[iir#g] + C[iir#g]] := AT#RShift(in#i, ActorParam#s);
+  M[iir#g][C[iir#g]] := AT#RShift(in#i, 8);
   C[iir#g] := C[iir#g] + 1;
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #116)"} 0 <= R[iir#a];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #117)"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #118)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #119)"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #120)"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #121)"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #122)"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #123)"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #124)"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #125)"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #126)"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #127)"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #128)"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #129)"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #130)"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #131)"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #132)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #133)"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #134)"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #135)"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #136)"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #137)"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #138)"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #139)"} (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
   );
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #140)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #141)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #142)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #143)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 19.3 might not preserve the channel invariant (generated #144)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assert {:msg "  28.3: Sub-actor action at 19.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "31.15: Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#78)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#79)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#80)"} I[iir#f] == I[iir#e];
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#81)"} I[iir#b] == I[iir#a];
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#82)"} I[iir#e] == I[iir#d];
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#83)"} I[iir#g] == I[iir#c];
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#84)"} I[iir#c] == I[iir#b];
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#85)"} I[iir#c] == I[iir#f];
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#86)"} I[iir#d] == I[iir#g];
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#87)"} I[iir#h] == I[iir#g];
+  assert {:msg "Action at 15.3 ('anon$4') for actor instance 'rsh1' might not preserve the channel invariant (#88)"} true;
 }
-procedure iir#anon$5#add#anon$0#11()
-  modifies C, R, M, St;
+procedure iir##add#anon$0#15()
+  modifies C, R, M, I, St;
 {
-  var St#next: State;
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
   var in1#i: int;
   var in2#j: int;
-  assume C#init[iir#a] == 1;
-  assume C#init[iir#b] == 0;
-  assume C#init[iir#c] == 0;
-  assume C#init[iir#d] == 0;
-  assume C#init[iir#e] == 0;
-  assume C#init[iir#g] == 0;
-  assume 0 <= R[iir#a];
-  assume 0 <= C[iir#a];
-  assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assume 0 <= R[iir#b];
-  assume 0 <= C[iir#b];
-  assume 0 <= R[iir#c];
-  assume 0 <= C[iir#c];
-  assume 0 <= R[iir#d];
-  assume 0 <= C[iir#d];
-  assume 0 <= R[iir#e];
-  assume 0 <= C[iir#e];
-  assume 0 <= R[iir#f];
-  assume 0 <= C[iir#f];
-  assume 0 <= R[iir#g];
-  assume 0 <= C[iir#g];
-  assume R[iir#g] == 0;
-  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assume (171 * M[iir#g][-1]) == M[iir#f][0];
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
   assume true;
-  assume (1 <= C[iir#b]) && (1 <= C[iir#f]);
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assume (1 <= (C[iir#b] - R[iir#b])) && (1 <= (C[iir#f] - R[iir#f]));
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
   in1#i := M[iir#b][R[iir#b]];
   R[iir#b] := R[iir#b] + 1;
-  C[iir#b] := C[iir#b] - 1;
   in2#j := M[iir#f][R[iir#f]];
   R[iir#f] := R[iir#f] + 1;
-  C[iir#f] := C[iir#f] - 1;
-  M[iir#c][R[iir#c] + C[iir#c]] := in1#i + in2#j;
+  M[iir#c][C[iir#c]] := in1#i + in2#j;
   C[iir#c] := C[iir#c] + 1;
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #145)"} 0 <= R[iir#a];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #146)"} 0 <= C[iir#a];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #147)"} (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #148)"} 0 <= R[iir#b];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #149)"} 0 <= C[iir#b];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #150)"} 0 <= R[iir#c];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #151)"} 0 <= C[iir#c];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #152)"} 0 <= R[iir#d];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #153)"} 0 <= C[iir#d];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #154)"} 0 <= R[iir#e];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #155)"} 0 <= C[iir#e];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #156)"} 0 <= R[iir#f];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #157)"} 0 <= C[iir#f];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #158)"} 0 <= R[iir#g];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #159)"} 0 <= C[iir#g];
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #160)"} R[iir#g] == 0;
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #161)"} R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #162)"} R[iir#a] == (R[iir#b] + C[iir#b]);
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #163)"} R[iir#d] == (R[iir#e] + C[iir#e]);
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #164)"} R[iir#c] == (R[iir#d] + C[iir#d]);
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #165)"} R[iir#c] == (R[iir#g] + C[iir#g]);
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #166)"} R[iir#b] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #167)"} R[iir#f] == (R[iir#c] + C[iir#c]);
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #168)"} (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
   );
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #169)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #170)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
-  );
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #171)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #172)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
-  );
-  assert {:msg "  Sub-actor action at 3.3 might not preserve the channel invariant (generated #173)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
-  );
-  assert {:msg "  28.3: Sub-actor action at 3.3 might not preserve the channel invariant"} (171 * M[iir#g][-1]) == M[iir#f][0];
+  assert {:msg "31.15: Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#89)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#90)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#91)"} I[iir#f] == I[iir#e];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#92)"} I[iir#b] == I[iir#a];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#93)"} I[iir#e] == I[iir#d];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#94)"} I[iir#g] == I[iir#c];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#95)"} I[iir#c] == I[iir#b];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#96)"} I[iir#c] == I[iir#f];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#97)"} I[iir#d] == I[iir#g];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#98)"} I[iir#h] == I[iir#g];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add1' might not preserve the channel invariant (#99)"} true;
 }
-procedure iir#anon$5#exit#12()
-  modifies C, R, M, St;
+procedure iir##split#anon$5#16()
+  modifies C, R, M, I, St;
 {
-  var iir#out#0: int;
-  assume C#init[iir#a] == 1;
-  assume C#init[iir#b] == 0;
-  assume C#init[iir#c] == 0;
-  assume C#init[iir#d] == 0;
-  assume C#init[iir#e] == 0;
-  assume C#init[iir#g] == 0;
-  assume 0 <= R[iir#a];
-  assume 0 <= C[iir#a];
-  assume (R[iir#a] + C[iir#a]) == C#init[iir#a];
-  assume 0 <= R[iir#b];
-  assume 0 <= C[iir#b];
-  assume 0 <= R[iir#c];
-  assume 0 <= C[iir#c];
-  assume 0 <= R[iir#d];
-  assume 0 <= C[iir#d];
-  assume 0 <= R[iir#e];
-  assume 0 <= C[iir#e];
-  assume 0 <= R[iir#f];
-  assume 0 <= C[iir#f];
-  assume 0 <= R[iir#g];
-  assume 0 <= C[iir#g];
-  assume R[iir#g] == 0;
-  assume R[iir#e] == ((R[iir#f] + C[iir#f]) - 1);
-  assume R[iir#a] == (R[iir#b] + C[iir#b]);
-  assume R[iir#d] == (R[iir#e] + C[iir#e]);
-  assume R[iir#c] == (R[iir#d] + C[iir#d]);
-  assume R[iir#c] == (R[iir#g] + C[iir#g]);
-  assume R[iir#b] == (R[iir#c] + C[iir#c]);
-  assume R[iir#f] == (R[iir#c] + C[iir#c]);
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
+  var in#i: int;
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
+  assume true;
+  assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < (R[iir#f] + C[iir#f])) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#b] + C[iir#b])) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assume 1 <= (C[iir#g] - R[iir#g]);
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#e] + C[iir#e])) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  in#i := M[iir#g][R[iir#g]];
+  R[iir#g] := R[iir#g] + 1;
+  M[iir#d][C[iir#d]] := in#i;
+  C[iir#d] := C[iir#d] + 1;
+  M[iir#h][C[iir#h]] := in#i;
+  C[iir#h] := C[iir#h] + 1;
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#d] + C[iir#d])) ==> (M[iir#d][idx$] == AT#RShift(M[iir#c][idx$], 8))
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assert {:msg "31.15: Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#100)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#101)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#102)"} I[iir#f] == I[iir#e];
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#103)"} I[iir#b] == I[iir#a];
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#104)"} I[iir#e] == I[iir#d];
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#105)"} I[iir#g] == I[iir#c];
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#106)"} I[iir#c] == I[iir#b];
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#107)"} I[iir#c] == I[iir#f];
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#108)"} I[iir#d] == I[iir#g];
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#109)"} I[iir#h] == I[iir#g];
+  assert {:msg "Action at 19.3 ('anon$5') for actor instance 'spl1' might not preserve the channel invariant (#110)"} true;
+}
+procedure iir#entry()
+  modifies C, R, M, I, St;
+{
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume C[iir#a] == R[iir#a];
+  assume C[iir#b] == R[iir#b];
+  assume C[iir#c] == R[iir#c];
+  assume C[iir#d] == R[iir#d];
+  assume C[iir#e] == R[iir#e];
+  assume C[iir#f] == R[iir#f];
+  assume C[iir#g] == R[iir#g];
+  assume C[iir#h] == R[iir#h];
+  C[iir#f] := C[iir#f] + 1;
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
+  assume true;
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#g] + C[iir#g])) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assert {:msg "22.1: Sub-actors in the network might fire without network input. This is not permitted. (#111)"} !(1 <= (C[iir#e] - R[iir#e]));
+  assert {:msg "22.1: Sub-actors in the network might fire without network input. This is not permitted. (#112)"} !(1 <= (C[iir#a] - R[iir#a]));
+  assert {:msg "22.1: Sub-actors in the network might fire without network input. This is not permitted. (#113)"} !(1 <= (C[iir#d] - R[iir#d]));
+  assert {:msg "22.1: Sub-actors in the network might fire without network input. This is not permitted. (#114)"} !(1 <= (C[iir#c] - R[iir#c]));
+  assert {:msg "22.1: Sub-actors in the network might fire without network input. This is not permitted. (#115)"} !((1 <= (C[iir#b] - R[iir#b])) && (1 <= (C[iir#f] - R[iir#f])));
+  assert {:msg "22.1: Sub-actors in the network might fire without network input. This is not permitted. (#116)"} !(1 <= (C[iir#g] - R[iir#g]));
+}
+procedure iir#anon$6#input#in#17()
+  modifies C, R, M, I, St;
+{
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume C[iir#a] < 1;
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
+  assume true;
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < (R[iir#c] + C[iir#c])) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
   );
-  assume (171 * M[iir#g][-1]) == M[iir#f][0];
-  assume !(((((1 <= C[iir#e]) || (1 <= C[iir#a])) || (1 <= C[iir#d])) || (1 <= C[iir#c])) || ((1 <= C[iir#b]) && (1 <= C[iir#f])));
-  assert {:msg "  23.3: The network might leave unread tokens on channel a"} C[iir#a] == 0;
-  assert {:msg "  23.3: The network might leave unread tokens on channel b"} C[iir#b] == 0;
-  assert {:msg "  23.3: The network might leave unread tokens on channel c"} C[iir#c] == 0;
-  assert {:msg "  23.3: The network might leave unread tokens on channel d"} C[iir#d] == 0;
-  assert {:msg "  23.3: The network might leave unread tokens on channel e"} C[iir#e] == 0;
-  assert {:msg "  23.3: The network might not produce the specified number of tokens on output out"} C[iir#g] == 1;
-  iir#out#0 := M[iir#g][0];
-  assert {:msg "  23.26: Network output might not conform to the specified action output"} iir#out#0 == AT#RShift((171 * M[iir#g][R[iir#g] - 1]) + (85 * M[iir#a][0]), 8);
-  R[iir#g] := R[iir#g] + C[iir#g];
-  C[iir#g] := 0;
-  assert {:msg "  The network might not preserve the network invariant"} iir#f == 1;
-  assert {:msg "  The network might not preserve the network invariant"} M[iir#f][R[iir#f]] == (171 * M[iir#g][R[iir#g] - 1]);
+  C[iir#a] := C[iir#a] + 1;
+  assert {:msg "31.15: Channel invariant might be falsified by network input (#117)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: Channel invariant might be falsified by network input (#118)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "Channel invariant might be falsified by network input (#119)"} I[iir#f] == I[iir#e];
+  assert {:msg "Channel invariant might be falsified by network input (#120)"} I[iir#b] == I[iir#a];
+  assert {:msg "Channel invariant might be falsified by network input (#121)"} I[iir#e] == I[iir#d];
+  assert {:msg "Channel invariant might be falsified by network input (#122)"} I[iir#g] == I[iir#c];
+  assert {:msg "Channel invariant might be falsified by network input (#123)"} I[iir#c] == I[iir#b];
+  assert {:msg "Channel invariant might be falsified by network input (#124)"} I[iir#c] == I[iir#f];
+  assert {:msg "Channel invariant might be falsified by network input (#125)"} I[iir#d] == I[iir#g];
+  assert {:msg "Channel invariant might be falsified by network input (#126)"} I[iir#h] == I[iir#g];
+  assert {:msg "Channel invariant might be falsified by network input (#127)"} true;
+}
+procedure iir#anon$6#exit#18()
+  modifies C, R, M, I, St;
+{
+  var iir#del1: Actor;
+  var iir#mul1: Actor;
+  var iir#mul2: Actor;
+  var iir#rsh1: Actor;
+  var iir#add1: Actor;
+  var iir#spl1: Actor;
+  var iir#a: Chan (int);
+  var iir#b: Chan (int);
+  var iir#c: Chan (int);
+  var iir#d: Chan (int);
+  var iir#e: Chan (int);
+  var iir#f: Chan (int);
+  var iir#g: Chan (int);
+  var iir#h: Chan (int);
+  assume (iir#del1 != iir#mul1) && (iir#del1 != iir#mul2) && (iir#del1 != iir#rsh1) && (iir#del1 != iir#add1) && (iir#del1 != iir#spl1) && (iir#mul1 != iir#mul2) && (iir#mul1 != iir#rsh1) && (iir#mul1 != iir#add1) && (iir#mul1 != iir#spl1) && (iir#mul2 != iir#rsh1) && (iir#mul2 != iir#add1) && (iir#mul2 != iir#spl1) && (iir#rsh1 != iir#add1) && (iir#rsh1 != iir#spl1) && (iir#add1 != iir#spl1);
+  assume (iir#a != iir#b) && (iir#a != iir#c) && (iir#a != iir#d) && (iir#a != iir#e) && (iir#a != iir#f) && (iir#a != iir#g) && (iir#a != iir#h) && (iir#b != iir#c) && (iir#b != iir#d) && (iir#b != iir#e) && (iir#b != iir#f) && (iir#b != iir#g) && (iir#b != iir#h) && (iir#c != iir#d) && (iir#c != iir#e) && (iir#c != iir#f) && (iir#c != iir#g) && (iir#c != iir#h) && (iir#d != iir#e) && (iir#d != iir#f) && (iir#d != iir#g) && (iir#d != iir#h) && (iir#e != iir#f) && (iir#e != iir#g) && (iir#e != iir#h) && (iir#f != iir#g) && (iir#f != iir#h) && (iir#g != iir#h);
+  assume 0 <= I[iir#a];
+  assume I[iir#a] <= R[iir#a];
+  assume R[iir#a] <= C[iir#a];
+  assume 0 <= I[iir#b];
+  assume I[iir#b] <= R[iir#b];
+  assume R[iir#b] <= C[iir#b];
+  assume 0 <= I[iir#c];
+  assume I[iir#c] <= R[iir#c];
+  assume R[iir#c] <= C[iir#c];
+  assume 0 <= I[iir#d];
+  assume I[iir#d] <= R[iir#d];
+  assume R[iir#d] <= C[iir#d];
+  assume 0 <= I[iir#e];
+  assume I[iir#e] <= R[iir#e];
+  assume R[iir#e] <= C[iir#e];
+  assume 0 <= I[iir#f];
+  assume I[iir#f] <= R[iir#f];
+  assume R[iir#f] <= C[iir#f];
+  assume 0 <= I[iir#g];
+  assume I[iir#g] <= R[iir#g];
+  assume R[iir#g] <= C[iir#g];
+  assume 0 <= I[iir#h];
+  assume I[iir#h] <= R[iir#h];
+  assume R[iir#h] <= C[iir#h];
+  assume I[iir#h] == R[iir#h];
+  assume M[iir#f][0] == 0;
+  assume (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assume I[iir#f] == I[iir#e];
+  assume I[iir#b] == I[iir#a];
+  assume I[iir#e] == I[iir#d];
+  assume I[iir#g] == I[iir#c];
+  assume I[iir#c] == I[iir#b];
+  assume I[iir#c] == I[iir#f];
+  assume I[iir#d] == I[iir#g];
+  assume I[iir#h] == I[iir#g];
+  assume true;
+  assume R[iir#e] == (C[iir#f] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
+  );
+  assume R[iir#a] == C[iir#b];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#b]) ==> (M[iir#b][idx$] == (85 * M[iir#a][idx$]))
+  );
+  assume R[iir#d] == C[iir#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#e]) ==> (M[iir#e][idx$] == (171 * M[iir#d][idx$]))
+  );
+  assume R[iir#c] == C[iir#g];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#g]) ==> (M[iir#g][idx$] == AT#RShift(M[iir#c][idx$], 8))
+  );
+  assume R[iir#b] == C[iir#c];
+  assume R[iir#f] == C[iir#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#c]) ==> (M[iir#c][idx$] == (M[iir#b][idx$] + M[iir#f][idx$]))
+  );
+  assume R[iir#g] == C[iir#d];
+  assume R[iir#g] == C[iir#h];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#d]) ==> (M[iir#d][idx$] == M[iir#g][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[iir#h]) ==> (M[iir#h][idx$] == M[iir#g][idx$])
+  );
+  assume (C[iir#a] - I[iir#a]) == 1;
+  assume !(1 <= (C[iir#e] - R[iir#e]));
+  assume !(1 <= (C[iir#a] - R[iir#a]));
+  assume !(1 <= (C[iir#d] - R[iir#d]));
+  assume !(1 <= (C[iir#c] - R[iir#c]));
+  assume !((1 <= (C[iir#b] - R[iir#b])) && (1 <= (C[iir#f] - R[iir#f])));
+  assume !(1 <= (C[iir#g] - R[iir#g]));
+  assert {:msg "25.13: Network action postcondition might not hold (#128)"} M[iir#h][0] == AT#RShift(85 * M[iir#a][0], 8);
+  assert {:msg "26.13: Network action postcondition might not hold (#129)"} (0 < I[iir#h]) ==> (M[iir#h][I[iir#h]] == AT#RShift((171 * M[iir#h][I[iir#h] - 1]) + (85 * M[iir#a][I[iir#a]]), 8));
+  R[iir#h] := R[iir#h] + 1;
+  I := R;
+  assert {:msg "31.15: The network might not preserve the channel invariant (#130)"} M[iir#f][0] == 0;
+  assert {:msg "32.15: The network might not preserve the channel invariant (#131)"} (0 < I[iir#h]) ==> ((171 * M[iir#h][I[iir#h] - 1]) == M[iir#f][I[iir#f]]);
+  assert {:msg "The network might not preserve the channel invariant (#132)"} I[iir#f] == I[iir#e];
+  assert {:msg "The network might not preserve the channel invariant (#133)"} I[iir#b] == I[iir#a];
+  assert {:msg "The network might not preserve the channel invariant (#134)"} I[iir#e] == I[iir#d];
+  assert {:msg "The network might not preserve the channel invariant (#135)"} I[iir#g] == I[iir#c];
+  assert {:msg "The network might not preserve the channel invariant (#136)"} I[iir#c] == I[iir#b];
+  assert {:msg "The network might not preserve the channel invariant (#137)"} I[iir#c] == I[iir#f];
+  assert {:msg "The network might not preserve the channel invariant (#138)"} I[iir#d] == I[iir#g];
+  assert {:msg "The network might not preserve the channel invariant (#139)"} I[iir#h] == I[iir#g];
+  assert {:msg "The network might not preserve the channel invariant (#140)"} true;
+  C[iir#f] := C[iir#f] - 1;
+  assert {:msg "24.3: The network might leave unread tokens on channel a (#141)"} C[iir#a] == R[iir#a];
+  assert {:msg "24.3: The network might leave unread tokens on channel b (#142)"} C[iir#b] == R[iir#b];
+  assert {:msg "24.3: The network might leave unread tokens on channel c (#143)"} C[iir#c] == R[iir#c];
+  assert {:msg "24.3: The network might leave unread tokens on channel d (#144)"} C[iir#d] == R[iir#d];
+  assert {:msg "24.3: The network might leave unread tokens on channel e (#145)"} C[iir#e] == R[iir#e];
+  assert {:msg "24.3: The network might leave unread tokens on channel f (#146)"} C[iir#f] == R[iir#f];
+  assert {:msg "24.3: The network might leave unread tokens on channel g (#147)"} C[iir#g] == R[iir#g];
+  assert {:msg "24.3: The network might not produce the specified number of tokens on output out (#148)"} C[iir#h] == R[iir#h];
 }
