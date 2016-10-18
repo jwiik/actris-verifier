@@ -92,7 +92,7 @@ object Inferencer {
       
       if (!static || actor.hasAnnotation(NoInferAnnot)) return
       
-      val action = actor.actions.filter{ a => !a.init }(0)
+      val firstAction = actor.actions.filter{ a => !a.init }(0)
       val initAction = actor.actions.find{ a => a.init }
       
       val delayedChannels = initAction match {
@@ -104,11 +104,11 @@ object Inferencer {
         
       for (op <- actor.outports) {
         
-        val outRate = action.portOutputCount(op.id)
+        val outRate = firstAction.portOutputCount(op.id)
           
         val replacements = {
-          val inputs = (for (ipat <- action.inputPattern) yield {
-            val inRate = action.portInputCount(ipat.portId)
+          val inputs = (for (ipat <- firstAction.inputPattern) yield {
+            val inRate = firstAction.portInputCount(ipat.portId)
             var i = 0
             for (v <- ipat.vars) yield {
               val cId = Id(ipat.portId); cId.typ = ChanType(v.typ)
@@ -133,7 +133,7 @@ object Inferencer {
         }
         
         for (ip <- actor.inports) {
-          val inRate = action.portInputCount(ip.id)
+          val inRate = firstAction.portInputCount(ip.id)
           val ratedTot = 
             if (inRate == 1) tot0(op.id)
             else Times(lit(inRate),tot0(op.id))
@@ -149,26 +149,47 @@ object Inferencer {
           countInvariants += Eq(ratedRd,ratedDelayedTot)
         }
         
-        val outFuncs = action.portOutputPattern(op.id).get.exps
-        var k = 0
-        for (fk <- outFuncs) {
-          val lowBound = delayedChannels.get(op.id) match {
-            case None => lit(0)
-            case Some(d) => lit(d)
-          }
-          val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(op.id)))
+        
+        val exps = (for (i <- 0 to firstAction.portOutputPattern(op.id).get.exps.size-1) yield {
+          (for (a <- actor.actions.filter{ !_.init  }) yield {
+            (a.guard,a.portOutputPattern(op.id).get.exps(i))
+          })
+        }).toList
+        
+        val lowBound = delayedChannels.get(op.id) match {
+          case None => lit(0)
+          case Some(d) => lit(d)
+        }
+        val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(op.id)))
+          
+        for ((list,k) <- exps.zipWithIndex) {
+          
           val bounds = // If there is more than one output we need differentiate with mod
-            if (1 < outFuncs.size) And(quantBounds,Eq(Mod(quantVar,lit(outRate)),lit(k)))
-            else quantBounds
+            if (1 < firstAction.portOutputPattern(op.id).get.exps.size) 
+              And(quantBounds,Eq(Mod(quantVar,lit(outRate)),lit(k)))
+            else 
+              quantBounds
           
-          val fkRenamed = IdReplacer.visitExpr(fk)(replacements)
-          val cId = Id(op.id); cId.typ = ChanType(fk.typ)
-          val acc = IndexAccessor(cId,quantVar); acc.typ = fk.typ
+          val guardedExps = for ((guard,exp) <- list) yield {
+            
+            val eRenamed = IdReplacer.visitExpr(exp)(replacements)
+            val cId = Id(op.id); cId.typ = ChanType(exp.typ)
+            val acc = IndexAccessor(cId,quantVar); acc.typ = exp.typ
+            val eqExp = Eq(acc,eRenamed)
+            guard match {
+              case Some(g) => {
+                Implies(IdReplacer.visitExpr(g)(replacements),eqExp)
+              }
+              case None => eqExp
+            }
+            
+          }
           
-          val quantExp = Implies(bounds,Eq(acc,fkRenamed))
+          val conjunction = guardedExps.reduceLeft((a,b) => And(a,b))
           
+          val quantExp = Implies(bounds,conjunction)
           valueInvariants += Forall(List(quantVar), quantExp)
-          k = k+1
+          println(quantExp)
         }
       } // for
       
@@ -228,7 +249,7 @@ object Inferencer {
               
             val ratedAt2 = 
               if (outRate == 1) str(inChan.id)
-              else Times(lit(inRate),str(inChan.id))
+              else Times(lit(outRate),str(inChan.id))
               
             countInvariants += Eq(ratedAt1,ratedAt2)
           }
