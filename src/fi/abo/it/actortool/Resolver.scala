@@ -561,7 +561,7 @@ object Resolver {
       case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("prev",params) => resolveChannelAccessFunction(ctx, fa)
       case fa@FunctionApp("last",params) => resolveChannelAccessFunction(ctx, fa)
-      case fa@FunctionApp("delay",params) => resolveDelayFunction(ctx, fa)
+      case fa@FunctionApp("tokens",params) => resolveDelayFunction(ctx, fa)
       case fa@FunctionApp("history",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
@@ -776,9 +776,9 @@ object Resolver {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
     
-    if (!t1.isUnsignedInt) ctx.error(exp.left.pos, "Shift operation only applicable on integers, found: " + t1.id)
-    if (!t2.isUnsignedInt) ctx.error(exp.right.pos, "Shift operation only applicable on integers, found: " + t2.id)
-    
+    if (!t1.isInt && !t1.isUnsignedInt) ctx.error(exp.left.pos, "Shift operation only applicable on integers, found: " + t1.id)
+    if (!t2.isInt && !t2.isUnsignedInt) ctx.error(exp.right.pos, "Shift operation only applicable on integers, found: " + t2.id)
+    //if (t1 != t2) ctx.error(exp.left.pos, "Shift operation applied to arguments of type: " + t1.id + " and " + t2.id ) 
     exp.typ = t1
     t1
     

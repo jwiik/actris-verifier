@@ -189,7 +189,6 @@ object Inferencer {
           
           val quantExp = Implies(bounds,conjunction)
           valueInvariants += Forall(List(quantVar), quantExp)
-          println(quantExp)
         }
       } // for
       

@@ -47,7 +47,7 @@ abstract class Halator(val trans: StmtExpTranslator, val inhale: Boolean, val su
         visit(right, free)(branchBuffer,msg,renamings)
         buffer += Boogie.If(trans.transExpr(left),branchBuffer.toList,List.empty) 
       }
-      case FunctionApp("delay",params) => {
+      case FunctionApp("tokens",params) => {
         if (!subAction) {
           val chCredit = B.C(trans.transExpr(params(0)))
           if (inhale) {
