@@ -1,35 +1,41 @@
-@sdf
-actor Repeater int in ==> int out :
-  action in:[i] ==> out:[i] end
+actor Gain int in ==> int out :
+  invariant rd0(in) = tot0(out)
+  action in:[i] ==> out:[2*i] end
 end
 
 actor Split int in ==> int pos, int neg :
   action in:[i] ==> pos:[i] 
     guard 0 <= i
   end
-  action in:[i] ==> neg:[i] 
-    guard i < 0
+  action in:[j] ==> neg:[j] 
+    guard j < 0
   end
 end
 
 network Net int in ==> int out1, int out2 :
-  action in:[x1,x2] ==> out1:[x2], out2:[x1] 
-    requires x1 < 0 && x2 > 0
+
+  action in:1 ==> out1:1
+    requires in[@] = 1
+    ensures out1[@] = 2*in[@]
   end
   
-  chinvariant tot(d) == (rd(b)+1)/2
-  chinvariant tot(c) == rd(b)/2
-  chinvariant (forall int i :: 0 <= i && i < rd(b) && i % 2 == 0 ==> b[i] == d[i/2])
-  chinvariant (forall int i :: 0 <= i && i < rd(b) && i % 2 == 1 ==> b[i] == c[i/2])
+  action in:1 ==> out2:1
+    requires in[@] = -1
+    ensures out2[@] = 2*in[@]
+  end
   
+  chinvariant rd(b) = tot(d)+tot(c)  
+  chinvariant rd(b) > 0 && b[@] >= 0 ==> tot(d) = 0 && c[@] = b[@]
+  chinvariant rd(b) > 0 && b[@] < 0 ==> tot(c) = 0 && d[@] = b[@]
+    
   entities
-    rep = Repeater();
+    gain = Gain();
     split = Split();
   end
   
   structure
-    a: in --> rep.in;
-    b: rep.out --> split.in;
+    a: in --> gain.in;
+    b: gain.out --> split.in;
     c: split.pos --> out1;
     d: split.neg --> out2;
   end

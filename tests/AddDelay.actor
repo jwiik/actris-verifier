@@ -20,7 +20,7 @@ network Net int in ==> int out :
     ensures 0 < @(out) ==> out[@] = out[@-1]+in[@]
   end
   
-  invariant delay(b,1)
+  invariant tokens(b,1)
   
   chinvariant 0 < @(out) ==> out[0] = in[0]
   chinvariant 0 < @(out) ==> out[@-1] = b[@]

@@ -1,0 +1,13 @@
+actor Sum int x ==> int y: 
+  int sum;
+  invariant 0 <= sum 
+  initialize ==> do
+    sum := 0;
+  end
+  action x:[i] ==> y:[sum]
+    requires 0 <= i
+    ensures i <= sum 
+  do
+    sum := sum+i;
+  end 
+end

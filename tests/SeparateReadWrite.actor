@@ -1,22 +1,25 @@
 actor RW() int in ==> int out :
     
-    invariant step = 0 || step = 1
-    invariant step = 1 <==> rd0(in) = tot0(out)
-    invariant step = 0 <==> rd0(in) = tot0(out)+1
-        
+    public invariant step = 0 || step = 1 || step = 2
+    public invariant 2*rd0(in) = tot0(out)+(2-step)
+    public invariant (forall int i :: every(out,i) ==> out[i] = in[i/2] + i%2+1)
+    public invariant rd0(in) > 0 ==> in[next-1] = data
+    
     int step;
     int data;
 	
-	init: initialize ==> do step := 1 end
+	init: initialize ==> do step := 2 end
     
 	read: action in:[ data_in ] ==>
-	  guard step = 1
-	  do step := 0; data := data + data_in;
+	  guard step = 2
+	  do 
+	    step := 0; 
+	    data := data_in;
 	end
    
-	write: action ==> out:[ data ]
-	  guard step = 0
-	  do step := 1;
+	write: action ==> out:[ data+step ]
+	  guard step < 2
+	  do step := step+1;
 	end
 	
 	priority
@@ -27,11 +30,17 @@ end
 
 network Net int in ==> int out :
   
-  action in:1 ==> out:1 end
+  action in:1 ==> out:2 
+    ensures out[@] = in[@]+1
+    ensures out[@+1] = in[@]+2
+  end
   
-  chinvariant variable(rw,step) = 1 || variable(rw,step) = 0
-  chinvariant variable(rw,step) = 1 <==> rd(a) = tot(b)
-  chinvariant variable(rw,step) = 0 <==> rd(a) = tot(b)+1
+  invariant subvar(rw,step) = 2
+  
+  chinvariant 2*@(a) = @(b)
+  //chinvariant subvar(rw,step) = 0 || subvar(rw,step) = 1 || subvar(rw,step) = 2
+  //chinvariant 2*rd0(a) = tot0(b)+(2-subvar(rw,step))
+  //chinvariant (forall int i :: every(out,i) ==> out[i] = in[i/2] + i%2+1)
   
   entities
     rw = RW();

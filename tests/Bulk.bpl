@@ -29,28 +29,91 @@ axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
 // -- End of prelude ---------------------------------------------
 // ---------------------------------------------------------------
 
-procedure AddSeq#anon$0#0()
+procedure AddSeq#init#0()
   modifies C, R, M, I, St;
 {
   var in: Chan (int);
   var out: Chan (int);
-  assume true;
+  assume in != out;
+  assume R[in] == 0;
+  assume C[out] == 0;
+  assert {:msg "Initialization might not establish the invariant (#0)"} R[in] == (2 * C[out]);
+  assert {:msg "Initialization might not establish the invariant (#1)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in][2 * idx$] + M[in][(2 * idx$) + 1]))
+  );
 }
-procedure Mod4#anon$1#1()
+procedure AddSeq#anon$0#1()
   modifies C, R, M, I, St;
 {
   var in: Chan (int);
   var out: Chan (int);
+  var in#0: int;
+  var in#1: int;
+  assume in != out;
+  assume 0 <= R[in];
+  assume 0 <= C[out];
+  assume R[in] == (2 * C[out]);
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in][2 * idx$] + M[in][(2 * idx$) + 1]))
+  );
+  in#0 := M[in][R[in]];
+  R[in] := R[in] + 1;
+  in#1 := M[in][R[in]];
+  R[in] := R[in] + 1;
   assume true;
+  M[out][C[out]] := in#0 + in#1;
+  C[out] := C[out] + 1;
+  assert {:msg "Action at 3.3 might not preserve invariant (#2)"} R[in] == (2 * C[out]);
+  assert {:msg "Action at 3.3 might not preserve invariant (#3)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in][2 * idx$] + M[in][(2 * idx$) + 1]))
+  );
 }
-const unique SumMod4#add: Actor;
-const unique SumMod4#mod: Actor;
-const unique SumMod4#a: Chan (int);
-const unique SumMod4#b: Chan (int);
-const unique SumMod4#c: Chan (int);
-procedure SumMod4#init#2()
+procedure Mod4#init#2()
   modifies C, R, M, I, St;
 {
+  var in: Chan (int);
+  var out: Chan (int);
+  assume in != out;
+  assume R[in] == 0;
+  assume C[out] == 0;
+  assert {:msg "Initialization might not establish the invariant (#4)"} R[in] == C[out];
+  assert {:msg "Initialization might not establish the invariant (#5)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#Mod(M[in][idx$], 4))
+  );
+}
+procedure Mod4#anon$1#3()
+  modifies C, R, M, I, St;
+{
+  var in: Chan (int);
+  var out: Chan (int);
+  var in#0: int;
+  assume in != out;
+  assume 0 <= R[in];
+  assume 0 <= C[out];
+  assume R[in] == C[out];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#Mod(M[in][idx$], 4))
+  );
+  in#0 := M[in][R[in]];
+  R[in] := R[in] + 1;
+  assume true;
+  M[out][C[out]] := AT#Mod(in#0, 4);
+  C[out] := C[out] + 1;
+  assert {:msg "Action at 8.3 might not preserve invariant (#6)"} R[in] == C[out];
+  assert {:msg "Action at 8.3 might not preserve invariant (#7)"} (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#Mod(M[in][idx$], 4))
+  );
+}
+procedure SumMod4#init#4()
+  modifies C, R, M, I, St;
+{
+  var SumMod4#add: Actor;
+  var SumMod4#mod: Actor;
+  var SumMod4#a: Chan (int);
+  var SumMod4#b: Chan (int);
+  var SumMod4#c: Chan (int);
+  assume SumMod4#add != SumMod4#mod;
+  assume (SumMod4#a != SumMod4#b) && (SumMod4#a != SumMod4#c) && (SumMod4#b != SumMod4#c);
   assume 0 <= I[SumMod4#a];
   assume I[SumMod4#a] <= R[SumMod4#a];
   assume R[SumMod4#a] <= C[SumMod4#a];
@@ -67,29 +130,41 @@ procedure SumMod4#init#2()
   assume R[SumMod4#b] == 0;
   assume C[SumMod4#c] == 0;
   assume R[SumMod4#c] == 0;
-  assert {:msg "Network initialization might not establish the channel invariant (#0)"} R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assert {:msg "Network initialization might not establish the channel invariant (#1)"} (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assert {:msg "Network initialization might not establish the channel invariant (#2)"} R[SumMod4#b] == C[SumMod4#c];
-  assert {:msg "Network initialization might not establish the channel invariant (#3)"} I[SumMod4#c] == I[SumMod4#b];
-  assert {:msg "Network initialization might not establish the channel invariant (#4)"} (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assume R[SumMod4#a] == (2 * C[SumMod4#b]);
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (M[SumMod4#a][2 * idx$] + M[SumMod4#a][(2 * idx$) + 1]))
   );
-  assert {:msg "Network initialization might not establish the channel invariant (#5)"} (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
   );
+  assert {:msg "18.15: Initialization of network 'SumMod4' might not establish the channel invariant (#8)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "19.15: Initialization of network 'SumMod4' might not establish the channel invariant (#9)"} I[SumMod4#c] == I[SumMod4#b];
+  assert {:msg "20.16: Initialization of network 'SumMod4' might not establish the channel invariant (#10)"} (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
+  );
+  assert {:msg "21.16: Initialization of network 'SumMod4' might not establish the channel invariant (#11)"} (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
+  );
+  assert {:msg "Initialization of network 'SumMod4' might not establish the channel invariant (#12)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "Initialization of network 'SumMod4' might not establish the channel invariant (#13)"} I[SumMod4#c] == I[SumMod4#b];
   I := R;
-  assert {:msg "24.5: The initialization might unspecified tokens on channel a (#6)"} (C[SumMod4#a] - R[SumMod4#a]) == 0;
-  assert {:msg "25.5: The initialization might unspecified tokens on channel b (#7)"} (C[SumMod4#b] - R[SumMod4#b]) == 0;
-  assert {:msg "26.5: The initialization might unspecified tokens on channel c (#8)"} (C[SumMod4#c] - R[SumMod4#c]) == 0;
+  assert {:msg "30.5: The initialization might produce unspecified tokens on channel a (#14)"} (C[SumMod4#a] - R[SumMod4#a]) == 0;
+  assert {:msg "31.5: The initialization might produce unspecified tokens on channel b (#15)"} (C[SumMod4#b] - R[SumMod4#b]) == 0;
+  assert {:msg "32.5: The initialization might produce unspecified tokens on channel c (#16)"} (C[SumMod4#c] - R[SumMod4#c]) == 0;
 }
-procedure SumMod4##AddSeq#anon$0#3()
+procedure SumMod4##AddSeq#anon$0#5()
   modifies C, R, M, I, St;
 {
-  var St#next: State;
+  var SumMod4#add: Actor;
+  var SumMod4#mod: Actor;
+  var SumMod4#a: Chan (int);
+  var SumMod4#b: Chan (int);
+  var SumMod4#c: Chan (int);
   var in#i: int;
   var in#j: int;
-  var in#k: int;
-  var in#l: int;
+  assume SumMod4#add != SumMod4#mod;
+  assume (SumMod4#a != SumMod4#b) && (SumMod4#a != SumMod4#c) && (SumMod4#b != SumMod4#c);
   assume 0 <= I[SumMod4#a];
   assume I[SumMod4#a] <= R[SumMod4#a];
   assume R[SumMod4#a] <= C[SumMod4#a];
@@ -100,44 +175,61 @@ procedure SumMod4##AddSeq#anon$0#3()
   assume I[SumMod4#c] <= R[SumMod4#c];
   assume R[SumMod4#c] <= C[SumMod4#c];
   assume I[SumMod4#c] == R[SumMod4#c];
-  assume R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assume (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
   assume I[SumMod4#c] == I[SumMod4#b];
-  assume (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assume (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
-  assume (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  assume (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
   );
-  assume true;
-  assume 4 <= (C[SumMod4#a] - R[SumMod4#a]);
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assume I[SumMod4#c] == I[SumMod4#b];
+  assume R[SumMod4#a] == (2 * C[SumMod4#b]);
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (M[SumMod4#a][2 * idx$] + M[SumMod4#a][(2 * idx$) + 1]))
+  );
+  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  );
+  assume 2 <= (C[SumMod4#a] - R[SumMod4#a]);
+  assume R[SumMod4#a] == (2 * C[SumMod4#b]);
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (M[SumMod4#a][2 * idx$] + M[SumMod4#a][(2 * idx$) + 1]))
+  );
   in#i := M[SumMod4#a][R[SumMod4#a]];
   R[SumMod4#a] := R[SumMod4#a] + 1;
   in#j := M[SumMod4#a][R[SumMod4#a]];
   R[SumMod4#a] := R[SumMod4#a] + 1;
-  in#k := M[SumMod4#a][R[SumMod4#a]];
-  R[SumMod4#a] := R[SumMod4#a] + 1;
-  in#l := M[SumMod4#a][R[SumMod4#a]];
-  R[SumMod4#a] := R[SumMod4#a] + 1;
-  M[SumMod4#b][C[SumMod4#b]] := ((in#i + in#j) + in#k) + in#l;
+  M[SumMod4#b][C[SumMod4#b]] := in#i + in#j;
   C[SumMod4#b] := C[SumMod4#b] + 1;
-  assert {:msg "Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#9)"} R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assert {:msg "Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#10)"} (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assert {:msg "Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#11)"} R[SumMod4#b] == C[SumMod4#c];
-  assert {:msg "Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#12)"} I[SumMod4#c] == I[SumMod4#b];
-  assert {:msg "Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#13)"} (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assume R[SumMod4#a] == (2 * C[SumMod4#b]);
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (M[SumMod4#a][2 * idx$] + M[SumMod4#a][(2 * idx$) + 1]))
   );
-  assert {:msg "Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#14)"} (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  assert {:msg "18.15: Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#17)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "19.15: Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#18)"} I[SumMod4#c] == I[SumMod4#b];
+  assert {:msg "20.16: Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#19)"} (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
+  assert {:msg "21.16: Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#20)"} (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
+  );
+  assert {:msg "Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#21)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "Action at 3.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#22)"} I[SumMod4#c] == I[SumMod4#b];
 }
-procedure SumMod4##Mod4#anon$1#4()
+procedure SumMod4##Mod4#anon$1#6()
   modifies C, R, M, I, St;
 {
-  var St#next: State;
+  var SumMod4#add: Actor;
+  var SumMod4#mod: Actor;
+  var SumMod4#a: Chan (int);
+  var SumMod4#b: Chan (int);
+  var SumMod4#c: Chan (int);
   var in#i: int;
+  assume SumMod4#add != SumMod4#mod;
+  assume (SumMod4#a != SumMod4#b) && (SumMod4#a != SumMod4#c) && (SumMod4#b != SumMod4#c);
   assume 0 <= I[SumMod4#a];
   assume I[SumMod4#a] <= R[SumMod4#a];
   assume R[SumMod4#a] <= C[SumMod4#a];
@@ -148,36 +240,58 @@ procedure SumMod4##Mod4#anon$1#4()
   assume I[SumMod4#c] <= R[SumMod4#c];
   assume R[SumMod4#c] <= C[SumMod4#c];
   assume I[SumMod4#c] == R[SumMod4#c];
-  assume R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assume (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
   assume I[SumMod4#c] == I[SumMod4#b];
-  assume (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assume (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
-  assume (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  assume (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
   );
-  assume true;
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assume I[SumMod4#c] == I[SumMod4#b];
+  assume R[SumMod4#a] == (2 * C[SumMod4#b]);
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (M[SumMod4#a][2 * idx$] + M[SumMod4#a][(2 * idx$) + 1]))
+  );
+  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  );
   assume 1 <= (C[SumMod4#b] - R[SumMod4#b]);
+  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  );
   in#i := M[SumMod4#b][R[SumMod4#b]];
   R[SumMod4#b] := R[SumMod4#b] + 1;
   M[SumMod4#c][C[SumMod4#c]] := AT#Mod(in#i, 4);
   C[SumMod4#c] := C[SumMod4#c] + 1;
-  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#15)"} R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#16)"} (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#17)"} R[SumMod4#b] == C[SumMod4#c];
-  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#18)"} I[SumMod4#c] == I[SumMod4#b];
-  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#19)"} (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
   );
-  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#20)"} (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  assert {:msg "18.15: Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#23)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "19.15: Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#24)"} I[SumMod4#c] == I[SumMod4#b];
+  assert {:msg "20.16: Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#25)"} (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
+  assert {:msg "21.16: Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#26)"} (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
+  );
+  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#27)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'mod' might not preserve the channel invariant (#28)"} I[SumMod4#c] == I[SumMod4#b];
 }
-procedure SumMod4#anon$2#entry#5()
+procedure SumMod4#entry()
   modifies C, R, M, I, St;
 {
+  var SumMod4#add: Actor;
+  var SumMod4#mod: Actor;
+  var SumMod4#a: Chan (int);
+  var SumMod4#b: Chan (int);
+  var SumMod4#c: Chan (int);
+  assume SumMod4#add != SumMod4#mod;
+  assume (SumMod4#a != SumMod4#b) && (SumMod4#a != SumMod4#c) && (SumMod4#b != SumMod4#c);
   assume 0 <= I[SumMod4#a];
   assume I[SumMod4#a] <= R[SumMod4#a];
   assume R[SumMod4#a] <= C[SumMod4#a];
@@ -188,24 +302,40 @@ procedure SumMod4#anon$2#entry#5()
   assume I[SumMod4#c] <= R[SumMod4#c];
   assume R[SumMod4#c] <= C[SumMod4#c];
   assume I[SumMod4#c] == R[SumMod4#c];
-  assume I == R;
-  assume R[SumMod4#a] == C[SumMod4#a];
-  assume R[SumMod4#b] == C[SumMod4#b];
-  assume R[SumMod4#c] == C[SumMod4#c];
-  assume R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assume (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assume R[SumMod4#b] == C[SumMod4#c];
+  assume C[SumMod4#a] == R[SumMod4#a];
+  assume C[SumMod4#b] == R[SumMod4#b];
+  assume C[SumMod4#c] == R[SumMod4#c];
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
   assume I[SumMod4#c] == I[SumMod4#b];
-  assume (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assume (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
-  assume (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  assume (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
   );
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assume I[SumMod4#c] == I[SumMod4#b];
+  assume R[SumMod4#a] == (2 * C[SumMod4#b]);
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (M[SumMod4#a][2 * idx$] + M[SumMod4#a][(2 * idx$) + 1]))
+  );
+  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  );
+  assert {:msg "11.1: Sub-actors in the network might fire without network input. This is not permitted. (#29)"} !(2 <= (C[SumMod4#a] - R[SumMod4#a]));
+  assert {:msg "11.1: Sub-actors in the network might fire without network input. This is not permitted. (#30)"} !(1 <= (C[SumMod4#b] - R[SumMod4#b]));
 }
-procedure SumMod4#anon$2#input#in#6()
+procedure SumMod4#anon$2#input#in#7()
   modifies C, R, M, I, St;
 {
+  var SumMod4#add: Actor;
+  var SumMod4#mod: Actor;
+  var SumMod4#a: Chan (int);
+  var SumMod4#b: Chan (int);
+  var SumMod4#c: Chan (int);
+  assume SumMod4#add != SumMod4#mod;
+  assume (SumMod4#a != SumMod4#b) && (SumMod4#a != SumMod4#c) && (SumMod4#b != SumMod4#c);
   assume 0 <= I[SumMod4#a];
   assume I[SumMod4#a] <= R[SumMod4#a];
   assume R[SumMod4#a] <= C[SumMod4#a];
@@ -216,35 +346,50 @@ procedure SumMod4#anon$2#input#in#6()
   assume I[SumMod4#c] <= R[SumMod4#c];
   assume R[SumMod4#c] <= C[SumMod4#c];
   assume I[SumMod4#c] == R[SumMod4#c];
-  assume C[SumMod4#a] < 64;
-  assume R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assume (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assume R[SumMod4#b] == C[SumMod4#c];
+  assume C[SumMod4#a] < 32;
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
   assume I[SumMod4#c] == I[SumMod4#b];
-  assume (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assume (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
+  assume (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
+  );
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assume I[SumMod4#c] == I[SumMod4#b];
+  assume R[SumMod4#a] == (2 * C[SumMod4#b]);
   assume (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+    (0 <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (M[SumMod4#a][2 * idx$] + M[SumMod4#a][(2 * idx$) + 1]))
+  );
+  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
   );
   C[SumMod4#a] := C[SumMod4#a] + 1;
   assume (forall i: int :: 
     (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
-  assert {:msg "Channel invariant might be falsified by network input (#21)"} R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assert {:msg "Channel invariant might be falsified by network input (#22)"} (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assert {:msg "Channel invariant might be falsified by network input (#23)"} R[SumMod4#b] == C[SumMod4#c];
-  assert {:msg "Channel invariant might be falsified by network input (#24)"} I[SumMod4#c] == I[SumMod4#b];
-  assert {:msg "Channel invariant might be falsified by network input (#25)"} (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assert {:msg "18.15: Channel invariant might be falsified by network input (#31)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "19.15: Channel invariant might be falsified by network input (#32)"} I[SumMod4#c] == I[SumMod4#b];
+  assert {:msg "20.16: Channel invariant might be falsified by network input (#33)"} (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
-  assert {:msg "Channel invariant might be falsified by network input (#26)"} (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  assert {:msg "21.16: Channel invariant might be falsified by network input (#34)"} (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
   );
+  assert {:msg "Channel invariant might be falsified by network input (#35)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "Channel invariant might be falsified by network input (#36)"} I[SumMod4#c] == I[SumMod4#b];
 }
-procedure SumMod4#anon$2#exit#7()
+procedure SumMod4#anon$2#exit#8()
   modifies C, R, M, I, St;
 {
+  var SumMod4#add: Actor;
+  var SumMod4#mod: Actor;
+  var SumMod4#a: Chan (int);
+  var SumMod4#b: Chan (int);
+  var SumMod4#c: Chan (int);
+  assume SumMod4#add != SumMod4#mod;
+  assume (SumMod4#a != SumMod4#b) && (SumMod4#a != SumMod4#c) && (SumMod4#b != SumMod4#c);
   assume 0 <= I[SumMod4#a];
   assume I[SumMod4#a] <= R[SumMod4#a];
   assume R[SumMod4#a] <= C[SumMod4#a];
@@ -255,38 +400,43 @@ procedure SumMod4#anon$2#exit#7()
   assume I[SumMod4#c] <= R[SumMod4#c];
   assume R[SumMod4#c] <= C[SumMod4#c];
   assume I[SumMod4#c] == R[SumMod4#c];
-  assume R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assume (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
   assume I[SumMod4#c] == I[SumMod4#b];
-  assume (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
-  );
-  assume (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
-  );
-  assume (C[SumMod4#a] - I[SumMod4#a]) == 64;
   assume (forall i: int :: 
     (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
-  assume !(4 <= (C[SumMod4#a] - R[SumMod4#a]));
-  assume !(1 <= (C[SumMod4#b] - R[SumMod4#b]));
-  assert {:msg "15.15: Network action postcondition might not hold (#27)"} (forall i: int :: 
-    (I[SumMod4#c] <= i) && (i < C[SumMod4#c]) ==> ((M[SumMod4#c][i] == 0) || (M[SumMod4#c][i] == 2))
+  assume (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
   );
+  assume (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assume I[SumMod4#c] == I[SumMod4#b];
+  assume R[SumMod4#a] == (2 * C[SumMod4#b]);
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (M[SumMod4#a][2 * idx$] + M[SumMod4#a][(2 * idx$) + 1]))
+  );
+  assume R[SumMod4#b] == C[SumMod4#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  );
+  assume (C[SumMod4#a] - I[SumMod4#a]) == 32;
+  assume (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
+  );
+  assume !(2 <= (C[SumMod4#a] - R[SumMod4#a]));
+  assume !(1 <= (C[SumMod4#b] - R[SumMod4#b]));
   R[SumMod4#c] := R[SumMod4#c] + 16;
   I := R;
-  assert {:msg "The network might not preserve the channel invariant (#28)"} R[SumMod4#a] == (4 * C[SumMod4#b]);
-  assert {:msg "The network might not preserve the channel invariant (#29)"} (4 * I[SumMod4#b]) == I[SumMod4#a];
-  assert {:msg "The network might not preserve the channel invariant (#30)"} R[SumMod4#b] == C[SumMod4#c];
-  assert {:msg "The network might not preserve the channel invariant (#31)"} I[SumMod4#c] == I[SumMod4#b];
-  assert {:msg "The network might not preserve the channel invariant (#32)"} (forall idx$: int :: 
-    (I[SumMod4#b] <= idx$) && (idx$ < C[SumMod4#b]) ==> (M[SumMod4#b][idx$] == (((M[SumMod4#a][4 * idx$] + M[SumMod4#a][(4 * idx$) + 1]) + M[SumMod4#a][(4 * idx$) + 2]) + M[SumMod4#a][(4 * idx$) + 3]))
+  assert {:msg "18.15: The network might not preserve the channel invariant (#37)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "19.15: The network might not preserve the channel invariant (#38)"} I[SumMod4#c] == I[SumMod4#b];
+  assert {:msg "20.16: The network might not preserve the channel invariant (#39)"} (forall i: int :: 
+    (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
-  assert {:msg "The network might not preserve the channel invariant (#33)"} (forall idx$: int :: 
-    (I[SumMod4#c] <= idx$) && (idx$ < C[SumMod4#c]) ==> (M[SumMod4#c][idx$] == AT#Mod(M[SumMod4#b][idx$], 4))
+  assert {:msg "21.16: The network might not preserve the channel invariant (#40)"} (forall i: int :: 
+    (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
   );
-  assert {:msg "13.3: The network might leave unread tokens on channel a (#34)"} C[SumMod4#a] == R[SumMod4#a];
-  assert {:msg "13.3: The network might leave unread tokens on channel b (#35)"} C[SumMod4#b] == R[SumMod4#b];
-  assert {:msg "13.3: The network might not produce the specified number of tokens on output out (#36)"} C[SumMod4#c] == R[SumMod4#c];
+  assert {:msg "The network might not preserve the channel invariant (#41)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "The network might not preserve the channel invariant (#42)"} I[SumMod4#c] == I[SumMod4#b];
+  assert {:msg "13.3: The network might leave unread tokens on channel a (#43)"} C[SumMod4#a] == R[SumMod4#a];
+  assert {:msg "13.3: The network might leave unread tokens on channel b (#44)"} C[SumMod4#b] == R[SumMod4#b];
+  assert {:msg "13.3: The network might not produce the specified number of tokens on output out (#45)"} C[SumMod4#c] == R[SumMod4#c];
 }

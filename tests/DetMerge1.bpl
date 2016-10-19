@@ -1,0 +1,466 @@
+// ---------------------------------------------------------------
+// -- Types and global variables ---------------------------------
+// ---------------------------------------------------------------
+type Chan a;
+type Actor;
+type CType = <a>[Chan a]int;
+type MType = <a>[Chan a][int]a;
+type State;
+
+var M: MType;
+var C: CType;
+var R: CType;
+var I: CType;
+var St: [Actor]State;
+
+const unique this#: Actor;
+type List a = [int]a;
+var AT#intlst: List int;
+
+function AT#Min(x:int, y: int): int { if x <= y then x else y }
+
+// ---------------------------------------------------------------
+// -- End of prelude ---------------------------------------------
+// ---------------------------------------------------------------
+
+procedure DetMerge1#init#0()
+  modifies C, R, M, I, St;
+{
+  var in1: Chan (int);
+  var in2: Chan (int);
+  var c_in: Chan (bool);
+  var out: Chan (int);
+  var c_out: Chan (bool);
+  assume (in1 != in2) && (in1 != out) && (in2 != out) && (c_in != c_out);
+  assume R[in1] == 0;
+  assume R[in2] == 0;
+  assume R[c_in] == 0;
+  assume C[out] == 0;
+  assume C[c_out] == 0;
+  assume true;
+  M[c_out][C[c_out]] := false;
+  C[c_out] := C[c_out] + 1;
+}
+procedure DetMerge1#a#1()
+  modifies C, R, M, I, St;
+{
+  var in1: Chan (int);
+  var in2: Chan (int);
+  var c_in: Chan (bool);
+  var out: Chan (int);
+  var c_out: Chan (bool);
+  var in1#0: int;
+  var c_in#0: bool;
+  assume (in1 != in2) && (in1 != out) && (in2 != out) && (c_in != c_out);
+  assume 0 <= R[in1];
+  assume 0 <= R[in2];
+  assume 0 <= R[c_in];
+  assume 0 <= C[out];
+  assume 0 <= C[c_out];
+  in1#0 := M[in1][R[in1]];
+  R[in1] := R[in1] + 1;
+  c_in#0 := M[c_in][R[c_in]];
+  R[c_in] := R[c_in] + 1;
+  assume !c_in#0;
+  assume true;
+  M[out][C[out]] := in1#0;
+  C[out] := C[out] + 1;
+  M[c_out][C[c_out]] := true;
+  C[c_out] := C[c_out] + 1;
+}
+procedure DetMerge1#b#2()
+  modifies C, R, M, I, St;
+{
+  var in1: Chan (int);
+  var in2: Chan (int);
+  var c_in: Chan (bool);
+  var out: Chan (int);
+  var c_out: Chan (bool);
+  var in2#0: int;
+  var c_in#0: bool;
+  assume (in1 != in2) && (in1 != out) && (in2 != out) && (c_in != c_out);
+  assume 0 <= R[in1];
+  assume 0 <= R[in2];
+  assume 0 <= R[c_in];
+  assume 0 <= C[out];
+  assume 0 <= C[c_out];
+  in2#0 := M[in2][R[in2]];
+  R[in2] := R[in2] + 1;
+  c_in#0 := M[c_in][R[c_in]];
+  R[c_in] := R[c_in] + 1;
+  assume c_in#0;
+  assume true;
+  M[out][C[out]] := in2#0;
+  C[out] := C[out] + 1;
+  M[c_out][C[c_out]] := false;
+  C[c_out] := C[c_out] + 1;
+}
+procedure DetMerge1##GuardWD#3()
+  modifies C, R, M, I, St;
+{
+  var in1: Chan (int);
+  var in2: Chan (int);
+  var c_in: Chan (bool);
+  var out: Chan (int);
+  var c_out: Chan (bool);
+  var in1#0: int;
+  var c_in#0: bool;
+  var in2#0: int;
+  assume (in1 != in2) && (in1 != out) && (in2 != out) && (c_in != c_out);
+  assert {:msg "1.1: The actions of actor 'DetMerge1' might not have mutually exclusive guards (#0)"} !((1 <= (C[in1] - R[in1])) && (1 <= (C[c_in] - R[c_in])) && (!c_in#0) && (1 <= (C[in2] - R[in2])) && (1 <= (C[c_in] - R[c_in])) && c_in#0);
+}
+procedure Top#init#4()
+  modifies C, R, M, I, St;
+{
+  var Top#dm: Actor;
+  var Top#a: Chan (int);
+  var Top#b: Chan (int);
+  var Top#c: Chan (int);
+  var Top#d: Chan (bool);
+  assume (Top#a != Top#b) && (Top#a != Top#c) && (Top#b != Top#c);
+  assume 0 <= I[Top#a];
+  assume I[Top#a] <= R[Top#a];
+  assume R[Top#a] <= C[Top#a];
+  assume 0 <= I[Top#b];
+  assume I[Top#b] <= R[Top#b];
+  assume R[Top#b] <= C[Top#b];
+  assume 0 <= I[Top#c];
+  assume I[Top#c] <= R[Top#c];
+  assume R[Top#c] <= C[Top#c];
+  assume I[Top#c] == R[Top#c];
+  assume 0 <= I[Top#d];
+  assume I[Top#d] <= R[Top#d];
+  assume R[Top#d] <= C[Top#d];
+  assume C[Top#a] == 0;
+  assume R[Top#a] == 0;
+  assume C[Top#b] == 0;
+  assume R[Top#b] == 0;
+  assume C[Top#c] == 0;
+  assume R[Top#c] == 0;
+  assume C[Top#d] == 0;
+  assume R[Top#d] == 0;
+  M[Top#d][C[Top#d]] := false;
+  C[Top#d] := C[Top#d] + 1;
+  assert {:msg "20.15: Initialization of network 'Top' might not establish the channel invariant (#1)"} I[Top#a] == I[Top#b];
+  assert {:msg "21.15: Initialization of network 'Top' might not establish the channel invariant (#2)"} I[Top#c] == (I[Top#a] + I[Top#b]);
+  assert {:msg "22.15: Initialization of network 'Top' might not establish the channel invariant (#3)"} !M[Top#d][0];
+  assert {:msg "24.15: Initialization of network 'Top' might not establish the channel invariant (#4)"} ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assert {:msg "25.15: Initialization of network 'Top' might not establish the channel invariant (#5)"} ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assert {:msg "26.15: Initialization of network 'Top' might not establish the channel invariant (#6)"} ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assert {:msg "28.15: Initialization of network 'Top' might not establish the channel invariant (#7)"} (C[Top#d] - R[Top#d]) == 1;
+  assert {:msg "29.15: Initialization of network 'Top' might not establish the channel invariant (#8)"} (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assert {:msg "30.15: Initialization of network 'Top' might not establish the channel invariant (#9)"} (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assert {:msg "32.15: Initialization of network 'Top' might not establish the channel invariant (#10)"} ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assert {:msg "33.15: Initialization of network 'Top' might not establish the channel invariant (#11)"} ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+  I := R;
+  C[Top#d] := C[Top#d] - 1;
+  assert {:msg "39.5: The initialization might produce unspecified tokens on channel a (#12)"} (C[Top#a] - R[Top#a]) == 0;
+  assert {:msg "40.5: The initialization might produce unspecified tokens on channel b (#13)"} (C[Top#b] - R[Top#b]) == 0;
+  assert {:msg "41.5: The initialization might produce unspecified tokens on channel c (#14)"} (C[Top#c] - R[Top#c]) == 0;
+  assert {:msg "42.5: The initialization might produce unspecified tokens on channel d (#15)"} (C[Top#d] - R[Top#d]) == 0;
+}
+procedure Top##DetMerge1#a#5()
+  modifies C, R, M, I, St;
+{
+  var Top#dm: Actor;
+  var Top#a: Chan (int);
+  var Top#b: Chan (int);
+  var Top#c: Chan (int);
+  var Top#d: Chan (bool);
+  var in1#i: int;
+  var c_in#ctrl: bool;
+  assume (Top#a != Top#b) && (Top#a != Top#c) && (Top#b != Top#c);
+  assume 0 <= I[Top#a];
+  assume I[Top#a] <= R[Top#a];
+  assume R[Top#a] <= C[Top#a];
+  assume 0 <= I[Top#b];
+  assume I[Top#b] <= R[Top#b];
+  assume R[Top#b] <= C[Top#b];
+  assume 0 <= I[Top#c];
+  assume I[Top#c] <= R[Top#c];
+  assume R[Top#c] <= C[Top#c];
+  assume I[Top#c] == R[Top#c];
+  assume 0 <= I[Top#d];
+  assume I[Top#d] <= R[Top#d];
+  assume R[Top#d] <= C[Top#d];
+  assume I[Top#a] == I[Top#b];
+  assume I[Top#c] == (I[Top#a] + I[Top#b]);
+  assume !M[Top#d][0];
+  assume ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assume ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assume ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assume (C[Top#d] - R[Top#d]) == 1;
+  assume (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assume (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assume ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assume ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+  assume (1 <= (C[Top#a] - R[Top#a])) && (1 <= (C[Top#d] - R[Top#d])) && (!M[Top#d][R[Top#d]]);
+  in1#i := M[Top#a][R[Top#a]];
+  R[Top#a] := R[Top#a] + 1;
+  c_in#ctrl := M[Top#d][R[Top#d]];
+  R[Top#d] := R[Top#d] + 1;
+  M[Top#c][C[Top#c]] := in1#i;
+  C[Top#c] := C[Top#c] + 1;
+  M[Top#d][C[Top#d]] := true;
+  C[Top#d] := C[Top#d] + 1;
+  assert {:msg "20.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#16)"} I[Top#a] == I[Top#b];
+  assert {:msg "21.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#17)"} I[Top#c] == (I[Top#a] + I[Top#b]);
+  assert {:msg "22.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#18)"} !M[Top#d][0];
+  assert {:msg "24.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#19)"} ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assert {:msg "25.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#20)"} ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assert {:msg "26.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#21)"} ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assert {:msg "28.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#22)"} (C[Top#d] - R[Top#d]) == 1;
+  assert {:msg "29.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#23)"} (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assert {:msg "30.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#24)"} (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assert {:msg "32.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#25)"} ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assert {:msg "33.15: Action at 3.3 ('a') for actor instance 'dm' might not preserve the channel invariant (#26)"} ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+}
+procedure Top##DetMerge1#b#6()
+  modifies C, R, M, I, St;
+{
+  var Top#dm: Actor;
+  var Top#a: Chan (int);
+  var Top#b: Chan (int);
+  var Top#c: Chan (int);
+  var Top#d: Chan (bool);
+  var in2#i: int;
+  var c_in#ctrl: bool;
+  assume (Top#a != Top#b) && (Top#a != Top#c) && (Top#b != Top#c);
+  assume 0 <= I[Top#a];
+  assume I[Top#a] <= R[Top#a];
+  assume R[Top#a] <= C[Top#a];
+  assume 0 <= I[Top#b];
+  assume I[Top#b] <= R[Top#b];
+  assume R[Top#b] <= C[Top#b];
+  assume 0 <= I[Top#c];
+  assume I[Top#c] <= R[Top#c];
+  assume R[Top#c] <= C[Top#c];
+  assume I[Top#c] == R[Top#c];
+  assume 0 <= I[Top#d];
+  assume I[Top#d] <= R[Top#d];
+  assume R[Top#d] <= C[Top#d];
+  assume I[Top#a] == I[Top#b];
+  assume I[Top#c] == (I[Top#a] + I[Top#b]);
+  assume !M[Top#d][0];
+  assume ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assume ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assume ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assume (C[Top#d] - R[Top#d]) == 1;
+  assume (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assume (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assume ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assume ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+  assume (1 <= (C[Top#b] - R[Top#b])) && (1 <= (C[Top#d] - R[Top#d])) && M[Top#d][R[Top#d]];
+  in2#i := M[Top#b][R[Top#b]];
+  R[Top#b] := R[Top#b] + 1;
+  c_in#ctrl := M[Top#d][R[Top#d]];
+  R[Top#d] := R[Top#d] + 1;
+  M[Top#c][C[Top#c]] := in2#i;
+  C[Top#c] := C[Top#c] + 1;
+  M[Top#d][C[Top#d]] := false;
+  C[Top#d] := C[Top#d] + 1;
+  assert {:msg "20.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#27)"} I[Top#a] == I[Top#b];
+  assert {:msg "21.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#28)"} I[Top#c] == (I[Top#a] + I[Top#b]);
+  assert {:msg "22.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#29)"} !M[Top#d][0];
+  assert {:msg "24.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#30)"} ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assert {:msg "25.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#31)"} ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assert {:msg "26.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#32)"} ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assert {:msg "28.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#33)"} (C[Top#d] - R[Top#d]) == 1;
+  assert {:msg "29.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#34)"} (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assert {:msg "30.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#35)"} (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assert {:msg "32.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#36)"} ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assert {:msg "33.15: Action at 6.3 ('b') for actor instance 'dm' might not preserve the channel invariant (#37)"} ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+}
+procedure Top#entry()
+  modifies C, R, M, I, St;
+{
+  var Top#dm: Actor;
+  var Top#a: Chan (int);
+  var Top#b: Chan (int);
+  var Top#c: Chan (int);
+  var Top#d: Chan (bool);
+  assume (Top#a != Top#b) && (Top#a != Top#c) && (Top#b != Top#c);
+  assume 0 <= I[Top#a];
+  assume I[Top#a] <= R[Top#a];
+  assume R[Top#a] <= C[Top#a];
+  assume 0 <= I[Top#b];
+  assume I[Top#b] <= R[Top#b];
+  assume R[Top#b] <= C[Top#b];
+  assume 0 <= I[Top#c];
+  assume I[Top#c] <= R[Top#c];
+  assume R[Top#c] <= C[Top#c];
+  assume I[Top#c] == R[Top#c];
+  assume 0 <= I[Top#d];
+  assume I[Top#d] <= R[Top#d];
+  assume R[Top#d] <= C[Top#d];
+  assume C[Top#a] == R[Top#a];
+  assume C[Top#b] == R[Top#b];
+  assume C[Top#c] == R[Top#c];
+  assume C[Top#d] == R[Top#d];
+  C[Top#d] := C[Top#d] + 1;
+  assume I[Top#a] == I[Top#b];
+  assume I[Top#c] == (I[Top#a] + I[Top#b]);
+  assume !M[Top#d][0];
+  assume ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assume ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assume ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assume (C[Top#d] - R[Top#d]) == 1;
+  assume (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assume (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assume ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assume ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+  assert {:msg "11.1: Sub-actors in the network might fire without network input. This is not permitted. (#38)"} !((1 <= (C[Top#a] - R[Top#a])) && (1 <= (C[Top#d] - R[Top#d])) && (!M[Top#d][R[Top#d]]));
+  assert {:msg "11.1: Sub-actors in the network might fire without network input. This is not permitted. (#39)"} !((1 <= (C[Top#b] - R[Top#b])) && (1 <= (C[Top#d] - R[Top#d])) && M[Top#d][R[Top#d]]);
+}
+procedure Top#anon$1#input#in1#7()
+  modifies C, R, M, I, St;
+{
+  var Top#dm: Actor;
+  var Top#a: Chan (int);
+  var Top#b: Chan (int);
+  var Top#c: Chan (int);
+  var Top#d: Chan (bool);
+  assume (Top#a != Top#b) && (Top#a != Top#c) && (Top#b != Top#c);
+  assume 0 <= I[Top#a];
+  assume I[Top#a] <= R[Top#a];
+  assume R[Top#a] <= C[Top#a];
+  assume 0 <= I[Top#b];
+  assume I[Top#b] <= R[Top#b];
+  assume R[Top#b] <= C[Top#b];
+  assume 0 <= I[Top#c];
+  assume I[Top#c] <= R[Top#c];
+  assume R[Top#c] <= C[Top#c];
+  assume I[Top#c] == R[Top#c];
+  assume 0 <= I[Top#d];
+  assume I[Top#d] <= R[Top#d];
+  assume R[Top#d] <= C[Top#d];
+  assume C[Top#a] < 1;
+  assume I[Top#a] == I[Top#b];
+  assume I[Top#c] == (I[Top#a] + I[Top#b]);
+  assume !M[Top#d][0];
+  assume ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assume ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assume ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assume (C[Top#d] - R[Top#d]) == 1;
+  assume (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assume (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assume ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assume ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+  C[Top#a] := C[Top#a] + 1;
+  assert {:msg "20.15: Channel invariant might be falsified by network input (#40)"} I[Top#a] == I[Top#b];
+  assert {:msg "21.15: Channel invariant might be falsified by network input (#41)"} I[Top#c] == (I[Top#a] + I[Top#b]);
+  assert {:msg "22.15: Channel invariant might be falsified by network input (#42)"} !M[Top#d][0];
+  assert {:msg "24.15: Channel invariant might be falsified by network input (#43)"} ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assert {:msg "25.15: Channel invariant might be falsified by network input (#44)"} ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assert {:msg "26.15: Channel invariant might be falsified by network input (#45)"} ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assert {:msg "28.15: Channel invariant might be falsified by network input (#46)"} (C[Top#d] - R[Top#d]) == 1;
+  assert {:msg "29.15: Channel invariant might be falsified by network input (#47)"} (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assert {:msg "30.15: Channel invariant might be falsified by network input (#48)"} (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assert {:msg "32.15: Channel invariant might be falsified by network input (#49)"} ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assert {:msg "33.15: Channel invariant might be falsified by network input (#50)"} ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+}
+procedure Top#anon$1#input#in2#8()
+  modifies C, R, M, I, St;
+{
+  var Top#dm: Actor;
+  var Top#a: Chan (int);
+  var Top#b: Chan (int);
+  var Top#c: Chan (int);
+  var Top#d: Chan (bool);
+  assume (Top#a != Top#b) && (Top#a != Top#c) && (Top#b != Top#c);
+  assume 0 <= I[Top#a];
+  assume I[Top#a] <= R[Top#a];
+  assume R[Top#a] <= C[Top#a];
+  assume 0 <= I[Top#b];
+  assume I[Top#b] <= R[Top#b];
+  assume R[Top#b] <= C[Top#b];
+  assume 0 <= I[Top#c];
+  assume I[Top#c] <= R[Top#c];
+  assume R[Top#c] <= C[Top#c];
+  assume I[Top#c] == R[Top#c];
+  assume 0 <= I[Top#d];
+  assume I[Top#d] <= R[Top#d];
+  assume R[Top#d] <= C[Top#d];
+  assume C[Top#b] < 1;
+  assume I[Top#a] == I[Top#b];
+  assume I[Top#c] == (I[Top#a] + I[Top#b]);
+  assume !M[Top#d][0];
+  assume ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assume ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assume ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assume (C[Top#d] - R[Top#d]) == 1;
+  assume (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assume (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assume ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assume ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+  C[Top#b] := C[Top#b] + 1;
+  assert {:msg "20.15: Channel invariant might be falsified by network input (#51)"} I[Top#a] == I[Top#b];
+  assert {:msg "21.15: Channel invariant might be falsified by network input (#52)"} I[Top#c] == (I[Top#a] + I[Top#b]);
+  assert {:msg "22.15: Channel invariant might be falsified by network input (#53)"} !M[Top#d][0];
+  assert {:msg "24.15: Channel invariant might be falsified by network input (#54)"} ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assert {:msg "25.15: Channel invariant might be falsified by network input (#55)"} ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assert {:msg "26.15: Channel invariant might be falsified by network input (#56)"} ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assert {:msg "28.15: Channel invariant might be falsified by network input (#57)"} (C[Top#d] - R[Top#d]) == 1;
+  assert {:msg "29.15: Channel invariant might be falsified by network input (#58)"} (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assert {:msg "30.15: Channel invariant might be falsified by network input (#59)"} (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assert {:msg "32.15: Channel invariant might be falsified by network input (#60)"} ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assert {:msg "33.15: Channel invariant might be falsified by network input (#61)"} ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+}
+procedure Top#anon$1#exit#9()
+  modifies C, R, M, I, St;
+{
+  var Top#dm: Actor;
+  var Top#a: Chan (int);
+  var Top#b: Chan (int);
+  var Top#c: Chan (int);
+  var Top#d: Chan (bool);
+  assume (Top#a != Top#b) && (Top#a != Top#c) && (Top#b != Top#c);
+  assume 0 <= I[Top#a];
+  assume I[Top#a] <= R[Top#a];
+  assume R[Top#a] <= C[Top#a];
+  assume 0 <= I[Top#b];
+  assume I[Top#b] <= R[Top#b];
+  assume R[Top#b] <= C[Top#b];
+  assume 0 <= I[Top#c];
+  assume I[Top#c] <= R[Top#c];
+  assume R[Top#c] <= C[Top#c];
+  assume I[Top#c] == R[Top#c];
+  assume 0 <= I[Top#d];
+  assume I[Top#d] <= R[Top#d];
+  assume R[Top#d] <= C[Top#d];
+  assume I[Top#a] == I[Top#b];
+  assume I[Top#c] == (I[Top#a] + I[Top#b]);
+  assume !M[Top#d][0];
+  assume ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assume ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assume ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assume (C[Top#d] - R[Top#d]) == 1;
+  assume (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assume (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assume ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assume ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+  assume (C[Top#a] - I[Top#a]) == 1;
+  assume (C[Top#b] - I[Top#b]) == 1;
+  assume !((1 <= (C[Top#a] - R[Top#a])) && (1 <= (C[Top#d] - R[Top#d])) && (!M[Top#d][R[Top#d]]));
+  assume !((1 <= (C[Top#b] - R[Top#b])) && (1 <= (C[Top#d] - R[Top#d])) && M[Top#d][R[Top#d]]);
+  assert {:msg "14.13: Network action postcondition might not hold (#62)"} M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]];
+  assert {:msg "15.13: Network action postcondition might not hold (#63)"} M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]];
+  R[Top#c] := R[Top#c] + 2;
+  I := R;
+  assert {:msg "20.15: The network might not preserve the channel invariant (#64)"} I[Top#a] == I[Top#b];
+  assert {:msg "21.15: The network might not preserve the channel invariant (#65)"} I[Top#c] == (I[Top#a] + I[Top#b]);
+  assert {:msg "22.15: The network might not preserve the channel invariant (#66)"} !M[Top#d][0];
+  assert {:msg "24.15: The network might not preserve the channel invariant (#67)"} ((R[Top#b] - I[Top#b]) == (R[Top#a] - I[Top#a])) || (((R[Top#b] - I[Top#b]) + 1) == (R[Top#a] - I[Top#a]));
+  assert {:msg "25.15: The network might not preserve the channel invariant (#68)"} ((R[Top#a] - I[Top#a]) == (R[Top#b] - I[Top#b])) ==> (!M[Top#d][R[Top#d]]);
+  assert {:msg "26.15: The network might not preserve the channel invariant (#69)"} ((R[Top#a] - I[Top#a]) == ((R[Top#b] - I[Top#b]) + 1)) ==> M[Top#d][R[Top#d]];
+  assert {:msg "28.15: The network might not preserve the channel invariant (#70)"} (C[Top#d] - R[Top#d]) == 1;
+  assert {:msg "29.15: The network might not preserve the channel invariant (#71)"} (C[Top#c] - I[Top#c]) == ((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b]));
+  assert {:msg "30.15: The network might not preserve the channel invariant (#72)"} (C[Top#d] - I[Top#d]) == (((R[Top#a] - I[Top#a]) + (R[Top#b] - I[Top#b])) + 1);
+  assert {:msg "32.15: The network might not preserve the channel invariant (#73)"} ((C[Top#c] - I[Top#c]) > 0) ==> (M[Top#c][I[Top#c]] == M[Top#a][I[Top#a]]);
+  assert {:msg "33.15: The network might not preserve the channel invariant (#74)"} ((C[Top#c] - I[Top#c]) > 1) ==> (M[Top#c][I[Top#c] + 1] == M[Top#b][I[Top#b]]);
+  C[Top#d] := C[Top#d] - 1;
+  assert {:msg "13.3: The network might leave unread tokens on channel a (#75)"} C[Top#a] == R[Top#a];
+  assert {:msg "13.3: The network might leave unread tokens on channel b (#76)"} C[Top#b] == R[Top#b];
+  assert {:msg "13.3: The network might not produce the specified number of tokens on output out (#77)"} C[Top#c] == R[Top#c];
+  assert {:msg "13.3: The network might leave unread tokens on channel d (#78)"} C[Top#d] == R[Top#d];
+}

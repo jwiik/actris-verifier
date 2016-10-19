@@ -1,0 +1,21 @@
+actor Repeater int in ==> int out :
+  action in:[i] ==> out:[i,i] end
+end
+
+network Net int in ==> int out :
+  
+  action in:1 ==> out:2 end
+  
+  chinvariant 2*init(a) = init(b)
+  chinvariant tot(b) = 2*rd(a)
+
+  entities
+    rep = Repeater();
+  end
+  
+  structure
+    a: in --> rep.in;
+    b: rep.out --> out;
+  end
+
+end

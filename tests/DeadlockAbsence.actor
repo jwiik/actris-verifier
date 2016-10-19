@@ -3,7 +3,6 @@ actor Route int in1, int in2 ==> int out1, int out2 :
   action in2:[i] ==> out1:[i] end
 end
 
-@sdf
 actor Repeat int in ==> int out :
   action in:[i] ==> out:[i] end
 end
