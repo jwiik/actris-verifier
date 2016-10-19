@@ -6,8 +6,8 @@ network Net int in ==> int out :
   
   action in:1 ==> out:2 end
   
-  chinvariant 2*init(a) = init(b)
-  chinvariant tot(b) = 2*rd(a)
+  chinvariant 2*@(a) = @(b)
+  chinvariant 2*rd(a) = tot(b)
 
   entities
     rep = Repeater();
