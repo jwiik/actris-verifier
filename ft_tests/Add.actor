@@ -8,8 +8,8 @@ end
 network Net int in1, int in2 ==> int out :
   
   action in1:1, in2:1 ==> out:1
-    requires (forall int i :: 0 <= i && i < limit(a) ==> 0 <= a[i])
-    requires (forall int i :: 0 <= i && i < limit(b) ==> 0 <= b[i])
+    requires (forall int i :: 0 <= i && i < tot(a) ==> 0 <= a[i])
+    requires (forall int i :: 0 <= i && i < tot(b) ==> 0 <= b[i])
     ensures (forall int i :: 0 <= i && i < tot(c) ==> 0 <= c[i])
     ensures (forall int i :: 0 <= i && i < tot(c) ==> sqn(c[i]) = i)
   end

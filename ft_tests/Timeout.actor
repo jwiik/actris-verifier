@@ -30,11 +30,12 @@ end
 network Net int in ==> int out :
 
   action in:1 ==> out:1
+    requires (forall int i :: 0 <= i && i < tot(a) ==> sqn(a[i]) = i)
     ensures (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
     ensures (forall int i :: 0 <= i && i < tot(g) ==> g[i] = a[i])
   end
   
-  invariant tokens(f,1)
+  invariant delay(f,1)
   invariant rd(e) = next(f)
   
   chinvariant currsqn(spl) = rd(a)
@@ -54,7 +55,7 @@ network Net int in ==> int out :
   chinvariant rd(e) = next(f)
   chinvariant (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
   
-  chinvariant 0 < rd(d) && 0 < rd(e) ==> prev(d) <= prev(e) 
+  //chinvariant 0 < rd(d) && 0 < rd(e) ==> prev(d) <= prev(e) 
   chinvariant (forall int i :: 0 <= i && i < rd(e) ==> g[i] = e[i])
   
   entities
