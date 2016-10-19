@@ -690,7 +690,6 @@ object Resolver {
           case None => ctx.error(sm.pos, "Marker '" + m + "' used in invalid position")
         }
         IntType.default
-
       }
       case v@Id(id) =>
         if (v.typ != null) {

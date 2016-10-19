@@ -6,6 +6,8 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.File
 import java.io.FileWriter
+import java.util.Timer
+import java.util.TimerTask
 import fi.abo.it.actortool.ActorTool.Verifier
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.ActorTool.CommandLineParameters
@@ -26,11 +28,19 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
     if (params.PrintProgram) println(bplText)
     if (!params.NoBplFile) writeFile(bplFilename, bplText);
     
-    val boogie = Runtime.getRuntime.exec(boogiePath + " /errorTrace:0 " + boogieArgs + " stdin.bpl")
+    //val destroyTimer = new Timer
     
+    val boogie = Runtime.getRuntime.exec(boogiePath + " /errorTrace:0 " + boogieArgs + " stdin.bpl")
     val output = boogie.getOutputStream()
     output.write(bplText.getBytes)
     output.close
+    
+//    destroyTimer.schedule(new TimerTask() {
+//      def run {
+//        boogie.destroy
+//        println("Boogie backend timed out during verification")
+//      }
+//    }, params.BoogieTimeout*1000)
     
     // terminate boogie if interrupted
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable() {

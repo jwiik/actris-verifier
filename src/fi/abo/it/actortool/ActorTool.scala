@@ -54,6 +54,7 @@ object ActorTool {
     val InferModules: List[String]
     val SmokeTest: Boolean
     val ReplaceMaps: Boolean
+    val BoogieTimeout: Int
     final lazy val help = "Usage: actortool [option] <filename>+\n"
   }
   
@@ -78,6 +79,7 @@ object ActorTool {
     var aFTMode = false
     var aSmokeTest = false
     var aReplaceMaps = false
+    var aBoogieTimeout = 20
     
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -93,6 +95,16 @@ object ActorTool {
         case Param("boogiePath") => value match {
           case None => reportCommandLineError("parameter boogiePath takes an argument"); return None
           case Some(v) => aBoogiePath = v
+        }
+        case Param("boogieTimeout") => value match {
+          case None => reportCommandLineError("parameter boogieTimeout takes an integer argument"); return None
+          case Some(v) => 
+            try aBoogieTimeout = v.toInt
+            catch {
+              case e: NumberFormatException =>
+                reportCommandLineError("parameter boogieTimeout takes an integer as argument.")
+                return None
+            }
         }
         case Param("noTypecheck") => aDoTypecheck = false
         case Param("noInfer") => aDoInfer = false
@@ -185,6 +197,7 @@ object ActorTool {
         val FTMode = aFTMode
         val SmokeTest = aSmokeTest
         val ReplaceMaps = aReplaceMaps
+        val BoogieTimeout = aBoogieTimeout
     })
   }
   

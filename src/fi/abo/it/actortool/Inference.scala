@@ -304,6 +304,7 @@ object Inferencer {
   abstract class StaticPropertyInferenceModule extends InferenceModule {
     def isStatic(actor: DFActor): Boolean = {
       if (actor.isInstanceOf[Network]) return false
+      if (!actor.variables.isEmpty) return false
       var portRates = Map[String,Int]()
       val ports = (actor.inports:::actor.outports map { _.id }).toSet
       for (action <- actor.actions.filter { !_.init }) {
