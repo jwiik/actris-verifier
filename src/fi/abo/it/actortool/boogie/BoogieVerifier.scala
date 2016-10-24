@@ -28,19 +28,19 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
     if (params.PrintProgram) println(bplText)
     if (!params.NoBplFile) writeFile(bplFilename, bplText);
     
-    //val destroyTimer = new Timer
+    val destroyTimer = new Timer
     
     val boogie = Runtime.getRuntime.exec(boogiePath + " /errorTrace:0 " + boogieArgs + " stdin.bpl")
     val output = boogie.getOutputStream()
     output.write(bplText.getBytes)
     output.close
     
-//    destroyTimer.schedule(new TimerTask() {
-//      def run {
-//        boogie.destroy
-//        println("Boogie backend timed out during verification")
-//      }
-//    }, params.BoogieTimeout*1000)
+    destroyTimer.schedule(new TimerTask() {
+      def run {
+        boogie.destroy
+        println("Boogie backend timed out during verification")
+      }
+    }, params.BoogieTimeout*1000)
     
     // terminate boogie if interrupted
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable() {
@@ -95,6 +95,8 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
       }
       println("Smoke test finished")
     }
+    
+    destroyTimer.cancel
     
     Console.out.println
   }
