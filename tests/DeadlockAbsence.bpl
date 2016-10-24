@@ -84,7 +84,7 @@ procedure Route##GuardWD#3()
   var in1#0: int;
   var in2#0: int;
   assume (in1 != in2) && (in1 != out1) && (in1 != out2) && (in2 != out1) && (in2 != out2) && (out1 != out2);
-  assert {:msg "1.1: The actions of actor 'Route' might not have mutually exclusive guards (#0)"} !((1 <= (C[in1] - R[in1])) && (1 <= (C[in2] - R[in2])));
+  assert {:msg "1.1: The actions of actor 'Route' might not have mutually exclusive guards (#0)"} !((1 <= (C[in1] - R[in1])) && (!(1 <= (C[in1] - R[in1]))) && (1 <= (C[in2] - R[in2])));
 }
 procedure Repeat#init#4()
   modifies C, R, M, I, St;
