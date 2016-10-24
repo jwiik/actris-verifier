@@ -1,6 +1,7 @@
 actor Route int in1, int in2 ==> int out1, int out2 :
-  action in1:[i] ==> out2:[i] end
-  action in2:[i] ==> out1:[i] end
+  a: action in1:[i] ==> out2:[i] end
+  b: action in2:[i] ==> out1:[i] end
+  priority a > b end
 end
 
 actor Repeat int in ==> int out :
