@@ -61,26 +61,41 @@ class Translator(
   
   def translateActor(avs: ActorVerificationStructure): List[Boogie.Decl] = {    
     val decls = new ListBuffer[Boogie.Decl]()
-    val guards = new ListBuffer[Boogie.Expr]()
+    val allGuards = new ListBuffer[Boogie.Expr]()
+    val actionGuards = collection.mutable.Map[Action,Boogie.Expr]()
     var inpatDecls = Map.empty[String,BDecl]
     
     decls += translateActorInit(avs)
     
-    for (a <- avs.actions) {
+    
+    for ((a,higherPrioActions) <- avs.priorityList) {
       if (!a.init) {
-        val (decl,guard,renames) = translateActorAction(a, avs)
+        val (decl,guards,renames) = translateActorAction(a, avs)
         decls ++= decl
+        
         inpatDecls = inpatDecls ++ renames
       
         // And together the input pattern expressions and the guard expression
-        if (!guard.isEmpty) {
-          guards += guard.reduceLeft((a,b) => (a && b))
+        if (!guards.isEmpty) {
+          val andedGuard = guards.reduceLeft((a,b) => (a && b))
+          actionGuards += (a -> andedGuard)
+//          guards += andedGuard
         }
+        
+        val higherPrioGuards = higherPrioActions map { a => actionGuards(a) }
+        
+        val completeGuard =
+          if (!higherPrioGuards.isEmpty) 
+            Boogie.UnaryExpr("!",higherPrioGuards.reduceLeft((a,b) => (a && b))) && guards.reduceLeft((a,b) => (a && b))
+          else guards.reduceLeft((a,b) => (a && b))
+          
+        allGuards += completeGuard
+        
       }
     } // end for
     
     if (!skipMutualExclusivenessCheck) {
-      createMutualExclusivenessCheck(avs,guards.toList,inpatDecls.values.toList) match {
+      createMutualExclusivenessCheck(avs,allGuards.toList,inpatDecls.values.toList) match {
         case Some(proc) => decls += proc
         case None =>
       }
@@ -357,35 +372,19 @@ class Translator(
     val nwFiringRules = new ListBuffer[Boogie.Expr]()
     for (inst <- nwvs.entities) {
       val actor = inst.actor
-      
-      val orderedActions = new ListBuffer[(Action,List[Action])]()
-      actor.priority match {
-        case Some(pr) => {
-          for (name <- pr.order) {
-            // Assuming valid label
-            val act = actor.actions.find{ a => a.fullName == name }.get
-            orderedActions += (act -> orderedActions.toList.map {_._1})
-          }
-        }
-        case None =>
-      }
-      
-      for (act <- actor.actions) {
-        if (! (orderedActions exists {case (a,_) => a == act})) {
-          orderedActions += (act -> List.empty)
-        }
-      }
-         
+
+      val priorityList = nwvs.entityData(inst).priorities
+
       val actorFiringRulesNoPrio = collection.mutable.Map[Action,Boogie.Expr]()
       val actorFiringRulesPrio = collection.mutable.Map[Action,Boogie.Expr]()
-      for ((ca,higherPrioAction) <- orderedActions) {
+      for ((ca,higherPrioActions) <- priorityList) {
         if (!ca.init) {
           val procName = nwvs.namePrefix+B.Sep+actor.id+B.Sep+ca.fullName
           
-          val prFiringRule = higherPrioAction map {a => actorFiringRulesNoPrio(a)}
+          val higherPrioFiringRules = higherPrioActions map {a => actorFiringRulesNoPrio(a)}
           
           val (subActorStmt,firingRulePrio,firingRuleNoPrio) = 
-            transSubActionExecution(inst, ca, nwvs, prFiringRule)
+            transSubActionExecution(inst, ca, nwvs, higherPrioFiringRules)
           val stmt = 
             (nwvs.entityDecls map { _.decl }) :::
             (nwvs.subactorVarDecls  map { _.decl }):::
