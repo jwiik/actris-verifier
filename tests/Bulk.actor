@@ -12,14 +12,13 @@ network SumMod4 int in ==> int out :
   
   action in:32 ==> out:16
     requires (forall int i :: current(in,i)  ==> in[i]%2 = 1)
-    //ensures  (forall int i :: current(out,i) ==> out[i] = 0 || out[i] = 2)
+    ensures  (forall int i :: current(out,i) ==> out[i] = 0 || out[i] = 2)
   end
   
   chinvariant 2*@(b) = @(a)
   chinvariant @(c) = @(b)
   chinvariant (forall int i :: current(a,i)  ==> a[i]%2 = 1)
   chinvariant (forall int i :: current(b,i)  ==> b[i]%2 = 0)
-  //chinvariant (forall int i :: current(c,i)  ==> c[i]%2 = 0 || c[i]%2 = 2)
   
   entities
     add = AddSeq();

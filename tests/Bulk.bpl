@@ -149,9 +149,9 @@ procedure SumMod4#init#4()
   assert {:msg "Initialization of network 'SumMod4' might not establish the channel invariant (#12)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
   assert {:msg "Initialization of network 'SumMod4' might not establish the channel invariant (#13)"} I[SumMod4#c] == I[SumMod4#b];
   I := R;
-  assert {:msg "30.5: The initialization might produce unspecified tokens on channel a (#14)"} (C[SumMod4#a] - R[SumMod4#a]) == 0;
-  assert {:msg "31.5: The initialization might produce unspecified tokens on channel b (#15)"} (C[SumMod4#b] - R[SumMod4#b]) == 0;
-  assert {:msg "32.5: The initialization might produce unspecified tokens on channel c (#16)"} (C[SumMod4#c] - R[SumMod4#c]) == 0;
+  assert {:msg "29.5: The initialization might produce unspecified tokens on channel a (#14)"} (C[SumMod4#a] - R[SumMod4#a]) == 0;
+  assert {:msg "30.5: The initialization might produce unspecified tokens on channel b (#15)"} (C[SumMod4#b] - R[SumMod4#b]) == 0;
+  assert {:msg "31.5: The initialization might produce unspecified tokens on channel c (#16)"} (C[SumMod4#c] - R[SumMod4#c]) == 0;
 }
 procedure SumMod4##AddSeq#anon$0#5()
   modifies C, R, M, I, St;
@@ -424,19 +424,22 @@ procedure SumMod4#anon$2#exit#8()
   );
   assume !(2 <= (C[SumMod4#a] - R[SumMod4#a]));
   assume !(1 <= (C[SumMod4#b] - R[SumMod4#b]));
+  assert {:msg "15.15: Network action postcondition might not hold (#37)"} (forall i: int :: 
+    (I[SumMod4#c] <= i) && (i < C[SumMod4#c]) ==> ((M[SumMod4#c][i] == 0) || (M[SumMod4#c][i] == 2))
+  );
   R[SumMod4#c] := R[SumMod4#c] + 16;
   I := R;
-  assert {:msg "18.15: The network might not preserve the channel invariant (#37)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
-  assert {:msg "19.15: The network might not preserve the channel invariant (#38)"} I[SumMod4#c] == I[SumMod4#b];
-  assert {:msg "20.16: The network might not preserve the channel invariant (#39)"} (forall i: int :: 
+  assert {:msg "18.15: The network might not preserve the channel invariant (#38)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "19.15: The network might not preserve the channel invariant (#39)"} I[SumMod4#c] == I[SumMod4#b];
+  assert {:msg "20.16: The network might not preserve the channel invariant (#40)"} (forall i: int :: 
     (I[SumMod4#a] <= i) && (i < C[SumMod4#a]) ==> (AT#Mod(M[SumMod4#a][i], 2) == 1)
   );
-  assert {:msg "21.16: The network might not preserve the channel invariant (#40)"} (forall i: int :: 
+  assert {:msg "21.16: The network might not preserve the channel invariant (#41)"} (forall i: int :: 
     (I[SumMod4#b] <= i) && (i < C[SumMod4#b]) ==> (AT#Mod(M[SumMod4#b][i], 2) == 0)
   );
-  assert {:msg "The network might not preserve the channel invariant (#41)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
-  assert {:msg "The network might not preserve the channel invariant (#42)"} I[SumMod4#c] == I[SumMod4#b];
-  assert {:msg "13.3: The network might leave unread tokens on channel a (#43)"} C[SumMod4#a] == R[SumMod4#a];
-  assert {:msg "13.3: The network might leave unread tokens on channel b (#44)"} C[SumMod4#b] == R[SumMod4#b];
-  assert {:msg "13.3: The network might not produce the specified number of tokens on output out (#45)"} C[SumMod4#c] == R[SumMod4#c];
+  assert {:msg "The network might not preserve the channel invariant (#42)"} (2 * I[SumMod4#b]) == I[SumMod4#a];
+  assert {:msg "The network might not preserve the channel invariant (#43)"} I[SumMod4#c] == I[SumMod4#b];
+  assert {:msg "13.3: The network might leave unread tokens on channel a (#44)"} C[SumMod4#a] == R[SumMod4#a];
+  assert {:msg "13.3: The network might leave unread tokens on channel b (#45)"} C[SumMod4#b] == R[SumMod4#b];
+  assert {:msg "13.3: The network might not produce the specified number of tokens on output out (#46)"} C[SumMod4#c] == R[SumMod4#c];
 }
