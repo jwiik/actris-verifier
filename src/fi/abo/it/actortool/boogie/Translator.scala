@@ -194,25 +194,12 @@ class Translator(
        // Assume invariants
        asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(Map.empty)))
      }
-//     avs.allowedStateInv match {
-//       case Some(e) => asgn += B.Assume(e)
-//       case None =>
-//     }
      
      val guards =
        (a.guard match {
          case None => Nil
          case Some(e) => List(transExpr(e)(renamings))
        })
-     
-//     val transitions = avs.schedule match {
-//       case Some(sched) => sched.transitionsOnAction(a.fullName)
-//       case None => Nil
-//     }
-//     val stateGuards = for ((f,t) <- transitions) yield {
-//       (B.This ==@ Boogie.VarExpr(avs.namePrefix+f)) : Boogie.Expr
-//     }
-//     val stateGuard = if (stateGuards.isEmpty) Nil else List(stateGuards.reduceLeft((a,b) => (a || b)))
      
      for (ipat <- a.inputPattern) {
        val cId = ipat.portId
@@ -223,7 +210,6 @@ class Translator(
      }
      
      asgn ++= (for (p <- a.requires) yield {B.Assume(transExpr(p)(renamings)) })
-//     asgn ++= stateGuard map {x => B.Assume(x)}
      asgn ++= guards map {g => B.Assume(g)}
      
      asgn ++= 
@@ -231,14 +217,7 @@ class Translator(
          case None => List(B.Assume(Boogie.BoolLiteral(true)))
          case Some(b) => transStmt( b )(renamings)
        })
-     
-//     asgn ++= 
-//       (transitions match {
-//         case Nil => Nil
-//         case List((f,t)) => List(Boogie.Assign(B.This, Boogie.VarExpr(avs.namePrefix+t)))
-//         case _ => assert(false); Nil
-//       })
-     
+
      asgn ++= (for (q <- a.ensures) yield {
        B.Assert(transExpr(q)(renamings), q.pos, "Action postcondition might not hold")
      })
@@ -322,22 +301,12 @@ class Translator(
       for (inv <- actor.publicActorInvariants) {
         asgn += B.Assume(transExpr(inv.expr)(renamings))
       }
-      
-//      actor.members.find(_.isSchedule) match {
-//        case Some(s) => {
-//          val schedule = s.asInstanceOf[Schedule]
-//          asgn += B.Assume(B.State(nwvs.nwRenamings(inst.id)) ==@ Boogie.VarExpr(actor.fullName+B.Sep+schedule.initState))
-//        }
-//        case None =>
-//      }
+
     }
+    
     for (chi <- nwvs.chInvariants) {
       asgn += BAssert(chi, "Initialization of network '" + nwvs.entity.id + "' might not establish the channel invariant", nwvs.nwRenamings)
     }
-    
-//    for ((subi,renames) <- nwvs.publicSubInvariants) {
-//      asgn += BAssert(subi, "Initialization of network '" + nwvs.entity.id + "' might not establish the sub-actor invariant", renames)
-//    }
     
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
     for (nwi <- nwvs.nwInvariants) {
@@ -495,10 +464,7 @@ class Translator(
     for (chi <- nwvs.chInvariants) {
       asgn += BAssert(chi,"The network might not preserve the channel invariant"  ,nwvs.nwRenamings)
     }
-//    for ((pinv,renames) <- nwvs.publicSubInvariants) {
-//      val msg = "The network might not preserve the  sub-invariant"
-//      asgn += BAssert(pinv, msg, renames)
-//    }
+    
     for (nwi <- nwvs.nwInvariants) {
       asgn ++= Exhalator.visit(nwi,"The network might not preserve the network invariant",nwvs.nwRenamings)
     }
@@ -626,13 +592,6 @@ class Translator(
       }
     }
     
-//    for ((pinv,renames) <- nwvs.publicSubInvariants) {
-//      val msg = 
-//            "Action at " + action.pos + " ('" + action.fullName + "') for actor instance '" + 
-//            instance.id + "' might not preserve the sub-actor invariant"
-//      asgn += BAssert(pinv, msg, renames)
-//    }
-    
     (asgn.toList, firingRuleWithPrio, firingRuleWithoutPrio)
   }
   
@@ -666,9 +625,6 @@ class Translator(
     for (chi <- nwvs.chInvariants) {
       asgn += BAssert(chi, "Channel invariant might be falsified by network input", nwvs.nwRenamings)
     }
-//    for ((pinv,renames) <- nwvs.publicSubInvariants) {
-//      asgn += BAssert(pinv, "Sub-actor invariant might be falsified by input on network '" + nwvs.entity.id + "'" , renames)
-//    }
 
     asgn.toList
   }
@@ -687,8 +643,6 @@ class Translator(
   
   def transExpr(id: String)(implicit renamings: Map[String,Expr]): Boogie.Expr = stmtTranslator.transExpr(Id(id))
   def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = stmtTranslator.transExpr(exp)
-  
-  //def transStmtNoRename(stmt: List[Stmt]): List[Boogie.Stmt] = transStmt(stmt)(Map.empty)
   
   def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = stmtTranslator.transStmt(stmts)
 
