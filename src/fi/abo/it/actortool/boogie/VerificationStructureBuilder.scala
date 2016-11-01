@@ -19,28 +19,21 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   }
   
   protected def buildPriorityMap(actor: BasicActor) = {
-    val orderedActions = new ListBuffer[(Action,List[Action])]()
+    var orderedActions = actor.actions filter { a => !a.init } map {a => (a,Nil: List[Action])} toMap
+    
     actor.priority match {
       case Some(pr) => {
-        for (name <- pr.order) {
+        for ((a1,a2) <- pr.orders) {
           // Assuming valid label
-          val act = actor.actions.find{ a => a.fullName == name }.get
-          orderedActions += (act -> orderedActions.toList.map {_._1})
+          val act1 = actor.actions.find{ a => a.fullName == a1.id }.get
+          val act2 = actor.actions.find{ a => a.fullName == a2.id }.get
+          val current = act1 :: orderedActions(act2)
+          orderedActions = orderedActions + (act2 -> current)
         }
       }
       case None =>
     }
-    
-    val unprioritizedActions = new ListBuffer[(Action,List[Action])]()
-    
-    for (act <- actor.actions) {
-      if (! (orderedActions exists {case (a,_) => a == act})) {
-        // This action does not appear in ordered actions
-        unprioritizedActions += (act -> List.empty)
-      }
-    }
-    
-    unprioritizedActions.toList ::: orderedActions.toList
+    orderedActions
   }
   
 }
@@ -208,12 +201,12 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
       }
       
       val actionData = (actor.actions map { a => (a,collectEntityData(e,a,targetMap)) }).toMap
-      val priorityList = actor match {
+      val priorityMap = actor match {
         case ba: BasicActor => buildPriorityMap(ba)
-        case _ => List.empty[(Action,List[Action])]
+        case _ => Map.empty[Action,List[Action]]
       }
       
-      val entityData = new EntityData(Nil,renameBuffer.toMap,variables.toList,actionData, priorityList)
+      val entityData = new EntityData(Nil,renameBuffer.toMap,variables.toList,actionData, priorityMap)
       //entitySpecificVariables += variables.toList
       //entitySpecificRenames += renameBuffer.toMap
       entityDataBuffer += ((e,entityData))
@@ -307,7 +300,12 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
       }
     }).flatten.toMap
     
-    new ActionData(vars.toList, patternVarRenamings, replacements.toMap)
+    val assignedVars = action.body flatMap { a => a match {
+      case Assign(x,_) => List(x)
+      case _ => Nil
+    }}
+    
+    new ActionData(vars.toList, patternVarRenamings, replacements.toMap, assignedVars.toSet)
 
   }
   

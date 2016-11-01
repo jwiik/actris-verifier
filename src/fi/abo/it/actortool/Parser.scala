@@ -37,7 +37,7 @@ class Parser extends StandardTokenParsers {
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
-                       "free", "primary", "error", "recovery", "next", "public"
+                       "free", "primary", "error", "recovery", "next", "last", "prev", "public", "havoc"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -118,16 +118,18 @@ class Parser extends StandardTokenParsers {
   //def schedType = "fsm" | "regexp" 
     
   def priorityBlock: Parser[Priority] = 
-    positioned(("priority" ~> repsep(ident,">") <~ "end") ^^ {
+    positioned(("priority" ~> repsep(prioOrder,";") <~ "end") ^^ {
       case actions => Priority(actions)
     })
   
+  def prioOrder = (ident ~ (">" ~> ident)) ^^ { case s1 ~ s2  => (Id(s1),Id(s2)) }
+    
   def entityDecl = positioned(opt(annotation) ~ ident ~ ("=" ~> (ident ~ paramList)) ^^ {
     case None ~ name ~ (actorId ~ params) => Instance(name,actorId,params,Nil)
     case Some(annot) ~ name ~ (actorId ~ params) => Instance(name,actorId,params,List(annot))
   })
   
-  def connection = positioned(opt(annotation) ~ ident ~ (":" ~> portRef ~ ("-->" ~> portRef)) ^^ {
+  def connection = positioned(opt(annotation) ~ opt(ident <~ ":") ~ (portRef ~ ("-->" ~> portRef)) ^^ {
     case None ~ id ~ (from ~ to) => Connection(id,from,to,Nil)
     case Some(annot) ~ id ~ (from ~ to) => Connection(id,from,to,List(annot))
   })
@@ -142,7 +144,7 @@ class Parser extends StandardTokenParsers {
   
   def actorInvDecl = positioned((opt("free") ~ opt("public") ~ "invariant" ~ expression) ^^ {
     case free ~ public ~ _ ~ expr => {
-      ActorInvariant(Assertion(expr, free.isDefined),false, public.isDefined)
+      ActorInvariant(Assertion(expr, free.isDefined),false, /*public.isDefined*/ true)
     }
   })
   
@@ -164,12 +166,12 @@ class Parser extends StandardTokenParsers {
         repsep(inputPattern,",") ~ 
         ("==>" ~> repsep(outputPattern,",")) ~
         ("guard" ~> expression ?) ~
-        ("var" ~> repsep(varDecl,",") ?) ~
+        //("var" ~> repsep(varDecl,",") ?) ~
         ("requires" ~> expression *) ~
         ("ensures" ~> expression *) ~
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
-          case (id ~ cl ~ label ~ inputs ~ outputs ~ guard ~ vars ~ requires ~ ensures  ~ stmt) => 
+          case (id ~ cl ~ label ~ inputs ~ outputs ~ guard ~ /*vars ~*/ requires ~ ensures  ~ stmtOpt) => 
             val init = label == "initialize"
             val actClass = cl match {
               case Some("primary") => ActionClass.Primary
@@ -180,7 +182,11 @@ class Parser extends StandardTokenParsers {
                 // Should not happen
                 throw new RuntimeException("Invalid keyword: " + x)
             }
-            Action(id,actClass,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
+            val stmt = stmtOpt match {
+              case Some(s) => s
+              case None => Nil
+            }
+            Action(id,actClass,init,inputs,outputs,guard,requires,ensures,/*vars.getOrElse(Nil)*/ Nil,stmt)
     }
   )
   
@@ -347,7 +353,7 @@ class Parser extends StandardTokenParsers {
     "false" ^^^ BoolLiteral(false)
   )
   
-  def marker = positioned( ("@" | "next") ^^ { case n => SpecialMarker(n) } )
+  def marker = positioned( ("@" | "next" | "last" | "prev") ^^ { case n => SpecialMarker(n) } )
     
   def identifier = positioned(ident ^^ Id)
   
@@ -356,11 +362,13 @@ class Parser extends StandardTokenParsers {
   def statement: Parser[Stmt] = positioned(
     "assert" ~> expression <~ Semi ^^ Assert |
     "assume" ~> expression <~ Semi ^^ Assume |
+    "havoc" ~> repsep(ident,",") <~ Semi ^^ {case ids => Havoc(ids map { Id(_) })} |
     identifier ~ opt("[" ~> expression <~ "]") ~ (":=" ~> expression) <~ Semi ^^ {
       case (id ~ None ~ exp) => Assign(id,exp)
       case (id ~ Some(idx) ~ exp) => IndexAssign(id,idx,exp)
     }
   )
+  
   
   def typeName = primType | compositeType 
   

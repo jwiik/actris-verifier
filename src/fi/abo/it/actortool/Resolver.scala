@@ -225,9 +225,9 @@ object Resolver {
                   case None => // OK
                 }
                 body match {
-                  case Some(body) => 
+                  case Nil =>
+                  case x :: _ => 
                     return Errors(List((ac.pos,"Network actions are not allowed to have bodies")))
-                  case None => // OK
                 }
                 vars match {
                   case x::rest => 
@@ -338,10 +338,7 @@ object Resolver {
     val postCtx = new ActionContext(action,actorCtx,vars)
     for (post <- action.ensures) resolveExpr(postCtx, post, BoolType)
     
-    action.body match {
-      case Some(stmt) => resolveStmt(ctx,stmt)
-      case None =>
-    }
+    resolveStmt(ctx,action.body)
   }
   
   def resolveEntities(ctx: ActorContext, e: Entities): Map[String,Instance] = {
@@ -468,14 +465,17 @@ object Resolver {
     states.toSet
   }
   
-  def resolvePriority(ctx: Context, actions: List[Action], prios: Priority) = {
-    val duplicates = prios.order.diff(prios.order.distinct).distinct
-    if (!duplicates.isEmpty) {
-      ctx.error(prios.pos, "Labels appear more than once in priority order " + (duplicates mkString ", "))
-    }
-    for (p <- prios.order) {
-      if (!(actions.exists { a => a.fullName == p })) {
-        ctx.error(prios.pos, "No action with label " + p)
+  def resolvePriority(ctx: Context, actions: List[Action], priority: Priority) = {
+    
+    for ((a1,a2) <- priority.orders) {
+      if (a1.id == a2.id) {
+        ctx.error(a1.pos, "Labels appear more than once in priority order: " + a1.id + ", " + a2.id )
+      }
+      if (!(actions.exists { a => a.fullName == a1.id })) {
+        ctx.error(a1.pos, "No action with label " + a1.id)
+      }
+      if (!(actions.exists { a => a.fullName == a2.id })) {
+        ctx.error(a2.pos, "No action with label " + a2.id)
       }
     }
   }
@@ -812,17 +812,17 @@ object Resolver {
     }
     
     // It is unsound to use tot on input channels. Check for such cases and fail.
-    if (totFuncs contains fa.name) { 
-      ctx.lookupChannel(param.asInstanceOf[Id].id) match {
-        case Some(c) => 
-          if (c.isInput) ctx.error(fa.pos, "Function '" + fa.name + "' cannot be used on input channels")
-        case None => 
-      }
-      ctx.lookupInport(param.asInstanceOf[Id].id) match {
-        case Some(c) => ctx.error(fa.pos, "Function '" + fa.name + "' cannot be used on input channels")
-        case None => 
-      }
-    }
+//    if (totFuncs contains fa.name) { 
+//      ctx.lookupChannel(param.asInstanceOf[Id].id) match {
+//        case Some(c) => 
+//          if (c.isInput) ctx.error(fa.pos, "Function '" + fa.name + "' cannot be used on input channels")
+//        case None => 
+//      }
+//      ctx.lookupInport(param.asInstanceOf[Id].id) match {
+//        case Some(c) => ctx.error(fa.pos, "Function '" + fa.name + "' cannot be used on input channels")
+//        case None => 
+//      }
+//    }
     
     
     

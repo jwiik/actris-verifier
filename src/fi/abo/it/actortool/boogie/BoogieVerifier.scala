@@ -63,7 +63,7 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
     var previousLine = null: String
     val boogieOutput: ListBuffer[String] = new ListBuffer()
     while (line != null) {
-      if (!(line.startsWith("[") && line.endsWith("]"))) {
+      if (!(line.startsWith("[smoke]"))) {
         if (previousLine != null) println
         Console.out.print(line)
         Console.out.flush
@@ -82,8 +82,8 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
           case p: Boogie.Proc => {
             var found = false
             for (line <- boogieOutput) {
-              if (line.startsWith("[") && line.endsWith("]")) {
-                if (line.substring(1, line.length-1) == p.id) found = true
+              if (line.startsWith("[smoke]")) {
+                if (line.substring(7, line.indexOf(" ")) == p.id) found = true
               }
             }
             if (!found) {

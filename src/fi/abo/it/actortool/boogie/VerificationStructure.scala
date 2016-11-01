@@ -16,7 +16,7 @@ class ActorVerificationStructure(
     val actorVarDecls: List[BDecl],
     val actorParamDecls: List[BDecl],
     val uniquenessCondition: Boogie.Expr,
-    val priorityList: List[(Action,List[Action])],
+    val priorityMap: Map[Action,List[Action]],
     val actorStates: List[String],
     val actorBoogieStates: List[Boogie.Const],
     val allowedStateInv: Option[Boogie.Expr],
@@ -58,9 +58,10 @@ class EntityData(
     val renamings: Map[String,Expr], 
     val variables: List[String],
     val actionData: Map[Action,ActionData],
-    val priorities: List[(Action,List[Action])])
+    val priorities: Map[Action,List[Action]])
     
 class ActionData(
     val declarations: List[BDecl], 
     val renamings: Map[String,Id], 
-    val replacements: Map[Id,Expr])
+    val replacements: Map[Id,Expr],
+    val assignedVariables: Set[Id])

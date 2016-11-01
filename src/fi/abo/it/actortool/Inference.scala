@@ -17,7 +17,7 @@ object Inferencer {
   }
   
   final val Modules = List(StaticClass,BulletInvariants,NWPreToInvariant,FTProperties).map(m => (m.name,m)).toMap
-  private val DefaultModules = Set(StaticClass,BulletInvariants,NWPreToInvariant)
+  private val DefaultModules = Set(StaticClass,BulletInvariants/*,NWPreToInvariant*/)
       
   def infer(program: List[TopDecl], modules: List[String], ftMode: Boolean): InferenceOutcome = {
     val inferenceModules = modules match {

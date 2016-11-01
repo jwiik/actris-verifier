@@ -79,7 +79,7 @@ object ActorTool {
     var aFTMode = false
     var aSmokeTest = false
     var aReplaceMaps = false
-    var aBoogieTimeout = 20
+    var aBoogieTimeout = 60
     
     lazy val help = {
       "actortool [option] <filename>+\n"

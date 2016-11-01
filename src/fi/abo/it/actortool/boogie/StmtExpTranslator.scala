@@ -205,6 +205,8 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         mark match {
           case "@" => B.I(accessorName)
           case "next" => B.R(accessorName)
+          case "prev" => B.R(accessorName)-B.Int(1)
+          case "last" => B.C(accessorName)-B.Int(1)
         }
       }
       case Id(id) => renamings.get(id) match {

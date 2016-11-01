@@ -152,7 +152,7 @@ sealed case class Action(
     val inputPattern: List[InputPattern], val outputPattern: List[OutputPattern],
     val guard: Option[Expr], 
     val requires: List[Expr], val ensures: List[Expr], variables: List[Declaration],
-    val body: Option[List[Stmt]]) extends Member {
+    val body: List[Stmt]) extends Member {
   
   override def isAction = true
   
@@ -170,7 +170,7 @@ sealed case class Action(
   
   def portOutputPattern(portId: String) = outputPattern.find(p => p.portId == portId)
   
-  val fullName = label match { case Some(l) => l; case None => "anon$"+Count.next}
+  val fullName = label.getOrElse("anon$"+Count.next)
 }
 
 sealed case class Declaration(val id: String, val typ: Type, 
@@ -252,9 +252,7 @@ sealed case class Schedule(val initState: String, val transitions: List[Transiti
   }
 }
 
-sealed case class Priority(val order: List[String]) extends Member {
-  
-}
+sealed case class Priority(val orders: List[(Id,Id)]) extends Member
 
 sealed case class Instance(
     val id: String, val actorId: String, val arguments: List[Expr], 
@@ -264,10 +262,12 @@ sealed case class Instance(
 }
 
 sealed case class Connection(
-    val id: String, val from: PortRef, val to: PortRef, 
+    val label: Option[String], val from: PortRef, val to: PortRef, 
     override val annotations: List[Annotation]) extends ASTNode {
   
   var typ: Type = null
+  
+  val id = label.getOrElse("anon$"+Count.next)
   
   def isInput = from match {
     case PortRef(None,_) => true
