@@ -397,15 +397,8 @@ class Translator(
           
           val higherPrioFiringRules = higherPrioActions map {a => firingRules(a) }
           
-          val (subActorStmt,_,_) = 
-            transSubActionExecution(inst, ca, nwvs, higherPrioFiringRules)
-          val stmt = 
-            (nwvs.entityDecls map { _.decl }) :::
-            (nwvs.subactorVarDecls  map { _.decl }):::
-            (nwvs.uniquenessConditions map {B.Assume(_)}) :::
-            (nwvs.entityData(inst).actionData(ca).declarations  map { _.decl }) :::
-            subActorStmt
-          boogieProcs += createBoogieProc(Uniquifier.get(procName),stmt)
+          val subActorStmt = transSubActionExecution(inst, ca, nwvs, firingRules(ca), higherPrioFiringRules)
+          boogieProcs += createBoogieProc(Uniquifier.get(procName),subActorStmt)
         }
       }
       nwFiringRules ++= firingRules.values
@@ -520,54 +513,31 @@ class Translator(
       instance: Instance, 
       action: Action, 
       nwvs: NetworkVerificationStructure,
-      higherPriorityGuards: List[Boogie.Expr]): (List[Boogie.Stmt],Boogie.Expr,Boogie.Expr) = {
+      firingRule: Boogie.Expr,
+      higherPriorityGuards: List[Boogie.Expr]): List[Boogie.Stmt] = {
     
     val actor = instance.actor
-    val asgn = new ListBuffer[Boogie.Stmt]()    
+    val asgn = new ListBuffer[Boogie.Stmt]()
+    
+    asgn ++= nwvs.entityDecls map { _.decl }
+    asgn ++= nwvs.subactorVarDecls  map { _.decl }
+    asgn ++= nwvs.uniquenessConditions map {B.Assume(_)}
+    asgn ++= nwvs.entityData(instance).actionData(action).declarations  map { _.decl }
+    
     asgn ++= nwvs.basicAssumes
     asgn ++= (for (chi <- nwvs.chInvariants) yield BAssume(chi,nwvs.nwRenamings))  // Assume channel invariants
     
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
       asgn += BAssume(pinv, renames)
     }
-        
-    val firingCondsBuffer = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
-
-    for (ipat <- action.inputPattern) {
-      val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
-      firingCondsBuffer += B.Int(ipat.numConsumed) lte B.Credit(cId)
-    }
     
     val renamings = nwvs.subActionRenamings(instance, action)
     
     val replacementMap = nwvs.entityData(instance).actionData(action).replacements
     
-    val renamedGuard = action.guard match {
-      case None =>
-      case Some(g) =>
-        val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
-        val transGuard = transExpr(renamedGuard)(renamings)
-        firingCondsBuffer += transGuard
-    }
     
-    val firingCondsWithoutPrio = firingCondsBuffer.toList
-    val firingCondsWithPrio = (higherPriorityGuards map { x: Boogie.Expr => Boogie.UnaryExpr("!",x) }) ::: firingCondsWithoutPrio
     
-    val firingRuleWithPrio = {
-      if (!firingCondsWithPrio.isEmpty) {
-        firingCondsWithPrio.reduceLeft((a,b) => a && b) 
-      }
-      else Boogie.BoolLiteral(true)
-    }
-    
-    val firingRuleWithoutPrio = {
-      if (!firingCondsWithoutPrio.isEmpty) {
-        firingCondsWithoutPrio.reduceLeft((a,b) => a && b) 
-      }
-      else Boogie.BoolLiteral(true)
-    }
-    
-    asgn += B.Assume(firingRuleWithPrio)
+    asgn += B.Assume(firingRule)
     
     for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
       asgn += B.Assume(transExpr(e.expr)(renamings))
@@ -634,7 +604,7 @@ class Translator(
       }
     }
     
-    (asgn.toList, firingRuleWithPrio, firingRuleWithoutPrio)
+    asgn.toList
   }
   
   

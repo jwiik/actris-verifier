@@ -5,6 +5,7 @@ import org.scalatest.BeforeAndAfter
 import java.io.File
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import scala.sys.process._
 
 @RunWith(classOf[JUnitRunner])
 class ActorToolTestSuite extends FunSuite {
@@ -40,6 +41,17 @@ class ActorToolTestSuite extends FunSuite {
         println("Running " + file.getName)
         ActorTool.verify(createParams(file.getAbsolutePath))
       }
+    }
+    
+    // Try to cleanup possible non-terminated z3 instances
+    try {
+      for (s <- (Process("ps x") #| Process("grep -e z3.exe") #| Process("grep -v grep") lineStream)) {
+        val pid = s.substring(0, s.indexOf(" "))
+        Process("kill -9 " + pid)!
+      }
+    }
+    catch {
+      case e: RuntimeException =>
     }
   }
   
