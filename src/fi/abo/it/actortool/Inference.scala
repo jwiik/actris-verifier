@@ -17,7 +17,7 @@ object Inferencer {
   }
   
   final val Modules = List(StaticClass,BulletInvariants,NWPreToInvariant,FTProperties).map(m => (m.name,m)).toMap
-  private val DefaultModules = Set(StaticClass,BulletInvariants/*,NWPreToInvariant*/)
+  private val DefaultModules = Set(StaticClass,BulletInvariants,NWPreToInvariant)
       
   def infer(program: List[TopDecl], modules: List[String], ftMode: Boolean): InferenceOutcome = {
     val inferenceModules = modules match {
@@ -39,38 +39,49 @@ object Inferencer {
     override val name = "nw-precondition"
     val quantVar = Id("idx$"); quantVar.typ = IntType(32)
     
-    object IndexReplacer extends ASTReplacingVisitor[IndexAccessor,IndexAccessor] {
-      override def visitExpr(expr: Expr)(implicit map: Map[IndexAccessor,IndexAccessor]): Expr = {
-        expr match {
-          case IndexAccessor(ch,index) => index match {
-            case SpecialMarker("@") => return IndexAccessor(ch,quantVar)
-            case _ => return super.visitExpr(expr)
-          }
-          case _ => return super.visitExpr(expr)
-        }
+    override def network(n: Network)(implicit ctx: Context): Unit = {
+      val disjuncts = n.actions flatMap { action => {
+        if (action.requires isEmpty) Nil
+        else List(action.requires reduceLeft { (a,b) => And(a,b) })
+      }}
+      if (!disjuncts.isEmpty) {
+        val invariant = disjuncts reduceLeft { (a,b) => Or(a,b) }
+        n.addChannelInvariant(invariant, true)
       }
     }
     
-    override def network(n: Network)(implicit ctx: Context): Unit = {
-      if (n.inports.size != 1) return
-      val inport = n.inports(0)
-      
-      val onlyOnes = n.actions.forall { a => a.inputPattern.forall { ip => ip.vars.size == 1 } }
-      if (!onlyOnes) return
-      
-      val disjuncts = for (action <- n.actions) yield {
-        val pres = for (pre <- action.requires) yield {
-          val bounds = And(AtMost(Elements.str(inport.id),quantVar),Less(quantVar,Elements.tot0(inport.id)))
-          val quantified = IndexReplacer.visitExpr(pre)(Map.empty)
-          Forall(List(quantVar), Implies(bounds,quantified)): Expr
-        }
-        pres.foldLeft(BoolLiteral(true): Expr)((a,b) => And(a,b))
-      }
-      if (!disjuncts.isEmpty) {
-        val disjunction = disjuncts.reduceLeft((a,b) => Or(a,b))
-        n.addChannelInvariant(disjunction, false)
-      }
-    }
+//    object IndexReplacer extends ASTReplacingVisitor[IndexAccessor,IndexAccessor] {
+//      override def visitExpr(expr: Expr)(implicit map: Map[IndexAccessor,IndexAccessor]): Expr = {
+//        expr match {
+//          case IndexAccessor(ch,index) => index match {
+//            case SpecialMarker("@") => return IndexAccessor(ch,quantVar)
+//            case _ => return super.visitExpr(expr)
+//          }
+//          case _ => return super.visitExpr(expr)
+//        }
+//      }
+//    }
+//    
+//    override def network(n: Network)(implicit ctx: Context): Unit = {
+//      if (n.inports.size != 1) return
+//      val inport = n.inports(0)
+//      
+//      val onlyOnes = n.actions.forall { a => a.inputPattern.forall { ip => ip.vars.size == 1 } }
+//      if (!onlyOnes) return
+//      
+//      val disjuncts = for (action <- n.actions) yield {
+//        val pres = for (pre <- action.requires) yield {
+//          val bounds = And(AtMost(Elements.str(inport.id),quantVar),Less(quantVar,Elements.tot0(inport.id)))
+//          val quantified = IndexReplacer.visitExpr(pre)(Map.empty)
+//          Forall(List(quantVar), Implies(bounds,quantified)): Expr
+//        }
+//        pres.foldLeft(BoolLiteral(true): Expr)((a,b) => And(a,b))
+//      }
+//      if (!disjuncts.isEmpty) {
+//        val disjunction = disjuncts.reduceLeft((a,b) => Or(a,b))
+//        n.addChannelInvariant(disjunction, false)
+//      }
+//    }
     
   }
   
@@ -235,7 +246,6 @@ object Inferencer {
         for (op <- e.actor.outports) {
           
           val outRate = action.portOutputCount(op.id)
-          
           val outChan = n.structure.get.outgoingConnections(e.id, op.id).get
             
           for (ip <- e.actor.inports) {

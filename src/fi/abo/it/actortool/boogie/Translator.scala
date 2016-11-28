@@ -59,7 +59,7 @@ class Translator(
   
   def translateActor(avs: ActorVerificationStructure): List[Boogie.Decl] = {    
     val decls = new ListBuffer[Boogie.Decl]()
-    val actionGuards = collection.mutable.Map[Action,List[Boogie.Expr]]()
+    val actionFiringRules = collection.mutable.Map[Action,(Boogie.Expr,Boogie.Expr)]()
     val actionInpatDecls = collection.mutable.Map[Action,List[BDecl]]()
     val actionRenamings = collection.mutable.Map[Action,Map[String,Id]]()
     var allInpatDecls = Set.empty[BDecl]
@@ -68,9 +68,9 @@ class Translator(
     
     for (a <- avs.actions) {
       if (!a.init) {
-        val (guards,inpatDecls,renamings) = translateGuards(a, avs)
+        val (patterns,guards,inpatDecls,renamings) = translateGuards(a, avs)
         allInpatDecls = allInpatDecls ++ inpatDecls
-        actionGuards += (a -> guards)
+        actionFiringRules += (a -> (patterns,guards))
         actionInpatDecls += (a -> inpatDecls)
         actionRenamings += (a -> renamings)
       }
@@ -78,30 +78,37 @@ class Translator(
     
     for (a <- avs.actions) {
       if (!a.init) {
-        val higherPrioGuards = avs.priorityMap(a) flatMap { h => actionGuards(h) }
-        decls ++= translateActorAction(a, avs, actionInpatDecls(a), actionRenamings(a), actionGuards(a), higherPrioGuards)
+        val higherPrioGuards = avs.priorityMap(a) map { h => actionFiringRules(h) }
+        decls ++= translateActorAction(a, avs, actionInpatDecls(a), actionRenamings(a), actionFiringRules(a), higherPrioGuards)
       }
     }
     
     val allGuards = new ListBuffer[Boogie.Expr]()
+    val supersetTests = new ListBuffer[Boogie.Expr]()
     
     for ((action,higherPrioActions) <- avs.priorityMap) {
-      val ownGuards = actionGuards(action)
-      val higherPrioGuards = higherPrioActions flatMap { a => actionGuards(a) }
+      val (ownPattern,ownGuard) = actionFiringRules(action)
+      val higherPrioGuards = higherPrioActions map { a => actionFiringRules(a) }
+
+      val andedGuard = ownPattern && ownGuard
       
-      val andedGuard =
-        if (!ownGuards.isEmpty) ownGuards.reduceLeft((a,b) => (a && b))
-        else B.Bool(true)
+      val timeDepTests = for ((p,g) <- higherPrioGuards) yield {
+        (ownPattern ==> p) ==> Boogie.UnaryExpr("!", g && ownGuard)
+      }
+      supersetTests ++= timeDepTests
       
+      val higherPrioFiringRules = higherPrioGuards map { case (a,b) => a && b }
       val completeGuard = 
-        if (!higherPrioGuards.isEmpty) 
-          Boogie.UnaryExpr("!",higherPrioGuards.reduceLeft((a,b) => (a && b))) && andedGuard 
-        else andedGuard
+//        if (!higherPrioGuards.isEmpty) 
+//          Boogie.UnaryExpr("!",higherPrioFiringRules.reduceLeft((a,b) => (a && b))) && andedGuard 
+//        else 
+          andedGuard
       allGuards += completeGuard
+      //allGuards += andedGuard
     }
     
     if (!skipMutualExclusivenessCheck) {
-      createMutualExclusivenessCheck(avs,allGuards.toList,allInpatDecls) match {
+      createMutualExclusivenessCheck(avs,allGuards.toList,supersetTests.toList,allInpatDecls) match {
         case Some(proc) => decls += proc
         case None =>
       }
@@ -111,18 +118,20 @@ class Translator(
   }
   
   def createMutualExclusivenessCheck(
-      avs: ActorVerificationStructure, guards: List[Boogie.Expr], inpatDecls: Set[BDecl]): Option[Boogie.Proc] = {
+      avs: ActorVerificationStructure, guards: List[Boogie.Expr], supersetTest: List[Boogie.Expr], inpatDecls: Set[BDecl]): Option[Boogie.Proc] = {
     
     val nonInitActions = avs.actions.filter { a => !a.init }
     if (nonInitActions.size > 1) {
+      
+      val asserts = supersetTest map { t => B.Assert(t,avs.entity.pos,"The actor might have time-dependent behaviour") }
       
       val decls = 
         (avs.channelDecls map { _.decl }) ::: 
         (avs.actorVarDecls map { _.decl }) ::: 
         (inpatDecls map { _.decl }).toList ::: 
         List(B.Assume(avs.uniquenessCondition))
-        
-      val stmt = decls :::createMEAssertionsRec(avs.entity,guards)
+      
+      val stmt = decls /*::: asserts*/ ::: createMEAssertionsRec(avs.entity,guards)
       Some(createBoogieProc(Uniquifier.get(avs.namePrefix+B.Sep+"GuardWD"), stmt))
     }
     else None
@@ -179,10 +188,10 @@ class Translator(
     createBoogieProc(Uniquifier.get(avs.namePrefix+"init"),asgn.toList)
   }
   
-  def translateGuards(a: Action, avs: ActorVerificationStructure): (List[Boogie.Expr],List[BDecl],Map[String,Id]) = {
+  def translateGuards(a: Action, avs: ActorVerificationStructure): (Boogie.Expr,Boogie.Expr,List[BDecl],Map[String,Id]) = {
     val renamingsBuffer = new ListBuffer[(String,Id)]
     val inpatDeclBuffer = new ListBuffer[BDecl]
-    val readTokensRules = new ListBuffer[Boogie.Expr]
+    val patterns = new ListBuffer[Boogie.Expr]
     for (ipat <- a.inputPattern) {
       for ((v,i) <- ipat.vars.zipWithIndex) {
         val name = ipat.portId+B.Sep+i.toString
@@ -190,7 +199,7 @@ class Translator(
         val lVar = B.Local(name, v.typ)
         inpatDeclBuffer += BDecl(name,lVar)
       }
-      readTokensRules += B.Int(ipat.vars.size) <= B.C(ipat.portId)-B.R(ipat.portId)
+      patterns += B.Int(ipat.vars.size) <= B.C(ipat.portId)-B.R(ipat.portId)
     }
     val renamings = renamingsBuffer.toMap
     val guards =
@@ -198,7 +207,9 @@ class Translator(
          case None => Nil
          case Some(e) => List(transExpr(e)(renamings))
        })
-    (readTokensRules.toList:::guards, inpatDeclBuffer.toList, renamings)
+    val pattern = if (patterns isEmpty) B.Bool(true) else patterns.reduceLeft((a,b) => a && b)
+    val guard = if (guards isEmpty) B.Bool(true) else guards.reduceLeft((a,b) => a && b)
+    (pattern, guard, inpatDeclBuffer.toList, renamings)
   }
   
   def translateActorAction(
@@ -206,8 +217,8 @@ class Translator(
       avs: ActorVerificationStructure,
       inpatDecls: List[BDecl],
       renamings: Map[String,Id], 
-      guards: List[Boogie.Expr],
-      higherPrioGuards: List[Boogie.Expr]): List[Boogie.Decl] = {
+      guards: (Boogie.Expr,Boogie.Expr),
+      higherPrioGuards: List[(Boogie.Expr,Boogie.Expr)]): List[Boogie.Decl] = {
      
     val asgn = new ListBuffer[Boogie.Stmt]
     
@@ -241,7 +252,7 @@ class Translator(
      
      asgn ++= (for (p <- a.requires) yield {B.Assume(transExpr(p)(renamings)) })
      
-     asgn ++= higherPrioGuards map { g => B.Assume(Boogie.UnaryExpr("!",g)) }
+     asgn ++= higherPrioGuards map { case (pat,guard) => B.Assume(Boogie.UnaryExpr("!", pat && guard)) }
      
      asgn ++= guards map {g => B.Assume(g)}
      
@@ -334,7 +345,8 @@ class Translator(
     }
     
     for (chi <- nwvs.chInvariants) {
-      asgn += BAssert(chi, "Initialization of network '" + nwvs.entity.id + "' might not establish the channel invariant", nwvs.nwRenamings)
+      if (!chi.assertion.free)
+        asgn += BAssert(chi, "Initialization of network '" + nwvs.entity.id + "' might not establish the channel invariant", nwvs.nwRenamings)
     }
     
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
@@ -615,9 +627,9 @@ class Translator(
     asgn ++= nwvs.subactorVarDecls  map { _.decl }
     asgn ++= (nwvs.uniquenessConditions map { B.Assume(_) })
     asgn ++= nwvs.basicAssumes
-    asgn += B.Local("x", B.type2BType(IntType(32)))
+    //asgn += B.Local("x", B.type2BType(IntType(32)))
     
-    //asgn += B.Assume(B.C(transExpr(pattern.portId)(nwvs.nwRenamings)) < B.Int(pattern.vars.size))
+    asgn += B.Assume(B.C(transExpr(pattern.portId)(nwvs.nwRenamings)) - B.I(transExpr(pattern.portId)(nwvs.nwRenamings)) < B.Int(pattern.vars.size))
      
     for (chi <- nwvs.chInvariants) {
       asgn += BAssume(chi, nwvs.nwRenamings)
@@ -626,10 +638,10 @@ class Translator(
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
       asgn += BAssume(pinv, renames)
     }
-    asgn += B.Assume(B.Int(0) <= Boogie.VarExpr("x"))
+    //asgn += B.Assume(B.Int(0) <= B.Int(1))
     asgn += Boogie.Assign(
         B.C(transExpr(pattern.portId)(nwvs.nwRenamings)),
-        B.C(transExpr(pattern.portId)(nwvs.nwRenamings)) + Boogie.VarExpr("x"))
+        B.C(transExpr(pattern.portId)(nwvs.nwRenamings)) + B.Int(1))
         
     for (r <- action.requires) {
       asgn += B.Assume(transExpr(r)(nwvs.nwRenamings))
