@@ -11,7 +11,6 @@ var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
-var St: [Actor]State;
 
 const unique this#: Actor;
 type List a = [int]a;
@@ -24,7 +23,7 @@ function AT#Min(x:int, y: int): int { if x <= y then x else y }
 // ---------------------------------------------------------------
 
 procedure Route#init#0()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var in1: Chan (int);
   var in2: Chan (int);
@@ -37,7 +36,7 @@ procedure Route#init#0()
   assume C[out2] == 0;
 }
 procedure Route#a#1()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var in1: Chan (int);
   var in2: Chan (int);
@@ -56,7 +55,7 @@ procedure Route#a#1()
   C[out2] := C[out2] + 1;
 }
 procedure Route#b#2()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var in1: Chan (int);
   var in2: Chan (int);
@@ -70,12 +69,13 @@ procedure Route#b#2()
   assume 0 <= C[out2];
   in2#0 := M[in2][R[in2]];
   R[in2] := R[in2] + 1;
+  assume !(1 <= (C[in1] - R[in1]));
   assume true;
   M[out1][C[out1]] := in2#0;
   C[out1] := C[out1] + 1;
 }
 procedure Route##GuardWD#3()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var in1: Chan (int);
   var in2: Chan (int);
@@ -87,7 +87,7 @@ procedure Route##GuardWD#3()
   assert {:msg "1.1: The actions of actor 'Route' might not have mutually exclusive guards (#0)"} !((1 <= (C[in1] - R[in1])) && (!(1 <= (C[in1] - R[in1]))) && (1 <= (C[in2] - R[in2])));
 }
 procedure Repeat#init#4()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var in: Chan (int);
   var out: Chan (int);
@@ -100,7 +100,7 @@ procedure Repeat#init#4()
   );
 }
 procedure Repeat#anon$0#5()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var in: Chan (int);
   var out: Chan (int);
@@ -123,7 +123,7 @@ procedure Repeat#anon$0#5()
   );
 }
 procedure Net#init#6()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rou: Actor;
   var Net#rep: Actor;
@@ -169,7 +169,7 @@ procedure Net#init#6()
   assert {:msg "28.5: The initialization might produce unspecified tokens on channel d (#12)"} (C[Net#d] - R[Net#d]) == 0;
 }
 procedure Net##Route#a#7()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rou: Actor;
   var Net#rep: Actor;
@@ -212,7 +212,7 @@ procedure Net##Route#a#7()
   assert {:msg "Action at 2.3 ('a') for actor instance 'rou' might not preserve the channel invariant (#16)"} true;
 }
 procedure Net##Route#b#8()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rou: Actor;
   var Net#rep: Actor;
@@ -255,7 +255,7 @@ procedure Net##Route#b#8()
   assert {:msg "Action at 3.3 ('b') for actor instance 'rou' might not preserve the channel invariant (#20)"} true;
 }
 procedure Net##Repeat#anon$0#9()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rou: Actor;
   var Net#rep: Actor;
@@ -306,7 +306,7 @@ procedure Net##Repeat#anon$0#9()
   assert {:msg "Action at 8.3 ('anon$0') for actor instance 'rep' might not preserve the channel invariant (#24)"} true;
 }
 procedure Net#entry()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rou: Actor;
   var Net#rep: Actor;
@@ -346,7 +346,7 @@ procedure Net#entry()
   assert {:msg "12.1: Sub-actors in the network might fire without network input. This is not permitted. (#27)"} !(1 <= (C[Net#b] - R[Net#b]));
 }
 procedure Net#anon$1#input#in#10()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rou: Actor;
   var Net#rep: Actor;
@@ -385,7 +385,7 @@ procedure Net#anon$1#input#in#10()
   assert {:msg "Channel invariant might be falsified by network input (#31)"} true;
 }
 procedure Net#anon$1#exit#11()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rou: Actor;
   var Net#rep: Actor;

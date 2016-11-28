@@ -11,7 +11,6 @@ var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
-var St: [Actor]State;
 
 const unique this#: Actor;
 type List a = [int]a;
@@ -30,7 +29,7 @@ axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
 // ---------------------------------------------------------------
 
 procedure Repeater#init#0()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var in: Chan (int);
   var out: Chan (int);
@@ -46,7 +45,7 @@ procedure Repeater#init#0()
   );
 }
 procedure Repeater#anon$0#1()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var in: Chan (int);
   var out: Chan (int);
@@ -77,7 +76,7 @@ procedure Repeater#anon$0#1()
   );
 }
 procedure Net#init#2()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rep: Actor;
   var Net#a: Chan (int);
@@ -110,7 +109,7 @@ procedure Net#init#2()
   assert {:msg "18.5: The initialization might produce unspecified tokens on channel b (#11)"} (C[Net#b] - R[Net#b]) == 0;
 }
 procedure Net##Repeater#anon$0#3()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rep: Actor;
   var Net#a: Chan (int);
@@ -162,7 +161,7 @@ procedure Net##Repeater#anon$0#3()
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'rep' might not preserve the channel invariant (#15)"} true;
 }
 procedure Net#entry()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rep: Actor;
   var Net#a: Chan (int);
@@ -191,7 +190,7 @@ procedure Net#entry()
   assert {:msg "5.1: Sub-actors in the network might fire without network input. This is not permitted. (#16)"} !(1 <= (C[Net#a] - R[Net#a]));
 }
 procedure Net#anon$1#input#in#4()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rep: Actor;
   var Net#a: Chan (int);
@@ -223,7 +222,7 @@ procedure Net#anon$1#input#in#4()
   assert {:msg "Channel invariant might be falsified by network input (#20)"} true;
 }
 procedure Net#anon$1#exit#5()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#rep: Actor;
   var Net#a: Chan (int);

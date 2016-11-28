@@ -1,0 +1,52 @@
+actor NonDet int x ==> int y:
+  invariant rd0(x) = tot0(y)
+  invariant (forall int i :: every(y,i) ==> y[i] = 1 || y[i] = 2)
+  int n;
+  action x:[i] ==> y:[n] 
+    ensures n = 1 || n = 2
+    do 
+      havoc n;
+      assume n = 1 || n = 2;
+  end
+end
+
+actor DetMergeUnbalanced int x, int ctrl ==> int y:
+  invariant tot0(y) = rd0(ctrl)
+  a1: action x:[i], ctrl:[c] ==> y:[i] 
+    guard c = 1
+  end
+  a2: action x:[i,j], ctrl:[c] ==> y:[i] 
+    guard c = 2
+  end 
+end
+
+network N int x, int ctrl ==> int y:
+
+  action x:2, ctrl:2 ==> y:2 end
+  
+  chinvariant @(a) = @(c)
+  
+  chinvariant tot(ctrl) <= 2
+  chinvariant tot(x) <= 2
+
+  chinvariant @(d) = @(c)
+  chinvariant tot(d) = rd(c)
+  
+  chinvariant @(e) = @(d)
+  chinvariant tot(e) = rd(d)
+
+  chinvariant @(e) = @(a)
+  chinvariant tot(e) = rd(a)
+  
+  entities
+    nd = NonDet();
+    dmu = DetMergeUnbalanced();
+  end
+  structure
+    a: x --> dmu.x;
+    c: ctrl --> nd.x;
+    d: nd.y --> dmu.ctrl;
+    e: dmu.y --> y;
+  end
+
+end

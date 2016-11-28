@@ -1,15 +1,15 @@
 actor TimeDep int in ==> int out :
   A: action in:[i] ==> out:[i] end
   B: action in:[i,j] ==> out:[i] end
-  priority A > B end
+  priority B > A end
 end
 
 network Net int in ==> int out :
   
   action in:[x] ==> out:[y] end
   
-  chinvariant @(a) = @(b)
-  chinvariant tot(b) = rd(a)
+  chinvariant @(a) = 2*@(b)
+  chinvariant 2*tot(b) = rd(a)
 
   entities
     tp = TimeDep();

@@ -1,13 +1,20 @@
 @static
 actor Add int in1, int in2 ==> int out :
-  action in1:[i], in2:[j] ==> out:[i+j] end
+  action in1:[i], in2:[j] ==> out:[i+j] 
+    requires 0 <= i
+  end
 end
 
 network Net int in1, int in2 ==> int out :
     
   action in1:1, in2:1 ==> out:1
+    requires 0 <= in1[@]
+    requires 0 <= in2[@]
     ensures out[@] = in1[@]+in2[@]
+    ensures (forall int i :: 0 <= i && i < tot(out) ==> out[@+i] <= in1[@+i]+in2[@+i])
   end
+  
+  chinvariant tot(in1)-@(in1) > 0 ==> 0 <= in1[@]
   
   entities
     add = Add();

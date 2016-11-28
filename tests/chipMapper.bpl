@@ -11,7 +11,6 @@ var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
-var St: [Actor]State;
 
 const unique this#: Actor;
 type List a = [int]a;
@@ -57,7 +56,7 @@ axiom (forall a: int :: (
 // ---------------------------------------------------------------
 
 procedure chipMapper#init#0()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var data: Chan (int);
   var chip: Chan (int);
@@ -72,7 +71,7 @@ procedure chipMapper#init#0()
   assert {:msg "10.22: Initialization might not establish the invariant (#1)"} (2 * R[data]) == (C[chip] + AT#Div(8 - offset, 4));
 }
 procedure chipMapper#read#1()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var data: Chan (int);
   var chip: Chan (int);
@@ -87,6 +86,7 @@ procedure chipMapper#read#1()
   assume (2 * R[data]) == (C[chip] + AT#Div(8 - offset, 4));
   data#0 := M[data][R[data]];
   R[data] := R[data] + 1;
+  assume !(true && (offset < 8));
   assume offset == 8;
   dataV := data#0;
   offset := 0;
@@ -94,7 +94,7 @@ procedure chipMapper#read#1()
   assert {:msg "10.22: Action at 19.2 might not preserve invariant (#3)"} (2 * R[data]) == (C[chip] + AT#Div(8 - offset, 4));
 }
 procedure chipMapper#write#2()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var data: Chan (int);
   var chip: Chan (int);
@@ -115,7 +115,7 @@ procedure chipMapper#write#2()
   assert {:msg "10.22: Action at 28.2 might not preserve invariant (#5)"} (2 * R[data]) == (C[chip] + AT#Div(8 - offset, 4));
 }
 procedure chipMapper##GuardWD#3()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var data: Chan (int);
   var chip: Chan (int);
@@ -124,10 +124,11 @@ procedure chipMapper##GuardWD#3()
   var ind: int;
   var data#0: int;
   assume data != chip;
-  assert {:msg "1.1: The actions of actor 'chipMapper' might not have mutually exclusive guards (#6)"} !((1 <= (C[data] - R[data])) && (offset == 8) && (offset < 8));
+  assert {:msg "1.1: The actor might have time-dependent behaviour (#6)"} ((1 <= (C[data] - R[data])) ==> true) ==> (!((offset < 8) && (offset == 8)));
+  assert {:msg "1.1: The actions of actor 'chipMapper' might not have mutually exclusive guards (#7)"} !((1 <= (C[data] - R[data])) && (offset == 8) && true && (offset < 8));
 }
 procedure Net#init#4()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#cm: Actor;
   var Net#a: Chan (int);
@@ -149,49 +150,14 @@ procedure Net#init#4()
   assume R[Net#b] == 0;
   assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
   assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
-  assert {:msg "49.15: Initialization of network 'Net' might not establish the channel invariant (#7)"} (2 * I[Net#a]) == I[Net#b];
-  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#8)"} true;
+  assert {:msg "49.15: Initialization of network 'Net' might not establish the channel invariant (#8)"} (2 * I[Net#a]) == I[Net#b];
   I := R;
   assert {:msg "47.13: Network initialization might not establish the network invariant (#9)"} AV#cm#offset == 8;
   assert {:msg "56.5: The initialization might produce unspecified tokens on channel a (#10)"} (C[Net#a] - R[Net#a]) == 0;
   assert {:msg "57.5: The initialization might produce unspecified tokens on channel b (#11)"} (C[Net#b] - R[Net#b]) == 0;
 }
-procedure Net##chipMapper#write#5()
-  modifies C, R, M, I, St;
-{
-  var Net#cm: Actor;
-  var Net#a: Chan (int);
-  var Net#b: Chan (int);
-  var AV#cm#dataV: int;
-  var AV#cm#offset: int;
-  var AV#cm#ind: int;
-  assume Net#a != Net#b;
-  assume 0 <= I[Net#a];
-  assume I[Net#a] <= R[Net#a];
-  assume R[Net#a] <= C[Net#a];
-  assume 0 <= I[Net#b];
-  assume I[Net#b] <= R[Net#b];
-  assume R[Net#b] <= C[Net#b];
-  assume I[Net#b] == R[Net#b];
-  assume (2 * I[Net#a]) == I[Net#b];
-  assume true;
-  assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
-  assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
-  assume AV#cm#offset < 8;
-  assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
-  assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
-  havoc AV#cm#dataV;
-  havoc AV#cm#offset;
-  havoc AV#cm#ind;
-  M[Net#b][C[Net#b]] := AV#cm#ind;
-  C[Net#b] := C[Net#b] + 1;
-  assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
-  assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
-  assert {:msg "49.15: Action at 28.2 ('write') for actor instance 'cm' might not preserve the channel invariant (#12)"} (2 * I[Net#a]) == I[Net#b];
-  assert {:msg "Action at 28.2 ('write') for actor instance 'cm' might not preserve the channel invariant (#13)"} true;
-}
-procedure Net##chipMapper#read#6()
-  modifies C, R, M, I, St;
+procedure Net##chipMapper#read#5()
+  modifies C, R, M, I;
 {
   var Net#cm: Actor;
   var Net#a: Chan (int);
@@ -209,24 +175,56 @@ procedure Net##chipMapper#read#6()
   assume R[Net#b] <= C[Net#b];
   assume I[Net#b] == R[Net#b];
   assume (2 * I[Net#a]) == I[Net#b];
-  assume true;
   assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
   assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
-  assume (!(AV#cm#offset < 8)) && (1 <= (C[Net#a] - R[Net#a])) && (AV#cm#offset == 8);
+  assume (1 <= (C[Net#a] - R[Net#a])) && (AV#cm#offset == 8);
   assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
   assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
   data#data_in := M[Net#a][R[Net#a]];
   R[Net#a] := R[Net#a] + 1;
   havoc AV#cm#dataV;
   havoc AV#cm#offset;
-  havoc AV#cm#ind;
   assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
   assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
-  assert {:msg "49.15: Action at 19.2 ('read') for actor instance 'cm' might not preserve the channel invariant (#14)"} (2 * I[Net#a]) == I[Net#b];
-  assert {:msg "Action at 19.2 ('read') for actor instance 'cm' might not preserve the channel invariant (#15)"} true;
+  assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
+  assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
+  assert {:msg "49.15: Action at 19.2 ('read') for actor instance 'cm' might not preserve the channel invariant (#12)"} (2 * I[Net#a]) == I[Net#b];
+}
+procedure Net##chipMapper#write#6()
+  modifies C, R, M, I;
+{
+  var Net#cm: Actor;
+  var Net#a: Chan (int);
+  var Net#b: Chan (int);
+  var AV#cm#dataV: int;
+  var AV#cm#offset: int;
+  var AV#cm#ind: int;
+  assume Net#a != Net#b;
+  assume 0 <= I[Net#a];
+  assume I[Net#a] <= R[Net#a];
+  assume R[Net#a] <= C[Net#a];
+  assume 0 <= I[Net#b];
+  assume I[Net#b] <= R[Net#b];
+  assume R[Net#b] <= C[Net#b];
+  assume I[Net#b] == R[Net#b];
+  assume (2 * I[Net#a]) == I[Net#b];
+  assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
+  assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
+  assume AV#cm#offset < 8;
+  assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
+  assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
+  havoc AV#cm#ind;
+  havoc AV#cm#offset;
+  M[Net#b][C[Net#b]] := AV#cm#ind;
+  C[Net#b] := C[Net#b] + 1;
+  assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
+  assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
+  assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
+  assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
+  assert {:msg "49.15: Action at 28.2 ('write') for actor instance 'cm' might not preserve the channel invariant (#13)"} (2 * I[Net#a]) == I[Net#b];
 }
 procedure Net#entry()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#cm: Actor;
   var Net#a: Chan (int);
@@ -246,14 +244,13 @@ procedure Net#entry()
   assume C[Net#b] == R[Net#b];
   assume AV#cm#offset == 8;
   assume (2 * I[Net#a]) == I[Net#b];
-  assume true;
   assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
   assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
-  assert {:msg "43.1: Sub-actors in the network might fire without network input. This is not permitted. (#16)"} !((!(AV#cm#offset < 8)) && (1 <= (C[Net#a] - R[Net#a])) && (AV#cm#offset == 8));
-  assert {:msg "43.1: Sub-actors in the network might fire without network input. This is not permitted. (#17)"} !(AV#cm#offset < 8);
+  assert {:msg "43.1: Sub-actors in the network might fire without network input. This is not permitted. (#14)"} !((1 <= (C[Net#a] - R[Net#a])) && (AV#cm#offset == 8));
+  assert {:msg "43.1: Sub-actors in the network might fire without network input. This is not permitted. (#15)"} !(AV#cm#offset < 8);
 }
 procedure Net#anon$0#input#in#7()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#cm: Actor;
   var Net#a: Chan (int);
@@ -261,6 +258,7 @@ procedure Net#anon$0#input#in#7()
   var AV#cm#dataV: int;
   var AV#cm#offset: int;
   var AV#cm#ind: int;
+  var x: int;
   assume Net#a != Net#b;
   assume 0 <= I[Net#a];
   assume I[Net#a] <= R[Net#a];
@@ -269,17 +267,15 @@ procedure Net#anon$0#input#in#7()
   assume I[Net#b] <= R[Net#b];
   assume R[Net#b] <= C[Net#b];
   assume I[Net#b] == R[Net#b];
-  assume C[Net#a] < 1;
   assume (2 * I[Net#a]) == I[Net#b];
-  assume true;
   assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
   assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
-  C[Net#a] := C[Net#a] + 1;
-  assert {:msg "49.15: Channel invariant might be falsified by network input (#18)"} (2 * I[Net#a]) == I[Net#b];
-  assert {:msg "Channel invariant might be falsified by network input (#19)"} true;
+  assume 0 <= x;
+  C[Net#a] := C[Net#a] + x;
+  assert {:msg "49.15: Channel invariant might be falsified by network input (#16)"} (2 * I[Net#a]) == I[Net#b];
 }
 procedure Net#anon$0#exit#8()
-  modifies C, R, M, I, St;
+  modifies C, R, M, I;
 {
   var Net#cm: Actor;
   var Net#a: Chan (int);
@@ -296,17 +292,15 @@ procedure Net#anon$0#exit#8()
   assume R[Net#b] <= C[Net#b];
   assume I[Net#b] == R[Net#b];
   assume (2 * I[Net#a]) == I[Net#b];
-  assume true;
   assume ((AV#cm#offset == 0) || (AV#cm#offset == 4)) || (AV#cm#offset == 8);
   assume (2 * R[Net#a]) == (C[Net#b] + AT#Div(8 - AV#cm#offset, 4));
   assume (C[Net#a] - I[Net#a]) == 1;
-  assume !((!(AV#cm#offset < 8)) && (1 <= (C[Net#a] - R[Net#a])) && (AV#cm#offset == 8));
+  assume !((1 <= (C[Net#a] - R[Net#a])) && (AV#cm#offset == 8));
   assume !(AV#cm#offset < 8);
   R[Net#b] := R[Net#b] + 2;
   I := R;
-  assert {:msg "49.15: The network might not preserve the channel invariant (#20)"} (2 * I[Net#a]) == I[Net#b];
-  assert {:msg "The network might not preserve the channel invariant (#21)"} true;
-  assert {:msg "47.13: The network might not preserve the network invariant (#22)"} AV#cm#offset == 8;
-  assert {:msg "45.3: The network might leave unread tokens on channel a (#23)"} C[Net#a] == R[Net#a];
-  assert {:msg "45.3: The network might not produce the specified number of tokens on output out (#24)"} C[Net#b] == R[Net#b];
+  assert {:msg "49.15: The network might not preserve the channel invariant (#17)"} (2 * I[Net#a]) == I[Net#b];
+  assert {:msg "47.13: The network might not preserve the network invariant (#18)"} AV#cm#offset == 8;
+  assert {:msg "45.3: The network might leave unread tokens on channel a (#19)"} C[Net#a] == R[Net#a];
+  assert {:msg "45.3: The network might not produce the specified number of tokens on output out (#20)"} C[Net#b] == R[Net#b];
 }

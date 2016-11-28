@@ -1,0 +1,86 @@
+actor add int in1, int in2 ==> int out :
+  action in1:[i], in2:[j] ==> out:[i+j] end
+end
+
+actor delay(int k) int in ==> int out :
+  int data;
+  int y;
+  
+  public invariant tot0(out) = 0 ==> data = k
+  public invariant tot0(out) > 0 ==> data = prev(in)
+  public invariant rd0(in) = tot0(out)
+  public invariant tot0(out) > 0 ==> out[0] = k
+  public invariant (forall int idx :: every(out,idx,1,0) ==> out[idx] = in[idx-1])
+  
+  initialize ==> do data := k end
+  action in:[i] ==> out:[y] 
+  do 
+  	y := data;
+  	data := i;
+  end
+end
+
+actor mulc(int c) int in ==> int out :
+  action in:[i] ==> out:[c*i] end
+end
+
+actor rshiftc(int s) int in ==> int out :
+  action in:[i] ==> out:[i >> s] end
+end
+
+actor split int in ==> int out1, int out2 :
+  action in:[i] ==> out1:[i], out2:[i] end
+end
+
+network iir() int in ==> int out :
+  
+  action in:1 ==> out:1 
+    ensures @(out) = 0 ==> out[@] = 37*in[@]
+    ensures @(out) = 1 ==> out[@] = 37*in[@] + 109*in[@-1]
+  	ensures @(out) = 2 ==> out[@] = 37*in[@] + 109*in[@-1] + 109*in[@-2]
+    ensures @(out) > 3 ==> out[@] = 37*in[@] + 109*in[@-1] + 109*in[@-2] + 37*in[@-3]
+  end
+    
+  entities
+    delay_1 = delay(0);
+    delay_2 = delay(0);
+    delay_3 = delay(0);
+    mul_1 = mulc(37);
+    mul_2 = mulc(109);
+    mul_3 = mulc(109);
+    mul_4 = mulc(37);
+    add_1 = add();
+    add_2 = add();
+    add_3 = add();
+    spl_1 = split();
+    spl_2 = split();
+    spl_3 = split();
+  end
+  
+  structure
+    in --> spl_1.in;
+    spl_1.out1 --> mul_1.in;
+    spl_1.out2 --> delay_1.in;
+
+    delay_1.out --> spl_2.in;
+    spl_2.out1 --> mul_2.in;
+    spl_2.out2 --> delay_2.in;
+
+    delay_2.out --> spl_3.in;
+    spl_3.out1 --> mul_3.in;
+    spl_3.out2 --> delay_3.in;
+    
+    delay_3.out --> mul_4.in;
+    
+    mul_1.out --> add_1.in1;
+    mul_2.out --> add_1.in2;
+    
+    mul_3.out --> add_2.in1;
+    mul_4.out --> add_2.in2;
+    
+    add_1.out --> add_3.in1;
+    add_2.out --> add_3.in2;
+    
+    add_3.out --> out;
+  end
+end

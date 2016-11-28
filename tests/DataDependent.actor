@@ -4,6 +4,9 @@ actor Gain int in ==> int out :
 end
 
 actor Split int in ==> int pos, int neg :
+  invariant rd0(in) = tot0(pos)+tot0(neg)
+  invariant 0 < rd0(in) && 0 <= in[prev] ==> in[prev] = pos[last]
+  invariant 0 < rd0(in) && in[prev] < 0  ==> in[prev] = neg[last]
   action in:[i] ==> pos:[i] 
     guard 0 <= i
   end
@@ -16,17 +19,21 @@ network Net int in ==> int out1, int out2 :
 
   action in:1 ==> out1:1
     requires in[@] = 1
+    requires (forall int i :: current(in,i) ==> in[i] = 1)
     ensures out1[@] = 2*in[@]
   end
   
   action in:1 ==> out2:1
     requires in[@] = -1
+    requires (forall int i :: current(in,i) ==> in[i] = -1)
     ensures out2[@] = 2*in[@]
   end
   
-  chinvariant rd(b) = tot(d)+tot(c)  
-  chinvariant rd(b) > 0 && b[@] >= 0 ==> tot(d) = 0 && c[@] = b[@]
-  chinvariant rd(b) > 0 && b[@] < 0 ==> tot(c) = 0 && d[@] = b[@]
+  chinvariant @(b) = @(d)+@(c)
+  //chinvariant rd(b) = tot(d)+tot(c)
+  chinvariant 0 < tot(in) ==> in[@] = 1 || in[@] = -1
+  chinvariant 0 < rd(b) && b[@] >= 0 ==> tot(d) = 0
+  chinvariant 0 < rd(b) && b[@] < 0  ==> tot(c) = 0
     
   entities
     gain = Gain();
