@@ -49,12 +49,12 @@ abstract class Halator(val trans: StmtExpTranslator, val inhale: Boolean, val su
       }
       case FunctionApp("tokens",params) => {
         if (!subAction) {
-          val chCredit = B.C(trans.transExpr(params(0)))
+          val chCredit = B.T(trans.transExpr(params(0)))
           if (inhale) {
             buffer += Boogie.Assign(chCredit, chCredit + trans.transExpr(params(1)))
           }
           else {
-            buffer += Boogie.Assign(chCredit, chCredit - trans.transExpr(params(1)))
+            buffer += Boogie.Assign(chCredit, chCredit + trans.transExpr(params(1)))
           }
         }
       }

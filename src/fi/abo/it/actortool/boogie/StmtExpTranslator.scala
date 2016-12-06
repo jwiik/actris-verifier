@@ -122,12 +122,12 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           }
           case "next" => 
             val ch = transExpr(params(0))
-            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.Read(ch) minus transExpr(params(1)))
-            else B.ChannelIdx(ch,B.Read(ch))
+            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) minus transExpr(params(1)))
+            else B.ChannelIdx(ch,B.R(ch))
           case "prev" => 
             val ch = transExpr(params(0))
-            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.Read(ch) minus transExpr(params(1)))
-            else B.ChannelIdx(ch,B.Read(ch) minus B.Int(1))
+            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) minus transExpr(params(1)))
+            else B.ChannelIdx(ch,B.R(ch) minus B.Int(1))
           case "last" => 
             val ch = transExpr(params(0))
             if (fa.parameters.size > 1) B.ChannelIdx(ch,B.C(ch) minus transExpr(params(1)))

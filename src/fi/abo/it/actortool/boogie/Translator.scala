@@ -23,7 +23,7 @@ class Translator(
   val Inhalator = new Inhalator(stmtTranslator)
   val Exhalator = new Exhalator(stmtTranslator)
   
-  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I):::
+  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I, BMap.T):::
     (if (!ftMode) Nil else List(BMap.SqnCh, BMap.SqnActor))
   
   object Annot {
@@ -356,8 +356,8 @@ class Translator(
     }
     
     val emptyChans = (for (c <- nwvs.connections) yield {
-      B.Assert(B.Credit(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(0), c.pos, 
-          "The initialization might produce unspecified tokens on channel " + c.id)
+      B.Assert(B.Urd(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.T(transExpr(c.id)(nwvs.nwRenamings)), 
+          c.pos, "The initialization might produce unspecified tokens on channel " + c.id)
     })
     
     asgn ++= emptyChans
@@ -490,7 +490,7 @@ class Translator(
       val msg =
         if (c.isOutput) "The network might not produce the specified number of tokens on output " + c.to.name
         else "The network might leave unread tokens on channel " + c.id
-      asgn += B.Assert(B.C(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.R(transExpr(c.id)(nwvs.nwRenamings)),nwa.pos, msg)
+      asgn += B.Assert(B.Urd(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.T(transExpr(c.id)(nwvs.nwRenamings)),nwa.pos, msg)
     } 
     
     createBoogieProc(Uniquifier.get(nwvs.namePrefix+nwa.fullName+"#exit"),asgn.toList)
@@ -507,7 +507,7 @@ class Translator(
     
     for (ipat <- action.inputPattern) {
       val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
-      firingCondsBuffer += B.Int(ipat.numConsumed) lte B.Credit(cId)
+      firingCondsBuffer += B.Int(ipat.numConsumed) lte B.Urd(cId)
     }
     
     val renamedGuard = action.guard match {
@@ -560,7 +560,7 @@ class Translator(
       while (repeats < ipat.repeat) {
         val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
         for (v <- ipat.vars) {
-          asgn += Boogie.Assign(transExpr(v.id)(renamings),B.ChannelIdx(cId,B.Read(cId)))
+          asgn += Boogie.Assign(transExpr(v.id)(renamings),B.ChannelIdx(cId,B.Urd(cId)))
           asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
         }
         repeats = repeats+1
