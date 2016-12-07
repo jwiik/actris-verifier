@@ -248,14 +248,11 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
         val list1 = List(
           B.Int(0) <= B.I(name),
           B.I(name) <= B.R(name),
-          B.R(name) <= B.C(name),
-          B.T(name) ==@ B.Int(0))
+          B.R(name) <= B.C(name))
         val list2 = (if (c.isOutput) List(B.I(name) ==@ B.R(name)) else Nil)
         (list1 ::: list2).map(x => B.Assume(x))
       }).flatten
-    
-    
-    
+
     new NetworkVerificationStructure(
         network, 
         actions, 

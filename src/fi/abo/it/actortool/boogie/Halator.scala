@@ -14,49 +14,57 @@ class Exhalator(expTranslator: StmtExpTranslator) extends Halator(expTranslator,
 
 abstract class Halator(val trans: StmtExpTranslator, val inhale: Boolean, val subAction: Boolean) {
     
-  def visit(inv: ChannelInvariant, renamings: Map[String,Expr]): List[Boogie.Stmt] = 
+  def visit(inv: ChannelInvariant, renamings: Map[String,Expr]): (List[String],List[Boogie.Stmt]) = 
     visit(inv, "Invariant might not hold", renamings)
   
-  def visit(inv: ActorInvariant, renamings: Map[String,Expr]): List[Boogie.Stmt] = 
+  def visit(inv: ActorInvariant, renamings: Map[String,Expr]): (List[String],List[Boogie.Stmt]) = 
     visit(inv, "Invariant might not hold", renamings)
   
-  def visit(inv: ActorInvariant, msg: String, renamings: Map[String,Expr]): List[Boogie.Stmt] = {
+  def visit(inv: ActorInvariant, msg: String, renamings: Map[String,Expr]): (List[String],List[Boogie.Stmt]) = {
     val buffer = new ListBuffer[Boogie.Stmt]
-    visit(inv.expr, inv.assertion.free)(buffer,msg,renamings);
-    buffer.toList
+    val chans = new ListBuffer[String]
+    visit(inv.expr, inv.assertion.free)(buffer,chans,msg,renamings);
+    (chans.toList, buffer.toList)
   }
   
-  def visit(inv: ChannelInvariant, msg: String, renamings: Map[String,Expr]): List[Boogie.Stmt] = {
+  def visit(inv: ChannelInvariant, msg: String, renamings: Map[String,Expr]): (List[String],List[Boogie.Stmt]) = {
     val buffer = new ListBuffer[Boogie.Stmt]
-    visit(inv.expr, inv.assertion.free)(buffer,msg,renamings);
-    buffer.toList
+    val chans = new ListBuffer[String]
+    visit(inv.expr, inv.assertion.free)(buffer,chans,msg,renamings);
+    (chans.toList, buffer.toList)
   }
   
-  def visit(e: Expr, msg: String, renamings: Map[String,Expr]): List[Boogie.Stmt] = {
+  def visit(e: Expr, msg: String, renamings: Map[String,Expr]): (List[String],List[Boogie.Stmt]) = {
     val buffer = new ListBuffer[Boogie.Stmt]
-    visit(e, false)(buffer,msg,renamings);
-    buffer.toList
+    val chans = new ListBuffer[String]
+    visit(e, false)(buffer,chans,msg,renamings);
+    (chans.toList, buffer.toList)
   }
   
   def visit(expr: Expr, free: Boolean)(
-      implicit buffer: ListBuffer[Boogie.Stmt], msg: String, renamings: Map[String,Expr]) {
+      implicit buffer: ListBuffer[Boogie.Stmt], chans: ListBuffer[String], msg: String, renamings: Map[String,Expr]) {
     expr match {
       case And(left,right) => visit(left, free); visit(right, free)
-      case Implies(left,right) => {
-        val branchBuffer = new ListBuffer[Boogie.Stmt]
-        visit(right, free)(branchBuffer,msg,renamings)
-        buffer += Boogie.If(trans.transExpr(left),branchBuffer.toList,List.empty) 
-      }
-      case FunctionApp("tokens",params) => {
-        if (!subAction) {
-          val chCredit = B.T(trans.transExpr(params(0)))
-          if (inhale) {
-            buffer += Boogie.Assign(chCredit, chCredit + trans.transExpr(params(1)))
-          }
-          else {
-            buffer += Boogie.Assign(chCredit, chCredit + trans.transExpr(params(1)))
-          }
-        }
+//      case Implies(left,right) => {
+//        val branchBuffer = new ListBuffer[Boogie.Stmt]
+//        visit(right, free)(branchBuffer,msg,renamings)
+//        buffer += Boogie.If(trans.transExpr(left),branchBuffer.toList,List.empty) 
+//      }
+      case fa@FunctionApp("tokens",params) => {
+        val cId = params(0).asInstanceOf[Id].id
+        chans += cId
+        val pred = B.C(trans.transExpr(params(0))) - B.R(trans.transExpr(params(0))) ==@ trans.transExpr(params(1))
+        if (inhale) buffer += B.Assume(pred)
+        else buffer += B.Assert(pred, fa.pos, msg)
+//        if (!subAction) {
+//          val chCredit = B.T(trans.transExpr(params(0)))
+//          if (inhale) {
+//            buffer += Boogie.Assign(chCredit, chCredit + trans.transExpr(params(1)))
+//          }
+//          else {
+//            buffer += Boogie.Assign(chCredit, chCredit + trans.transExpr(params(1)))
+//          }
+//        }
       }
       case x => {
         if (inhale) buffer += B.Assume(trans.transExpr(x)) 

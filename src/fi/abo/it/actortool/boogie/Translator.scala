@@ -23,7 +23,7 @@ class Translator(
   val Inhalator = new Inhalator(stmtTranslator)
   val Exhalator = new Exhalator(stmtTranslator)
   
-  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I, BMap.T):::
+  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I):::
     (if (!ftMode) Nil else List(BMap.SqnCh, BMap.SqnActor))
   
   object Annot {
@@ -349,18 +349,18 @@ class Translator(
         asgn += BAssert(chi, "Initialization of network '" + nwvs.entity.id + "' might not establish the channel invariant", nwvs.nwRenamings)
     }
     
+    val tokenChs = new scala.collection.mutable.HashSet[String]
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
     for (nwi <- nwvs.nwInvariants) {
-      asgn ++= Exhalator.visit(
-          nwi, "Network initialization might not establish the network invariant", nwvs.nwRenamings)
+      val (chs,asserts) = Exhalator.visit(nwi, "Network initialization might not establish the network invariant", nwvs.nwRenamings)
+      asgn ++= asserts
+      tokenChs ++= chs
     }
     
-    val emptyChans = (for (c <- nwvs.connections) yield {
-      B.Assert(B.Urd(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.T(transExpr(c.id)(nwvs.nwRenamings)), 
+    for (c <- nwvs.connections.filter(c => !tokenChs.contains(c.id))) {
+      asgn += B.Assert(B.Urd(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(0), 
           c.pos, "The initialization might produce unspecified tokens on channel " + c.id)
-    })
-    
-    asgn ++= emptyChans
+    }
     
     val stmt = asgn.toList
     List(createBoogieProc(Uniquifier.get(nwvs.namePrefix+"init"),stmt))
@@ -376,7 +376,8 @@ class Translator(
       asgn += B.Assume(B.C(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.R(transExpr(c.id)(nwvs.nwRenamings)))
     }
     for (nwi <- nwvs.nwInvariants) {
-      asgn ++= Inhalator.visit(nwi, "", nwvs.nwRenamings)
+      val (chs,asserts) = Inhalator.visit(nwi, "", nwvs.nwRenamings)
+      asgn ++= asserts
     }
     for (chi <- nwvs.chInvariants) {
       asgn += BAssume(chi, nwvs.nwRenamings)
@@ -482,15 +483,19 @@ class Translator(
         asgn += BAssert(chi,"The network might not preserve the channel invariant"  ,nwvs.nwRenamings)
     }
     
+    val tokenChs = new scala.collection.mutable.HashSet[String]
     for (nwi <- nwvs.nwInvariants) {
-      if (!nwi.assertion.free)
-        asgn ++= Exhalator.visit(nwi,"The network might not preserve the network invariant",nwvs.nwRenamings)
+      if (!nwi.assertion.free) {
+        val (chs,asserts) = Exhalator.visit(nwi,"The network might not preserve the network invariant",nwvs.nwRenamings)
+        asgn ++= asserts
+        tokenChs ++= chs
+      }
     }
-    for (c <- nwvs.connections) {
+    for (c <- nwvs.connections.filter(c => !tokenChs.contains(c.id))) {
       val msg =
         if (c.isOutput) "The network might not produce the specified number of tokens on output " + c.to.name
         else "The network might leave unread tokens on channel " + c.id
-      asgn += B.Assert(B.Urd(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.T(transExpr(c.id)(nwvs.nwRenamings)),nwa.pos, msg)
+      asgn += B.Assert(B.Urd(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(0),nwa.pos, msg)
     } 
     
     createBoogieProc(Uniquifier.get(nwvs.namePrefix+nwa.fullName+"#exit"),asgn.toList)
