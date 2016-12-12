@@ -18,7 +18,7 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
     }
   }
   
-  protected def buildPriorityMap(actor: BasicActor) = {
+  protected def buildPriorityMap(actor: DFActor) = {
     var orderedActions = actor.actions filter { a => !a.init } map {a => (a,Nil: List[Action])} toMap
     
     actor.priority match {
@@ -201,12 +201,10 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
       }
       
       val actionData = (actor.actions map { a => (a,collectEntityData(e,a,targetMap)) }).toMap
-      val priorityMap = actor match {
-        case ba: BasicActor => buildPriorityMap(ba)
-        case _ => Map.empty[Action,List[Action]]
-      }
+      val priorityMap = buildPriorityMap(actor)
+
       
-      val entityData = new EntityData(Nil,renameBuffer.toMap,variables.toList,actionData, priorityMap)
+      val entityData = new EntityData(Nil,renameBuffer.toMap,variables.toList, actionData, priorityMap)
       //entitySpecificVariables += variables.toList
       //entitySpecificRenames += renameBuffer.toMap
       entityDataBuffer += ((e,entityData))
@@ -218,7 +216,6 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     val tempRenames = buffer.toMap
     
     val networkRenamings = buffer.map{ case (s1,s2) => (s1,Id(s2)) }.toMap
-    
     val publicInvs = 
       entities flatMap { 
         entity => {

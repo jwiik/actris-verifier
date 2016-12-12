@@ -547,9 +547,9 @@ object Resolver {
           ac.typ = indexedType.resultType
           indexedType.resultType
         }
-      case fa@FunctionApp("rd0",params) => resolveChannelCountFunction(ctx, fa)
+      //case fa@FunctionApp("rd0",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
-      case fa@FunctionApp("tot0",params) => resolveChannelCountFunction(ctx, fa)
+      //case fa@FunctionApp("tot0",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("rd@",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot@",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("rd",params) => resolveChannelCountFunction(ctx, fa)

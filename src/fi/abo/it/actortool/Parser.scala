@@ -144,7 +144,7 @@ class Parser extends StandardTokenParsers {
   
   def actorInvDecl = positioned((opt("free") ~ opt("public") ~ "invariant" ~ expression) ^^ {
     case free ~ public ~ _ ~ expr => {
-      ActorInvariant(Assertion(expr, free.isDefined),false, /*public.isDefined*/ true)
+      ActorInvariant(Assertion(expr, free.isDefined),false, public.isDefined)
     }
   })
   

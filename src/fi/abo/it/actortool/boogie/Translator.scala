@@ -288,7 +288,7 @@ class Translator(
     
     val (subActorProcs, subActorFiringRules) = translateSubActorExecutions(nwvs)
     decls ++= subActorProcs
-    decls += translateNetworkEntry(nwvs, subActorFiringRules)
+//    decls += translateNetworkEntry(nwvs, subActorFiringRules)
     for (a <- nwvs.actions) {
       decls ++= translateNetworkAction(a,nwvs,subActorFiringRules)
     }
@@ -338,9 +338,11 @@ class Translator(
         }
       }
       
-      for (inv <- actor.publicActorInvariants) {
-        asgn += B.Assume(transExpr(inv.expr)(renamings))
-      }
+//      for (inv <- actor.publicActorInvariants) {
+//        //asgn += B.Assume(transExpr(inv.expr)(renamings))
+//        val (_,stmt) = Inhalator.visit(inv.expr, "", renamings)
+//        asgn ++= stmt
+//      }
 
     }
     
@@ -366,32 +368,33 @@ class Translator(
     List(createBoogieProc(Uniquifier.get(nwvs.namePrefix+"init"),stmt))
   }
   
-  def translateNetworkEntry(nwvs: NetworkVerificationStructure, firingRules: List[Boogie.Expr]) = {
-    val asgn = new ListBuffer[Boogie.Stmt]
-    asgn ++= (nwvs.entityDecls map { _.decl })
-    asgn ++= nwvs.subactorVarDecls map { _.decl }
-    asgn ++= nwvs.uniquenessConditions map {B.Assume(_)}
-    asgn ++= nwvs.basicAssumes
-    for (c <- nwvs.connections) {
-      asgn += B.Assume(B.C(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.R(transExpr(c.id)(nwvs.nwRenamings)))
-    }
-    for (nwi <- nwvs.nwInvariants) {
-      val (chs,asserts) = Inhalator.visit(nwi, "", nwvs.nwRenamings)
-      asgn ++= asserts
-    }
-    for (chi <- nwvs.chInvariants) {
-      asgn += BAssume(chi, nwvs.nwRenamings)
-    }
-    for ((inv,renames) <- nwvs.publicSubInvariants) {
-      asgn += BAssume(inv, renames)
-    }
-    for (fr <- firingRules) {
-      asgn += B.Assert(
-          Boogie.UnaryExpr("!",fr), nwvs.entity.pos, 
-          "Sub-actors in the network might fire without network input. This is not permitted.")
-    }
-    createBoogieProc(nwvs.namePrefix+"entry", asgn.toList)
-  }
+//  def translateNetworkEntry(nwvs: NetworkVerificationStructure, firingRules: List[Boogie.Expr]) = {
+//    val asgn = new ListBuffer[Boogie.Stmt]
+//    asgn ++= (nwvs.entityDecls map { _.decl })
+//    asgn ++= nwvs.subactorVarDecls map { _.decl }
+//    asgn ++= nwvs.uniquenessConditions map {B.Assume(_)}
+//    asgn ++= nwvs.basicAssumes
+//    for (c <- nwvs.connections) {
+//      asgn += B.Assume(B.C(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.R(transExpr(c.id)(nwvs.nwRenamings)))
+//    }
+//    for (nwi <- nwvs.nwInvariants) {
+//      val (chs,asserts) = Inhalator.visit(nwi, "", nwvs.nwRenamings)
+//      asgn ++= asserts
+//    }
+//    for (chi <- nwvs.chInvariants) {
+//      asgn += BAssume(chi, nwvs.nwRenamings)
+//    }
+//    for ((inv,renames) <- nwvs.publicSubInvariants) {
+//      val (_,stmt) = Inhalator.visit(inv.expr, "", renames)
+//      asgn ++= stmt
+//    }
+//    for (fr <- firingRules) {
+//      asgn += B.Assert(
+//          Boogie.UnaryExpr("!",fr), nwvs.entity.pos, 
+//          "Sub-actors in the network might fire without network input. This is not permitted.")
+//    }
+//    createBoogieProc(nwvs.namePrefix+"entry", asgn.toList)
+//  }
   
   def translateSubActorExecutions(nwvs: NetworkVerificationStructure) = {
     
@@ -403,7 +406,11 @@ class Translator(
       
       val priorityList = nwvs.entityData(inst).priorities
       val firingRules = priorityList.keys map { ca => (ca, transSubActionFiringRules(inst, ca, nwvs)) } toMap
-
+      
+//      if (inst.actor.isInstanceOf[Network]) {
+//        println()
+//      }
+      
       for ((ca,higherPrioActions) <- priorityList) {
         if (!ca.init) {
           val procName = nwvs.namePrefix+B.Sep+actor.id+B.Sep+ca.fullName
@@ -461,7 +468,8 @@ class Translator(
       asgn += BAssume(chi,nwvs.nwRenamings)
     }
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
-      asgn += BAssume(pinv, renames)
+      val (_,stmt) = Inhalator.visit(pinv.expr, "", renames)
+      asgn ++= stmt
     }
     asgn ++= inputBounds
     asgn ++= (nwPre.map { case (_,r) => B.Assume(r) })
@@ -545,7 +553,8 @@ class Translator(
     asgn ++= (for (chi <- nwvs.chInvariants) yield BAssume(chi,nwvs.nwRenamings))  // Assume channel invariants
     
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
-      asgn += BAssume(pinv, renames)
+      val (_,stmt) = Inhalator.visit(pinv.expr, "", renames)
+      asgn ++= stmt
     }
     
     val renamings = nwvs.subActionRenamings(instance, action)
@@ -556,16 +565,17 @@ class Translator(
     
     asgn += B.Assume(firingRule)
     
-    for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
-      asgn += B.Assume(transExpr(e.expr)(renamings))
-    }
+//    for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
+//      val (_,stmt) = Inhalator.visit(e.expr, "", renamings)
+//      asgn ++= stmt
+//    }
       
     for (ipat <- action.inputPattern) {
       var repeats = 0
       while (repeats < ipat.repeat) {
         val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
         for (v <- ipat.vars) {
-          asgn += Boogie.Assign(transExpr(v.id)(renamings),B.ChannelIdx(cId,B.Urd(cId)))
+          asgn += Boogie.Assign(transExpr(v.id)(renamings),B.ChannelIdx(cId,B.R(cId)))
           asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
         }
         repeats = repeats+1
@@ -587,7 +597,9 @@ class Translator(
       var repeats = 0
       while (repeats < opat.repeat) {
         for (e <- opat.exps) {
-          asgn += Boogie.Assign(B.ChannelIdx(cId,B.C(cId)),transExpr(e)(renamings))
+          if (!actor.isInstanceOf[Network]) {
+            asgn += Boogie.Assign(B.ChannelIdx(cId,B.C(cId)),transExpr(e)(renamings))
+          }
           if (ftMode) {
             asgn += Boogie.Assign(B.SqnCh(cId,B.C(cId)),B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)))
           }
@@ -604,12 +616,15 @@ class Translator(
     if (ftMode && action.aClass != ActionClass.Recovery) {
       asgn += Boogie.Assign(B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)),B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)) plus B.Int(1))
     }
-    for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
-      asgn += B.Assume(transExpr(e.expr)(renamings))
-    }
+    
+//    for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
+//      val (_,stmt) = Inhalator.visit(e.expr, "", renamings)
+//      asgn ++= stmt
+//    }
     
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
-      asgn += BAssume(pinv, renames)
+      val (_,stmt) = Inhalator.visit(pinv.expr, "", renames)
+      asgn ++= stmt
     }
     
     for (chi <- nwvs.chInvariants) {
@@ -641,7 +656,8 @@ class Translator(
     }
     
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
-      asgn += BAssume(pinv, renames)
+      val (_,stmt) = Inhalator.visit(pinv.expr, "", renames)
+      asgn ++= stmt
     }
     //asgn += B.Assume(B.Int(0) <= B.Int(1))
     asgn += Boogie.Assign(

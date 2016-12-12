@@ -97,13 +97,13 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         )
       case fa@FunctionApp(name,params) => {
         name match {
-          case "rd0" => B.R(transExpr(params(0)))
+          case "rd" => B.R(transExpr(params(0)))
           case "urd" => B.C(transExpr(params(0))) - B.R(transExpr(params(0)))
-          case "tot0" => B.C(transExpr(params(0)))
+          case "tot" => B.C(transExpr(params(0)))
           case "rd@" => B.R(transExpr(params(0))) - B.I(transExpr(params(0)))
           case "tot@" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
-          case "rd" => B.R(transExpr(params(0))) - B.I(transExpr(params(0)))
-          case "tot" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
+//          case "rd" => B.R(transExpr(params(0))) - B.I(transExpr(params(0)))
+//          case "tot" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
           case "str" => B.I(transExpr(params(0)))
           case "@" => B.I(transExpr(params(0)))
           case "sqn" => {

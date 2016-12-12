@@ -8,7 +8,7 @@ import scala.collection.mutable.ListBuffer
 
 object Elements {
   def rd0(id: String) = {
-    val fa = FunctionApp("rd0",List(Id(id): Expr))
+    val fa = FunctionApp("rd",List(Id(id): Expr))
     fa.typ = IntType(32)
     fa
   }
@@ -18,7 +18,7 @@ object Elements {
 //    fa
 //  }
   def tot0(id: String) = {
-    val fa = FunctionApp("tot0",List(Id(id): Expr))
+    val fa = FunctionApp("tot",List(Id(id): Expr))
     fa.typ = IntType(32)
     fa
   }
