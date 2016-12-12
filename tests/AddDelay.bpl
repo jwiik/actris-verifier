@@ -155,8 +155,8 @@ procedure Delay#anon$3#5()
   R[in] := R[in] + 1;
   M[out][C[out]] := in#0;
   C[out] := C[out] + 1;
-  assert {:msg "Action at 12.3 might not preserve invariant (#16)"} R[in] == (C[out] - 1);
-  assert {:msg "Action at 12.3 might not preserve invariant (#17)"} (forall idx$: int :: 
+  assert {:msg "Action at 11.3 might not preserve invariant (#16)"} R[in] == (C[out] - 1);
+  assert {:msg "Action at 11.3 might not preserve invariant (#17)"} (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == M[in][idx$ - 1])
   );
 }
@@ -199,39 +199,26 @@ procedure Net#init#6()
   assume R[Net#d] == 0;
   assume C[Net#e] == 0;
   assume R[Net#e] == 0;
-  assume R[Net#a] == C[Net#c];
-  assume R[Net#b] == C[Net#c];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#c]) ==> (M[Net#c][idx$] == (M[Net#a][idx$] + M[Net#b][idx$]))
-  );
   assume 0 == 0;
   M[Net#b][C[Net#b]] := 0;
   C[Net#b] := C[Net#b] + 1;
-  assume R[Net#e] == (C[Net#b] - 1);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < C[Net#b]) ==> (M[Net#b][idx$] == M[Net#e][idx$ - 1])
-  );
-  assume R[Net#c] == C[Net#d];
-  assume R[Net#c] == C[Net#e];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#d]) ==> (M[Net#d][idx$] == M[Net#c][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
-  assert {:msg "25.15: Initialization of network 'Net' might not establish the channel invariant (#18)"} M[Net#b][0] == 0;
-  assert {:msg "26.15: Initialization of network 'Net' might not establish the channel invariant (#19)"} 0 <= M[Net#b][I[Net#b]];
+  assert {:msg "27.15: Initialization of network 'Net' might not establish the channel invariant (#18)"} M[Net#b][0] == 0;
+  assert {:msg "28.15: Initialization of network 'Net' might not establish the channel invariant (#19)"} 0 <= M[Net#b][I[Net#b]];
   assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#20)"} I[Net#c] == I[Net#a];
   assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#21)"} I[Net#c] == I[Net#b];
   assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#22)"} I[Net#b] == I[Net#e];
   assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#23)"} I[Net#d] == I[Net#c];
   assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#24)"} I[Net#e] == I[Net#c];
   I := R;
-  assert {:msg "24.13: Network initialization might not establish the network invariant (#25)"} (C[Net#b] - R[Net#b]) == 1;
-  assert {:msg "35.5: The initialization might produce unspecified tokens on channel a (#26)"} (C[Net#a] - R[Net#a]) == 0;
-  assert {:msg "37.5: The initialization might produce unspecified tokens on channel c (#27)"} (C[Net#c] - R[Net#c]) == 0;
-  assert {:msg "38.5: The initialization might produce unspecified tokens on channel d (#28)"} (C[Net#d] - R[Net#d]) == 0;
-  assert {:msg "39.5: The initialization might produce unspecified tokens on channel e (#29)"} (C[Net#e] - R[Net#e]) == 0;
+  assert {:msg "23.13: Network initialization might not establish the network invariant (#25)"} (C[Net#b] - R[Net#b]) == 1;
+  assert {:msg "24.13: Network initialization might not establish the network invariant (#26)"} R[Net#a] == C[Net#d];
+  assert {:msg "25.14: Network initialization might not establish the network invariant (#27)"} (forall i: int :: 
+    ((0 + 1) <= i) && (i < (C[Net#d] - 0)) ==> (M[Net#d][i] == (M[Net#d][i - 1] + M[Net#a][i]))
+  );
+  assert {:msg "37.5: The initialization might produce unspecified tokens on channel a (#28)"} (C[Net#a] - R[Net#a]) == 0;
+  assert {:msg "39.5: The initialization might produce unspecified tokens on channel c (#29)"} (C[Net#c] - R[Net#c]) == 0;
+  assert {:msg "40.5: The initialization might produce unspecified tokens on channel d (#30)"} (C[Net#d] - R[Net#d]) == 0;
+  assert {:msg "41.5: The initialization might produce unspecified tokens on channel e (#31)"} (C[Net#e] - R[Net#e]) == 0;
 }
 procedure Net##Add#anon$0#7()
   modifies C, R, M, I;
@@ -290,22 +277,12 @@ procedure Net##Add#anon$0#7()
     (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
   assume (1 <= (C[Net#a] - R[Net#a])) && (1 <= (C[Net#b] - R[Net#b]));
-  assume R[Net#a] == C[Net#c];
-  assume R[Net#b] == C[Net#c];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#c]) ==> (M[Net#c][idx$] == (M[Net#a][idx$] + M[Net#b][idx$]))
-  );
-  in1#i := M[Net#a][C[Net#a] - R[Net#a]];
+  in1#i := M[Net#a][R[Net#a]];
   R[Net#a] := R[Net#a] + 1;
-  in2#j := M[Net#b][C[Net#b] - R[Net#b]];
+  in2#j := M[Net#b][R[Net#b]];
   R[Net#b] := R[Net#b] + 1;
   M[Net#c][C[Net#c]] := in1#i + in2#j;
   C[Net#c] := C[Net#c] + 1;
-  assume R[Net#a] == C[Net#c];
-  assume R[Net#b] == C[Net#c];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#c]) ==> (M[Net#c][idx$] == (M[Net#a][idx$] + M[Net#b][idx$]))
-  );
   assume R[Net#a] == C[Net#c];
   assume R[Net#b] == C[Net#c];
   assume (forall idx$: int :: 
@@ -323,13 +300,13 @@ procedure Net##Add#anon$0#7()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "25.15: Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#30)"} M[Net#b][0] == 0;
-  assert {:msg "26.15: Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#31)"} 0 <= M[Net#b][I[Net#b]];
-  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#32)"} I[Net#c] == I[Net#a];
-  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#33)"} I[Net#c] == I[Net#b];
-  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#34)"} I[Net#b] == I[Net#e];
-  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#35)"} I[Net#d] == I[Net#c];
-  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#36)"} I[Net#e] == I[Net#c];
+  assert {:msg "27.15: Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#32)"} M[Net#b][0] == 0;
+  assert {:msg "28.15: Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#33)"} 0 <= M[Net#b][I[Net#b]];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#34)"} I[Net#c] == I[Net#a];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#35)"} I[Net#c] == I[Net#b];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#36)"} I[Net#b] == I[Net#e];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#37)"} I[Net#d] == I[Net#c];
+  assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#38)"} I[Net#e] == I[Net#c];
 }
 procedure Net##Delay#anon$3#8()
   modifies C, R, M, I;
@@ -387,18 +364,10 @@ procedure Net##Delay#anon$3#8()
     (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
   assume 1 <= (C[Net#e] - R[Net#e]);
-  assume R[Net#e] == (C[Net#b] - 1);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < C[Net#b]) ==> (M[Net#b][idx$] == M[Net#e][idx$ - 1])
-  );
-  in#i := M[Net#e][C[Net#e] - R[Net#e]];
+  in#i := M[Net#e][R[Net#e]];
   R[Net#e] := R[Net#e] + 1;
   M[Net#b][C[Net#b]] := in#i;
   C[Net#b] := C[Net#b] + 1;
-  assume R[Net#e] == (C[Net#b] - 1);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < C[Net#b]) ==> (M[Net#b][idx$] == M[Net#e][idx$ - 1])
-  );
   assume R[Net#a] == C[Net#c];
   assume R[Net#b] == C[Net#c];
   assume (forall idx$: int :: 
@@ -416,13 +385,13 @@ procedure Net##Delay#anon$3#8()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "25.15: Action at 12.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#37)"} M[Net#b][0] == 0;
-  assert {:msg "26.15: Action at 12.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#38)"} 0 <= M[Net#b][I[Net#b]];
-  assert {:msg "Action at 12.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#39)"} I[Net#c] == I[Net#a];
-  assert {:msg "Action at 12.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#40)"} I[Net#c] == I[Net#b];
-  assert {:msg "Action at 12.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#41)"} I[Net#b] == I[Net#e];
-  assert {:msg "Action at 12.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#42)"} I[Net#d] == I[Net#c];
-  assert {:msg "Action at 12.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#43)"} I[Net#e] == I[Net#c];
+  assert {:msg "27.15: Action at 11.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#39)"} M[Net#b][0] == 0;
+  assert {:msg "28.15: Action at 11.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#40)"} 0 <= M[Net#b][I[Net#b]];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#41)"} I[Net#c] == I[Net#a];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#42)"} I[Net#c] == I[Net#b];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#43)"} I[Net#b] == I[Net#e];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#44)"} I[Net#d] == I[Net#c];
+  assert {:msg "Action at 11.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#45)"} I[Net#e] == I[Net#c];
 }
 procedure Net##Split#anon$1#9()
   modifies C, R, M, I;
@@ -480,28 +449,12 @@ procedure Net##Split#anon$1#9()
     (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
   assume 1 <= (C[Net#c] - R[Net#c]);
-  assume R[Net#c] == C[Net#d];
-  assume R[Net#c] == C[Net#e];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#d]) ==> (M[Net#d][idx$] == M[Net#c][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
-  in#i := M[Net#c][C[Net#c] - R[Net#c]];
+  in#i := M[Net#c][R[Net#c]];
   R[Net#c] := R[Net#c] + 1;
   M[Net#d][C[Net#d]] := in#i;
   C[Net#d] := C[Net#d] + 1;
   M[Net#e][C[Net#e]] := in#i;
   C[Net#e] := C[Net#e] + 1;
-  assume R[Net#c] == C[Net#d];
-  assume R[Net#c] == C[Net#e];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#d]) ==> (M[Net#d][idx$] == M[Net#c][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
   assume R[Net#a] == C[Net#c];
   assume R[Net#b] == C[Net#c];
   assume (forall idx$: int :: 
@@ -519,77 +472,13 @@ procedure Net##Split#anon$1#9()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
   );
-  assert {:msg "25.15: Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#44)"} M[Net#b][0] == 0;
-  assert {:msg "26.15: Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#45)"} 0 <= M[Net#b][I[Net#b]];
-  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#46)"} I[Net#c] == I[Net#a];
-  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#47)"} I[Net#c] == I[Net#b];
-  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#48)"} I[Net#b] == I[Net#e];
-  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#49)"} I[Net#d] == I[Net#c];
-  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#50)"} I[Net#e] == I[Net#c];
-}
-procedure Net#entry()
-  modifies C, R, M, I;
-{
-  var Net#add: Actor;
-  var Net#del: Actor;
-  var Net#spl: Actor;
-  var Net#a: Chan (int);
-  var Net#b: Chan (int);
-  var Net#c: Chan (int);
-  var Net#d: Chan (int);
-  var Net#e: Chan (int);
-  assume (Net#add != Net#del) && (Net#add != Net#spl) && (Net#del != Net#spl);
-  assume (Net#a != Net#b) && (Net#a != Net#c) && (Net#a != Net#d) && (Net#a != Net#e) && (Net#b != Net#c) && (Net#b != Net#d) && (Net#b != Net#e) && (Net#c != Net#d) && (Net#c != Net#e) && (Net#d != Net#e);
-  assume 0 <= I[Net#a];
-  assume I[Net#a] <= R[Net#a];
-  assume R[Net#a] <= C[Net#a];
-  assume 0 <= I[Net#b];
-  assume I[Net#b] <= R[Net#b];
-  assume R[Net#b] <= C[Net#b];
-  assume 0 <= I[Net#c];
-  assume I[Net#c] <= R[Net#c];
-  assume R[Net#c] <= C[Net#c];
-  assume 0 <= I[Net#d];
-  assume I[Net#d] <= R[Net#d];
-  assume R[Net#d] <= C[Net#d];
-  assume I[Net#d] == R[Net#d];
-  assume 0 <= I[Net#e];
-  assume I[Net#e] <= R[Net#e];
-  assume R[Net#e] <= C[Net#e];
-  assume C[Net#a] == R[Net#a];
-  assume C[Net#b] == R[Net#b];
-  assume C[Net#c] == R[Net#c];
-  assume C[Net#d] == R[Net#d];
-  assume C[Net#e] == R[Net#e];
-  assume (C[Net#b] - R[Net#b]) == 1;
-  assume M[Net#b][0] == 0;
-  assume 0 <= M[Net#b][I[Net#b]];
-  assume I[Net#c] == I[Net#a];
-  assume I[Net#c] == I[Net#b];
-  assume I[Net#b] == I[Net#e];
-  assume I[Net#d] == I[Net#c];
-  assume I[Net#e] == I[Net#c];
-  assume 0 <= M[Net#a][I[Net#a]];
-  assume R[Net#a] == C[Net#c];
-  assume R[Net#b] == C[Net#c];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#c]) ==> (M[Net#c][idx$] == (M[Net#a][idx$] + M[Net#b][idx$]))
-  );
-  assume R[Net#e] == (C[Net#b] - 1);
-  assume (forall idx$: int :: 
-    (1 <= idx$) && (idx$ < C[Net#b]) ==> (M[Net#b][idx$] == M[Net#e][idx$ - 1])
-  );
-  assume R[Net#c] == C[Net#d];
-  assume R[Net#c] == C[Net#e];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#d]) ==> (M[Net#d][idx$] == M[Net#c][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[Net#e]) ==> (M[Net#e][idx$] == M[Net#c][idx$])
-  );
-  assert {:msg "15.1: Sub-actors in the network might fire without network input. This is not permitted. (#51)"} !((1 <= (C[Net#a] - R[Net#a])) && (1 <= (C[Net#b] - R[Net#b])));
-  assert {:msg "15.1: Sub-actors in the network might fire without network input. This is not permitted. (#52)"} !(1 <= (C[Net#e] - R[Net#e]));
-  assert {:msg "15.1: Sub-actors in the network might fire without network input. This is not permitted. (#53)"} !(1 <= (C[Net#c] - R[Net#c]));
+  assert {:msg "27.15: Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#46)"} M[Net#b][0] == 0;
+  assert {:msg "28.15: Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#47)"} 0 <= M[Net#b][I[Net#b]];
+  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#48)"} I[Net#c] == I[Net#a];
+  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#49)"} I[Net#c] == I[Net#b];
+  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#50)"} I[Net#b] == I[Net#e];
+  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#51)"} I[Net#d] == I[Net#c];
+  assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#52)"} I[Net#e] == I[Net#c];
 }
 procedure Net#anon$4#input#in#10()
   modifies C, R, M, I;
@@ -648,14 +537,14 @@ procedure Net#anon$4#input#in#10()
   );
   C[Net#a] := C[Net#a] + 1;
   assume 0 <= M[Net#a][I[Net#a]];
-  assert {:msg "25.15: Channel invariant might be falsified by network input (#54)"} M[Net#b][0] == 0;
-  assert {:msg "26.15: Channel invariant might be falsified by network input (#55)"} 0 <= M[Net#b][I[Net#b]];
-  assert {:msg "Channel invariant might be falsified by network input (#56)"} I[Net#c] == I[Net#a];
-  assert {:msg "Channel invariant might be falsified by network input (#57)"} I[Net#c] == I[Net#b];
-  assert {:msg "Channel invariant might be falsified by network input (#58)"} I[Net#b] == I[Net#e];
-  assert {:msg "Channel invariant might be falsified by network input (#59)"} I[Net#d] == I[Net#c];
-  assert {:msg "Channel invariant might be falsified by network input (#60)"} I[Net#e] == I[Net#c];
-  assert {:msg "18.14: Channel invariant might be falsified by network input (#61)"} 0 <= M[Net#a][I[Net#a]];
+  assert {:msg "27.15: Channel invariant might be falsified by network input (#53)"} M[Net#b][0] == 0;
+  assert {:msg "28.15: Channel invariant might be falsified by network input (#54)"} 0 <= M[Net#b][I[Net#b]];
+  assert {:msg "Channel invariant might be falsified by network input (#55)"} I[Net#c] == I[Net#a];
+  assert {:msg "Channel invariant might be falsified by network input (#56)"} I[Net#c] == I[Net#b];
+  assert {:msg "Channel invariant might be falsified by network input (#57)"} I[Net#b] == I[Net#e];
+  assert {:msg "Channel invariant might be falsified by network input (#58)"} I[Net#d] == I[Net#c];
+  assert {:msg "Channel invariant might be falsified by network input (#59)"} I[Net#e] == I[Net#c];
+  assert {:msg "17.14: Channel invariant might be falsified by network input (#60)"} 0 <= M[Net#a][I[Net#a]];
 }
 procedure Net#anon$4#exit#11()
   modifies C, R, M, I;
@@ -716,21 +605,25 @@ procedure Net#anon$4#exit#11()
   assume !((1 <= (C[Net#a] - R[Net#a])) && (1 <= (C[Net#b] - R[Net#b])));
   assume !(1 <= (C[Net#e] - R[Net#e]));
   assume !(1 <= (C[Net#c] - R[Net#c]));
-  assert {:msg "19.13: Network action postcondition might not hold (#62)"} M[Net#d][0] == M[Net#a][0];
-  assert {:msg "20.13: Network action postcondition might not hold (#63)"} M[Net#d][I[Net#d]] >= M[Net#a][I[Net#a]];
-  assert {:msg "21.13: Network action postcondition might not hold (#64)"} (0 < I[Net#d]) ==> (M[Net#d][I[Net#d]] == (M[Net#d][I[Net#d] - 1] + M[Net#a][I[Net#a]]));
+  assert {:msg "18.13: Network action postcondition might not hold (#61)"} M[Net#d][0] == M[Net#a][0];
+  assert {:msg "19.13: Network action postcondition might not hold (#62)"} M[Net#d][I[Net#d]] >= M[Net#a][I[Net#a]];
+  assert {:msg "20.13: Network action postcondition might not hold (#63)"} (0 < I[Net#d]) ==> (M[Net#d][I[Net#d]] == (M[Net#d][I[Net#d] - 1] + M[Net#a][I[Net#a]]));
   R[Net#d] := R[Net#d] + 1;
   I := R;
-  assert {:msg "25.15: The network might not preserve the channel invariant (#65)"} M[Net#b][0] == 0;
-  assert {:msg "26.15: The network might not preserve the channel invariant (#66)"} 0 <= M[Net#b][I[Net#b]];
-  assert {:msg "The network might not preserve the channel invariant (#67)"} I[Net#c] == I[Net#a];
-  assert {:msg "The network might not preserve the channel invariant (#68)"} I[Net#c] == I[Net#b];
-  assert {:msg "The network might not preserve the channel invariant (#69)"} I[Net#b] == I[Net#e];
-  assert {:msg "The network might not preserve the channel invariant (#70)"} I[Net#d] == I[Net#c];
-  assert {:msg "The network might not preserve the channel invariant (#71)"} I[Net#e] == I[Net#c];
-  assert {:msg "24.13: The network might not preserve the network invariant (#72)"} (C[Net#b] - R[Net#b]) == 1;
-  assert {:msg "17.3: The network might leave unread tokens on channel a (#73)"} (C[Net#a] - R[Net#a]) == 0;
-  assert {:msg "17.3: The network might leave unread tokens on channel c (#74)"} (C[Net#c] - R[Net#c]) == 0;
-  assert {:msg "17.3: The network might not produce the specified number of tokens on output out (#75)"} (C[Net#d] - R[Net#d]) == 0;
-  assert {:msg "17.3: The network might leave unread tokens on channel e (#76)"} (C[Net#e] - R[Net#e]) == 0;
+  assert {:msg "27.15: The network might not preserve the channel invariant (#64)"} M[Net#b][0] == 0;
+  assert {:msg "28.15: The network might not preserve the channel invariant (#65)"} 0 <= M[Net#b][I[Net#b]];
+  assert {:msg "The network might not preserve the channel invariant (#66)"} I[Net#c] == I[Net#a];
+  assert {:msg "The network might not preserve the channel invariant (#67)"} I[Net#c] == I[Net#b];
+  assert {:msg "The network might not preserve the channel invariant (#68)"} I[Net#b] == I[Net#e];
+  assert {:msg "The network might not preserve the channel invariant (#69)"} I[Net#d] == I[Net#c];
+  assert {:msg "The network might not preserve the channel invariant (#70)"} I[Net#e] == I[Net#c];
+  assert {:msg "23.13: The network might not preserve the network invariant (#71)"} (C[Net#b] - R[Net#b]) == 1;
+  assert {:msg "24.13: The network might not preserve the network invariant (#72)"} R[Net#a] == C[Net#d];
+  assert {:msg "25.14: The network might not preserve the network invariant (#73)"} (forall i: int :: 
+    ((0 + 1) <= i) && (i < (C[Net#d] - 0)) ==> (M[Net#d][i] == (M[Net#d][i - 1] + M[Net#a][i]))
+  );
+  assert {:msg "16.3: The network might leave unread tokens on channel a (#74)"} (C[Net#a] - R[Net#a]) == 0;
+  assert {:msg "16.3: The network might leave unread tokens on channel c (#75)"} (C[Net#c] - R[Net#c]) == 0;
+  assert {:msg "16.3: The network might not produce the specified number of tokens on output out (#76)"} (C[Net#d] - R[Net#d]) == 0;
+  assert {:msg "16.3: The network might leave unread tokens on channel e (#77)"} (C[Net#e] - R[Net#e]) == 0;
 }

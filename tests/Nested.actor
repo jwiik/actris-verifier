@@ -1,0 +1,103 @@
+@static
+actor Add int in1, int in2 ==> int out :
+  action in1:[i], in2:[j] ==> out:[i+j] end
+end
+
+@static
+actor Split int in ==> int out1, int out2 :
+  action in:[i] ==> out1:[i], out2:[i] end
+end
+
+@static
+actor Delay(int k) int in ==> int out :
+  initialize ==> out:[k] end
+  action in:[i] ==> out:[i] end
+end
+
+network SumNet int in ==> int out :
+  
+  action in:1 ==> out:1
+    requires 0 <= in[@]
+    ensures out[0] = in[0]
+    ensures out[@] >= in[@]
+    ensures 0 < @(out) ==> out[@] = out[@-1]+in[@]
+  end
+  
+  invariant tokens(sn_b,1)
+  public invariant rd(in) = tot(out)
+  public invariant tot(out) > 0 ==> out[0] = in[0]
+  public invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in[i])
+  
+  chinvariant sn_b[0] = 0
+  chinvariant 0 <= sn_b[@]
+  
+  entities
+    add = Add();
+    del = Delay(0);
+    spl = Split();
+  end
+  
+  structure
+    sn_a: in --> add.in1;
+    sn_b: del.out --> add.in2;
+    sn_c: add.out --> spl.in;
+    sn_d: spl.out1 --> out;
+    sn_e: spl.out2 --> del.in;
+  end
+
+end
+
+actor Sum int x ==> int y: 
+
+  int sum;
+  
+  invariant 0 <= sum
+  invariant rd(x) > 0 ==> sum = y[last]
+  invariant tot(y) = 0 ==> sum = 0
+  
+  public invariant rd(x) = tot(y)
+  public invariant tot(y) > 0 ==> y[0] = x[0]
+  public invariant (forall int i :: every(y,i,1,0) ==> y[i] = y[i-1]+x[i])
+
+  initialize ==> do
+    sum := 0;
+  end
+  
+  action x:[i] ==> y:[sum]
+    requires 0 <= i
+    ensures i <= sum 
+  do
+    sum := sum+i;
+  end 
+  
+end
+
+network Nested int in ==> int out1, int out2 :
+  
+  action in:1 ==> out1:1, out2:1
+    requires 0 <= in[@]
+    ensures out1[0] = in[0]
+    ensures out2[0] = in[0]
+    ensures 0 < @(out1) ==> out1[@] = out1[@-1]+in[@]
+    ensures 0 < @(out2) ==> out2[@] = out2[@-1]+in[@]
+  end
+  
+  chinvariant @(d) = @(b)
+  chinvariant @(e) = @(c)
+  chinvariant tot@(in) <= 1
+  
+  entities
+    net = SumNet();
+    sum = Sum();
+    spl = Split();
+  end
+  
+  structure
+    a: in --> spl.in;
+    b: spl.out1 --> net.in;
+    c: spl.out2 --> sum.x;
+    d: net.out --> out1;
+    e: sum.y --> out2;
+  end
+
+end

@@ -7,7 +7,6 @@ actor Split int in ==> int out1, int out2 :
 end
 
 actor Delay(int k) int in ==> int out :
-  //public invariant out[0] = k
   initialize ==> out:[k] end
   action in:[i] ==> out:[i] end
 end
@@ -22,6 +21,9 @@ network Net int in ==> int out :
   end
   
   invariant tokens(b,1)
+  invariant rd(in) = tot(out)
+  invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in[i])
+  
   chinvariant b[0] = 0
   chinvariant 0 <= b[@]
   
