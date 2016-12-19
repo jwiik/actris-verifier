@@ -723,17 +723,26 @@ procedure Nested#init#14()
   assume R[Nested#d] == 0;
   assume C[Nested#e] == 0;
   assume R[Nested#e] == 0;
-  assert {:msg "85.15: Initialization of network 'Nested' might not establish the channel invariant (#93)"} I[Nested#d] == I[Nested#b];
-  assert {:msg "86.15: Initialization of network 'Nested' might not establish the channel invariant (#94)"} I[Nested#e] == I[Nested#c];
-  assert {:msg "87.15: Initialization of network 'Nested' might not establish the channel invariant (#95)"} (C[Nested#a] - I[Nested#a]) <= 1;
-  assert {:msg "Initialization of network 'Nested' might not establish the channel invariant (#96)"} I[Nested#b] == I[Nested#a];
-  assert {:msg "Initialization of network 'Nested' might not establish the channel invariant (#97)"} I[Nested#c] == I[Nested#a];
+  assert {:msg "88.16: Initialization of network 'Nested' might not establish the channel invariant (#93)"} (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
+  assert {:msg "89.15: Initialization of network 'Nested' might not establish the channel invariant (#94)"} I[Nested#d] == I[Nested#b];
+  assert {:msg "90.15: Initialization of network 'Nested' might not establish the channel invariant (#95)"} I[Nested#e] == I[Nested#c];
+  assert {:msg "91.15: Initialization of network 'Nested' might not establish the channel invariant (#96)"} (C[Nested#a] - I[Nested#a]) <= 1;
+  assert {:msg "Initialization of network 'Nested' might not establish the channel invariant (#97)"} I[Nested#b] == I[Nested#a];
+  assert {:msg "Initialization of network 'Nested' might not establish the channel invariant (#98)"} I[Nested#c] == I[Nested#a];
   I := R;
-  assert {:msg "96.5: The initialization might produce unspecified tokens on channel a (#98)"} (C[Nested#a] - R[Nested#a]) == 0;
-  assert {:msg "97.5: The initialization might produce unspecified tokens on channel b (#99)"} (C[Nested#b] - R[Nested#b]) == 0;
-  assert {:msg "98.5: The initialization might produce unspecified tokens on channel c (#100)"} (C[Nested#c] - R[Nested#c]) == 0;
-  assert {:msg "99.5: The initialization might produce unspecified tokens on channel d (#101)"} (C[Nested#d] - R[Nested#d]) == 0;
-  assert {:msg "100.5: The initialization might produce unspecified tokens on channel e (#102)"} (C[Nested#e] - R[Nested#e]) == 0;
+  assert {:msg "86.21: Network initialization might not establish the network invariant (#99)"} (forall i: int :: 
+    ((0 + 1) <= i) && (i < (C[Nested#d] - 0)) ==> (M[Nested#d][i] == (M[Nested#d][i - 1] + M[Nested#a][i]))
+  );
+  assert {:msg "87.21: Network initialization might not establish the network invariant (#100)"} (forall i: int :: 
+    (0 <= i) && (i < C[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
+  assert {:msg "100.5: The initialization might produce unspecified tokens on channel a (#101)"} (C[Nested#a] - R[Nested#a]) == 0;
+  assert {:msg "101.5: The initialization might produce unspecified tokens on channel b (#102)"} (C[Nested#b] - R[Nested#b]) == 0;
+  assert {:msg "102.5: The initialization might produce unspecified tokens on channel c (#103)"} (C[Nested#c] - R[Nested#c]) == 0;
+  assert {:msg "103.5: The initialization might produce unspecified tokens on channel d (#104)"} (C[Nested#d] - R[Nested#d]) == 0;
+  assert {:msg "104.5: The initialization might produce unspecified tokens on channel e (#105)"} (C[Nested#e] - R[Nested#e]) == 0;
 }
 procedure Nested##SumNet#anon$4#15()
   modifies C, R, M, I;
@@ -767,6 +776,9 @@ procedure Nested##SumNet#anon$4#15()
   assume I[Nested#e] <= R[Nested#e];
   assume R[Nested#e] <= C[Nested#e];
   assume I[Nested#e] == R[Nested#e];
+  assume (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
   assume I[Nested#d] == I[Nested#b];
   assume I[Nested#e] == I[Nested#c];
   assume (C[Nested#a] - I[Nested#a]) <= 1;
@@ -794,7 +806,7 @@ procedure Nested##SumNet#anon$4#15()
   assume 1 <= (C[Nested#b] - R[Nested#b]);
   in#inv$0 := M[Nested#b][R[Nested#b]];
   R[Nested#b] := R[Nested#b] + 1;
-  assert {:msg "20.14: Precondition might not hold for instance at 90.5 (#103)"} 0 <= M[Nested#b][I[Nested#b]];
+  assert {:msg "20.14: Precondition might not hold for instance at 94.5 (#106)"} 0 <= M[Nested#b][I[Nested#b]];
   C[Nested#d] := C[Nested#d] + 1;
   assume M[Nested#d][0] == M[Nested#b][0];
   assume M[Nested#d][I[Nested#d]] >= M[Nested#b][I[Nested#b]];
@@ -817,11 +829,14 @@ procedure Nested##SumNet#anon$4#15()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[Nested#c]) ==> (M[Nested#c][idx$] == M[Nested#a][idx$])
   );
-  assert {:msg "85.15: Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#104)"} I[Nested#d] == I[Nested#b];
-  assert {:msg "86.15: Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#105)"} I[Nested#e] == I[Nested#c];
-  assert {:msg "87.15: Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#106)"} (C[Nested#a] - I[Nested#a]) <= 1;
-  assert {:msg "Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#107)"} I[Nested#b] == I[Nested#a];
-  assert {:msg "Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#108)"} I[Nested#c] == I[Nested#a];
+  assert {:msg "88.16: Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#107)"} (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
+  assert {:msg "89.15: Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#108)"} I[Nested#d] == I[Nested#b];
+  assert {:msg "90.15: Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#109)"} I[Nested#e] == I[Nested#c];
+  assert {:msg "91.15: Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#110)"} (C[Nested#a] - I[Nested#a]) <= 1;
+  assert {:msg "Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#111)"} I[Nested#b] == I[Nested#a];
+  assert {:msg "Action at 19.3 ('anon$4') for actor instance 'net' might not preserve the channel invariant (#112)"} I[Nested#c] == I[Nested#a];
 }
 procedure Nested##Sum#anon$6#16()
   modifies C, R, M, I;
@@ -855,6 +870,9 @@ procedure Nested##Sum#anon$6#16()
   assume I[Nested#e] <= R[Nested#e];
   assume R[Nested#e] <= C[Nested#e];
   assume I[Nested#e] == R[Nested#e];
+  assume (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
   assume I[Nested#d] == I[Nested#b];
   assume I[Nested#e] == I[Nested#c];
   assume (C[Nested#a] - I[Nested#a]) <= 1;
@@ -882,7 +900,7 @@ procedure Nested##Sum#anon$6#16()
   assume 1 <= (C[Nested#c] - R[Nested#c]);
   x#i := M[Nested#c][R[Nested#c]];
   R[Nested#c] := R[Nested#c] + 1;
-  assert {:msg "67.14: Precondition might not hold for instance at 91.5 (#109)"} 0 <= x#i;
+  assert {:msg "67.14: Precondition might not hold for instance at 95.5 (#113)"} 0 <= x#i;
   havoc AV#sum#sum;
   M[Nested#e][C[Nested#e]] := AV#sum#sum;
   C[Nested#e] := C[Nested#e] + 1;
@@ -905,11 +923,14 @@ procedure Nested##Sum#anon$6#16()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[Nested#c]) ==> (M[Nested#c][idx$] == M[Nested#a][idx$])
   );
-  assert {:msg "85.15: Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#110)"} I[Nested#d] == I[Nested#b];
-  assert {:msg "86.15: Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#111)"} I[Nested#e] == I[Nested#c];
-  assert {:msg "87.15: Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#112)"} (C[Nested#a] - I[Nested#a]) <= 1;
-  assert {:msg "Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#113)"} I[Nested#b] == I[Nested#a];
-  assert {:msg "Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#114)"} I[Nested#c] == I[Nested#a];
+  assert {:msg "88.16: Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#114)"} (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
+  assert {:msg "89.15: Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#115)"} I[Nested#d] == I[Nested#b];
+  assert {:msg "90.15: Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#116)"} I[Nested#e] == I[Nested#c];
+  assert {:msg "91.15: Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#117)"} (C[Nested#a] - I[Nested#a]) <= 1;
+  assert {:msg "Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#118)"} I[Nested#b] == I[Nested#a];
+  assert {:msg "Action at 66.3 ('anon$6') for actor instance 'sum' might not preserve the channel invariant (#119)"} I[Nested#c] == I[Nested#a];
 }
 procedure Nested##Split#anon$1#17()
   modifies C, R, M, I;
@@ -943,6 +964,9 @@ procedure Nested##Split#anon$1#17()
   assume I[Nested#e] <= R[Nested#e];
   assume R[Nested#e] <= C[Nested#e];
   assume I[Nested#e] == R[Nested#e];
+  assume (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
   assume I[Nested#d] == I[Nested#b];
   assume I[Nested#e] == I[Nested#c];
   assume (C[Nested#a] - I[Nested#a]) <= 1;
@@ -992,11 +1016,14 @@ procedure Nested##Split#anon$1#17()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[Nested#c]) ==> (M[Nested#c][idx$] == M[Nested#a][idx$])
   );
-  assert {:msg "85.15: Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#115)"} I[Nested#d] == I[Nested#b];
-  assert {:msg "86.15: Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#116)"} I[Nested#e] == I[Nested#c];
-  assert {:msg "87.15: Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#117)"} (C[Nested#a] - I[Nested#a]) <= 1;
-  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#118)"} I[Nested#b] == I[Nested#a];
-  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#119)"} I[Nested#c] == I[Nested#a];
+  assert {:msg "88.16: Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#120)"} (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
+  assert {:msg "89.15: Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#121)"} I[Nested#d] == I[Nested#b];
+  assert {:msg "90.15: Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#122)"} I[Nested#e] == I[Nested#c];
+  assert {:msg "91.15: Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#123)"} (C[Nested#a] - I[Nested#a]) <= 1;
+  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#124)"} I[Nested#b] == I[Nested#a];
+  assert {:msg "Action at 8.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#125)"} I[Nested#c] == I[Nested#a];
 }
 procedure Nested#anon$7#input#in#18()
   modifies C, R, M, I;
@@ -1030,6 +1057,9 @@ procedure Nested#anon$7#input#in#18()
   assume R[Nested#e] <= C[Nested#e];
   assume I[Nested#e] == R[Nested#e];
   assume (C[Nested#a] - I[Nested#a]) < 1;
+  assume (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
   assume I[Nested#d] == I[Nested#b];
   assume I[Nested#e] == I[Nested#c];
   assume (C[Nested#a] - I[Nested#a]) <= 1;
@@ -1056,12 +1086,15 @@ procedure Nested#anon$7#input#in#18()
   );
   C[Nested#a] := C[Nested#a] + 1;
   assume 0 <= M[Nested#a][I[Nested#a]];
-  assert {:msg "85.15: Channel invariant might be falsified by network input (#120)"} I[Nested#d] == I[Nested#b];
-  assert {:msg "86.15: Channel invariant might be falsified by network input (#121)"} I[Nested#e] == I[Nested#c];
-  assert {:msg "87.15: Channel invariant might be falsified by network input (#122)"} (C[Nested#a] - I[Nested#a]) <= 1;
-  assert {:msg "Channel invariant might be falsified by network input (#123)"} I[Nested#b] == I[Nested#a];
-  assert {:msg "Channel invariant might be falsified by network input (#124)"} I[Nested#c] == I[Nested#a];
-  assert {:msg "78.14: Channel invariant might be falsified by network input (#125)"} 0 <= M[Nested#a][I[Nested#a]];
+  assert {:msg "88.16: Channel invariant might be falsified by network input (#126)"} (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
+  assert {:msg "89.15: Channel invariant might be falsified by network input (#127)"} I[Nested#d] == I[Nested#b];
+  assert {:msg "90.15: Channel invariant might be falsified by network input (#128)"} I[Nested#e] == I[Nested#c];
+  assert {:msg "91.15: Channel invariant might be falsified by network input (#129)"} (C[Nested#a] - I[Nested#a]) <= 1;
+  assert {:msg "Channel invariant might be falsified by network input (#130)"} I[Nested#b] == I[Nested#a];
+  assert {:msg "Channel invariant might be falsified by network input (#131)"} I[Nested#c] == I[Nested#a];
+  assert {:msg "78.14: Channel invariant might be falsified by network input (#132)"} 0 <= M[Nested#a][I[Nested#a]];
 }
 procedure Nested#anon$7#exit#19()
   modifies C, R, M, I;
@@ -1094,6 +1127,9 @@ procedure Nested#anon$7#exit#19()
   assume I[Nested#e] <= R[Nested#e];
   assume R[Nested#e] <= C[Nested#e];
   assume I[Nested#e] == R[Nested#e];
+  assume (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
   assume I[Nested#d] == I[Nested#b];
   assume I[Nested#e] == I[Nested#c];
   assume (C[Nested#a] - I[Nested#a]) <= 1;
@@ -1123,21 +1159,31 @@ procedure Nested#anon$7#exit#19()
   assume !(1 <= (C[Nested#b] - R[Nested#b]));
   assume !(1 <= (C[Nested#c] - R[Nested#c]));
   assume !(1 <= (C[Nested#a] - R[Nested#a]));
-  assert {:msg "79.13: Network action postcondition might not hold (#126)"} M[Nested#d][0] == M[Nested#a][0];
-  assert {:msg "80.13: Network action postcondition might not hold (#127)"} M[Nested#e][0] == M[Nested#a][0];
-  assert {:msg "81.13: Network action postcondition might not hold (#128)"} (0 < I[Nested#d]) ==> (M[Nested#d][I[Nested#d]] == (M[Nested#d][I[Nested#d] - 1] + M[Nested#a][I[Nested#a]]));
-  assert {:msg "82.13: Network action postcondition might not hold (#129)"} (0 < I[Nested#e]) ==> (M[Nested#e][I[Nested#e]] == (M[Nested#e][I[Nested#e] - 1] + M[Nested#a][I[Nested#a]]));
+  assert {:msg "79.13: Network action postcondition might not hold (#133)"} M[Nested#d][0] == M[Nested#a][0];
+  assert {:msg "80.13: Network action postcondition might not hold (#134)"} M[Nested#e][0] == M[Nested#a][0];
+  assert {:msg "81.13: Network action postcondition might not hold (#135)"} (0 < I[Nested#d]) ==> (M[Nested#d][I[Nested#d]] == (M[Nested#d][I[Nested#d] - 1] + M[Nested#a][I[Nested#a]]));
+  assert {:msg "82.13: Network action postcondition might not hold (#136)"} (0 < I[Nested#e]) ==> (M[Nested#e][I[Nested#e]] == (M[Nested#e][I[Nested#e] - 1] + M[Nested#a][I[Nested#a]]));
+  assert {:msg "83.13: Network action postcondition might not hold (#137)"} M[Nested#d][I[Nested#d]] == M[Nested#e][I[Nested#e]];
   R[Nested#d] := R[Nested#d] + 1;
   R[Nested#e] := R[Nested#e] + 1;
   I := R;
-  assert {:msg "85.15: The network might not preserve the channel invariant (#130)"} I[Nested#d] == I[Nested#b];
-  assert {:msg "86.15: The network might not preserve the channel invariant (#131)"} I[Nested#e] == I[Nested#c];
-  assert {:msg "87.15: The network might not preserve the channel invariant (#132)"} (C[Nested#a] - I[Nested#a]) <= 1;
-  assert {:msg "The network might not preserve the channel invariant (#133)"} I[Nested#b] == I[Nested#a];
-  assert {:msg "The network might not preserve the channel invariant (#134)"} I[Nested#c] == I[Nested#a];
-  assert {:msg "77.3: The network might leave unread tokens on channel a (#135)"} (C[Nested#a] - R[Nested#a]) == 0;
-  assert {:msg "77.3: The network might leave unread tokens on channel b (#136)"} (C[Nested#b] - R[Nested#b]) == 0;
-  assert {:msg "77.3: The network might leave unread tokens on channel c (#137)"} (C[Nested#c] - R[Nested#c]) == 0;
-  assert {:msg "77.3: The network might not produce the specified number of tokens on output out1 (#138)"} (C[Nested#d] - R[Nested#d]) == 0;
-  assert {:msg "77.3: The network might not produce the specified number of tokens on output out2 (#139)"} (C[Nested#e] - R[Nested#e]) == 0;
+  assert {:msg "88.16: The network might not preserve the channel invariant (#138)"} (forall i: int :: 
+    (0 <= i) && (i < I[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
+  assert {:msg "89.15: The network might not preserve the channel invariant (#139)"} I[Nested#d] == I[Nested#b];
+  assert {:msg "90.15: The network might not preserve the channel invariant (#140)"} I[Nested#e] == I[Nested#c];
+  assert {:msg "91.15: The network might not preserve the channel invariant (#141)"} (C[Nested#a] - I[Nested#a]) <= 1;
+  assert {:msg "The network might not preserve the channel invariant (#142)"} I[Nested#b] == I[Nested#a];
+  assert {:msg "The network might not preserve the channel invariant (#143)"} I[Nested#c] == I[Nested#a];
+  assert {:msg "86.21: The network might not preserve the network invariant (#144)"} (forall i: int :: 
+    ((0 + 1) <= i) && (i < (C[Nested#d] - 0)) ==> (M[Nested#d][i] == (M[Nested#d][i - 1] + M[Nested#a][i]))
+  );
+  assert {:msg "87.21: The network might not preserve the network invariant (#145)"} (forall i: int :: 
+    (0 <= i) && (i < C[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
+  );
+  assert {:msg "77.3: The network might leave unread tokens on channel a (#146)"} (C[Nested#a] - R[Nested#a]) == 0;
+  assert {:msg "77.3: The network might leave unread tokens on channel b (#147)"} (C[Nested#b] - R[Nested#b]) == 0;
+  assert {:msg "77.3: The network might leave unread tokens on channel c (#148)"} (C[Nested#c] - R[Nested#c]) == 0;
+  assert {:msg "77.3: The network might not produce the specified number of tokens on output out1 (#149)"} (C[Nested#d] - R[Nested#d]) == 0;
+  assert {:msg "77.3: The network might not produce the specified number of tokens on output out2 (#150)"} (C[Nested#e] - R[Nested#e]) == 0;
 }
