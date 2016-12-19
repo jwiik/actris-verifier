@@ -51,7 +51,7 @@ sealed abstract class DFActor(
 //    members.filter { x => x.isActorInvariant } map { x => x.asInstanceOf[ActorInvariant] }
 //  }
   
-  lazy val publicActorInvariants = actorInvariants.filter { x => x.public }
+  lazy val streamInvariants = actorInvariants.filter { x => x.stream }
   
   lazy val schedule = {
     val opt = members.find(m => m match {case sc: Schedule => true; case _ => false;})
@@ -187,7 +187,7 @@ sealed abstract class Invariant(val assertion: Assertion, val generated: Boolean
 sealed case class ActorInvariant(
     override val assertion: Assertion, 
     override val generated: Boolean, 
-    val public: Boolean) extends Invariant(assertion,generated) {
+    val stream: Boolean) extends Invariant(assertion,generated) {
   
   override def isActorInvariant = true
 }

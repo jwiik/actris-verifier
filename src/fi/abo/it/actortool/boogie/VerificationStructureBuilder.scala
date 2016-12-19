@@ -219,7 +219,7 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     val publicInvs = 
       entities flatMap { 
         entity => {
-          for (inv <- entity.actor.publicActorInvariants) yield {
+          for (inv <- entity.actor.streamInvariants) yield {
             val renamings = networkRenamings ++ entityData(entity).renamings
             (inv,renamings)
           }

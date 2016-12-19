@@ -38,7 +38,7 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
     destroyTimer.schedule(new TimerTask() {
       def run {
         boogie.destroy
-        println("Boogie backend timed out during verification")
+        println("\nBoogie backend timed out during verification")
       }
     }, params.BoogieTimeout*1000)
     

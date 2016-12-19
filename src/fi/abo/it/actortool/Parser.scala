@@ -37,7 +37,7 @@ class Parser extends StandardTokenParsers {
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
-                       "free", "primary", "error", "recovery", "next", "last", "prev", "public", "havoc"
+                       "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -142,9 +142,9 @@ class Parser extends StandardTokenParsers {
     case exps => exps
   })
   
-  def actorInvDecl = positioned((opt("free") ~ opt("public") ~ "invariant" ~ expression) ^^ {
-    case free ~ public ~ _ ~ expr => {
-      ActorInvariant(Assertion(expr, free.isDefined),false, public.isDefined)
+  def actorInvDecl = positioned((opt("free") ~ opt("stream") ~ "invariant" ~ expression) ^^ {
+    case free ~ stream ~ _ ~ expr => {
+      ActorInvariant(Assertion(expr, free.isDefined),false, stream.isDefined)
     }
   })
   
