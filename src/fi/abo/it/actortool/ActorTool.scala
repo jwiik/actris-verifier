@@ -55,7 +55,7 @@ object ActorTool {
     val SmokeTest: Boolean
     val ReplaceMaps: Boolean
     val BoogieTimeout: Int
-    final lazy val help = "Usage: actortool [option] <filename>+\n"
+    final lazy val help = "actortool [option] <filename>+\n"
   }
   
   //val actorSystem = ActorSystem("actortool")
@@ -208,7 +208,7 @@ object ActorTool {
     // parse programs
     val parser = new Parser
     val parseResults = if (files.isEmpty) {
-      reportCommandLineError("No input file(s) provided.", params.help)
+      //reportCommandLineError("No input file(s) provided.", params.help)
       Nil
     } else for (file <- files) yield {
       parser.parseFile(file)
@@ -219,7 +219,7 @@ object ActorTool {
     val program: List[TopDecl] = parseResults.map(result => result match {
      case e: parser.NoSuccess =>
        parseErrors = true;
-       println("Error: " + e);
+       //println("Error: " + e);
        Nil
      case parser.Success(prog, _) =>
        prog
@@ -348,10 +348,10 @@ object ActorTool {
     val totalTime = System.nanoTime - startTime
     
     if (0 < params.Timing)
-      Console.out.println("Verification finished in %1.3f seconds" format (totalTime/1000000000.0))
+      println("Verification finished in %1.3f seconds" format (totalTime/1000000000.0))
     if (1 < params.Timing) {
       for (s <- Step.values) {
-        Console.out.println(s + ": %1.3fs" format (timings(s)/1000000000.0))
+        println(s + ": %1.3fs".format (timings(s)/1000000000.0))
       }
     }
     
