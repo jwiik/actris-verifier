@@ -1,12 +1,12 @@
+@static
 actor Gain int in ==> int out :
-  invariant rd0(in) = tot0(out)
   action in:[i] ==> out:[2*i] end
 end
 
 actor Split int in ==> int pos, int neg :
-  invariant rd0(in) = tot0(pos)+tot0(neg)
-  invariant 0 < rd0(in) && 0 <= in[prev] ==> in[prev] = pos[last]
-  invariant 0 < rd0(in) && in[prev] < 0  ==> in[prev] = neg[last]
+  stream invariant rd(in) = tot(pos)+tot(neg)
+  stream invariant 0 < rd(in) && 0 <= in[prev] ==> in[prev] = pos[last]
+  stream invariant 0 < rd(in) && in[prev] < 0  ==> in[prev] = neg[last]
   action in:[i] ==> pos:[i] 
     guard 0 <= i
   end
@@ -30,10 +30,9 @@ network Net int in ==> int out1, int out2 :
   end
   
   chinvariant @(b) = @(d)+@(c)
-  //chinvariant rd(b) = tot(d)+tot(c)
-  chinvariant 0 < tot(in) ==> in[@] = 1 || in[@] = -1
-  chinvariant 0 < rd(b) && b[@] >= 0 ==> tot(d) = 0
-  chinvariant 0 < rd(b) && b[@] < 0  ==> tot(c) = 0
+  chinvariant 0 < tot@(in) ==> in[@] = 1 || in[@] = -1
+  chinvariant 0 < rd@(b) && b[@] >= 0 ==> tot@(d) = 0
+  chinvariant 0 < rd@(b) && b[@] < 0  ==> tot@(c) = 0
     
   entities
     gain = Gain();

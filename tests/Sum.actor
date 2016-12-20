@@ -2,14 +2,13 @@ actor Sum int x ==> int y:
   int sum;
   
   invariant 0 <= sum
-  invariant rd0(x) = tot0(y)
-  //invariant rd0(x) = 0 ==> sum = 0
-  invariant rd0(x) > 0 ==> sum = y[last]
-  //invariant rd0(x) > 0 ==> y[0] = x[0]
-  //invariant (forall int i :: every(y,i) ==> y[i] >= x[i])
-  invariant (forall int i :: every(y,i,1,0) ==> y[i] = y[i-1]+x[i])
-  
-  
+  invariant rd(x) > 0 ==> sum = y[last]
+  invariant rd(x) = 0 ==> sum = 0
+  stream invariant rd(x) = tot(y)
+  stream invariant tot(y) > 0 ==> y[0] = x[0]
+  stream invariant (forall int i :: every(y,i) ==> y[i] >= x[i])
+  stream invariant (forall int i :: every(y,i,1,0) ==> y[i] = y[i-1]+x[i])
+
   initialize ==> do
     sum := 0;
   end
@@ -25,13 +24,13 @@ network Net int in ==> int out :
   
   action in:1 ==> out:1
     requires 0 <= in[@]
-    //ensures out[0] = in[0]
-    //ensures out[@] >= in[@]
+    ensures out[0] = in[0]
+    ensures out[@] >= in[@]
     ensures 0 < @(out) ==> out[@] = out[@-1]+in[@]
   end
   
   chinvariant @(in) = @(out)
-  chinvariant tot(in) <= 1
+  chinvariant tot@(in) <= 1
   
   entities
     sum = Sum();

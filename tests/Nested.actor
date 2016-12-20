@@ -24,9 +24,9 @@ network SumNet int in ==> int out :
   end
   
   invariant tokens(sn_b,1)
-  public invariant rd(in) = tot(out)
-  public invariant tot(out) > 0 ==> out[0] = in[0]
-  public invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in[i])
+  stream invariant rd(in) = tot(out)
+  stream invariant tot(out) > 0 ==> out[0] = in[0]
+  stream invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in[i])
   
   chinvariant sn_b[0] = 0
   chinvariant 0 <= sn_b[@]

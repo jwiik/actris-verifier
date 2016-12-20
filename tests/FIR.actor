@@ -6,11 +6,11 @@ actor delay(int k) int in ==> int out :
   int data;
   int y;
   
-  public invariant tot0(out) = 0 ==> data = k
-  public invariant tot0(out) > 0 ==> data = prev(in)
-  public invariant rd0(in) = tot0(out)
-  public invariant tot0(out) > 0 ==> out[0] = k
-  public invariant (forall int idx :: every(out,idx,1,0) ==> out[idx] = in[idx-1])
+  stream invariant tot(out) = 0 ==> data = k
+  stream invariant tot(out) > 0 ==> data = prev(in)
+  stream invariant rd(in) = tot(out)
+  stream invariant tot(out) > 0 ==> out[0] = k
+  stream invariant (forall int idx :: every(out,idx,1,0) ==> out[idx] = in[idx-1])
   
   initialize ==> do data := k end
   action in:[i] ==> out:[y] 

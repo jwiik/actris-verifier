@@ -3,7 +3,7 @@ actor add int in1, int in2 ==> int out :
 end
 
 actor delay(int k) int in ==> int out :
-  invariant out[0] = k
+  stream invariant out[0] = k
   initialize ==> out:[k] end
   action in:[i] ==> out:[i] end
 end
