@@ -12,6 +12,8 @@ import fi.abo.it.actortool.boogie.BoogieVerifier
 
 object ActorTool {
   
+  val DEBUG = true
+  
   abstract class Verifier[U,T] {
     def translateProgram(decls: List[TopDecl]): U
     def verify(input: U): T
@@ -61,17 +63,16 @@ object ActorTool {
   //val actorSystem = ActorSystem("actortool")
   
   def parseCommandLine(args: Array[String]): Option[CommandLineParameters] = {
-
-    var aBoogiePath = "./boogie"
+    var aBoogiePath = if (DEBUG) "./boogie" else "boogie"
     var aBoogieArgs = ""
-    var aPrintProgram = true
-    var aNoBplFile = false
+    var aPrintProgram = if (DEBUG) true else false
+    var aNoBplFile = if (DEBUG) true else false
     var aBplFile = "out.bpl"
     var aDoTypecheck = true
     var aDoInfer = true
     var aDoTranslate = true
     var aDoVerify = true
-    var aTiming = 2
+    var aTiming = if (DEBUG) 2 else 1
     var aInferModules = List("default")
     var aBVMode = false
     var aSoundnessChecks = false
@@ -219,7 +220,7 @@ object ActorTool {
     val program: List[TopDecl] = parseResults.map(result => result match {
      case e: parser.NoSuccess =>
        parseErrors = true;
-       //println("Error: " + e);
+       println("Error: " + e);
        Nil
      case parser.Success(prog, _) =>
        prog
