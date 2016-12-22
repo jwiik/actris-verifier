@@ -137,7 +137,9 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
     for (c <- connections) {
       buffer += ((c.id,namePrefix+c.id))
       chanDecls += BDecl(namePrefix+c.id,ChanType(c.typ))
-      chanDecls += BDecl(namePrefix+c.id+"#sqn",IntType)
+      if (ftMode) {
+        chanDecls += BDecl(namePrefix+c.id+"#sqn",IntType)
+      }
     }
     
     val explicitTokensAsserts = tokensFinder.visit(userNwInvariants) ::: tokensFinder.visit(chInvariants) toSet
