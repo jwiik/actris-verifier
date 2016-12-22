@@ -1,62 +1,45 @@
-@sdf
 actor Rep int in ==> int out :
   action in:[i] ==> out:[i] end
 end
 
-@sdf
 actor Split int in ==> int out1, int out2 :
   action in:[i] ==> out1:[i], out2:[i] end
 end
 
 
-actor Adjudicator int x1, int x2, int c_in ==> int y, int c_out :
+actor Adjudicator int x1, int x2 ==> int y :
 
-  normal: primary action x1:[i], x2:[j], c_in:[c] ==> y:[i], c_out:[c+1]
+  stream invariant tot(y) = rd(x2)
+  invariant rd(x2) = c
+  //stream invariant tot(y) > 0 ==> y[last] = rd(x2)
+  
+  int c;
+
+  normal: primary action x1:[i], x2:[j] ==> y:[i]
     guard sqn(i) = sqn(j) && sqn(i) = c
+    do c := c+1;
   end
   
-  timeout: error action x2:[j], c_in:[c] ==> y:[j], c_out:[c+1] end
+  timeout: error action x2:[j] ==> y:[j] 
+    do c := c+1;
+  end
   
-  readoff: recovery action x1:[i], c_in:[c] ==> c_out:[c]
+  readoff: recovery action x1:[i] ==>
     guard sqn(i) < c
   end
   
-  initialize ==> c_out:[0] end
-  
-  priority readoff > normal > timeout end 
+  initialize ==>
+    do c := 0;
+  end
   
 end
 
 network Net int in ==> int out :
 
-  action in:1 ==> out:1
-    requires (forall int i :: 0 <= i && i < tot(a) ==> sqn(a[i]) = i)
-    ensures (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
-    ensures (forall int i :: 0 <= i && i < tot(g) ==> g[i] = a[i])
-  end
-  
-  invariant delay(f,1)
-  invariant rd(e) = next(f)
-  
-  chinvariant currsqn(spl) = rd(a)
-  chinvariant currsqn(pri) = rd(b)
-  chinvariant currsqn(sec) = rd(c)
-  chinvariant currsqn(adj) = rd(e)
-  
-  chinvariant (forall int i :: 0 <= i && i < tot(a) ==> sqn(a[i]) = i)
-  chinvariant (forall int i :: 0 <= i && i < tot(b) ==> sqn(b[i]) = i)
-  chinvariant (forall int i :: 0 <= i && i < tot(c) ==> sqn(c[i]) = i)
-  chinvariant (forall int i :: 0 <= i && i < tot(d) ==> sqn(d[i]) = i)
-  chinvariant (forall int i :: 0 <= i && i < tot(e) ==> sqn(e[i]) = i)
-  chinvariant (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
-  
-  chinvariant urd(f) = 1
-  chinvariant tot(g) = rd(e)
-  chinvariant rd(e) = next(f)
-  chinvariant (forall int i :: 0 <= i && i < tot(g) ==> sqn(g[i]) = i)
-  
-  //chinvariant 0 < rd(d) && 0 < rd(e) ==> prev(d) <= prev(e) 
-  chinvariant (forall int i :: 0 <= i && i < rd(e) ==> g[i] = e[i])
+  action in:1 ==> out:1 end
+
+  chinvariant @(g) = @(d)
+  chinvariant @(g) = @(e)
   
   entities
     spl = Split();
@@ -71,7 +54,7 @@ network Net int in ==> int out :
     c: spl.out2 --> sec.in;
     d: pri.out --> adj.x1;
     e: sec.out --> adj.x2;
-    f: adj.c_out --> adj.c_in;
+    //f: adj.c_out --> adj.c_in;
     g: adj.y --> out;
   end
 
