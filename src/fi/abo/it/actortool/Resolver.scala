@@ -153,8 +153,8 @@ object Resolver {
             case ac: Action => 
               resolveAction(ctx,ac,false)
               actions += ac
-            case ActorInvariant(Assertion(e,_),_,_) => resolveExpr(ctx,e,BoolType)
-            case ChannelInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
+            case ActorInvariant(Assertion(e,_,_),_,_) => resolveExpr(ctx,e,BoolType)
+            case ChannelInvariant(Assertion(e,_,_),_) => resolveExpr(ctx,e,BoolType)
               //return Errors(List((ci.pos, "Basic actors cannot have channel invariants")))
             case e: Entities =>
               return Errors(List((e.pos, "Basic actors cannot have a entities block")))
@@ -238,8 +238,8 @@ object Resolver {
               }
               case e: Entities =>  // Already handled
               case s: Structure => // Already handled 
-              case ActorInvariant(Assertion(e,_),_,_) => resolveExpr(ctx,e,BoolType)
-              case ChannelInvariant(Assertion(e,_),_) => resolveExpr(ctx,e,BoolType)
+              case ActorInvariant(Assertion(e,_,_),_,_) => resolveExpr(ctx,e,BoolType)
+              case ChannelInvariant(Assertion(e,_,_),_) => resolveExpr(ctx,e,BoolType)
               case d: Declaration => return Errors(List((d.pos, "Networks cannot have declarations")))
               case sch: Schedule => return Errors(List((sch.pos,"Networks cannot have action schedules")))
               case sch: Priority => return Errors(List((sch.pos,"Networks cannot have action priorities")))
@@ -565,7 +565,7 @@ object Resolver {
       case fa@FunctionApp("history",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
-      case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType.default,IntType.default,IntType.default))
+      case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType,IntType,IntType))
       case fa@FunctionApp("subvar",params) => {
         if (params.size != 2) {
           ctx.error(fa.pos, "Expected two arguments")
@@ -689,7 +689,7 @@ object Resolver {
           }
           case None => ctx.error(sm.pos, "Marker '" + m + "' used in invalid position")
         }
-        IntType.default
+        IntType
       }
       case v@Id(id) =>
         if (v.typ != null) {

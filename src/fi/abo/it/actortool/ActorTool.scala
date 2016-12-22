@@ -66,7 +66,7 @@ object ActorTool {
     var aBoogiePath = if (DEBUG) "./boogie" else "boogie"
     var aBoogieArgs = ""
     var aPrintProgram = if (DEBUG) true else false
-    var aNoBplFile = if (DEBUG) true else false
+    var aNoBplFile = if (DEBUG) false else true
     var aBplFile = "out.bpl"
     var aDoTypecheck = true
     var aDoInfer = true

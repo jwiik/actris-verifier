@@ -275,22 +275,22 @@ object Inferencer {
     val soundnessChecks = true
     
     override def network(n: Network)(implicit ctx: Context) {
-      val action = n.actions(0)
-      for (ipat <- action.inputPattern) {
-        val channel = n.structure.get.getInputChannel(ipat.portId).get
-        
-        // Generate chinvariant: forall i . 0 <= i && i < tot(a) ==> sqn(a[i]) = i
-        // where a is a network input channel
-        val lowBound = lit(0)
-        val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(channel.id)))
-        val cId = Id(channel.id); cId.typ = ChanType(ipat.vars(0).typ)
-        val accessor = IndexAccessor(cId,quantVar); accessor.typ = ipat.vars(0).typ
-        val sqn = sqnAcc(accessor); sqn.typ = IntType(32)
-        val quantExp = Implies(quantBounds,Eq(sqn,quantVar))
-        n.addChannelInvariant(Forall(List(quantVar),quantExp), !soundnessChecks)
-        
-      }
-      
+//      val action = n.actions(0)
+//      for (ipat <- action.inputPattern) {
+//        val channel = n.structure.get.getInputChannel(ipat.portId).get
+//        
+//        // Generate chinvariant: forall i . 0 <= i && i < tot(a) ==> sqn(a[i]) = i
+//        // where a is a network input channel
+//        val lowBound = lit(0)
+//        val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(channel.id)))
+//        val cId = Id(channel.id); cId.typ = ChanType(ipat.vars(0).typ)
+//        val accessor = IndexAccessor(cId,quantVar); accessor.typ = ipat.vars(0).typ
+//        val sqn = sqnAcc(accessor); sqn.typ = IntType(32)
+//        val quantExp = Implies(quantBounds,Eq(sqn,quantVar))
+//        n.addChannelInvariant(Forall(List(quantVar),quantExp), !soundnessChecks)
+//        
+//      }
+//      
     }
   }
   

@@ -38,14 +38,16 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   
 }
 
-class ActorVerificationStructureBuilder(implicit val bvMode: Boolean) 
+class ActorVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
   
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
-    
     val prefix = actor.id+B.Sep
         
-    val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
+    val normalChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
+    val portChans =
+      if (ftMode) normalChans ::: ((actor.inports ::: actor.outports) map { p => BDecl(p.id+"#sqn", ChanType(IntType)) }) 
+      else normalChans
     val uniquenessConidition = createUniquenessCondition(portChans).reduceLeft((a,b) => (a && b))
 
             
@@ -115,12 +117,14 @@ class ActorVerificationStructureBuilder(implicit val bvMode: Boolean)
   
 }
 
-class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean) 
+class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean) 
          extends VerificationStructureBuilder[Network, NetworkVerificationStructure] {
+  
+  val tokensFinder = new TokensFinder()
   
   def buildStructure(network: Network): NetworkVerificationStructure = {
     val actions = network.actions
-    val nwInvariants = network.actorInvariants
+    val userNwInvariants = network.actorInvariants
     val chInvariants = network.channelInvariants
     val connections = network.structure.get.connections
     val entities = network.entities.get.entities
@@ -133,7 +137,15 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     for (c <- connections) {
       buffer += ((c.id,namePrefix+c.id))
       chanDecls += BDecl(namePrefix+c.id,ChanType(c.typ))
+      chanDecls += BDecl(namePrefix+c.id+"#sqn",IntType)
     }
+    
+    val explicitTokensAsserts = tokensFinder.visit(userNwInvariants) ::: tokensFinder.visit(chInvariants) toSet
+    val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
+    val implicitTokensAsserts = implicitTokensChs map { 
+      c => ActorInvariant(Assertion(FunctionApp("tokens",List(Id(c.id),IntLiteral(0))),false,Some("Unread tokens might be left on channel " + c.id)),true,false)
+    }
+    val nwInvariants = userNwInvariants ::: implicitTokensAsserts
     
     // Add input/output port names as synonyms to the connected channels
     for (ip <- network.inports) {
@@ -302,6 +314,19 @@ class NetworkVerificationStructureBuilder(implicit val bvMode: Boolean)
     
     new ActionData(vars.toList, patternVarRenamings, replacements.toMap, assignedVars.toSet)
 
+  }
+  
+  class TokensFinder {
+    
+    def visit(invs: List[Invariant]): List[String] = invs.flatMap { x => visit(x.expr) }
+    
+    def visit(expr: Expr): List[String] =
+      expr match {
+        case And(left,right) => visit(left) ::: visit(right)
+        case FunctionApp("tokens",params) => List(params(0).asInstanceOf[Id].id)
+        case _ => Nil
+      }
+    
   }
   
 }

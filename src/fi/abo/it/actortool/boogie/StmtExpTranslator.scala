@@ -4,6 +4,7 @@ import fi.abo.it.actortool._
 import scala.collection.mutable.ListBuffer
 import fi.abo.it.actortool.boogie.Boogie.UnaryExpr
 import fi.abo.it.actortool.ActorTool.TranslationException
+import fi.abo.it.actortool.ActorTool.TranslationException
 
 class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
   /*
@@ -102,22 +103,26 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "tot" => B.C(transExpr(params(0)))
           case "rd@" => B.R(transExpr(params(0))) - B.I(transExpr(params(0)))
           case "tot@" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
-//          case "rd" => B.R(transExpr(params(0))) - B.I(transExpr(params(0)))
-//          case "tot" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
           case "str" => B.I(transExpr(params(0)))
           case "@" => B.I(transExpr(params(0)))
           case "sqn" => {
-            if (!ftMode) 
-              throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
-            val t = transExpr(params(0))
-            val accessor = params(0).asInstanceOf[IndexAccessor]
-            val channel = transExpr(accessor.exp)
-            val index = transExpr(accessor.suffix)
-            B.SqnCh(channel,index)
+            if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
+            if (params(0).isInstanceOf[Id]) {
+              val name = renamings(params(0).asInstanceOf[Id].id).asInstanceOf[Id].id
+              Boogie.VarExpr(name+"#sqn")
+            }
+            else if (params(0).isInstanceOf[IndexAccessor]) {
+              val accessor = params(0).asInstanceOf[IndexAccessor]
+              val channel = transExpr(accessor.exp)
+              val index = transExpr(accessor.suffix)
+              B.SqnCh(channel, index)
+            }
+            else {
+              throw new TranslationException(fa.pos, "Invalid argument passed to function " + name)
+            }
           }
           case "currsqn" => {
-            if (!ftMode) 
-              throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
+            if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
             B.SqnAct(transExpr(params(0)))
           }
           case "next" => 
@@ -142,16 +147,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
             val ch = transExpr(params(0))
             generateRangePredicate(params, B.Int(0), B.C(ch)) 
           case "tokens" =>
-            // Happens if tokens function is used in an invalid position (not inhaled/exhaled)
-            throw new TranslationException(fa.pos, "Function 'tokens' used in invalid position")
-          case "credit" =>
-            // Happens if tokens function is used in an invalid position (not inhaled/exhaled)
-            throw new TranslationException(fa.pos, "Function 'credit' used in invalid position")
-          case "state" => {
-            val actor = params(0).typ.asInstanceOf[ActorType].actor
-            val id = params(1).asInstanceOf[Id].id
-            B.State(transExpr(params(0))) ==@ Boogie.VarExpr(actor.fullName+B.Sep+id)
-          }
+            B.C(transExpr(params(0))) - B.R(transExpr(params(0))) ==@ transExpr(params(1))
           case "min" => {
             Boogie.FunctionApp("AT#Min", params.map(p => transExpr(p)))
           }

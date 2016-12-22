@@ -178,7 +178,13 @@ sealed case class Declaration(val id: String, val typ: Type,
   override def isDeclaration = true
 }
 
-sealed case class Assertion(val expr: Expr, val free: Boolean) extends ASTNode
+sealed case class Assertion(val expr: Expr, val free: Boolean, val msg: Option[String]) extends ASTNode {
+  def this(expr: Expr, free: Boolean) = this(expr,free,None)
+}
+
+object Assertion {
+  def apply(expr: Expr, free: Boolean) = new Assertion(expr,free,None)
+}
 
 sealed abstract class Invariant(val assertion: Assertion, val generated: Boolean) extends Member {
   def expr = assertion.expr
@@ -472,17 +478,13 @@ sealed case class IntType(override val size: Int) extends AbstractIntType("int",
   override def isSignedInt = true
 }
 
-object IntType {
-  def default = IntType(32)
-}
+object IntType extends IntType(32)
 
 sealed case class UintType(override val size: Int) extends AbstractIntType("uint", size) {
   override def isUnsignedInt = true
 }
 
-object UintType {
-  def default = UintType(32)
-}
+object UintType extends UintType(32)
 
 case object BoolType extends Type("bool") {
   override def isBool = true
