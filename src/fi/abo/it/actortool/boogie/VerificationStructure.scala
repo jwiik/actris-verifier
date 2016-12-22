@@ -17,9 +17,6 @@ class ActorVerificationStructure(
     val actorParamDecls: List[BDecl],
     val uniquenessCondition: Boogie.Expr,
     val priorityMap: Map[Action,List[Action]],
-    val actorStates: List[String],
-    val actorBoogieStates: List[Boogie.Const],
-    val allowedStateInv: Option[Boogie.Expr],
     val basicAssumes: List[Boogie.Assume],
     val initAssumes: List[Boogie.Assume],
     val namePrefix: String) extends VerificationStructure[BasicActor]

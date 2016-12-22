@@ -247,7 +247,7 @@ class Translator(
        val cId = ipat.portId
        for (v <- ipat.vars) {
          asgn += Boogie.Assign(transExpr(v)(renamings), B.ChannelIdx(cId, B.R(cId)))
-         if (ftMode) asgn += Boogie.Assign(transExpr(v.id+"#sqn")(renamings), B.ChannelIdx(cId+"#sqn", B.R(cId)))
+         if (ftMode) asgn += Boogie.Assign(transExpr(v.id+"#sqn")(renamings), B.SqnCh(cId, B.R(cId)))
          asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
        }
      }

@@ -44,37 +44,12 @@ class ActorVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
     val prefix = actor.id+B.Sep
         
-    val normalChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
-    val portChans =
-      if (ftMode) normalChans ::: ((actor.inports ::: actor.outports) map { p => BDecl(p.id+"#sqn", ChanType(IntType)) }) 
-      else normalChans
+    val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
+
     val uniquenessConidition = createUniquenessCondition(portChans).reduceLeft((a,b) => (a && b))
 
-            
     val actorVars = new ListBuffer[BDecl]()
     
-    val states = actor.schedule match {
-      case Some(s) => 
-        actorVars += BDecl("this#", B.ThisDecl)
-        s.states
-      case None => Nil
-    }
-    
-    val bActorStates = for (s <- states) yield {
-      //actorVars += bLocal(currentState,BType.State)
-      Boogie.Const(prefix+s,true,BType.State)
-    }
-    
-    val allowedStatesInvariant = 
-      if (!states.isEmpty) {
-        Some((for (s <- states) yield {
-          B.This ==@ Boogie.VarExpr(prefix+s)
-        }).reduceLeft((a,b) => (a || b)))
-      }
-      else None
-    
-    
-    //val oldAssigns = new ListBuffer[Boogie.Assign]()
     for (decl <- actor.variables) {
       val newName = decl.id
       actorVars  += BDecl(newName,decl.typ)
@@ -105,9 +80,6 @@ class ActorVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean
         actorParamDecls,
         uniquenessConidition,
         priorityList,
-        states,
-        bActorStates,
-        allowedStatesInvariant,
         basicAssumes,
         initAssumes,
         prefix)
@@ -137,9 +109,6 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
     for (c <- connections) {
       buffer += ((c.id,namePrefix+c.id))
       chanDecls += BDecl(namePrefix+c.id,ChanType(c.typ))
-      if (ftMode) {
-        chanDecls += BDecl(namePrefix+c.id+"#sqn",IntType)
-      }
     }
     
     val explicitTokensAsserts = tokensFinder.visit(userNwInvariants) ::: tokensFinder.visit(chInvariants) toSet
