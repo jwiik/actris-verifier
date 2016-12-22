@@ -210,15 +210,15 @@ procedure Net#init#6()
   assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#23)"} I[Net#d] == I[Net#c];
   assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#24)"} I[Net#e] == I[Net#c];
   I := R;
-  assert {:msg "23.13: Network initialization might not establish the network invariant (#25)"} (C[Net#b] - R[Net#b]) == 1;
-  assert {:msg "24.13: Network initialization might not establish the network invariant (#26)"} R[Net#a] == C[Net#d];
-  assert {:msg "25.14: Network initialization might not establish the network invariant (#27)"} (forall i: int :: 
+  assert {:msg "23.13: Initialization of network 'Net' might not establish the network invariant (#25)"} (C[Net#b] - R[Net#b]) == 1;
+  assert {:msg "24.13: Initialization of network 'Net' might not establish the network invariant (#26)"} R[Net#a] == C[Net#d];
+  assert {:msg "25.14: Initialization of network 'Net' might not establish the network invariant (#27)"} (forall i: int :: 
     ((0 + 1) <= i) && (i < (C[Net#d] - 0)) ==> (M[Net#d][i] == (M[Net#d][i - 1] + M[Net#a][i]))
   );
-  assert {:msg "36.5: The initialization might produce unspecified tokens on channel a (#28)"} (C[Net#a] - R[Net#a]) == 0;
-  assert {:msg "38.5: The initialization might produce unspecified tokens on channel c (#29)"} (C[Net#c] - R[Net#c]) == 0;
-  assert {:msg "39.5: The initialization might produce unspecified tokens on channel d (#30)"} (C[Net#d] - R[Net#d]) == 0;
-  assert {:msg "40.5: The initialization might produce unspecified tokens on channel e (#31)"} (C[Net#e] - R[Net#e]) == 0;
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel a (#28)"} (C[Net#a] - R[Net#a]) == 0;
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel c (#29)"} (C[Net#c] - R[Net#c]) == 0;
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel d (#30)"} (C[Net#d] - R[Net#d]) == 0;
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel e (#31)"} (C[Net#e] - R[Net#e]) == 0;
 }
 procedure Net##Add#anon$0#7()
   modifies C, R, M, I;
@@ -622,8 +622,8 @@ procedure Net#anon$4#exit#11()
   assert {:msg "25.14: The network might not preserve the network invariant (#73)"} (forall i: int :: 
     ((0 + 1) <= i) && (i < (C[Net#d] - 0)) ==> (M[Net#d][i] == (M[Net#d][i - 1] + M[Net#a][i]))
   );
-  assert {:msg "16.3: The network might leave unread tokens on channel a (#74)"} (C[Net#a] - R[Net#a]) == 0;
-  assert {:msg "16.3: The network might leave unread tokens on channel c (#75)"} (C[Net#c] - R[Net#c]) == 0;
-  assert {:msg "16.3: The network might not produce the specified number of tokens on output out (#76)"} (C[Net#d] - R[Net#d]) == 0;
-  assert {:msg "16.3: The network might leave unread tokens on channel e (#77)"} (C[Net#e] - R[Net#e]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel a (#74)"} (C[Net#a] - R[Net#a]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel c (#75)"} (C[Net#c] - R[Net#c]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel d (#76)"} (C[Net#d] - R[Net#d]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel e (#77)"} (C[Net#e] - R[Net#e]) == 0;
 }
