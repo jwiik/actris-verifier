@@ -106,8 +106,10 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "str" => B.I(transExpr(params(0)))
           case "@" => B.I(transExpr(params(0)))
           case "sqn" => {
-            if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
-            if (params(0).isInstanceOf[Id]) {
+            if (!ftMode) throw new TranslationException(fa.pos, "Function '" + name + "' is only supported in FT-mode")
+            
+            if (params(0).isInstanceOf[Id] && params(0).asInstanceOf[Id].id == "this") B.SqnAct(B.This)
+            else if (params(0).isInstanceOf[Id]) {
               val name = renamings(params(0).asInstanceOf[Id].id).asInstanceOf[Id].id
               Boogie.VarExpr(name+"#sqn")
             }
@@ -120,6 +122,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
             else {
               throw new TranslationException(fa.pos, "Invalid argument passed to function " + name)
             }
+            
           }
           case "currsqn" => {
             if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")

@@ -10,6 +10,14 @@ object Inferencer {
   sealed case class Success() extends InferenceOutcome
   sealed case class Errors(errors: List[(Position,String)]) extends InferenceOutcome
   
+  private object InvariantCount {
+    private var i = 0
+    def get = i
+    def add(k: Int) { i = i+k }
+  }
+  
+  def getNumGeneratedInvariants = InvariantCount.get
+  
   class Context {
     private val errors = new ListBuffer[(Position,String)]
     def error(pos: Position, msg: String) { errors += ((pos,msg)) }
@@ -47,6 +55,7 @@ object Inferencer {
       if (!disjuncts.isEmpty) {
         val invariant = disjuncts reduceLeft { (a,b) => Or(a,b) }
         n.addChannelInvariant(invariant, true)
+        InvariantCount.add(1)
       }
     }
     
@@ -205,6 +214,7 @@ object Inferencer {
       
       actor.addInvariants(countInvariants.toList, false)
       actor.addInvariants(valueInvariants.toList, false)
+      InvariantCount.add(countInvariants.size+valueInvariants.size)
       
     }
   }
@@ -265,6 +275,7 @@ object Inferencer {
         } // for
       } // for
       n.addChannelInvariants(countInvariants.toList, false)
+      InvariantCount.add(countInvariants.size)
     } // def network
   }
   

@@ -78,32 +78,29 @@ class Translator(
     
     for (a <- avs.actions) {
       if (!a.init) {
-        val higherPrioGuards = avs.priorityMap(a) map { h => actionFiringRules(h) }
-        decls ++= translateActorAction(a, avs, actionInpatDecls(a), actionRenamings(a), actionFiringRules(a), higherPrioGuards)
+        val higherPrioActions = avs.priorityMap(a)
+        val higherPrioGuards = higherPrioActions map { h => actionFiringRules(h) }
+        decls ++= translateActorAction(a, avs, allInpatDecls.toList, actionRenamings(a), actionFiringRules(a), higherPrioGuards)
       }
     }
     
-    val allGuards = new ListBuffer[Boogie.Expr]()
-    val supersetTests = new ListBuffer[Boogie.Expr]()
+    val allGuards = new ListBuffer[(Action,Boogie.Expr)]()
+    //val supersetTests = new ListBuffer[Boogie.Expr]()
     
     for ((action,higherPrioActions) <- avs.priorityMap) {
+      println(action.fullName)
+      higherPrioActions map { a => println("Higher: " + a.fullName) }
       val (ownPattern,ownGuard) = actionFiringRules(action)
-      val higherPrioGuards = higherPrioActions map { a => actionFiringRules(a) }
+      val negHigherPrioGuards = higherPrioActions map { a => { val (p,g) = actionFiringRules(a); Boogie.UnaryExpr("!",p && g) } }
 
       val andedGuard = ownPattern && ownGuard
       
-      val timeDepTests = for ((p,g) <- higherPrioGuards) yield {
-        (ownPattern ==> p) ==> Boogie.UnaryExpr("!", g && ownGuard)
-      }
-      supersetTests ++= timeDepTests
-      
-      val higherPrioFiringRules = higherPrioGuards map { case (a,b) => a && b }
-      val completeGuard = andedGuard
-      allGuards += completeGuard
+      val completeGuard = negHigherPrioGuards.foldLeft(B.Bool(true): Boogie.Expr)((g1,g2) => g1 && g2 ) && andedGuard
+      allGuards += ((action,completeGuard))
     }
     
     if (!skipMutualExclusivenessCheck) {
-      createMutualExclusivenessCheck(avs,allGuards.toList,supersetTests.toList,allInpatDecls) match {
+      createMutualExclusivenessCheck(avs,allGuards.toList,allInpatDecls) match {
         case Some(proc) => decls += proc
         case None =>
       }
@@ -113,32 +110,32 @@ class Translator(
   }
   
   def createMutualExclusivenessCheck(
-      avs: ActorVerificationStructure, guards: List[Boogie.Expr], supersetTest: List[Boogie.Expr], inpatDecls: Set[BDecl]): Option[Boogie.Proc] = {
+      avs: ActorVerificationStructure, guards: List[(Action,Boogie.Expr)], inpatDecls: Set[BDecl]): Option[Boogie.Proc] = {
     
-    val nonInitActions = avs.actions.filter { a => !a.init }
-    if (nonInitActions.size > 1) {
-      
-      val asserts = supersetTest map { t => B.Assert(t,avs.entity.pos,"The actor might have time-dependent behaviour") }
-      
+    val nonInitActions = avs.actions.filter { a => !a.init } size
+    
+    if (nonInitActions > 1) {      
       val decls = 
         (avs.channelDecls map { _.decl }) ::: 
         (avs.actorVarDecls map { _.decl }) ::: 
         (inpatDecls map { _.decl }).toList ::: 
         List(B.Assume(avs.uniquenessCondition))
       
-      val stmt = decls /*::: asserts*/ ::: createMEAssertionsRec(avs.entity,guards)
+      val stmt = decls ::: createMEAssertionsRec(avs.entity,guards)
       Some(createBoogieProc(Uniquifier.get(avs.namePrefix+B.Sep+"GuardWD"), stmt))
     }
-    else None
+    else {
+      None
+    }
   }
   
-  def createMEAssertionsRec(a: DFActor, guards: List[Boogie.Expr]): List[Boogie.Assert] = {
+  def createMEAssertionsRec(a: DFActor, guards: List[(Action,Boogie.Expr)]): List[Boogie.Assert] = {
     guards match {
-      case first::rest => {
-        val asserts = for (g <- rest) yield {
+      case (action1,first)::rest => {
+        val asserts = for ((action2,guard) <- rest) yield {
           B.Assert(
-              Boogie.UnaryExpr("!", first && g) , a.pos, 
-              "The actions of actor '" + a.id + "' might not have mutually exclusive guards")
+              Boogie.UnaryExpr("!", first && guard) , a.pos, 
+              "The actions '" + action1.fullName + "' and '" + action2.fullName + "' of actor '" + a.id + "' might not have mutually exclusive guards")
         }
         asserts:::createMEAssertionsRec(a,rest)
       }
@@ -153,6 +150,8 @@ class Translator(
     asgn ++= avs.actorParamDecls map { _.decl }
     asgn += B.Assume(avs.uniquenessCondition)
     asgn ++= avs.initAssumes
+    
+    asgn += Boogie.Assign(B.SqnAct(B.This),B.Int(0))
     
     val initAction = avs.actions.find { x => x.init } 
     initAction match {
@@ -172,8 +171,6 @@ class Translator(
       }
       case None =>
     }
-    
-
     
     for (inv <- avs.invariants) {
       if (!inv.assertion.free) 
@@ -197,7 +194,7 @@ class Translator(
           val sqnName = name+"#sqn"
           renamingsBuffer += ((v.id+"#sqn", Id(sqnName)))
           val sqnLVar = B.Local(sqnName, IntType)
-          inpatDeclBuffer += BDecl(name,sqnLVar)
+          inpatDeclBuffer += BDecl(sqnName,sqnLVar)
         }
       }
       patterns += B.Int(ipat.vars.size) <= B.C(ipat.portId)-B.R(ipat.portId)
@@ -268,9 +265,18 @@ class Translator(
        val cId = opat.portId
        for (v <- opat.exps) {
          asgn += Boogie.Assign(B.ChannelIdx(cId, B.C(cId)), transExpr(v)(renamings))
+         if (ftMode) {
+           asgn += Boogie.Assign(B.SqnCh(cId, B.C(cId)), B.SqnAct(B.This))
+         }
          asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
+         
        }
      }
+     
+    if (ftMode) {
+      asgn += Boogie.Assign(B.SqnAct(B.This), B.SqnAct(B.This) plus B.Int(1))
+    }
+     
      for (inv <- avs.invariants) {
        if (!inv.assertion.free) 
          asgn += B.Assert(transExpr(inv.expr)(Map.empty),inv.expr.pos, "Action at " + a.pos + " might not preserve invariant")

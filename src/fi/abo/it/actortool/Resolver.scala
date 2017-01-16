@@ -127,6 +127,7 @@ object Resolver {
       
       val vars = scala.collection.mutable.HashMap[String,Declaration]()
       val functions = scala.collection.mutable.HashMap[String,FunctionDecl]()
+      
       for (p <- decl.parameters) {
         vars += (p.id -> p)
         p.value match {
@@ -138,7 +139,7 @@ object Resolver {
       decl match {
         case a: BasicActor => {
           
-          
+          vars += ("this" -> Declaration("this",ActorType(a),true,None))
           for (m <- a.members) m match {
             case d: Declaration => vars += (d.id -> d)
             case fd: FunctionDecl => functions += (fd.name -> fd)

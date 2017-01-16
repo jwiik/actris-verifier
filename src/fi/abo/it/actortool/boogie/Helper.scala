@@ -128,7 +128,8 @@ object B {
   
   def Fun(id: String, arg: Boogie.Expr*) = Boogie.FunctionApp(id,arg.toList)
   
-  val This = State(BMap.This)
+  def This = VarExpr("this#")
+  
   //val BaseL = VarExpr(BMap.BaseL)
   val intlst = VarExpr("AT#intlst");
   

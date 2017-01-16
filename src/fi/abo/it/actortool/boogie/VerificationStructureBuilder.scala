@@ -27,6 +27,7 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
           // Assuming valid label
           val act1 = actor.actions.find{ a => a.fullName == a1.id }.get
           val act2 = actor.actions.find{ a => a.fullName == a2.id }.get
+          // act1 is the higher prio action. We now add act1 as a higher prio action to act2
           val current = act1 :: orderedActions(act2)
           orderedActions = orderedActions + (act2 -> current)
         }

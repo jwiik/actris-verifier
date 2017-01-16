@@ -297,56 +297,12 @@ object ActorTool {
     
     verifier.verify(bplProg)
     
-//		val boogiePath = params.BoogiePath
-//		val boogieArgs = params.BoogieArgs
-//		if (params.BVMode) BoogiePrelude.addComponent(BitwisePL)
-//    val bplText = BoogiePrelude.get(params.BVMode) + (bplProg map Boogie.Print).foldLeft(""){ (a, b) => a + b };
-//    val bplFilename = if (params.NoBplFile) "stdin.bpl" else params.BplFile
-//    if (params.PrintProgram) println(bplText)
-//    if (!params.NoBplFile) writeFile(bplFilename, bplText);
-//    
-//    val boogie = Runtime.getRuntime.exec(boogiePath + " /errorTrace:0 " + boogieArgs + " stdin.bpl")
-//    
-//    val output = boogie.getOutputStream()
-//    output.write(bplText.getBytes)
-//    output.close
-//    
-//    // terminate boogie if interrupted
-//    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable() {
-//      def run {
-//        boogie.destroy
-//      }
-//    }))
-//    // the process blocks until we exhaust input and error streams 
-//    // (this extra thread reads all from error stream, and buffers it)
-//    val errorReadingThread = new Thread(new Runnable() {
-//      def run {
-//        val err = new BufferedReader(new InputStreamReader(boogie.getErrorStream))
-//        var line = err.readLine;
-//        while(line!=null) {Console.err.println(line); Console.err.flush; line = err.readLine}
-//      }
-//    });
-//    errorReadingThread.start()
-//    val input = new BufferedReader(new InputStreamReader(boogie.getInputStream))
-//    var line = input.readLine()
-//    var previousLine = null: String
-//    val boogieOutput: ListBuffer[String] = new ListBuffer()
-//    while (line!=null){
-//      if (previousLine != null) println
-//      Console.out.print(line)
-//      Console.out.flush
-//      boogieOutput += line
-//      previousLine = line
-//      line = input.readLine()
-//    }
-//    boogie.waitFor
-//    input.close
-//    Console.out.println
     
     timings += (Step.Verification -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
     val totalTime = System.nanoTime - startTime
+    
     
     if (0 < params.Timing)
       println("Verification finished in %1.3f seconds" format (totalTime/1000000000.0))
@@ -355,7 +311,7 @@ object ActorTool {
         println(s + ": %1.3fs".format (timings(s)/1000000000.0))
       }
     }
-    
+    println("Number of generated invariants: " + Inferencer.getNumGeneratedInvariants) 
 	}
   
   def writeFile(filename: String, text: String) {
