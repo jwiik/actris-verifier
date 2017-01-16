@@ -11,6 +11,7 @@ var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
+var T: CType;
 
 const unique this#: Actor;
 type List a = [int]a;
@@ -408,88 +409,12 @@ procedure iir#init#10()
   assume C[iir#anon$23] == 0;
   assume R[iir#anon$23] == 0;
   assume 0 == 0;
-  assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
-  assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
-  );
   assume 0 == 0;
-  assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
-  assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
-  );
   assume 0 == 0;
-  assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
-  assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
-  );
   assume 37 == 37;
-  assume R[iir#anon$8] == C[iir#anon$17];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
-  );
   assume 109 == 109;
-  assume R[iir#anon$11] == C[iir#anon$18];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
-  );
   assume 109 == 109;
-  assume R[iir#anon$14] == C[iir#anon$19];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
-  );
   assume 37 == 37;
-  assume R[iir#anon$16] == C[iir#anon$20];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
-  );
-  assume R[iir#anon$17] == C[iir#anon$21];
-  assume R[iir#anon$18] == C[iir#anon$21];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
-  );
-  assume R[iir#anon$19] == C[iir#anon$22];
-  assume R[iir#anon$20] == C[iir#anon$22];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
-  );
-  assume R[iir#anon$21] == C[iir#anon$23];
-  assume R[iir#anon$22] == C[iir#anon$23];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
-  );
-  assume R[iir#anon$7] == C[iir#anon$8];
-  assume R[iir#anon$7] == C[iir#anon$9];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
-  );
-  assume R[iir#anon$10] == C[iir#anon$11];
-  assume R[iir#anon$10] == C[iir#anon$12];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
-  );
-  assume R[iir#anon$13] == C[iir#anon$14];
-  assume R[iir#anon$13] == C[iir#anon$15];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
-  );
   assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#32)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#33)"} I[iir#anon$18] == I[iir#anon$11];
   assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#34)"} I[iir#anon$19] == I[iir#anon$14];
@@ -507,23 +432,23 @@ procedure iir#init#10()
   assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#46)"} I[iir#anon$14] == I[iir#anon$13];
   assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#47)"} I[iir#anon$15] == I[iir#anon$13];
   I := R;
-  assert {:msg "61.5: The initialization might produce unspecified tokens on channel anon$7 (#48)"} (C[iir#anon$7] - R[iir#anon$7]) == 0;
-  assert {:msg "62.5: The initialization might produce unspecified tokens on channel anon$8 (#49)"} (C[iir#anon$8] - R[iir#anon$8]) == 0;
-  assert {:msg "63.5: The initialization might produce unspecified tokens on channel anon$9 (#50)"} (C[iir#anon$9] - R[iir#anon$9]) == 0;
-  assert {:msg "65.5: The initialization might produce unspecified tokens on channel anon$10 (#51)"} (C[iir#anon$10] - R[iir#anon$10]) == 0;
-  assert {:msg "66.5: The initialization might produce unspecified tokens on channel anon$11 (#52)"} (C[iir#anon$11] - R[iir#anon$11]) == 0;
-  assert {:msg "67.5: The initialization might produce unspecified tokens on channel anon$12 (#53)"} (C[iir#anon$12] - R[iir#anon$12]) == 0;
-  assert {:msg "69.5: The initialization might produce unspecified tokens on channel anon$13 (#54)"} (C[iir#anon$13] - R[iir#anon$13]) == 0;
-  assert {:msg "70.5: The initialization might produce unspecified tokens on channel anon$14 (#55)"} (C[iir#anon$14] - R[iir#anon$14]) == 0;
-  assert {:msg "71.5: The initialization might produce unspecified tokens on channel anon$15 (#56)"} (C[iir#anon$15] - R[iir#anon$15]) == 0;
-  assert {:msg "73.5: The initialization might produce unspecified tokens on channel anon$16 (#57)"} (C[iir#anon$16] - R[iir#anon$16]) == 0;
-  assert {:msg "75.5: The initialization might produce unspecified tokens on channel anon$17 (#58)"} (C[iir#anon$17] - R[iir#anon$17]) == 0;
-  assert {:msg "76.5: The initialization might produce unspecified tokens on channel anon$18 (#59)"} (C[iir#anon$18] - R[iir#anon$18]) == 0;
-  assert {:msg "78.5: The initialization might produce unspecified tokens on channel anon$19 (#60)"} (C[iir#anon$19] - R[iir#anon$19]) == 0;
-  assert {:msg "79.5: The initialization might produce unspecified tokens on channel anon$20 (#61)"} (C[iir#anon$20] - R[iir#anon$20]) == 0;
-  assert {:msg "81.5: The initialization might produce unspecified tokens on channel anon$21 (#62)"} (C[iir#anon$21] - R[iir#anon$21]) == 0;
-  assert {:msg "82.5: The initialization might produce unspecified tokens on channel anon$22 (#63)"} (C[iir#anon$22] - R[iir#anon$22]) == 0;
-  assert {:msg "84.5: The initialization might produce unspecified tokens on channel anon$23 (#64)"} (C[iir#anon$23] - R[iir#anon$23]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$7 (#48)"} (C[iir#anon$7] - R[iir#anon$7]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$8 (#49)"} (C[iir#anon$8] - R[iir#anon$8]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$9 (#50)"} (C[iir#anon$9] - R[iir#anon$9]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$10 (#51)"} (C[iir#anon$10] - R[iir#anon$10]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$11 (#52)"} (C[iir#anon$11] - R[iir#anon$11]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$12 (#53)"} (C[iir#anon$12] - R[iir#anon$12]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$13 (#54)"} (C[iir#anon$13] - R[iir#anon$13]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$14 (#55)"} (C[iir#anon$14] - R[iir#anon$14]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$15 (#56)"} (C[iir#anon$15] - R[iir#anon$15]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$16 (#57)"} (C[iir#anon$16] - R[iir#anon$16]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$17 (#58)"} (C[iir#anon$17] - R[iir#anon$17]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$18 (#59)"} (C[iir#anon$18] - R[iir#anon$18]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$19 (#60)"} (C[iir#anon$19] - R[iir#anon$19]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$20 (#61)"} (C[iir#anon$20] - R[iir#anon$20]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$21 (#62)"} (C[iir#anon$21] - R[iir#anon$21]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$22 (#63)"} (C[iir#anon$22] - R[iir#anon$22]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$23 (#64)"} (C[iir#anon$23] - R[iir#anon$23]) == 0;
 }
 procedure iir##delay#anon$2#11()
   modifies C, R, M, I;
@@ -712,26 +637,12 @@ procedure iir##delay#anon$2#11()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$9] - R[iir#anon$9]);
-  assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
-  assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
-  );
   in#i := M[iir#anon$9][R[iir#anon$9]];
   R[iir#anon$9] := R[iir#anon$9] + 1;
   havoc AV#delay_1#y;
   havoc AV#delay_1#data;
   M[iir#anon$10][C[iir#anon$10]] := AV#delay_1#y;
   C[iir#anon$10] := C[iir#anon$10] + 1;
-  assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
-  assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -1012,26 +923,12 @@ procedure iir##delay#anon$2#12()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$12] - R[iir#anon$12]);
-  assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
-  assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
-  );
   in#i := M[iir#anon$12][R[iir#anon$12]];
   R[iir#anon$12] := R[iir#anon$12] + 1;
   havoc AV#delay_2#y;
   havoc AV#delay_2#data;
   M[iir#anon$13][C[iir#anon$13]] := AV#delay_2#y;
   C[iir#anon$13] := C[iir#anon$13] + 1;
-  assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
-  assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -1312,26 +1209,12 @@ procedure iir##delay#anon$2#13()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$15] - R[iir#anon$15]);
-  assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
-  assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
-  );
   in#i := M[iir#anon$15][R[iir#anon$15]];
   R[iir#anon$15] := R[iir#anon$15] + 1;
   havoc AV#delay_3#y;
   havoc AV#delay_3#data;
   M[iir#anon$16][C[iir#anon$16]] := AV#delay_3#y;
   C[iir#anon$16] := C[iir#anon$16] + 1;
-  assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
-  assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -1612,18 +1495,10 @@ procedure iir##mulc#anon$3#14()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$8] - R[iir#anon$8]);
-  assume R[iir#anon$8] == C[iir#anon$17];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
-  );
   in#i := M[iir#anon$8][R[iir#anon$8]];
   R[iir#anon$8] := R[iir#anon$8] + 1;
   M[iir#anon$17][C[iir#anon$17]] := 37 * in#i;
   C[iir#anon$17] := C[iir#anon$17] + 1;
-  assume R[iir#anon$8] == C[iir#anon$17];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -1904,18 +1779,10 @@ procedure iir##mulc#anon$3#15()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$11] - R[iir#anon$11]);
-  assume R[iir#anon$11] == C[iir#anon$18];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
-  );
   in#i := M[iir#anon$11][R[iir#anon$11]];
   R[iir#anon$11] := R[iir#anon$11] + 1;
   M[iir#anon$18][C[iir#anon$18]] := 109 * in#i;
   C[iir#anon$18] := C[iir#anon$18] + 1;
-  assume R[iir#anon$11] == C[iir#anon$18];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -2196,18 +2063,10 @@ procedure iir##mulc#anon$3#16()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$14] - R[iir#anon$14]);
-  assume R[iir#anon$14] == C[iir#anon$19];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
-  );
   in#i := M[iir#anon$14][R[iir#anon$14]];
   R[iir#anon$14] := R[iir#anon$14] + 1;
   M[iir#anon$19][C[iir#anon$19]] := 109 * in#i;
   C[iir#anon$19] := C[iir#anon$19] + 1;
-  assume R[iir#anon$14] == C[iir#anon$19];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -2488,18 +2347,10 @@ procedure iir##mulc#anon$3#17()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$16] - R[iir#anon$16]);
-  assume R[iir#anon$16] == C[iir#anon$20];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
-  );
   in#i := M[iir#anon$16][R[iir#anon$16]];
   R[iir#anon$16] := R[iir#anon$16] + 1;
   M[iir#anon$20][C[iir#anon$20]] := 37 * in#i;
   C[iir#anon$20] := C[iir#anon$20] + 1;
-  assume R[iir#anon$16] == C[iir#anon$20];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -2781,22 +2632,12 @@ procedure iir##add#anon$0#18()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume (1 <= (C[iir#anon$17] - R[iir#anon$17])) && (1 <= (C[iir#anon$18] - R[iir#anon$18]));
-  assume R[iir#anon$17] == C[iir#anon$21];
-  assume R[iir#anon$18] == C[iir#anon$21];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
-  );
   in1#i := M[iir#anon$17][R[iir#anon$17]];
   R[iir#anon$17] := R[iir#anon$17] + 1;
   in2#j := M[iir#anon$18][R[iir#anon$18]];
   R[iir#anon$18] := R[iir#anon$18] + 1;
   M[iir#anon$21][C[iir#anon$21]] := in1#i + in2#j;
   C[iir#anon$21] := C[iir#anon$21] + 1;
-  assume R[iir#anon$17] == C[iir#anon$21];
-  assume R[iir#anon$18] == C[iir#anon$21];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -3078,22 +2919,12 @@ procedure iir##add#anon$0#19()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume (1 <= (C[iir#anon$19] - R[iir#anon$19])) && (1 <= (C[iir#anon$20] - R[iir#anon$20]));
-  assume R[iir#anon$19] == C[iir#anon$22];
-  assume R[iir#anon$20] == C[iir#anon$22];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
-  );
   in1#i := M[iir#anon$19][R[iir#anon$19]];
   R[iir#anon$19] := R[iir#anon$19] + 1;
   in2#j := M[iir#anon$20][R[iir#anon$20]];
   R[iir#anon$20] := R[iir#anon$20] + 1;
   M[iir#anon$22][C[iir#anon$22]] := in1#i + in2#j;
   C[iir#anon$22] := C[iir#anon$22] + 1;
-  assume R[iir#anon$19] == C[iir#anon$22];
-  assume R[iir#anon$20] == C[iir#anon$22];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -3375,22 +3206,12 @@ procedure iir##add#anon$0#20()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume (1 <= (C[iir#anon$21] - R[iir#anon$21])) && (1 <= (C[iir#anon$22] - R[iir#anon$22]));
-  assume R[iir#anon$21] == C[iir#anon$23];
-  assume R[iir#anon$22] == C[iir#anon$23];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
-  );
   in1#i := M[iir#anon$21][R[iir#anon$21]];
   R[iir#anon$21] := R[iir#anon$21] + 1;
   in2#j := M[iir#anon$22][R[iir#anon$22]];
   R[iir#anon$22] := R[iir#anon$22] + 1;
   M[iir#anon$23][C[iir#anon$23]] := in1#i + in2#j;
   C[iir#anon$23] := C[iir#anon$23] + 1;
-  assume R[iir#anon$21] == C[iir#anon$23];
-  assume R[iir#anon$22] == C[iir#anon$23];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -3671,28 +3492,12 @@ procedure iir##split#anon$5#21()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$7] - R[iir#anon$7]);
-  assume R[iir#anon$7] == C[iir#anon$8];
-  assume R[iir#anon$7] == C[iir#anon$9];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
-  );
   in#i := M[iir#anon$7][R[iir#anon$7]];
   R[iir#anon$7] := R[iir#anon$7] + 1;
   M[iir#anon$8][C[iir#anon$8]] := in#i;
   C[iir#anon$8] := C[iir#anon$8] + 1;
   M[iir#anon$9][C[iir#anon$9]] := in#i;
   C[iir#anon$9] := C[iir#anon$9] + 1;
-  assume R[iir#anon$7] == C[iir#anon$8];
-  assume R[iir#anon$7] == C[iir#anon$9];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -3973,28 +3778,12 @@ procedure iir##split#anon$5#22()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$10] - R[iir#anon$10]);
-  assume R[iir#anon$10] == C[iir#anon$11];
-  assume R[iir#anon$10] == C[iir#anon$12];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
-  );
   in#i := M[iir#anon$10][R[iir#anon$10]];
   R[iir#anon$10] := R[iir#anon$10] + 1;
   M[iir#anon$11][C[iir#anon$11]] := in#i;
   C[iir#anon$11] := C[iir#anon$11] + 1;
   M[iir#anon$12][C[iir#anon$12]] := in#i;
   C[iir#anon$12] := C[iir#anon$12] + 1;
-  assume R[iir#anon$10] == C[iir#anon$11];
-  assume R[iir#anon$10] == C[iir#anon$12];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -4275,28 +4064,12 @@ procedure iir##split#anon$5#23()
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$13] - R[iir#anon$13]);
-  assume R[iir#anon$13] == C[iir#anon$14];
-  assume R[iir#anon$13] == C[iir#anon$15];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
-  );
   in#i := M[iir#anon$13][R[iir#anon$13]];
   R[iir#anon$13] := R[iir#anon$13] + 1;
   M[iir#anon$14][C[iir#anon$14]] := in#i;
   C[iir#anon$14] := C[iir#anon$14] + 1;
   M[iir#anon$15][C[iir#anon$15]] := in#i;
   C[iir#anon$15] := C[iir#anon$15] + 1;
-  assume R[iir#anon$13] == C[iir#anon$14];
-  assume R[iir#anon$13] == C[iir#anon$15];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
-  );
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
   assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
@@ -4390,222 +4163,6 @@ procedure iir##split#anon$5#23()
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_3' might not preserve the channel invariant (#271)"} I[iir#anon$14] == I[iir#anon$13];
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_3' might not preserve the channel invariant (#272)"} I[iir#anon$15] == I[iir#anon$13];
 }
-procedure iir#entry()
-  modifies C, R, M, I;
-{
-  var iir#delay_1: Actor;
-  var iir#delay_2: Actor;
-  var iir#delay_3: Actor;
-  var iir#mul_1: Actor;
-  var iir#mul_2: Actor;
-  var iir#mul_3: Actor;
-  var iir#mul_4: Actor;
-  var iir#add_1: Actor;
-  var iir#add_2: Actor;
-  var iir#add_3: Actor;
-  var iir#spl_1: Actor;
-  var iir#spl_2: Actor;
-  var iir#spl_3: Actor;
-  var iir#anon$7: Chan (int);
-  var iir#anon$8: Chan (int);
-  var iir#anon$9: Chan (int);
-  var iir#anon$10: Chan (int);
-  var iir#anon$11: Chan (int);
-  var iir#anon$12: Chan (int);
-  var iir#anon$13: Chan (int);
-  var iir#anon$14: Chan (int);
-  var iir#anon$15: Chan (int);
-  var iir#anon$16: Chan (int);
-  var iir#anon$17: Chan (int);
-  var iir#anon$18: Chan (int);
-  var iir#anon$19: Chan (int);
-  var iir#anon$20: Chan (int);
-  var iir#anon$21: Chan (int);
-  var iir#anon$22: Chan (int);
-  var iir#anon$23: Chan (int);
-  var AV#delay_1#data: int;
-  var AV#delay_1#y: int;
-  var AV#delay_2#data: int;
-  var AV#delay_2#y: int;
-  var AV#delay_3#data: int;
-  var AV#delay_3#y: int;
-  assume (iir#delay_1 != iir#delay_2) && (iir#delay_1 != iir#delay_3) && (iir#delay_1 != iir#mul_1) && (iir#delay_1 != iir#mul_2) && (iir#delay_1 != iir#mul_3) && (iir#delay_1 != iir#mul_4) && (iir#delay_1 != iir#add_1) && (iir#delay_1 != iir#add_2) && (iir#delay_1 != iir#add_3) && (iir#delay_1 != iir#spl_1) && (iir#delay_1 != iir#spl_2) && (iir#delay_1 != iir#spl_3) && (iir#delay_2 != iir#delay_3) && (iir#delay_2 != iir#mul_1) && (iir#delay_2 != iir#mul_2) && (iir#delay_2 != iir#mul_3) && (iir#delay_2 != iir#mul_4) && (iir#delay_2 != iir#add_1) && (iir#delay_2 != iir#add_2) && (iir#delay_2 != iir#add_3) && (iir#delay_2 != iir#spl_1) && (iir#delay_2 != iir#spl_2) && (iir#delay_2 != iir#spl_3) && (iir#delay_3 != iir#mul_1) && (iir#delay_3 != iir#mul_2) && (iir#delay_3 != iir#mul_3) && (iir#delay_3 != iir#mul_4) && (iir#delay_3 != iir#add_1) && (iir#delay_3 != iir#add_2) && (iir#delay_3 != iir#add_3) && (iir#delay_3 != iir#spl_1) && (iir#delay_3 != iir#spl_2) && (iir#delay_3 != iir#spl_3) && (iir#mul_1 != iir#mul_2) && (iir#mul_1 != iir#mul_3) && (iir#mul_1 != iir#mul_4) && (iir#mul_1 != iir#add_1) && (iir#mul_1 != iir#add_2) && (iir#mul_1 != iir#add_3) && (iir#mul_1 != iir#spl_1) && (iir#mul_1 != iir#spl_2) && (iir#mul_1 != iir#spl_3) && (iir#mul_2 != iir#mul_3) && (iir#mul_2 != iir#mul_4) && (iir#mul_2 != iir#add_1) && (iir#mul_2 != iir#add_2) && (iir#mul_2 != iir#add_3) && (iir#mul_2 != iir#spl_1) && (iir#mul_2 != iir#spl_2) && (iir#mul_2 != iir#spl_3) && (iir#mul_3 != iir#mul_4) && (iir#mul_3 != iir#add_1) && (iir#mul_3 != iir#add_2) && (iir#mul_3 != iir#add_3) && (iir#mul_3 != iir#spl_1) && (iir#mul_3 != iir#spl_2) && (iir#mul_3 != iir#spl_3) && (iir#mul_4 != iir#add_1) && (iir#mul_4 != iir#add_2) && (iir#mul_4 != iir#add_3) && (iir#mul_4 != iir#spl_1) && (iir#mul_4 != iir#spl_2) && (iir#mul_4 != iir#spl_3) && (iir#add_1 != iir#add_2) && (iir#add_1 != iir#add_3) && (iir#add_1 != iir#spl_1) && (iir#add_1 != iir#spl_2) && (iir#add_1 != iir#spl_3) && (iir#add_2 != iir#add_3) && (iir#add_2 != iir#spl_1) && (iir#add_2 != iir#spl_2) && (iir#add_2 != iir#spl_3) && (iir#add_3 != iir#spl_1) && (iir#add_3 != iir#spl_2) && (iir#add_3 != iir#spl_3) && (iir#spl_1 != iir#spl_2) && (iir#spl_1 != iir#spl_3) && (iir#spl_2 != iir#spl_3);
-  assume (iir#anon$7 != iir#anon$8) && (iir#anon$7 != iir#anon$9) && (iir#anon$7 != iir#anon$10) && (iir#anon$7 != iir#anon$11) && (iir#anon$7 != iir#anon$12) && (iir#anon$7 != iir#anon$13) && (iir#anon$7 != iir#anon$14) && (iir#anon$7 != iir#anon$15) && (iir#anon$7 != iir#anon$16) && (iir#anon$7 != iir#anon$17) && (iir#anon$7 != iir#anon$18) && (iir#anon$7 != iir#anon$19) && (iir#anon$7 != iir#anon$20) && (iir#anon$7 != iir#anon$21) && (iir#anon$7 != iir#anon$22) && (iir#anon$7 != iir#anon$23) && (iir#anon$8 != iir#anon$9) && (iir#anon$8 != iir#anon$10) && (iir#anon$8 != iir#anon$11) && (iir#anon$8 != iir#anon$12) && (iir#anon$8 != iir#anon$13) && (iir#anon$8 != iir#anon$14) && (iir#anon$8 != iir#anon$15) && (iir#anon$8 != iir#anon$16) && (iir#anon$8 != iir#anon$17) && (iir#anon$8 != iir#anon$18) && (iir#anon$8 != iir#anon$19) && (iir#anon$8 != iir#anon$20) && (iir#anon$8 != iir#anon$21) && (iir#anon$8 != iir#anon$22) && (iir#anon$8 != iir#anon$23) && (iir#anon$9 != iir#anon$10) && (iir#anon$9 != iir#anon$11) && (iir#anon$9 != iir#anon$12) && (iir#anon$9 != iir#anon$13) && (iir#anon$9 != iir#anon$14) && (iir#anon$9 != iir#anon$15) && (iir#anon$9 != iir#anon$16) && (iir#anon$9 != iir#anon$17) && (iir#anon$9 != iir#anon$18) && (iir#anon$9 != iir#anon$19) && (iir#anon$9 != iir#anon$20) && (iir#anon$9 != iir#anon$21) && (iir#anon$9 != iir#anon$22) && (iir#anon$9 != iir#anon$23) && (iir#anon$10 != iir#anon$11) && (iir#anon$10 != iir#anon$12) && (iir#anon$10 != iir#anon$13) && (iir#anon$10 != iir#anon$14) && (iir#anon$10 != iir#anon$15) && (iir#anon$10 != iir#anon$16) && (iir#anon$10 != iir#anon$17) && (iir#anon$10 != iir#anon$18) && (iir#anon$10 != iir#anon$19) && (iir#anon$10 != iir#anon$20) && (iir#anon$10 != iir#anon$21) && (iir#anon$10 != iir#anon$22) && (iir#anon$10 != iir#anon$23) && (iir#anon$11 != iir#anon$12) && (iir#anon$11 != iir#anon$13) && (iir#anon$11 != iir#anon$14) && (iir#anon$11 != iir#anon$15) && (iir#anon$11 != iir#anon$16) && (iir#anon$11 != iir#anon$17) && (iir#anon$11 != iir#anon$18) && (iir#anon$11 != iir#anon$19) && (iir#anon$11 != iir#anon$20) && (iir#anon$11 != iir#anon$21) && (iir#anon$11 != iir#anon$22) && (iir#anon$11 != iir#anon$23) && (iir#anon$12 != iir#anon$13) && (iir#anon$12 != iir#anon$14) && (iir#anon$12 != iir#anon$15) && (iir#anon$12 != iir#anon$16) && (iir#anon$12 != iir#anon$17) && (iir#anon$12 != iir#anon$18) && (iir#anon$12 != iir#anon$19) && (iir#anon$12 != iir#anon$20) && (iir#anon$12 != iir#anon$21) && (iir#anon$12 != iir#anon$22) && (iir#anon$12 != iir#anon$23) && (iir#anon$13 != iir#anon$14) && (iir#anon$13 != iir#anon$15) && (iir#anon$13 != iir#anon$16) && (iir#anon$13 != iir#anon$17) && (iir#anon$13 != iir#anon$18) && (iir#anon$13 != iir#anon$19) && (iir#anon$13 != iir#anon$20) && (iir#anon$13 != iir#anon$21) && (iir#anon$13 != iir#anon$22) && (iir#anon$13 != iir#anon$23) && (iir#anon$14 != iir#anon$15) && (iir#anon$14 != iir#anon$16) && (iir#anon$14 != iir#anon$17) && (iir#anon$14 != iir#anon$18) && (iir#anon$14 != iir#anon$19) && (iir#anon$14 != iir#anon$20) && (iir#anon$14 != iir#anon$21) && (iir#anon$14 != iir#anon$22) && (iir#anon$14 != iir#anon$23) && (iir#anon$15 != iir#anon$16) && (iir#anon$15 != iir#anon$17) && (iir#anon$15 != iir#anon$18) && (iir#anon$15 != iir#anon$19) && (iir#anon$15 != iir#anon$20) && (iir#anon$15 != iir#anon$21) && (iir#anon$15 != iir#anon$22) && (iir#anon$15 != iir#anon$23) && (iir#anon$16 != iir#anon$17) && (iir#anon$16 != iir#anon$18) && (iir#anon$16 != iir#anon$19) && (iir#anon$16 != iir#anon$20) && (iir#anon$16 != iir#anon$21) && (iir#anon$16 != iir#anon$22) && (iir#anon$16 != iir#anon$23) && (iir#anon$17 != iir#anon$18) && (iir#anon$17 != iir#anon$19) && (iir#anon$17 != iir#anon$20) && (iir#anon$17 != iir#anon$21) && (iir#anon$17 != iir#anon$22) && (iir#anon$17 != iir#anon$23) && (iir#anon$18 != iir#anon$19) && (iir#anon$18 != iir#anon$20) && (iir#anon$18 != iir#anon$21) && (iir#anon$18 != iir#anon$22) && (iir#anon$18 != iir#anon$23) && (iir#anon$19 != iir#anon$20) && (iir#anon$19 != iir#anon$21) && (iir#anon$19 != iir#anon$22) && (iir#anon$19 != iir#anon$23) && (iir#anon$20 != iir#anon$21) && (iir#anon$20 != iir#anon$22) && (iir#anon$20 != iir#anon$23) && (iir#anon$21 != iir#anon$22) && (iir#anon$21 != iir#anon$23) && (iir#anon$22 != iir#anon$23);
-  assume 0 <= I[iir#anon$7];
-  assume I[iir#anon$7] <= R[iir#anon$7];
-  assume R[iir#anon$7] <= C[iir#anon$7];
-  assume 0 <= I[iir#anon$8];
-  assume I[iir#anon$8] <= R[iir#anon$8];
-  assume R[iir#anon$8] <= C[iir#anon$8];
-  assume 0 <= I[iir#anon$9];
-  assume I[iir#anon$9] <= R[iir#anon$9];
-  assume R[iir#anon$9] <= C[iir#anon$9];
-  assume 0 <= I[iir#anon$10];
-  assume I[iir#anon$10] <= R[iir#anon$10];
-  assume R[iir#anon$10] <= C[iir#anon$10];
-  assume 0 <= I[iir#anon$11];
-  assume I[iir#anon$11] <= R[iir#anon$11];
-  assume R[iir#anon$11] <= C[iir#anon$11];
-  assume 0 <= I[iir#anon$12];
-  assume I[iir#anon$12] <= R[iir#anon$12];
-  assume R[iir#anon$12] <= C[iir#anon$12];
-  assume 0 <= I[iir#anon$13];
-  assume I[iir#anon$13] <= R[iir#anon$13];
-  assume R[iir#anon$13] <= C[iir#anon$13];
-  assume 0 <= I[iir#anon$14];
-  assume I[iir#anon$14] <= R[iir#anon$14];
-  assume R[iir#anon$14] <= C[iir#anon$14];
-  assume 0 <= I[iir#anon$15];
-  assume I[iir#anon$15] <= R[iir#anon$15];
-  assume R[iir#anon$15] <= C[iir#anon$15];
-  assume 0 <= I[iir#anon$16];
-  assume I[iir#anon$16] <= R[iir#anon$16];
-  assume R[iir#anon$16] <= C[iir#anon$16];
-  assume 0 <= I[iir#anon$17];
-  assume I[iir#anon$17] <= R[iir#anon$17];
-  assume R[iir#anon$17] <= C[iir#anon$17];
-  assume 0 <= I[iir#anon$18];
-  assume I[iir#anon$18] <= R[iir#anon$18];
-  assume R[iir#anon$18] <= C[iir#anon$18];
-  assume 0 <= I[iir#anon$19];
-  assume I[iir#anon$19] <= R[iir#anon$19];
-  assume R[iir#anon$19] <= C[iir#anon$19];
-  assume 0 <= I[iir#anon$20];
-  assume I[iir#anon$20] <= R[iir#anon$20];
-  assume R[iir#anon$20] <= C[iir#anon$20];
-  assume 0 <= I[iir#anon$21];
-  assume I[iir#anon$21] <= R[iir#anon$21];
-  assume R[iir#anon$21] <= C[iir#anon$21];
-  assume 0 <= I[iir#anon$22];
-  assume I[iir#anon$22] <= R[iir#anon$22];
-  assume R[iir#anon$22] <= C[iir#anon$22];
-  assume 0 <= I[iir#anon$23];
-  assume I[iir#anon$23] <= R[iir#anon$23];
-  assume R[iir#anon$23] <= C[iir#anon$23];
-  assume I[iir#anon$23] == R[iir#anon$23];
-  assume C[iir#anon$7] == R[iir#anon$7];
-  assume C[iir#anon$8] == R[iir#anon$8];
-  assume C[iir#anon$9] == R[iir#anon$9];
-  assume C[iir#anon$10] == R[iir#anon$10];
-  assume C[iir#anon$11] == R[iir#anon$11];
-  assume C[iir#anon$12] == R[iir#anon$12];
-  assume C[iir#anon$13] == R[iir#anon$13];
-  assume C[iir#anon$14] == R[iir#anon$14];
-  assume C[iir#anon$15] == R[iir#anon$15];
-  assume C[iir#anon$16] == R[iir#anon$16];
-  assume C[iir#anon$17] == R[iir#anon$17];
-  assume C[iir#anon$18] == R[iir#anon$18];
-  assume C[iir#anon$19] == R[iir#anon$19];
-  assume C[iir#anon$20] == R[iir#anon$20];
-  assume C[iir#anon$21] == R[iir#anon$21];
-  assume C[iir#anon$22] == R[iir#anon$22];
-  assume C[iir#anon$23] == R[iir#anon$23];
-  assume I[iir#anon$17] == I[iir#anon$8];
-  assume I[iir#anon$18] == I[iir#anon$11];
-  assume I[iir#anon$19] == I[iir#anon$14];
-  assume I[iir#anon$20] == I[iir#anon$16];
-  assume I[iir#anon$21] == I[iir#anon$17];
-  assume I[iir#anon$21] == I[iir#anon$18];
-  assume I[iir#anon$22] == I[iir#anon$19];
-  assume I[iir#anon$22] == I[iir#anon$20];
-  assume I[iir#anon$23] == I[iir#anon$21];
-  assume I[iir#anon$23] == I[iir#anon$22];
-  assume I[iir#anon$8] == I[iir#anon$7];
-  assume I[iir#anon$9] == I[iir#anon$7];
-  assume I[iir#anon$11] == I[iir#anon$10];
-  assume I[iir#anon$12] == I[iir#anon$10];
-  assume I[iir#anon$14] == I[iir#anon$13];
-  assume I[iir#anon$15] == I[iir#anon$13];
-  assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
-  assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
-  );
-  assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
-  assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
-  );
-  assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
-  assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
-  assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
-  );
-  assume R[iir#anon$8] == C[iir#anon$17];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
-  );
-  assume R[iir#anon$11] == C[iir#anon$18];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
-  );
-  assume R[iir#anon$14] == C[iir#anon$19];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
-  );
-  assume R[iir#anon$16] == C[iir#anon$20];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
-  );
-  assume R[iir#anon$17] == C[iir#anon$21];
-  assume R[iir#anon$18] == C[iir#anon$21];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
-  );
-  assume R[iir#anon$19] == C[iir#anon$22];
-  assume R[iir#anon$20] == C[iir#anon$22];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
-  );
-  assume R[iir#anon$21] == C[iir#anon$23];
-  assume R[iir#anon$22] == C[iir#anon$23];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
-  );
-  assume R[iir#anon$7] == C[iir#anon$8];
-  assume R[iir#anon$7] == C[iir#anon$9];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
-  );
-  assume R[iir#anon$10] == C[iir#anon$11];
-  assume R[iir#anon$10] == C[iir#anon$12];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
-  );
-  assume R[iir#anon$13] == C[iir#anon$14];
-  assume R[iir#anon$13] == C[iir#anon$15];
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
-  );
-  assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
-  );
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#273)"} !(1 <= (C[iir#anon$9] - R[iir#anon$9]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#274)"} !(1 <= (C[iir#anon$12] - R[iir#anon$12]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#275)"} !(1 <= (C[iir#anon$15] - R[iir#anon$15]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#276)"} !(1 <= (C[iir#anon$8] - R[iir#anon$8]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#277)"} !(1 <= (C[iir#anon$11] - R[iir#anon$11]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#278)"} !(1 <= (C[iir#anon$14] - R[iir#anon$14]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#279)"} !(1 <= (C[iir#anon$16] - R[iir#anon$16]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#280)"} !((1 <= (C[iir#anon$17] - R[iir#anon$17])) && (1 <= (C[iir#anon$18] - R[iir#anon$18])));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#281)"} !((1 <= (C[iir#anon$19] - R[iir#anon$19])) && (1 <= (C[iir#anon$20] - R[iir#anon$20])));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#282)"} !((1 <= (C[iir#anon$21] - R[iir#anon$21])) && (1 <= (C[iir#anon$22] - R[iir#anon$22])));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#283)"} !(1 <= (C[iir#anon$7] - R[iir#anon$7]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#284)"} !(1 <= (C[iir#anon$10] - R[iir#anon$10]));
-  assert {:msg "35.1: Sub-actors in the network might fire without network input. This is not permitted. (#285)"} !(1 <= (C[iir#anon$13] - R[iir#anon$13]));
-}
 procedure iir#anon$6#input#in#24()
   modifies C, R, M, I;
 {
@@ -4645,7 +4202,6 @@ procedure iir#anon$6#input#in#24()
   var AV#delay_2#y: int;
   var AV#delay_3#data: int;
   var AV#delay_3#y: int;
-  var x: int;
   assume (iir#delay_1 != iir#delay_2) && (iir#delay_1 != iir#delay_3) && (iir#delay_1 != iir#mul_1) && (iir#delay_1 != iir#mul_2) && (iir#delay_1 != iir#mul_3) && (iir#delay_1 != iir#mul_4) && (iir#delay_1 != iir#add_1) && (iir#delay_1 != iir#add_2) && (iir#delay_1 != iir#add_3) && (iir#delay_1 != iir#spl_1) && (iir#delay_1 != iir#spl_2) && (iir#delay_1 != iir#spl_3) && (iir#delay_2 != iir#delay_3) && (iir#delay_2 != iir#mul_1) && (iir#delay_2 != iir#mul_2) && (iir#delay_2 != iir#mul_3) && (iir#delay_2 != iir#mul_4) && (iir#delay_2 != iir#add_1) && (iir#delay_2 != iir#add_2) && (iir#delay_2 != iir#add_3) && (iir#delay_2 != iir#spl_1) && (iir#delay_2 != iir#spl_2) && (iir#delay_2 != iir#spl_3) && (iir#delay_3 != iir#mul_1) && (iir#delay_3 != iir#mul_2) && (iir#delay_3 != iir#mul_3) && (iir#delay_3 != iir#mul_4) && (iir#delay_3 != iir#add_1) && (iir#delay_3 != iir#add_2) && (iir#delay_3 != iir#add_3) && (iir#delay_3 != iir#spl_1) && (iir#delay_3 != iir#spl_2) && (iir#delay_3 != iir#spl_3) && (iir#mul_1 != iir#mul_2) && (iir#mul_1 != iir#mul_3) && (iir#mul_1 != iir#mul_4) && (iir#mul_1 != iir#add_1) && (iir#mul_1 != iir#add_2) && (iir#mul_1 != iir#add_3) && (iir#mul_1 != iir#spl_1) && (iir#mul_1 != iir#spl_2) && (iir#mul_1 != iir#spl_3) && (iir#mul_2 != iir#mul_3) && (iir#mul_2 != iir#mul_4) && (iir#mul_2 != iir#add_1) && (iir#mul_2 != iir#add_2) && (iir#mul_2 != iir#add_3) && (iir#mul_2 != iir#spl_1) && (iir#mul_2 != iir#spl_2) && (iir#mul_2 != iir#spl_3) && (iir#mul_3 != iir#mul_4) && (iir#mul_3 != iir#add_1) && (iir#mul_3 != iir#add_2) && (iir#mul_3 != iir#add_3) && (iir#mul_3 != iir#spl_1) && (iir#mul_3 != iir#spl_2) && (iir#mul_3 != iir#spl_3) && (iir#mul_4 != iir#add_1) && (iir#mul_4 != iir#add_2) && (iir#mul_4 != iir#add_3) && (iir#mul_4 != iir#spl_1) && (iir#mul_4 != iir#spl_2) && (iir#mul_4 != iir#spl_3) && (iir#add_1 != iir#add_2) && (iir#add_1 != iir#add_3) && (iir#add_1 != iir#spl_1) && (iir#add_1 != iir#spl_2) && (iir#add_1 != iir#spl_3) && (iir#add_2 != iir#add_3) && (iir#add_2 != iir#spl_1) && (iir#add_2 != iir#spl_2) && (iir#add_2 != iir#spl_3) && (iir#add_3 != iir#spl_1) && (iir#add_3 != iir#spl_2) && (iir#add_3 != iir#spl_3) && (iir#spl_1 != iir#spl_2) && (iir#spl_1 != iir#spl_3) && (iir#spl_2 != iir#spl_3);
   assume (iir#anon$7 != iir#anon$8) && (iir#anon$7 != iir#anon$9) && (iir#anon$7 != iir#anon$10) && (iir#anon$7 != iir#anon$11) && (iir#anon$7 != iir#anon$12) && (iir#anon$7 != iir#anon$13) && (iir#anon$7 != iir#anon$14) && (iir#anon$7 != iir#anon$15) && (iir#anon$7 != iir#anon$16) && (iir#anon$7 != iir#anon$17) && (iir#anon$7 != iir#anon$18) && (iir#anon$7 != iir#anon$19) && (iir#anon$7 != iir#anon$20) && (iir#anon$7 != iir#anon$21) && (iir#anon$7 != iir#anon$22) && (iir#anon$7 != iir#anon$23) && (iir#anon$8 != iir#anon$9) && (iir#anon$8 != iir#anon$10) && (iir#anon$8 != iir#anon$11) && (iir#anon$8 != iir#anon$12) && (iir#anon$8 != iir#anon$13) && (iir#anon$8 != iir#anon$14) && (iir#anon$8 != iir#anon$15) && (iir#anon$8 != iir#anon$16) && (iir#anon$8 != iir#anon$17) && (iir#anon$8 != iir#anon$18) && (iir#anon$8 != iir#anon$19) && (iir#anon$8 != iir#anon$20) && (iir#anon$8 != iir#anon$21) && (iir#anon$8 != iir#anon$22) && (iir#anon$8 != iir#anon$23) && (iir#anon$9 != iir#anon$10) && (iir#anon$9 != iir#anon$11) && (iir#anon$9 != iir#anon$12) && (iir#anon$9 != iir#anon$13) && (iir#anon$9 != iir#anon$14) && (iir#anon$9 != iir#anon$15) && (iir#anon$9 != iir#anon$16) && (iir#anon$9 != iir#anon$17) && (iir#anon$9 != iir#anon$18) && (iir#anon$9 != iir#anon$19) && (iir#anon$9 != iir#anon$20) && (iir#anon$9 != iir#anon$21) && (iir#anon$9 != iir#anon$22) && (iir#anon$9 != iir#anon$23) && (iir#anon$10 != iir#anon$11) && (iir#anon$10 != iir#anon$12) && (iir#anon$10 != iir#anon$13) && (iir#anon$10 != iir#anon$14) && (iir#anon$10 != iir#anon$15) && (iir#anon$10 != iir#anon$16) && (iir#anon$10 != iir#anon$17) && (iir#anon$10 != iir#anon$18) && (iir#anon$10 != iir#anon$19) && (iir#anon$10 != iir#anon$20) && (iir#anon$10 != iir#anon$21) && (iir#anon$10 != iir#anon$22) && (iir#anon$10 != iir#anon$23) && (iir#anon$11 != iir#anon$12) && (iir#anon$11 != iir#anon$13) && (iir#anon$11 != iir#anon$14) && (iir#anon$11 != iir#anon$15) && (iir#anon$11 != iir#anon$16) && (iir#anon$11 != iir#anon$17) && (iir#anon$11 != iir#anon$18) && (iir#anon$11 != iir#anon$19) && (iir#anon$11 != iir#anon$20) && (iir#anon$11 != iir#anon$21) && (iir#anon$11 != iir#anon$22) && (iir#anon$11 != iir#anon$23) && (iir#anon$12 != iir#anon$13) && (iir#anon$12 != iir#anon$14) && (iir#anon$12 != iir#anon$15) && (iir#anon$12 != iir#anon$16) && (iir#anon$12 != iir#anon$17) && (iir#anon$12 != iir#anon$18) && (iir#anon$12 != iir#anon$19) && (iir#anon$12 != iir#anon$20) && (iir#anon$12 != iir#anon$21) && (iir#anon$12 != iir#anon$22) && (iir#anon$12 != iir#anon$23) && (iir#anon$13 != iir#anon$14) && (iir#anon$13 != iir#anon$15) && (iir#anon$13 != iir#anon$16) && (iir#anon$13 != iir#anon$17) && (iir#anon$13 != iir#anon$18) && (iir#anon$13 != iir#anon$19) && (iir#anon$13 != iir#anon$20) && (iir#anon$13 != iir#anon$21) && (iir#anon$13 != iir#anon$22) && (iir#anon$13 != iir#anon$23) && (iir#anon$14 != iir#anon$15) && (iir#anon$14 != iir#anon$16) && (iir#anon$14 != iir#anon$17) && (iir#anon$14 != iir#anon$18) && (iir#anon$14 != iir#anon$19) && (iir#anon$14 != iir#anon$20) && (iir#anon$14 != iir#anon$21) && (iir#anon$14 != iir#anon$22) && (iir#anon$14 != iir#anon$23) && (iir#anon$15 != iir#anon$16) && (iir#anon$15 != iir#anon$17) && (iir#anon$15 != iir#anon$18) && (iir#anon$15 != iir#anon$19) && (iir#anon$15 != iir#anon$20) && (iir#anon$15 != iir#anon$21) && (iir#anon$15 != iir#anon$22) && (iir#anon$15 != iir#anon$23) && (iir#anon$16 != iir#anon$17) && (iir#anon$16 != iir#anon$18) && (iir#anon$16 != iir#anon$19) && (iir#anon$16 != iir#anon$20) && (iir#anon$16 != iir#anon$21) && (iir#anon$16 != iir#anon$22) && (iir#anon$16 != iir#anon$23) && (iir#anon$17 != iir#anon$18) && (iir#anon$17 != iir#anon$19) && (iir#anon$17 != iir#anon$20) && (iir#anon$17 != iir#anon$21) && (iir#anon$17 != iir#anon$22) && (iir#anon$17 != iir#anon$23) && (iir#anon$18 != iir#anon$19) && (iir#anon$18 != iir#anon$20) && (iir#anon$18 != iir#anon$21) && (iir#anon$18 != iir#anon$22) && (iir#anon$18 != iir#anon$23) && (iir#anon$19 != iir#anon$20) && (iir#anon$19 != iir#anon$21) && (iir#anon$19 != iir#anon$22) && (iir#anon$19 != iir#anon$23) && (iir#anon$20 != iir#anon$21) && (iir#anon$20 != iir#anon$22) && (iir#anon$20 != iir#anon$23) && (iir#anon$21 != iir#anon$22) && (iir#anon$21 != iir#anon$23) && (iir#anon$22 != iir#anon$23);
   assume 0 <= I[iir#anon$7];
@@ -4700,6 +4256,7 @@ procedure iir#anon$6#input#in#24()
   assume I[iir#anon$23] <= R[iir#anon$23];
   assume R[iir#anon$23] <= C[iir#anon$23];
   assume I[iir#anon$23] == R[iir#anon$23];
+  assume (C[iir#anon$7] - I[iir#anon$7]) < 1;
   assume I[iir#anon$17] == I[iir#anon$8];
   assume I[iir#anon$18] == I[iir#anon$11];
   assume I[iir#anon$19] == I[iir#anon$14];
@@ -4792,24 +4349,23 @@ procedure iir#anon$6#input#in#24()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
-  assume 0 <= x;
-  C[iir#anon$7] := C[iir#anon$7] + x;
-  assert {:msg "Channel invariant might be falsified by network input (#286)"} I[iir#anon$17] == I[iir#anon$8];
-  assert {:msg "Channel invariant might be falsified by network input (#287)"} I[iir#anon$18] == I[iir#anon$11];
-  assert {:msg "Channel invariant might be falsified by network input (#288)"} I[iir#anon$19] == I[iir#anon$14];
-  assert {:msg "Channel invariant might be falsified by network input (#289)"} I[iir#anon$20] == I[iir#anon$16];
-  assert {:msg "Channel invariant might be falsified by network input (#290)"} I[iir#anon$21] == I[iir#anon$17];
-  assert {:msg "Channel invariant might be falsified by network input (#291)"} I[iir#anon$21] == I[iir#anon$18];
-  assert {:msg "Channel invariant might be falsified by network input (#292)"} I[iir#anon$22] == I[iir#anon$19];
-  assert {:msg "Channel invariant might be falsified by network input (#293)"} I[iir#anon$22] == I[iir#anon$20];
-  assert {:msg "Channel invariant might be falsified by network input (#294)"} I[iir#anon$23] == I[iir#anon$21];
-  assert {:msg "Channel invariant might be falsified by network input (#295)"} I[iir#anon$23] == I[iir#anon$22];
-  assert {:msg "Channel invariant might be falsified by network input (#296)"} I[iir#anon$8] == I[iir#anon$7];
-  assert {:msg "Channel invariant might be falsified by network input (#297)"} I[iir#anon$9] == I[iir#anon$7];
-  assert {:msg "Channel invariant might be falsified by network input (#298)"} I[iir#anon$11] == I[iir#anon$10];
-  assert {:msg "Channel invariant might be falsified by network input (#299)"} I[iir#anon$12] == I[iir#anon$10];
-  assert {:msg "Channel invariant might be falsified by network input (#300)"} I[iir#anon$14] == I[iir#anon$13];
-  assert {:msg "Channel invariant might be falsified by network input (#301)"} I[iir#anon$15] == I[iir#anon$13];
+  C[iir#anon$7] := C[iir#anon$7] + 1;
+  assert {:msg "Channel invariant might be falsified by network input (#273)"} I[iir#anon$17] == I[iir#anon$8];
+  assert {:msg "Channel invariant might be falsified by network input (#274)"} I[iir#anon$18] == I[iir#anon$11];
+  assert {:msg "Channel invariant might be falsified by network input (#275)"} I[iir#anon$19] == I[iir#anon$14];
+  assert {:msg "Channel invariant might be falsified by network input (#276)"} I[iir#anon$20] == I[iir#anon$16];
+  assert {:msg "Channel invariant might be falsified by network input (#277)"} I[iir#anon$21] == I[iir#anon$17];
+  assert {:msg "Channel invariant might be falsified by network input (#278)"} I[iir#anon$21] == I[iir#anon$18];
+  assert {:msg "Channel invariant might be falsified by network input (#279)"} I[iir#anon$22] == I[iir#anon$19];
+  assert {:msg "Channel invariant might be falsified by network input (#280)"} I[iir#anon$22] == I[iir#anon$20];
+  assert {:msg "Channel invariant might be falsified by network input (#281)"} I[iir#anon$23] == I[iir#anon$21];
+  assert {:msg "Channel invariant might be falsified by network input (#282)"} I[iir#anon$23] == I[iir#anon$22];
+  assert {:msg "Channel invariant might be falsified by network input (#283)"} I[iir#anon$8] == I[iir#anon$7];
+  assert {:msg "Channel invariant might be falsified by network input (#284)"} I[iir#anon$9] == I[iir#anon$7];
+  assert {:msg "Channel invariant might be falsified by network input (#285)"} I[iir#anon$11] == I[iir#anon$10];
+  assert {:msg "Channel invariant might be falsified by network input (#286)"} I[iir#anon$12] == I[iir#anon$10];
+  assert {:msg "Channel invariant might be falsified by network input (#287)"} I[iir#anon$14] == I[iir#anon$13];
+  assert {:msg "Channel invariant might be falsified by network input (#288)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir#anon$6#exit#25()
   modifies C, R, M, I;
@@ -5010,43 +4566,43 @@ procedure iir#anon$6#exit#25()
   assume !(1 <= (C[iir#anon$7] - R[iir#anon$7]));
   assume !(1 <= (C[iir#anon$10] - R[iir#anon$10]));
   assume !(1 <= (C[iir#anon$13] - R[iir#anon$13]));
-  assert {:msg "38.13: Network action postcondition might not hold (#302)"} (I[iir#anon$23] == 0) ==> (M[iir#anon$23][I[iir#anon$23]] == (37 * M[iir#anon$7][I[iir#anon$7]]));
-  assert {:msg "39.13: Network action postcondition might not hold (#303)"} (I[iir#anon$23] == 1) ==> (M[iir#anon$23][I[iir#anon$23]] == ((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])));
-  assert {:msg "40.12: Network action postcondition might not hold (#304)"} (I[iir#anon$23] == 2) ==> (M[iir#anon$23][I[iir#anon$23]] == (((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])) + (109 * M[iir#anon$7][I[iir#anon$7] - 2])));
-  assert {:msg "41.13: Network action postcondition might not hold (#305)"} (I[iir#anon$23] > 3) ==> (M[iir#anon$23][I[iir#anon$23]] == ((((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])) + (109 * M[iir#anon$7][I[iir#anon$7] - 2])) + (37 * M[iir#anon$7][I[iir#anon$7] - 3])));
+  assert {:msg "38.13: Network action postcondition might not hold (#289)"} (I[iir#anon$23] == 0) ==> (M[iir#anon$23][I[iir#anon$23]] == (37 * M[iir#anon$7][I[iir#anon$7]]));
+  assert {:msg "39.13: Network action postcondition might not hold (#290)"} (I[iir#anon$23] == 1) ==> (M[iir#anon$23][I[iir#anon$23]] == ((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])));
+  assert {:msg "40.12: Network action postcondition might not hold (#291)"} (I[iir#anon$23] == 2) ==> (M[iir#anon$23][I[iir#anon$23]] == (((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])) + (109 * M[iir#anon$7][I[iir#anon$7] - 2])));
+  assert {:msg "41.13: Network action postcondition might not hold (#292)"} (I[iir#anon$23] > 3) ==> (M[iir#anon$23][I[iir#anon$23]] == ((((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])) + (109 * M[iir#anon$7][I[iir#anon$7] - 2])) + (37 * M[iir#anon$7][I[iir#anon$7] - 3])));
   R[iir#anon$23] := R[iir#anon$23] + 1;
   I := R;
-  assert {:msg "The network might not preserve the channel invariant (#306)"} I[iir#anon$17] == I[iir#anon$8];
-  assert {:msg "The network might not preserve the channel invariant (#307)"} I[iir#anon$18] == I[iir#anon$11];
-  assert {:msg "The network might not preserve the channel invariant (#308)"} I[iir#anon$19] == I[iir#anon$14];
-  assert {:msg "The network might not preserve the channel invariant (#309)"} I[iir#anon$20] == I[iir#anon$16];
-  assert {:msg "The network might not preserve the channel invariant (#310)"} I[iir#anon$21] == I[iir#anon$17];
-  assert {:msg "The network might not preserve the channel invariant (#311)"} I[iir#anon$21] == I[iir#anon$18];
-  assert {:msg "The network might not preserve the channel invariant (#312)"} I[iir#anon$22] == I[iir#anon$19];
-  assert {:msg "The network might not preserve the channel invariant (#313)"} I[iir#anon$22] == I[iir#anon$20];
-  assert {:msg "The network might not preserve the channel invariant (#314)"} I[iir#anon$23] == I[iir#anon$21];
-  assert {:msg "The network might not preserve the channel invariant (#315)"} I[iir#anon$23] == I[iir#anon$22];
-  assert {:msg "The network might not preserve the channel invariant (#316)"} I[iir#anon$8] == I[iir#anon$7];
-  assert {:msg "The network might not preserve the channel invariant (#317)"} I[iir#anon$9] == I[iir#anon$7];
-  assert {:msg "The network might not preserve the channel invariant (#318)"} I[iir#anon$11] == I[iir#anon$10];
-  assert {:msg "The network might not preserve the channel invariant (#319)"} I[iir#anon$12] == I[iir#anon$10];
-  assert {:msg "The network might not preserve the channel invariant (#320)"} I[iir#anon$14] == I[iir#anon$13];
-  assert {:msg "The network might not preserve the channel invariant (#321)"} I[iir#anon$15] == I[iir#anon$13];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$7 (#322)"} C[iir#anon$7] == R[iir#anon$7];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$8 (#323)"} C[iir#anon$8] == R[iir#anon$8];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$9 (#324)"} C[iir#anon$9] == R[iir#anon$9];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$10 (#325)"} C[iir#anon$10] == R[iir#anon$10];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$11 (#326)"} C[iir#anon$11] == R[iir#anon$11];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$12 (#327)"} C[iir#anon$12] == R[iir#anon$12];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$13 (#328)"} C[iir#anon$13] == R[iir#anon$13];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$14 (#329)"} C[iir#anon$14] == R[iir#anon$14];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$15 (#330)"} C[iir#anon$15] == R[iir#anon$15];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$16 (#331)"} C[iir#anon$16] == R[iir#anon$16];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$17 (#332)"} C[iir#anon$17] == R[iir#anon$17];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$18 (#333)"} C[iir#anon$18] == R[iir#anon$18];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$19 (#334)"} C[iir#anon$19] == R[iir#anon$19];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$20 (#335)"} C[iir#anon$20] == R[iir#anon$20];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$21 (#336)"} C[iir#anon$21] == R[iir#anon$21];
-  assert {:msg "37.3: The network might leave unread tokens on channel anon$22 (#337)"} C[iir#anon$22] == R[iir#anon$22];
-  assert {:msg "37.3: The network might not produce the specified number of tokens on output out (#338)"} C[iir#anon$23] == R[iir#anon$23];
+  assert {:msg "The network might not preserve the channel invariant (#293)"} I[iir#anon$17] == I[iir#anon$8];
+  assert {:msg "The network might not preserve the channel invariant (#294)"} I[iir#anon$18] == I[iir#anon$11];
+  assert {:msg "The network might not preserve the channel invariant (#295)"} I[iir#anon$19] == I[iir#anon$14];
+  assert {:msg "The network might not preserve the channel invariant (#296)"} I[iir#anon$20] == I[iir#anon$16];
+  assert {:msg "The network might not preserve the channel invariant (#297)"} I[iir#anon$21] == I[iir#anon$17];
+  assert {:msg "The network might not preserve the channel invariant (#298)"} I[iir#anon$21] == I[iir#anon$18];
+  assert {:msg "The network might not preserve the channel invariant (#299)"} I[iir#anon$22] == I[iir#anon$19];
+  assert {:msg "The network might not preserve the channel invariant (#300)"} I[iir#anon$22] == I[iir#anon$20];
+  assert {:msg "The network might not preserve the channel invariant (#301)"} I[iir#anon$23] == I[iir#anon$21];
+  assert {:msg "The network might not preserve the channel invariant (#302)"} I[iir#anon$23] == I[iir#anon$22];
+  assert {:msg "The network might not preserve the channel invariant (#303)"} I[iir#anon$8] == I[iir#anon$7];
+  assert {:msg "The network might not preserve the channel invariant (#304)"} I[iir#anon$9] == I[iir#anon$7];
+  assert {:msg "The network might not preserve the channel invariant (#305)"} I[iir#anon$11] == I[iir#anon$10];
+  assert {:msg "The network might not preserve the channel invariant (#306)"} I[iir#anon$12] == I[iir#anon$10];
+  assert {:msg "The network might not preserve the channel invariant (#307)"} I[iir#anon$14] == I[iir#anon$13];
+  assert {:msg "The network might not preserve the channel invariant (#308)"} I[iir#anon$15] == I[iir#anon$13];
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$7 (#309)"} (C[iir#anon$7] - R[iir#anon$7]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$8 (#310)"} (C[iir#anon$8] - R[iir#anon$8]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$9 (#311)"} (C[iir#anon$9] - R[iir#anon$9]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$10 (#312)"} (C[iir#anon$10] - R[iir#anon$10]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$11 (#313)"} (C[iir#anon$11] - R[iir#anon$11]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$12 (#314)"} (C[iir#anon$12] - R[iir#anon$12]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$13 (#315)"} (C[iir#anon$13] - R[iir#anon$13]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$14 (#316)"} (C[iir#anon$14] - R[iir#anon$14]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$15 (#317)"} (C[iir#anon$15] - R[iir#anon$15]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$16 (#318)"} (C[iir#anon$16] - R[iir#anon$16]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$17 (#319)"} (C[iir#anon$17] - R[iir#anon$17]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$18 (#320)"} (C[iir#anon$18] - R[iir#anon$18]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$19 (#321)"} (C[iir#anon$19] - R[iir#anon$19]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$20 (#322)"} (C[iir#anon$20] - R[iir#anon$20]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$21 (#323)"} (C[iir#anon$21] - R[iir#anon$21]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$22 (#324)"} (C[iir#anon$22] - R[iir#anon$22]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel anon$23 (#325)"} (C[iir#anon$23] - R[iir#anon$23]) == 0;
 }

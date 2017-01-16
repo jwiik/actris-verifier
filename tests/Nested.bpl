@@ -210,16 +210,16 @@ procedure SumNet#init#6()
   assert {:msg "Initialization of network 'SumNet' might not establish the channel invariant (#23)"} I[SumNet#sn_d] == I[SumNet#sn_c];
   assert {:msg "Initialization of network 'SumNet' might not establish the channel invariant (#24)"} I[SumNet#sn_e] == I[SumNet#sn_c];
   I := R;
-  assert {:msg "26.13: Network initialization might not establish the network invariant (#25)"} (C[SumNet#sn_b] - R[SumNet#sn_b]) == 1;
-  assert {:msg "27.20: Network initialization might not establish the network invariant (#26)"} R[SumNet#sn_a] == C[SumNet#sn_d];
-  assert {:msg "28.20: Network initialization might not establish the network invariant (#27)"} (C[SumNet#sn_d] > 0) ==> (M[SumNet#sn_d][0] == M[SumNet#sn_a][0]);
-  assert {:msg "29.21: Network initialization might not establish the network invariant (#28)"} (forall i: int :: 
+  assert {:msg "26.13: Initialization of network 'SumNet' might not establish the network invariant (#25)"} (C[SumNet#sn_b] - R[SumNet#sn_b]) == 1;
+  assert {:msg "27.20: Initialization of network 'SumNet' might not establish the network invariant (#26)"} R[SumNet#sn_a] == C[SumNet#sn_d];
+  assert {:msg "28.20: Initialization of network 'SumNet' might not establish the network invariant (#27)"} (C[SumNet#sn_d] > 0) ==> (M[SumNet#sn_d][0] == M[SumNet#sn_a][0]);
+  assert {:msg "29.21: Initialization of network 'SumNet' might not establish the network invariant (#28)"} (forall i: int :: 
     ((0 + 1) <= i) && (i < (C[SumNet#sn_d] - 0)) ==> (M[SumNet#sn_d][i] == (M[SumNet#sn_d][i - 1] + M[SumNet#sn_a][i]))
   );
-  assert {:msg "41.5: The initialization might produce unspecified tokens on channel sn_a (#29)"} (C[SumNet#sn_a] - R[SumNet#sn_a]) == 0;
-  assert {:msg "43.5: The initialization might produce unspecified tokens on channel sn_c (#30)"} (C[SumNet#sn_c] - R[SumNet#sn_c]) == 0;
-  assert {:msg "44.5: The initialization might produce unspecified tokens on channel sn_d (#31)"} (C[SumNet#sn_d] - R[SumNet#sn_d]) == 0;
-  assert {:msg "45.5: The initialization might produce unspecified tokens on channel sn_e (#32)"} (C[SumNet#sn_e] - R[SumNet#sn_e]) == 0;
+  assert {:msg "Initialization of network 'SumNet' might not establish the network invariant: Unread tokens might be left on channel sn_a (#29)"} (C[SumNet#sn_a] - R[SumNet#sn_a]) == 0;
+  assert {:msg "Initialization of network 'SumNet' might not establish the network invariant: Unread tokens might be left on channel sn_c (#30)"} (C[SumNet#sn_c] - R[SumNet#sn_c]) == 0;
+  assert {:msg "Initialization of network 'SumNet' might not establish the network invariant: Unread tokens might be left on channel sn_d (#31)"} (C[SumNet#sn_d] - R[SumNet#sn_d]) == 0;
+  assert {:msg "Initialization of network 'SumNet' might not establish the network invariant: Unread tokens might be left on channel sn_e (#32)"} (C[SumNet#sn_e] - R[SumNet#sn_e]) == 0;
 }
 procedure SumNet##Add#anon$0#7()
   modifies C, R, M, I;
@@ -624,10 +624,10 @@ procedure SumNet#anon$4#exit#11()
   assert {:msg "29.21: The network might not preserve the network invariant (#75)"} (forall i: int :: 
     ((0 + 1) <= i) && (i < (C[SumNet#sn_d] - 0)) ==> (M[SumNet#sn_d][i] == (M[SumNet#sn_d][i - 1] + M[SumNet#sn_a][i]))
   );
-  assert {:msg "19.3: The network might leave unread tokens on channel sn_a (#76)"} (C[SumNet#sn_a] - R[SumNet#sn_a]) == 0;
-  assert {:msg "19.3: The network might leave unread tokens on channel sn_c (#77)"} (C[SumNet#sn_c] - R[SumNet#sn_c]) == 0;
-  assert {:msg "19.3: The network might not produce the specified number of tokens on output out (#78)"} (C[SumNet#sn_d] - R[SumNet#sn_d]) == 0;
-  assert {:msg "19.3: The network might leave unread tokens on channel sn_e (#79)"} (C[SumNet#sn_e] - R[SumNet#sn_e]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel sn_a (#76)"} (C[SumNet#sn_a] - R[SumNet#sn_a]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel sn_c (#77)"} (C[SumNet#sn_c] - R[SumNet#sn_c]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel sn_d (#78)"} (C[SumNet#sn_d] - R[SumNet#sn_d]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel sn_e (#79)"} (C[SumNet#sn_e] - R[SumNet#sn_e]) == 0;
 }
 procedure Sum#init#12()
   modifies C, R, M, I;
@@ -732,17 +732,17 @@ procedure Nested#init#14()
   assert {:msg "Initialization of network 'Nested' might not establish the channel invariant (#97)"} I[Nested#b] == I[Nested#a];
   assert {:msg "Initialization of network 'Nested' might not establish the channel invariant (#98)"} I[Nested#c] == I[Nested#a];
   I := R;
-  assert {:msg "86.21: Network initialization might not establish the network invariant (#99)"} (forall i: int :: 
+  assert {:msg "86.21: Initialization of network 'Nested' might not establish the network invariant (#99)"} (forall i: int :: 
     ((0 + 1) <= i) && (i < (C[Nested#d] - 0)) ==> (M[Nested#d][i] == (M[Nested#d][i - 1] + M[Nested#a][i]))
   );
-  assert {:msg "87.21: Network initialization might not establish the network invariant (#100)"} (forall i: int :: 
+  assert {:msg "87.21: Initialization of network 'Nested' might not establish the network invariant (#100)"} (forall i: int :: 
     (0 <= i) && (i < C[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
   );
-  assert {:msg "100.5: The initialization might produce unspecified tokens on channel a (#101)"} (C[Nested#a] - R[Nested#a]) == 0;
-  assert {:msg "101.5: The initialization might produce unspecified tokens on channel b (#102)"} (C[Nested#b] - R[Nested#b]) == 0;
-  assert {:msg "102.5: The initialization might produce unspecified tokens on channel c (#103)"} (C[Nested#c] - R[Nested#c]) == 0;
-  assert {:msg "103.5: The initialization might produce unspecified tokens on channel d (#104)"} (C[Nested#d] - R[Nested#d]) == 0;
-  assert {:msg "104.5: The initialization might produce unspecified tokens on channel e (#105)"} (C[Nested#e] - R[Nested#e]) == 0;
+  assert {:msg "Initialization of network 'Nested' might not establish the network invariant: Unread tokens might be left on channel a (#101)"} (C[Nested#a] - R[Nested#a]) == 0;
+  assert {:msg "Initialization of network 'Nested' might not establish the network invariant: Unread tokens might be left on channel b (#102)"} (C[Nested#b] - R[Nested#b]) == 0;
+  assert {:msg "Initialization of network 'Nested' might not establish the network invariant: Unread tokens might be left on channel c (#103)"} (C[Nested#c] - R[Nested#c]) == 0;
+  assert {:msg "Initialization of network 'Nested' might not establish the network invariant: Unread tokens might be left on channel d (#104)"} (C[Nested#d] - R[Nested#d]) == 0;
+  assert {:msg "Initialization of network 'Nested' might not establish the network invariant: Unread tokens might be left on channel e (#105)"} (C[Nested#e] - R[Nested#e]) == 0;
 }
 procedure Nested##SumNet#anon$4#15()
   modifies C, R, M, I;
@@ -1181,9 +1181,9 @@ procedure Nested#anon$7#exit#19()
   assert {:msg "87.21: The network might not preserve the network invariant (#145)"} (forall i: int :: 
     (0 <= i) && (i < C[Nested#d]) ==> (M[Nested#d][i] == M[Nested#e][i])
   );
-  assert {:msg "77.3: The network might leave unread tokens on channel a (#146)"} (C[Nested#a] - R[Nested#a]) == 0;
-  assert {:msg "77.3: The network might leave unread tokens on channel b (#147)"} (C[Nested#b] - R[Nested#b]) == 0;
-  assert {:msg "77.3: The network might leave unread tokens on channel c (#148)"} (C[Nested#c] - R[Nested#c]) == 0;
-  assert {:msg "77.3: The network might not produce the specified number of tokens on output out1 (#149)"} (C[Nested#d] - R[Nested#d]) == 0;
-  assert {:msg "77.3: The network might not produce the specified number of tokens on output out2 (#150)"} (C[Nested#e] - R[Nested#e]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel a (#146)"} (C[Nested#a] - R[Nested#a]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel b (#147)"} (C[Nested#b] - R[Nested#b]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel c (#148)"} (C[Nested#c] - R[Nested#c]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel d (#149)"} (C[Nested#d] - R[Nested#d]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel e (#150)"} (C[Nested#e] - R[Nested#e]) == 0;
 }

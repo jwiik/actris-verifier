@@ -62,7 +62,6 @@ var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
-var T: CType;
 
 const unique this#: Actor;
 type List a = [@inttype@]a;

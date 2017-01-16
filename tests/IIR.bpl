@@ -112,7 +112,7 @@ procedure delay#init#2()
   assume C[out] == 0;
   M[out][C[out]] := k;
   C[out] := C[out] + 1;
-  assert {:msg "6.13: Initialization might not establish the invariant (#6)"} M[out][0] == k;
+  assert {:msg "6.20: Initialization might not establish the invariant (#6)"} M[out][0] == k;
   assert {:msg "Initialization might not establish the invariant (#7)"} R[in] == (C[out] - 1);
   assert {:msg "Initialization might not establish the invariant (#8)"} (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == M[in][idx$ - 1])
@@ -137,7 +137,7 @@ procedure delay#anon$2#3()
   R[in] := R[in] + 1;
   M[out][C[out]] := in#0;
   C[out] := C[out] + 1;
-  assert {:msg "6.13: Action at 8.3 might not preserve invariant (#9)"} M[out][0] == k;
+  assert {:msg "6.20: Action at 8.3 might not preserve invariant (#9)"} M[out][0] == k;
   assert {:msg "Action at 8.3 might not preserve invariant (#10)"} R[in] == (C[out] - 1);
   assert {:msg "Action at 8.3 might not preserve invariant (#11)"} (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == M[in][idx$ - 1])
@@ -345,14 +345,14 @@ procedure iir#init#10()
   assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#34)"} I[iir#d] == I[iir#g];
   assert {:msg "Initialization of network 'iir' might not establish the channel invariant (#35)"} I[iir#h] == I[iir#g];
   I := R;
-  assert {:msg "30.13: Network initialization might not establish the network invariant (#36)"} (C[iir#f] - R[iir#f]) == 1;
-  assert {:msg "42.5: The initialization might produce unspecified tokens on channel a (#37)"} (C[iir#a] - R[iir#a]) == 0;
-  assert {:msg "43.5: The initialization might produce unspecified tokens on channel b (#38)"} (C[iir#b] - R[iir#b]) == 0;
-  assert {:msg "44.5: The initialization might produce unspecified tokens on channel c (#39)"} (C[iir#c] - R[iir#c]) == 0;
-  assert {:msg "45.5: The initialization might produce unspecified tokens on channel d (#40)"} (C[iir#d] - R[iir#d]) == 0;
-  assert {:msg "46.5: The initialization might produce unspecified tokens on channel e (#41)"} (C[iir#e] - R[iir#e]) == 0;
-  assert {:msg "48.5: The initialization might produce unspecified tokens on channel g (#42)"} (C[iir#g] - R[iir#g]) == 0;
-  assert {:msg "49.5: The initialization might produce unspecified tokens on channel h (#43)"} (C[iir#h] - R[iir#h]) == 0;
+  assert {:msg "30.13: Initialization of network 'iir' might not establish the network invariant (#36)"} (C[iir#f] - R[iir#f]) == 1;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel a (#37)"} (C[iir#a] - R[iir#a]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel b (#38)"} (C[iir#b] - R[iir#b]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel c (#39)"} (C[iir#c] - R[iir#c]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel d (#40)"} (C[iir#d] - R[iir#d]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel e (#41)"} (C[iir#e] - R[iir#e]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel g (#42)"} (C[iir#g] - R[iir#g]) == 0;
+  assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel h (#43)"} (C[iir#h] - R[iir#h]) == 0;
 }
 procedure iir##delay#anon$2#11()
   modifies C, R, M, I;
@@ -407,6 +407,7 @@ procedure iir##delay#anon$2#11()
   assume I[iir#c] == I[iir#f];
   assume I[iir#d] == I[iir#g];
   assume I[iir#h] == I[iir#g];
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -441,6 +442,7 @@ procedure iir##delay#anon$2#11()
   R[iir#e] := R[iir#e] + 1;
   M[iir#f][C[iir#f]] := in#i;
   C[iir#f] := C[iir#f] + 1;
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -532,6 +534,7 @@ procedure iir##mulc#anon$3#12()
   assume I[iir#c] == I[iir#f];
   assume I[iir#d] == I[iir#g];
   assume I[iir#h] == I[iir#g];
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -566,6 +569,7 @@ procedure iir##mulc#anon$3#12()
   R[iir#a] := R[iir#a] + 1;
   M[iir#b][C[iir#b]] := 85 * in#i;
   C[iir#b] := C[iir#b] + 1;
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -657,6 +661,7 @@ procedure iir##mulc#anon$3#13()
   assume I[iir#c] == I[iir#f];
   assume I[iir#d] == I[iir#g];
   assume I[iir#h] == I[iir#g];
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -691,6 +696,7 @@ procedure iir##mulc#anon$3#13()
   R[iir#d] := R[iir#d] + 1;
   M[iir#e][C[iir#e]] := 171 * in#i;
   C[iir#e] := C[iir#e] + 1;
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -782,6 +788,7 @@ procedure iir##rshift#anon$4#14()
   assume I[iir#c] == I[iir#f];
   assume I[iir#d] == I[iir#g];
   assume I[iir#h] == I[iir#g];
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -816,6 +823,7 @@ procedure iir##rshift#anon$4#14()
   R[iir#c] := R[iir#c] + 1;
   M[iir#g][C[iir#g]] := AT#RShift(in#i, 8);
   C[iir#g] := C[iir#g] + 1;
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -908,6 +916,7 @@ procedure iir##add#anon$0#15()
   assume I[iir#c] == I[iir#f];
   assume I[iir#d] == I[iir#g];
   assume I[iir#h] == I[iir#g];
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -944,6 +953,7 @@ procedure iir##add#anon$0#15()
   R[iir#f] := R[iir#f] + 1;
   M[iir#c][C[iir#c]] := in1#i + in2#j;
   C[iir#c] := C[iir#c] + 1;
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -1035,6 +1045,7 @@ procedure iir##split#anon$5#16()
   assume I[iir#c] == I[iir#f];
   assume I[iir#d] == I[iir#g];
   assume I[iir#h] == I[iir#g];
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -1071,6 +1082,7 @@ procedure iir##split#anon$5#16()
   C[iir#d] := C[iir#d] + 1;
   M[iir#h][C[iir#h]] := in#i;
   C[iir#h] := C[iir#h] + 1;
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -1162,6 +1174,7 @@ procedure iir#anon$6#input#in#17()
   assume I[iir#c] == I[iir#f];
   assume I[iir#d] == I[iir#g];
   assume I[iir#h] == I[iir#g];
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -1253,6 +1266,7 @@ procedure iir#anon$6#exit#18()
   assume I[iir#c] == I[iir#f];
   assume I[iir#d] == I[iir#g];
   assume I[iir#h] == I[iir#g];
+  assume M[iir#f][0] == 0;
   assume R[iir#e] == (C[iir#f] - 1);
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[iir#f]) ==> (M[iir#f][idx$] == M[iir#e][idx$ - 1])
@@ -1302,11 +1316,11 @@ procedure iir#anon$6#exit#18()
   assert {:msg "The network might not preserve the channel invariant (#108)"} I[iir#d] == I[iir#g];
   assert {:msg "The network might not preserve the channel invariant (#109)"} I[iir#h] == I[iir#g];
   assert {:msg "30.13: The network might not preserve the network invariant (#110)"} (C[iir#f] - R[iir#f]) == 1;
-  assert {:msg "25.3: The network might leave unread tokens on channel a (#111)"} (C[iir#a] - R[iir#a]) == 0;
-  assert {:msg "25.3: The network might leave unread tokens on channel b (#112)"} (C[iir#b] - R[iir#b]) == 0;
-  assert {:msg "25.3: The network might leave unread tokens on channel c (#113)"} (C[iir#c] - R[iir#c]) == 0;
-  assert {:msg "25.3: The network might leave unread tokens on channel d (#114)"} (C[iir#d] - R[iir#d]) == 0;
-  assert {:msg "25.3: The network might leave unread tokens on channel e (#115)"} (C[iir#e] - R[iir#e]) == 0;
-  assert {:msg "25.3: The network might leave unread tokens on channel g (#116)"} (C[iir#g] - R[iir#g]) == 0;
-  assert {:msg "25.3: The network might not produce the specified number of tokens on output out (#117)"} (C[iir#h] - R[iir#h]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel a (#111)"} (C[iir#a] - R[iir#a]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel b (#112)"} (C[iir#b] - R[iir#b]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel c (#113)"} (C[iir#c] - R[iir#c]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel d (#114)"} (C[iir#d] - R[iir#d]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel e (#115)"} (C[iir#e] - R[iir#e]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel g (#116)"} (C[iir#g] - R[iir#g]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel h (#117)"} (C[iir#h] - R[iir#h]) == 0;
 }

@@ -21,8 +21,6 @@ network Net int in ==> int out :
   end
   
   invariant tokens(b,1)
-  invariant rd(in) = tot(out)
-  invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in[i])
   chinvariant b[0] = 0
   chinvariant 0 <= b[@]
   

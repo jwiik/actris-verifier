@@ -10,8 +10,10 @@ end
 actor Adjudicator int x1, int x2 ==> int y :
 
   stream invariant tot(y) = rd(x2)
+  stream invariant rd(x1) <= rd(x2)
   invariant rd(x2) = c
-  //stream invariant tot(y) > 0 ==> y[last] = rd(x2)
+  
+  //invariant rd(x2) > 0 ==> sqn(x2[prev]) = c
   
   int c;
 
