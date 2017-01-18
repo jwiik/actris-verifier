@@ -11,9 +11,12 @@ sealed abstract class TopDecl(val id: String) extends ASTNode {
   def isNetwork: Boolean = false
   def isActor: Boolean = false
   def isUnit: Boolean = false
+  def isType: Boolean = false
 }
 
 sealed case class Annotation(name: String) extends ASTNode
+
+sealed case class TypeDecl(tp: RefType, fields: List[Declaration]) extends TopDecl(tp.id)
 
 sealed case class DataUnit(
     override val id: String, 
@@ -407,14 +410,16 @@ sealed case class Exists(
   override val operator = "exists"
 }
 
-sealed abstract class SuffixedExpr(val exp: Expr) extends Expr
+sealed abstract class Assignable extends Expr
+sealed abstract class SuffixedExpr(val exp: Expr) extends Assignable
 case class IndexAccessor(override val exp: Expr, val suffix: Expr) extends SuffixedExpr(exp)
+case class FieldAccessor(override val exp: Expr, val suffix: String) extends SuffixedExpr(exp)
 
 sealed case class FunctionApp(val name: String, val parameters: List[Expr]) extends Expr
 
 sealed case class ListLiteral(val elements: List[Expr]) extends Expr
 
-sealed abstract class Assignable extends Expr
+
 sealed case class Id(val id: String) extends Assignable
 sealed abstract class Literal extends Expr
 sealed case class IntLiteral(val value: Int) extends Literal
@@ -432,8 +437,7 @@ sealed case class SpecialMarker(val value: String) extends Expr {
 }
 
 sealed abstract class Stmt extends ASTNode
-sealed case class Assign(val id: Id, val expr: Expr) extends Stmt
-sealed case class IndexAssign(val id: Id, val index: Expr, val expr: Expr) extends Stmt
+sealed case class Assign(val id: Assignable, val expr: Expr) extends Stmt
 sealed case class IfElse(val ifCond: Expr, val ifStmt: List[Stmt], val elseIfs: List[ElseIf], val elseStmt: List[Stmt]) extends Stmt
 sealed case class ElseIf(val cond: Expr, val stmt: List[Stmt])
 sealed case class While(val cond: Expr, val invariants: List[Expr], val stmt: List[Stmt]) extends Stmt
@@ -458,6 +462,11 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isIndexed = false
   def isActor = false
   def isList = false
+  def isRef = false
+}
+
+sealed case class RefType(val name: String) extends Type(name) {
+  override def isRef = true
 }
 
 sealed abstract class ParamType(val name: String, parameters: List[Type]) extends Type(name) {
@@ -469,7 +478,9 @@ sealed abstract class IndexedType(
   override def isIndexed = true
 }
 
-sealed abstract class AbstractIntType(name: String, val size: Int) extends Type(name+"("+size+")") {
+sealed abstract class PrimitiveType(name: String) extends Type(name) 
+
+sealed abstract class AbstractIntType(name: String, val size: Int) extends PrimitiveType(name+"("+size+")") {
   override def isInt = true
   override def isNumeric = true
 }
@@ -486,14 +497,14 @@ sealed case class UintType(override val size: Int) extends AbstractIntType("uint
 
 object UintType extends UintType(32)
 
-case object BoolType extends Type("bool") {
+case object BoolType extends PrimitiveType("bool") {
   override def isBool = true
 }
-case object FloatType extends Type("float") {
+case object FloatType extends PrimitiveType("float") {
   override def isFloat = true
   override def isNumeric = true
 }
-case object HalfType extends Type("half") {
+case object HalfType extends PrimitiveType("half") {
   override def isHalf = true
   override def isNumeric = true
 }

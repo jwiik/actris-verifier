@@ -280,7 +280,13 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
     }).flatten.toMap
     
     val assignedVars = action.body flatMap { a => a match {
-      case Assign(x,_) => List(x)
+      case Assign(x,_) => {
+        x match {
+          case id: Id => List(id)
+          case fa: FieldAccessor => List(fa.exp.asInstanceOf[Id])
+          case _ => assert(false); Nil
+        }
+      }
       case _ => Nil
     }}
     

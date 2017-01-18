@@ -23,8 +23,8 @@ class Translator(
   //val Inhalator = new Inhalator(stmtTranslator)
   //val Exhalator = new Exhalator(stmtTranslator)
   
-  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I):::
-    (if (!ftMode) Nil else List(BMap.SqnCh, BMap.SqnActor))
+  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I, BMap.H)//:::
+//    (if (!ftMode) Nil else List(BMap.SqnCh, BMap.SqnActor)) 
   
   object Annot {
     final val Error = "error"
@@ -40,6 +40,8 @@ class Translator(
     val actorVerStructBuilder = new ActorVerificationStructureBuilder(bvMode, ftMode)
     
     if (ftMode) BoogiePrelude.addComponent(SeqNumberingPL)
+    
+    //var userTypes = Map.empty[String,NamedType]
         
     val bProgram = decls flatMap {
       case a: BasicActor => {
@@ -51,6 +53,12 @@ class Translator(
         translateNetwork(nwvs)
       }
       case u: DataUnit => Nil
+      case td: TypeDecl => {
+        //userTypes += (td.tp.id -> NamedType(td.tp.id))
+        for (f <- td.fields) yield {
+          Boogie.Const(td.tp.id+"."+f.id,true,BType.Field(B.type2BType(f.typ)))
+        }
+      }
     }
     
     return bProgram
@@ -88,8 +96,6 @@ class Translator(
     //val supersetTests = new ListBuffer[Boogie.Expr]()
     
     for ((action,higherPrioActions) <- avs.priorityMap) {
-      println(action.fullName)
-      higherPrioActions map { a => println("Higher: " + a.fullName) }
       val (ownPattern,ownGuard) = actionFiringRules(action)
       val negHigherPrioGuards = higherPrioActions map { a => { val (p,g) = actionFiringRules(a); Boogie.UnaryExpr("!",p && g) } }
 
@@ -151,7 +157,9 @@ class Translator(
     asgn += B.Assume(avs.uniquenessCondition)
     asgn ++= avs.initAssumes
     
-    asgn += Boogie.Assign(B.SqnAct(B.This),B.Int(0))
+//    if (ftMode) {
+//      asgn += Boogie.Assign(B.SqnAct(B.This),B.Int(0))
+//    }
     
     val initAction = avs.actions.find { x => x.init } 
     initAction match {
@@ -164,7 +172,7 @@ class Translator(
         for (opat <- a.outputPattern) {
           val cId = opat.portId
           for (v <- opat.exps) {
-            asgn += Boogie.Assign(B.ChannelIdx(cId, B.C(cId)), transExpr(v)(Map.empty))
+            asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(Map.empty))
             asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
           }
         }
@@ -242,9 +250,10 @@ class Translator(
      
      for (ipat <- a.inputPattern) {
        val cId = ipat.portId
+       
        for (v <- ipat.vars) {
-         asgn += Boogie.Assign(transExpr(v)(renamings), B.ChannelIdx(cId, B.R(cId)))
-         if (ftMode) asgn += Boogie.Assign(transExpr(v.id+"#sqn")(renamings), B.SqnCh(cId, B.R(cId)))
+         asgn += Boogie.Assign(transExpr(v)(renamings), B.ChannelIdx(cId, v.typ, B.R(cId)))
+//         if (ftMode) asgn += Boogie.Assign(transExpr(v.id+"#sqn")(renamings), B.SqnCh(cId, B.R(cId)))
          asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
        }
      }
@@ -264,18 +273,18 @@ class Translator(
      for (opat <- a.outputPattern) {
        val cId = opat.portId
        for (v <- opat.exps) {
-         asgn += Boogie.Assign(B.ChannelIdx(cId, B.C(cId)), transExpr(v)(renamings))
-         if (ftMode) {
-           asgn += Boogie.Assign(B.SqnCh(cId, B.C(cId)), B.SqnAct(B.This))
-         }
+         asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(renamings))
+//         if (ftMode) {
+//           asgn += Boogie.Assign(B.SqnCh(cId, B.C(cId)), B.SqnAct(B.This))
+//         }
          asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
          
        }
      }
      
-    if (ftMode) {
-      asgn += Boogie.Assign(B.SqnAct(B.This), B.SqnAct(B.This) plus B.Int(1))
-    }
+//    if (ftMode) {
+//      asgn += Boogie.Assign(B.SqnAct(B.This), B.SqnAct(B.This) plus B.Int(1))
+//    }
      
      for (inv <- avs.invariants) {
        if (!inv.assertion.free) 
@@ -318,11 +327,11 @@ class Translator(
       asgn += B.Assume(B.R(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(0))
     }
     
-    if (ftMode) {
-      for (e <- nwvs.entities) {
-        asgn += B.Assume(B.SqnAct(transExpr(e.id)(nwvs.nwRenamings)) ==@ B.Int(0))
-      }
-    }
+//    if (ftMode) {
+//      for (e <- nwvs.entities) {
+//        asgn += B.Assume(B.SqnAct(transExpr(e.id)(nwvs.nwRenamings)) ==@ B.Int(0))
+//      }
+//    }
     
     for (inst <- nwvs.entities) {
       
@@ -340,7 +349,7 @@ class Translator(
         for (opat <- ca.outputPattern) {
           val cId = nwvs.sourceMap(PortRef(Some(inst.id),opat.portId))
           for (e <- opat.exps) {
-            asgn += Boogie.Assign(B.ChannelIdx(cId,B.C(cId)),transExpr(e)(renamings))
+            asgn += Boogie.Assign(B.ChannelIdx(cId,e.typ,B.C(cId)),transExpr(e)(renamings))
             asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(1))
           }
         }
@@ -570,7 +579,7 @@ class Translator(
       while (repeats < ipat.repeat) {
         val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
         for (v <- ipat.vars) {
-          asgn += Boogie.Assign(transExpr(v.id)(renamings),B.ChannelIdx(cId,B.R(cId)))
+          asgn += Boogie.Assign(transExpr(v.id)(renamings),B.ChannelIdx(cId,v.typ,B.R(cId)))
           asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
         }
         repeats = repeats+1
@@ -593,11 +602,11 @@ class Translator(
       while (repeats < opat.repeat) {
         for (e <- opat.exps) {
           if (!actor.isInstanceOf[Network]) {
-            asgn += Boogie.Assign(B.ChannelIdx(cId,B.C(cId)),transExpr(e)(renamings))
+            asgn += Boogie.Assign(B.ChannelIdx(cId,e.typ,B.C(cId)),transExpr(e)(renamings))
           }
-          if (ftMode) {
-            asgn += Boogie.Assign(B.SqnCh(cId,B.C(cId)),B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)))
-          }
+//          if (ftMode) {
+//            asgn += Boogie.Assign(B.SqnCh(cId,B.C(cId)),B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)))
+//          }
           asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(1))
         }
         repeats = repeats+1
@@ -608,9 +617,9 @@ class Translator(
       asgn += B.Assume(transExpr(post)(renamings))
     }
     
-    if (ftMode && action.aClass != ActionClass.Recovery) {
-      asgn += Boogie.Assign(B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)),B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)) plus B.Int(1))
-    }
+//    if (ftMode && action.aClass != ActionClass.Recovery) {
+//      asgn += Boogie.Assign(B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)),B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)) plus B.Int(1))
+//    }
     
 //    for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
 //      val (_,stmt) = Inhalator.visit(e.expr, "", renamings)

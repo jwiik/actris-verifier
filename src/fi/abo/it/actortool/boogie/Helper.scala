@@ -16,6 +16,7 @@ object BMap extends Enumeration {
   final val R = "R"
   final val M = "M"
   final val I = "I"
+  final val H = "H"
   final val St = "St"
   final val SqnCh = "SqnCh"
   final val SqnActor = "SqnAct"
@@ -24,9 +25,12 @@ object BMap extends Enumeration {
 }
 
 object BType {
+  //def Chan(arg: BType) = Boogie.IndexedType("Chan", arg)
   def Chan(arg: BType) = Boogie.IndexedType("Chan", arg)
+  def Field(arg: BType) = Boogie.IndexedType("Field", arg)
   def M = NamedType("MType")
   def C = NamedType("CType")
+  def Ref = NamedType("Ref")
   def Bool = NamedType("bool");
   def Real = NamedType("real");
   def Int = NamedType("int");
@@ -38,9 +42,11 @@ object BType {
 
 case class BDecl(val name: String, val decl: Boogie.LocalVar) {
   def this(name1: String, typ: Type) = this(name1, B.Local(name1, B.type2BType(typ)))
+  def this(name1: String, bTyp: BType) = this(name1, B.Local(name1, bTyp))
 }
 object BDecl {
   def apply(name1: String, typ: Type) = new BDecl(name1,typ)
+  def apply(name1: String, bTyp: BType) = new BDecl(name1, B.Local(name1, bTyp))
 }
 
 object B {
@@ -64,6 +70,7 @@ object B {
       case ChanType(contentType) => BType.Chan(type2BType(contentType))
       case ActorType(_) => BType.Actor
       case ListType(contentType,_) => BType.List(type2BType(contentType))
+      case RefType(_) => BType.Ref
       case UnknownType =>
         assert(false, "Unknown types should not occur during the translation")
         null
@@ -94,35 +101,31 @@ object B {
   def C(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.C) apply channel)
   def R(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.R) apply channel)
   def I(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.I) apply channel)
-  //def T(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.T) apply channel)
-  
+    
   def R(channel: String): Boogie.Expr = R(Boogie.VarExpr(channel))
   def C(channel: String): Boogie.Expr = C(Boogie.VarExpr(channel))
   def I(channel: String): Boogie.Expr = I(Boogie.VarExpr(channel))
-  //def T(channel: String): Boogie.Expr = T(Boogie.VarExpr(channel))
   
   def Urd(channel: String): Boogie.Expr = C(channel) - R(channel)
   def Urd(channel: Boogie.Expr): Boogie.Expr = C(channel) - R(channel)
-//  
-//  def Read(channel: String): Boogie.Expr = R(channel)
-//  def Read(channel: Boogie.Expr): Boogie.Expr = R(channel)
-//  
-//  def Total(channel: String)(implicit bvMode: Boolean): Boogie.Expr = C(channel)
-//  def Total(channel: Boogie.Expr)(implicit bvMode: Boolean): Boogie.Expr = C(channel)
   
-  def SqnCh(connName: String, ind: Boogie.Expr): Boogie.Expr = SqnCh(VarExpr(connName),ind)
-  def SqnCh(channel: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnCh) apply channel) apply ind
-  
-  def SqnAct(actorName: String): Boogie.Expr = SqnAct(VarExpr(actorName))
-  def SqnAct(actor: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnActor) apply actor)
+//  def SqnCh(connName: String, ind: Boogie.Expr): Boogie.Expr = SqnCh(VarExpr(connName),ind)
+//  def SqnCh(channel: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnCh) apply channel) apply ind
+//  
+//  def SqnAct(actorName: String): Boogie.Expr = SqnAct(VarExpr(actorName))
+//  def SqnAct(actor: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnActor) apply actor)
   
   def Channel(connName: String): Boogie.Expr = (VarExpr(BMap.M) apply VarExpr(connName))
-  def ChannelIdx(connName: String, ind: Boogie.Expr): Boogie.Expr = 
-    ((VarExpr(BMap.M) apply VarExpr(connName)) apply ind)
+  def ChannelIdx(connName: String, t: Type, ind: Boogie.Expr): Boogie.Expr = ChannelIdx(VarExpr(connName), ind)
   def Channel(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.M) apply channel)
-  def ChannelIdx(channel: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = 
-    ((VarExpr(BMap.M) apply channel) apply ind)
+//  def ChannelIdx(channel: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = ((VarExpr(BMap.M) apply channel) apply ind)
+  def ChannelIdx(channel: Boogie.Expr, ind: Boogie.Expr) = 
+    VarExpr(BMap.M).apply(channel).apply(ind)
+    //((VarExpr(BMap.M) apply channel) apply ind)
   
+  def Field(ref: Boogie.Expr, typeName: String, fieldName: String) = (VarExpr(BMap.H) apply(ref,VarExpr(typeName+"."+fieldName)))
+  def SqnField(ref: Boogie.Expr) = (VarExpr(BMap.H) apply(ref,VarExpr("sqn#")))
+    
   def State(id: String) = VarExpr(BMap.St) apply VarExpr(id)
   def State(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
   

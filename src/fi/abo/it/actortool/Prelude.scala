@@ -52,18 +52,24 @@ object TypesAndGlobalVarsPL extends PreludeComponent {
 """// ---------------------------------------------------------------
 // -- Types and global variables ---------------------------------
 // ---------------------------------------------------------------
+type Ref;
 type Chan a;
+type Field a;
 type Actor;
 type CType = <a>[Chan a]@inttype@;
 type MType = <a>[Chan a][@inttype@]a;
-type State;
+type HType = <a>[Ref,Field a]a;
 
 var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
 
+var H: HType;
+
 const unique this#: Actor;
+
+
 type List a = [@inttype@]a;
 var AT#intlst: List @inttype@;
 
@@ -75,8 +81,7 @@ object SeqNumberingPL extends PreludeComponent {
   val text = 
 """
 // -- Sequence numbering for FT ----------------------------------
-var SqnCh: <a>[Chan a][@inttype@]int;
-var SqnAct: [Actor]int;
+const unique sqn#: Field int;
 """
 }
 

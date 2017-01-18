@@ -91,7 +91,8 @@ object TypeUtil {
     (t1.isIndexed && t2.isIndexed && 
         isCompatible(t1.asInstanceOf[ListType].resultType, t2.asInstanceOf[ListType].resultType) && 
         isCompatible(t1.asInstanceOf[ListType].indexType, t2.asInstanceOf[ListType].indexType) &&
-        t1.asInstanceOf[ListType].size == t2.asInstanceOf[ListType].size)
+        t1.asInstanceOf[ListType].size == t2.asInstanceOf[ListType].size) ||
+    (t1.isRef && t2.isRef && t1.asInstanceOf[RefType].id == t2.asInstanceOf[RefType].id)
   
   def getSize(n: Long): Int = {
     if (n == 0) { 1 }
@@ -175,10 +176,7 @@ abstract class ASTVisitor[T] {
 
   def visitStmt(stmt: Stmt)(implicit info: T) {
     stmt match {
-      case Assign(id, exp)             =>
-        visitAssignable(id); visitExpr(exp)
-      case IndexAssign(id, idx, exp)   =>
-        visitAssignable(id); visitExpr(idx); visitExpr(exp)
+      case Assign(id, exp)             => visitExpr(id); visitExpr(exp)
       case Assert(e)                   => visitExpr(e)
       case Assume(e)                   => visitExpr(e)
       case Havoc(vars)                 => for (v <- vars) visitId(v)
@@ -243,6 +241,7 @@ abstract class ASTVisitor[T] {
       case Exists(v, e, None) => visitExpr(e)
       case Exists(v, e, Some(p)) => visitExpr(e); visitExpr(p)
       case IndexAccessor(l, i) => visitExpr(l); visitExpr(i)
+      case FieldAccessor(e, f) => visitExpr(e)
       case FunctionApp(n, args) => visitExpr(args)
       case ListLiteral(els) => for (e <- els) visitExpr(e)
       case il: IntLiteral =>
@@ -250,12 +249,6 @@ abstract class ASTVisitor[T] {
       case bl: BoolLiteral =>
       case fl: FloatLiteral =>
       case sm: SpecialMarker =>
-    }
-  }
-
-  def visitAssignable(asgn: Assignable)(implicit info: T) {
-    asgn match {
-      case id: Id => visitId(id)
     }
   }
 
@@ -269,8 +262,7 @@ abstract class ASTReplacingVisitor[A <: ASTNode, B <: ASTNode] {
 
   def visitStmt(stmt: Stmt)(implicit map: Map[A, B]): Stmt = {
     stmt match {
-      case Assign(id, exp)             => Assign(visitId(id), visitExpr(exp))
-      case IndexAssign(id, idx, exp)   => IndexAssign(visitId(id), visitExpr(idx), visitExpr(exp))
+      case Assign(id, exp)             => Assign(visitAssignable(id), visitExpr(exp))
       case Assert(e)                   => Assert(visitExpr(e))
       case Assume(e)                   => Assume(visitExpr(e))
       case Havoc(vars)                 => Havoc(for (v <- vars) yield visitId(v))
@@ -316,7 +308,8 @@ abstract class ASTReplacingVisitor[A <: ASTNode, B <: ASTNode] {
       case Forall(v, e, Some(p)) => Forall(v, visitExpr(e), Some(visitExpr(p)))
       case Exists(v, e, None)    => Exists(v, visitExpr(e), None)
       case Exists(v, e, Some(p)) => Exists(v, visitExpr(e), Some(visitExpr(p)))
-      case IndexAccessor(l, i)   => IndexAccessor(visitExpr(l), visitExpr(i))
+      case ia: IndexAccessor     => visitAssignable(ia)
+      case fa: FieldAccessor     => visitAssignable(fa)
       case FunctionApp(n, args)  => FunctionApp(n, visitExpr(args))
       case ListLiteral(els)      => ListLiteral(for (e <- els) yield visitExpr(e))
       case il: IntLiteral   => il
@@ -327,6 +320,14 @@ abstract class ASTReplacingVisitor[A <: ASTNode, B <: ASTNode] {
     }
     newExpr.typ = expr.typ
     newExpr
+  }
+  
+  def visitAssignable(asgn: Assignable)(implicit map: Map[A, B]): Assignable = {
+    asgn match {
+      case id: Id => visitId(id)
+      case IndexAccessor(l, i)   => IndexAccessor(visitExpr(l), visitExpr(i))
+      case FieldAccessor(e, f)   => FieldAccessor(visitExpr(e), f)
+    }
   }
 
   def visitId(id: Id)(implicit map: Map[A, B]): Id = {

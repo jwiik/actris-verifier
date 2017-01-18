@@ -21,14 +21,16 @@ object Resolver {
     def lookupChannel(id: String): Option[Connection] = None
     def lookupInport(id: String): Option[InPort] = None
     def lookupOutport(id: String): Option[OutPort] = None
+    def lookupRefTypeDecl(id: String): Option[TypeDecl] = None 
   }
   
-  sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor]) extends Context(parentNode, null) {
+  sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor], val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
     val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
+    override def lookupRefTypeDecl(id: String): Option[TypeDecl] = userTypes.get(id)
   }
   
-  sealed class EmptyContext extends RootContext(null,Map.empty)
+  sealed class EmptyContext extends RootContext(null,Map.empty,Map.empty)
   
   sealed abstract class ChildContext(override val parentNode: ASTNode, override val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
@@ -39,6 +41,7 @@ object Resolver {
     override def lookupChannel(id: String) = parentCtx.lookupChannel(id)
     override def lookupInport(id: String) = parentCtx.lookupInport(id)
     override def lookupOutport(id: String) = parentCtx.lookupOutport(id)
+    override def lookupRefTypeDecl(id: String) = parentCtx.lookupRefTypeDecl(id)
   }
   
   sealed class ActorContext(val actor: DFActor,
@@ -95,6 +98,7 @@ object Resolver {
     
     val actors: scala.collection.mutable.Map[String,DFActor] = new scala.collection.mutable.HashMap()
     val units: scala.collection.mutable.Map[String,DataUnit] = new scala.collection.mutable.HashMap()
+    var userTypes: Map[String,TypeDecl] = Map.empty
     
     for (decl <- prog) {
       if (decls contains decl.id) {
@@ -106,10 +110,11 @@ object Resolver {
         case du: DataUnit => units += (du.id -> du)
         case ba: BasicActor => actors += (ba.id -> ba)
         case nw: Network => actors += (nw.id -> nw)
+        case td: TypeDecl => userTypes += (td.id -> td)
       }
     }
     
-    val rootCtx = new RootContext(null,actors.toMap)
+    val rootCtx = new RootContext(null,actors.toMap,userTypes)
     
     for (decl <- actors.values) {
       val inports = scala.collection.mutable.HashMap[String,InPort]()
@@ -548,6 +553,37 @@ object Resolver {
           ac.typ = indexedType.resultType
           indexedType.resultType
         }
+      case fa@FieldAccessor(e,f) =>
+        val tExp = resolveExpr(ctx,e)
+        if (!tExp.isRef) {
+          ctx.error(e.pos, "Expected reference type, found: " + tExp.id)
+          UnknownType
+        } 
+        else {
+          val refType = tExp.asInstanceOf[RefType]
+          ctx.lookupRefTypeDecl(refType.id) match {
+            case Some(d) => {
+              val builtin = f match {
+                case "sqn" => Some(IntType)
+                case _ => None
+              }
+              if (builtin.isDefined) builtin.get
+              else {
+                // Its not a builtin field. Check if the field exists in the definition.
+                val fieldOpt = d.fields.find { d => d.id == f  }
+                fieldOpt match {
+                  case Some(field) => field.typ
+                  case None =>
+                    ctx.error(e.pos, "Unknown field: " + f)
+                    UnknownType
+                }
+              }
+            }
+            case None =>
+              ctx.error(e.pos, "Undeclared reference type: " + refType.id)
+              UnknownType
+          }
+        }
       //case fa@FunctionApp("rd0",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
       //case fa@FunctionApp("tot0",params) => resolveChannelCountFunction(ctx, fa)
@@ -955,25 +991,11 @@ object Resolver {
     val ctx = new BasicContext(stmt,parentCtx)
     stmt match {
       case Assign(id,exp) =>
-        if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
+        //if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
         val it = resolveExpr(ctx,id)
         val et = resolveExpr(ctx, exp)
         if (!TypeUtil.isCompatible(it, et)) 
           ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable of type " + it.id)
-      case IndexAssign(id,idx,exp) =>
-        if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
-        val it = resolveExpr(ctx,id)
-        val et = resolveExpr(ctx, exp)
-        val xt = resolveExpr(ctx,idx)
-        if (!it.isList) {
-          ctx.error(id.pos,  id.id + " is not a list."); return
-        }
-        else {
-          if (!TypeUtil.isCompatible(it.asInstanceOf[ListType].contentType,et)) {
-            ctx.error(id.pos, "Cannot assign a value of type " + et.id + " to a list of type " + it.id); return
-          }
-        }
-        if (!xt.isInt) ctx.error(idx.pos, "List indices must be integers.")
       case While(cond,invs,body) =>
         resolveExpr(ctx,cond,BoolType)
         for (i <- invs) resolveExpr(ctx,i,BoolType)

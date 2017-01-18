@@ -43,7 +43,7 @@ class Parser extends StandardTokenParsers {
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
                        "-->", "::", "{", "}", "<<" , ">>", "@", "&")
                        
-  def programUnit = (actorDecl | networkDecl | unitDecl)*
+  def programUnit = (actorDecl | networkDecl | unitDecl | typeDecl)*
   
   def annotation = positioned(("@" ~> ident) ^^ { case id => Annotation(id)})
   
@@ -76,6 +76,11 @@ class Parser extends StandardTokenParsers {
       case (a ~ (id ~ None ~ inports ~ outports ~ members)) => 
         Network(a, id, Nil, inports, outports, members)
     })
+  
+  def typeDecl = positioned(("type" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")" ?)) ^^ {
+    case (id ~ Some(params)) => TypeDecl(RefType(id),params)
+    case (id ~ None) => TypeDecl(RefType(id),Nil)
+  })  
   
   def formalParam = positioned(
       (typeName ~ ident) ^^ {
@@ -286,8 +291,8 @@ class Parser extends StandardTokenParsers {
     "!" ~> unaryExpr ^^ Not |
     quantifier |
     "(" ~> expression <~ ")" ^^ { case e => e } |
-    suffixExpr |
     functionApp |
+    suffixExpr |
     listLiteral |
     atom
   )
@@ -331,9 +336,15 @@ class Parser extends StandardTokenParsers {
       })
       
   def suffixExpr: Parser[Expr] = positioned(
-      (atom ~ ("[" ~> expression <~ "]")) ^^ {
-        case (e ~ suffix) => IndexAccessor(e,suffix)
-      })
+      atom ~ (suffixThing *) ^^ {
+        case e ~ sfxs => sfxs.foldLeft(e) { (t,a) => val result = a(t); result.pos = t.pos; result }
+      }
+  )
+  
+  def suffixThing: Parser[(Expr => Expr)] = {
+    (("[" ~> expression <~ "]") ^^ {case e1 => { e0: Expr => IndexAccessor(e0,e1)}}
+    | ("." ~> ident) ^^ {case e1 => { e0: Expr => FieldAccessor(e0,e1)}})
+  }
   
   def atom: Parser[Expr] = positioned(
     boolLiteral | 
@@ -363,11 +374,12 @@ class Parser extends StandardTokenParsers {
     "assert" ~> expression <~ Semi ^^ Assert |
     "assume" ~> expression <~ Semi ^^ Assume |
     "havoc" ~> repsep(ident,",") <~ Semi ^^ {case ids => Havoc(ids map { Id(_) })} |
-    identifier ~ opt("[" ~> expression <~ "]") ~ (":=" ~> expression) <~ Semi ^^ {
-      case (id ~ None ~ exp) => Assign(id,exp)
-      case (id ~ Some(idx) ~ exp) => IndexAssign(id,idx,exp)
+    assignable ~ (":=" ~> expression) <~ Semi ^^ {
+      case (id ~ exp) => Assign(id.asInstanceOf[Assignable],exp) // FIXME ugly typecast
     }
   )
+  
+  def assignable = suffixExpr | identifier
   
   
   def typeName = primType | compositeType 
@@ -383,8 +395,9 @@ class Parser extends StandardTokenParsers {
   )
   
   def compositeType: Parser[Type] = positioned(
-    "List" ~> ("(" ~> "type" ~> ":" ~> typeName ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")") ^^ {
+    ("List" ~> ("(" ~> "type" ~> ":" ~> typeName ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")") ^^ {
       case (contType ~ size) => ListType(contType,size.toInt)
-    }
+    }) |
+    (ident ^^ {case id => RefType(id)})
   )
 }

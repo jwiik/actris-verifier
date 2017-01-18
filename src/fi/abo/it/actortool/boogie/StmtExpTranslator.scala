@@ -16,7 +16,6 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
     for (s <- stmts) {
       bStmts ++= (s match {
         case Assign(id,exp) => List(Boogie.Assign(transExpr(id),transExpr(exp)))
-        case IndexAssign(id,idx,exp) => List(Boogie.AssignMap(transExpr(id),transExpr(idx),transExpr(exp)))
         case Assert(e) => List(B.Assert(transExpr(e), e.pos, "Condition might not hold"))
         case Assume(e) => List(B.Assume(transExpr(e)))
         case Havoc(ids) => for (i <- ids) yield { Boogie.Havoc(transExpr(i)) }
@@ -105,29 +104,30 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "tot@" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
           case "str" => B.I(transExpr(params(0)))
           case "@" => B.I(transExpr(params(0)))
-          case "sqn" => {
-            if (!ftMode) throw new TranslationException(fa.pos, "Function '" + name + "' is only supported in FT-mode")
-            
-            if (params(0).isInstanceOf[Id] && params(0).asInstanceOf[Id].id == "this") B.SqnAct(B.This)
-            else if (params(0).isInstanceOf[Id]) {
-              val name = renamings(params(0).asInstanceOf[Id].id).asInstanceOf[Id].id
-              Boogie.VarExpr(name+"#sqn")
-            }
-            else if (params(0).isInstanceOf[IndexAccessor]) {
-              val accessor = params(0).asInstanceOf[IndexAccessor]
-              val channel = transExpr(accessor.exp)
-              val index = transExpr(accessor.suffix)
-              B.SqnCh(channel, index)
-            }
-            else {
-              throw new TranslationException(fa.pos, "Invalid argument passed to function " + name)
-            }
-            
-          }
-          case "currsqn" => {
-            if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
-            B.SqnAct(transExpr(params(0)))
-          }
+//          case "sqn" => 
+//          case "sqn" => {
+//            if (!ftMode) throw new TranslationException(fa.pos, "Function '" + name + "' is only supported in FT-mode")
+//            
+//            if (params(0).isInstanceOf[Id] && params(0).asInstanceOf[Id].id == "this") B.SqnAct(B.This)
+//            else if (params(0).isInstanceOf[Id]) {
+//              val name = renamings(params(0).asInstanceOf[Id].id).asInstanceOf[Id].id
+//              Boogie.VarExpr(name+"#sqn")
+//            }
+//            else if (params(0).isInstanceOf[IndexAccessor]) {
+//              val accessor = params(0).asInstanceOf[IndexAccessor]
+//              val channel = transExpr(accessor.exp)
+//              val index = transExpr(accessor.suffix)
+//              B.SqnCh(channel, index)
+//            }
+//            else {
+//              throw new TranslationException(fa.pos, "Invalid argument passed to function " + name)
+//            }
+//            
+//          }
+//          case "currsqn" => {
+//            if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
+//            B.SqnAct(transExpr(params(0)))
+//          }
           case "next" => 
             val ch = transExpr(params(0))
             if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) minus transExpr(params(1)))
@@ -169,6 +169,14 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         val index = transExpr(i)
         if (e.typ.isChannel) B.ChannelIdx(tExpr,index)
         else tExpr apply transExpr(i)
+      }
+      case FieldAccessor(e,f) => {
+        val tExpr = transExpr(e)
+        f match {
+          case "sqn" => B.SqnField(tExpr)
+          case _ => B.Field(tExpr, e.typ.asInstanceOf[RefType].id, f)
+        }
+        
       }
       case ListLiteral(lst) => {
         var listlit: Boogie.Expr = B.intlst
