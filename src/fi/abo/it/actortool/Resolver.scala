@@ -584,15 +584,13 @@ object Resolver {
               UnknownType
           }
         }
-      //case fa@FunctionApp("rd0",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
-      //case fa@FunctionApp("tot0",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("rd@",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot@",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("rd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot",params) => resolveChannelCountFunction(ctx, fa)
-      case fa@FunctionApp("sqn",params) => resolveSqnFunction(ctx, fa)
-      case fa@FunctionApp("currsqn",params) => resolveSqnFunction(ctx, fa)
+//      case fa@FunctionApp("sqn",params) => resolveSqnFunction(ctx, fa)
+//      case fa@FunctionApp("currsqn",params) => resolveSqnFunction(ctx, fa)
       case fa@FunctionApp("str",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("@",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("next",params) => resolveChannelAccessFunction(ctx, fa)
@@ -603,76 +601,76 @@ object Resolver {
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType,IntType,IntType))
-      case fa@FunctionApp("subvar",params) => {
-        if (params.size != 2) {
-          ctx.error(fa.pos, "Expected two arguments")
-          UnknownType
-        }
-        else {
-          val tActor = resolveExpr(ctx,params(0))
-          if (!tActor.isActor) {
-            ctx.error(fa.pos, "The first argument must be an actor instance")
-            UnknownType
-          }
-          else {
-            val name = params(1) match {
-              case Id(id) => id
-              case x => 
-                ctx.error(x.pos, "The second argument to 'variable' must be a state identifier")
-                return UnknownType
-            }
-            val actorDecl = tActor.asInstanceOf[ActorType].actor 
-            val varDecl = actorDecl.variables.find { d => d.id == name }
-            varDecl match {
-              case Some(v) => 
-                v.typ
-              case None =>
-                ctx.error(fa.pos, "Actor " + actorDecl.id + " does not declare any variable named '" + name + "'")
-                UnknownType
-            }
-          }
-        }
-      }
-      case fa@FunctionApp("state",params) => {
-        if (params.size != 2) {
-          ctx.error(fa.pos, "Expected two arguments")
-          UnknownType
-        }
-        else {
-          val tActor = resolveExpr(ctx,params(0))
-          val state = params(1) match {
-            case Id(id) => id
-            case x => 
-              ctx.error(x.pos, "The second argument to 'state' must be a state identifier")
-              return UnknownType
-          }
-          tActor match {
-            case ActorType(a) =>
-              a match {
-                case n: Network =>
-                  ctx.error(params(0).pos, "Function 'state' cannot be used on networks")
-                  UnknownType
-                case ba: BasicActor =>
-                  ba.schedule match {
-                    case Some(schedule) =>
-                      if (schedule.states contains state) {
-                        return BoolType
-                      }
-                      else {
-                        ctx.error(params(0).pos, "Actor " + ba.fullName + " has no state named " + state)
-                        return UnknownType
-                      }
-                    case None => 
-                      ctx.error(params(0).pos, "Actor " + ba.fullName + " has no FSM schedule")
-                      return UnknownType
-                  }
-              }
-            case _ =>
-              ctx.error(params(0).pos, "Actor instance expected, found: " + tActor.id)
-              UnknownType
-          }
-        }
-      }
+//      case fa@FunctionApp("subvar",params) => {
+//        if (params.size != 2) {
+//          ctx.error(fa.pos, "Expected two arguments")
+//          UnknownType
+//        }
+//        else {
+//          val tActor = resolveExpr(ctx,params(0))
+//          if (!tActor.isActor) {
+//            ctx.error(fa.pos, "The first argument must be an actor instance")
+//            UnknownType
+//          }
+//          else {
+//            val name = params(1) match {
+//              case Id(id) => id
+//              case x => 
+//                ctx.error(x.pos, "The second argument to 'variable' must be a state identifier")
+//                return UnknownType
+//            }
+//            val actorDecl = tActor.asInstanceOf[ActorType].actor 
+//            val varDecl = actorDecl.variables.find { d => d.id == name }
+//            varDecl match {
+//              case Some(v) => 
+//                v.typ
+//              case None =>
+//                ctx.error(fa.pos, "Actor " + actorDecl.id + " does not declare any variable named '" + name + "'")
+//                UnknownType
+//            }
+//          }
+//        }
+//      }
+//      case fa@FunctionApp("state",params) => {
+//        if (params.size != 2) {
+//          ctx.error(fa.pos, "Expected two arguments")
+//          UnknownType
+//        }
+//        else {
+//          val tActor = resolveExpr(ctx,params(0))
+//          val state = params(1) match {
+//            case Id(id) => id
+//            case x => 
+//              ctx.error(x.pos, "The second argument to 'state' must be a state identifier")
+//              return UnknownType
+//          }
+//          tActor match {
+//            case ActorType(a) =>
+//              a match {
+//                case n: Network =>
+//                  ctx.error(params(0).pos, "Function 'state' cannot be used on networks")
+//                  UnknownType
+//                case ba: BasicActor =>
+//                  ba.schedule match {
+//                    case Some(schedule) =>
+//                      if (schedule.states contains state) {
+//                        return BoolType
+//                      }
+//                      else {
+//                        ctx.error(params(0).pos, "Actor " + ba.fullName + " has no state named " + state)
+//                        return UnknownType
+//                      }
+//                    case None => 
+//                      ctx.error(params(0).pos, "Actor " + ba.fullName + " has no FSM schedule")
+//                      return UnknownType
+//                  }
+//              }
+//            case _ =>
+//              ctx.error(params(0).pos, "Actor instance expected, found: " + tActor.id)
+//              UnknownType
+//          }
+//        }
+//      }
       case fa@FunctionApp(name,params) => {
         ctx.lookupFunction(name) match {
           case Some(fd) => {
