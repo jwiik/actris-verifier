@@ -1,0 +1,33 @@
+type C(int i, C j)
+
+actor Add C in ==> C out :
+  action in:[t] ==> out:[t] 
+    guard t.i = 0
+    ensures 1 <= t.i
+    do t.i := t.i + 1;
+  end
+  action in:[t] ==> out:[t]
+    guard t.i > 0
+  end
+end
+
+network Net C in ==> C out :
+  
+  action in:1 ==> out:1 
+    requires 0 <= in[@].sqn
+    requires 0 <= in[@].i
+    ensures 1 <= out[@].i
+  end
+  
+  chinvariant tot@(out) > 0 ==> 1 <= out[@].i
+
+  entities
+    add = Add();
+  end
+  
+  structure
+    a: in --> add.in;
+    c: add.out --> out;
+  end
+
+end

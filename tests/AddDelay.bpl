@@ -1,19 +1,24 @@
 // ---------------------------------------------------------------
 // -- Types and global variables ---------------------------------
 // ---------------------------------------------------------------
+type Ref;
 type Chan a;
+type Field a;
 type Actor;
 type CType = <a>[Chan a]int;
 type MType = <a>[Chan a][int]a;
-type State;
+type HType = <a>[Ref,Field a]a;
 
 var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
-var T: CType;
+
+var H: HType;
 
 const unique this#: Actor;
+
+
 type List a = [int]a;
 var AT#intlst: List int;
 
@@ -24,7 +29,7 @@ function AT#Min(x:int, y: int): int { if x <= y then x else y }
 // ---------------------------------------------------------------
 
 procedure Add#init#0()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var in1: Chan (int);
   var in2: Chan (int);
@@ -40,7 +45,7 @@ procedure Add#init#0()
   );
 }
 procedure Add#anon$0#1()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var in1: Chan (int);
   var in2: Chan (int);
@@ -69,7 +74,7 @@ procedure Add#anon$0#1()
   );
 }
 procedure Split#init#2()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var in: Chan (int);
   var out1: Chan (int);
@@ -88,7 +93,7 @@ procedure Split#init#2()
   );
 }
 procedure Split#anon$1#3()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var in: Chan (int);
   var out1: Chan (int);
@@ -122,7 +127,7 @@ procedure Split#anon$1#3()
   );
 }
 procedure Delay#init#4()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var in: Chan (int);
   var out: Chan (int);
@@ -138,7 +143,7 @@ procedure Delay#init#4()
   );
 }
 procedure Delay#anon$3#5()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var in: Chan (int);
   var out: Chan (int);
@@ -161,7 +166,7 @@ procedure Delay#anon$3#5()
   );
 }
 procedure Net#init#6()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var Net#add: Actor;
   var Net#del: Actor;
@@ -217,7 +222,7 @@ procedure Net#init#6()
   assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel e (#29)"} (C[Net#e] - R[Net#e]) == 0;
 }
 procedure Net##Add#anon$0#7()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var Net#add: Actor;
   var Net#del: Actor;
@@ -305,7 +310,7 @@ procedure Net##Add#anon$0#7()
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add' might not preserve the channel invariant (#36)"} I[Net#e] == I[Net#c];
 }
 procedure Net##Delay#anon$3#8()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var Net#add: Actor;
   var Net#del: Actor;
@@ -390,7 +395,7 @@ procedure Net##Delay#anon$3#8()
   assert {:msg "Action at 11.3 ('anon$3') for actor instance 'del' might not preserve the channel invariant (#43)"} I[Net#e] == I[Net#c];
 }
 procedure Net##Split#anon$1#9()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var Net#add: Actor;
   var Net#del: Actor;
@@ -477,7 +482,7 @@ procedure Net##Split#anon$1#9()
   assert {:msg "Action at 6.3 ('anon$1') for actor instance 'spl' might not preserve the channel invariant (#50)"} I[Net#e] == I[Net#c];
 }
 procedure Net#anon$4#input#in#10()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var Net#add: Actor;
   var Net#del: Actor;
@@ -543,7 +548,7 @@ procedure Net#anon$4#input#in#10()
   assert {:msg "17.14: Channel invariant might be falsified by network input (#58)"} 0 <= M[Net#a][I[Net#a]];
 }
 procedure Net#anon$4#exit#11()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var Net#add: Actor;
   var Net#del: Actor;
