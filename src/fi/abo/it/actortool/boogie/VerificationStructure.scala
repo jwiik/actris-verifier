@@ -61,4 +61,4 @@ class ActionData(
     val declarations: List[BDecl], 
     val renamings: Map[String,Id], 
     val replacements: Map[Id,Expr],
-    val assignedVariables: Set[Id])
+    val assignedVariables: Set[Assignable])

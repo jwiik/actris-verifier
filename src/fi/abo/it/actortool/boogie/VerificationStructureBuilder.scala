@@ -290,7 +290,7 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
       case Assign(x,_) => {
         x match {
           case id: Id => List(id)
-          case fa: FieldAccessor => List(fa.exp.asInstanceOf[Id])
+          case fa: FieldAccessor => List(fa)
           case _ => assert(false); Nil
         }
       }

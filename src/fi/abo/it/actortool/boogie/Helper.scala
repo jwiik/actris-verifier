@@ -28,6 +28,7 @@ object BType {
   //def Chan(arg: BType) = Boogie.IndexedType("Chan", arg)
   def Chan(arg: BType) = Boogie.IndexedType("Chan", arg)
   def Field(arg: BType) = Boogie.IndexedType("Field", arg)
+  def ParamField(param: String) = Boogie.NamedType("Field " + param)
   def M = NamedType("MType")
   def C = NamedType("CType")
   def Ref = NamedType("Ref")
@@ -124,7 +125,9 @@ object B {
     //((VarExpr(BMap.M) apply channel) apply ind)
   
   def Field(ref: Boogie.Expr, typeName: String, fieldName: String) = 
-    (VarExpr(BMap.H).apply(ref).apply(VarExpr(typeName+"."+fieldName)))
+    (VarExpr(BMap.H).apply(ref).apply(VarExpr(FieldName(typeName,fieldName))))
+    
+  def FieldName(typeName: String, fieldName: String) = typeName+"."+fieldName
     
   def SqnField(ref: Boogie.Expr) = VarExpr(BMap.H).apply(ref).apply(VarExpr("sqn#"))
   
