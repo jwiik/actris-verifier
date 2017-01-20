@@ -35,9 +35,9 @@ class Translator(
     def get(id: String) = { i = i+1; id+B.Sep+(i.toString) }
   }
   
-  def translateProgram(decls: List[TopDecl]): List[Boogie.Decl] = {
-    val nwVerStructBuilder = new NetworkVerificationStructureBuilder(bvMode, ftMode)
-    val actorVerStructBuilder = new ActorVerificationStructureBuilder(bvMode, ftMode)
+  def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Boogie.Decl] = {
+    val nwVerStructBuilder = new NetworkVerificationStructureBuilder(bvMode, ftMode, typeCtx)
+    val actorVerStructBuilder = new ActorVerificationStructureBuilder(bvMode, ftMode, typeCtx)
     
     if (ftMode) BoogiePrelude.addComponent(SeqNumberingPL)
     
@@ -195,15 +195,15 @@ class Translator(
     for (ipat <- a.inputPattern) {
       for ((v,i) <- ipat.vars.zipWithIndex) {
         val name = ipat.portId+B.Sep+i.toString
-        renamingsBuffer += ((v.id, Id(name)))
+        renamingsBuffer += ((v.id, {val id = Id(name); id.typ = v.typ; id} ))
         val lVar = B.Local(name, v.typ)
         inpatDeclBuffer += BDecl(name,lVar)
-        if (ftMode) {
-          val sqnName = name+"#sqn"
-          renamingsBuffer += ((v.id+"#sqn", Id(sqnName)))
-          val sqnLVar = B.Local(sqnName, IntType)
-          inpatDeclBuffer += BDecl(sqnName,sqnLVar)
-        }
+//        if (ftMode) {
+//          val sqnName = name+"#sqn"
+//          renamingsBuffer += ((v.id+"#sqn", Id(sqnName)))
+//          val sqnLVar = B.Local(sqnName, IntType)
+//          inpatDeclBuffer += BDecl(sqnName,sqnLVar)
+//        }
       }
       patterns += B.Int(ipat.vars.size) <= B.C(ipat.portId)-B.R(ipat.portId)
     }
@@ -323,8 +323,8 @@ class Translator(
     asgn ++= nwvs.basicAssumes
     
     for (c <- nwvs.connections) {
-      asgn += B.Assume(B.C(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(0))
-      asgn += B.Assume(B.R(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(0))
+      asgn += B.Assume(B.C(transExpr(c.id,c.typ)(nwvs.nwRenamings)) ==@ B.Int(0))
+      asgn += B.Assume(B.R(transExpr(c.id,c.typ)(nwvs.nwRenamings)) ==@ B.Int(0))
     }
     
 //    if (ftMode) {
@@ -339,7 +339,7 @@ class Translator(
       
       val renamings = nwvs.instanceRenamings(inst)
       
-      val parameterNames = actor.parameters map {x => Id(x.id)}
+      val parameterNames = actor.parameters map {x => val id = Id(x.id); id.typ = x.typ; id}
       for ((name,value) <- (parameterNames zip inst.arguments)) {
         // Add assumptions about the values of the actor parameters
         asgn += B.Assume(transExpr(name)(renamings) ==@ transExpr(value)(renamings))
@@ -461,7 +461,7 @@ class Translator(
     // Network action exit
     
     val inputBounds = for (c <- nwvs.connections.filter { _.isInput }) yield {
-      B.Assume(B.C(transExpr(c.id)(nwvs.nwRenamings)) - B.I(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(nwa.portInputCount(c.from.name)) /* B.BaseL*/)
+      B.Assume(B.C(transExpr(c.id,c.typ)(nwvs.nwRenamings)) - B.I(transExpr(c.id,c.typ)(nwvs.nwRenamings)) ==@ B.Int(nwa.portInputCount(c.from.name)) /* B.BaseL*/)
     }
     
     val nwPre = for (r <- nwa.requires) yield 
@@ -562,6 +562,7 @@ class Translator(
     asgn ++= nwvs.entityData(instance).actionData(action).declarations  map { _.decl }
     
     asgn ++= nwvs.basicAssumes
+    //nwvs.chInvariants foreach { chi => chi.expr.typ != null }
     asgn ++= (for (chi <- nwvs.chInvariants) yield BAssume(chi,nwvs.nwRenamings))  // Assume channel invariants
     
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
@@ -579,7 +580,7 @@ class Translator(
       while (repeats < ipat.repeat) {
         val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
         for (v <- ipat.vars) {
-          asgn += Boogie.Assign(transExpr(v.id)(renamings),B.ChannelIdx(cId,v.typ,B.R(cId)))
+          asgn += Boogie.Assign(transExpr(v.id,v.typ)(renamings),B.ChannelIdx(cId,v.typ,B.R(cId)))
           asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
         }
         repeats = repeats+1
@@ -593,7 +594,13 @@ class Translator(
     }
     
     for (ev <- nwvs.entityData(instance).actionData(action).assignedVariables) {
-      asgn += Boogie.Havoc(transExpr(ev)(renamings))
+      if (ev.typ.isRef) {
+        asgn += Boogie.Havoc(Boogie.VarExpr(BMap.H))
+      }
+      else {
+        asgn += Boogie.Havoc(transExpr(ev)(renamings)) 
+      }
+      //asgn += Boogie.Havoc(transExpr(ev)(renamings))
     }
         
     for (opat <- action.outputPattern) {
@@ -652,7 +659,7 @@ class Translator(
     asgn ++= nwvs.basicAssumes
     //asgn += B.Local("x", B.type2BType(IntType(32)))
     
-    asgn += B.Assume(B.C(transExpr(pattern.portId)(nwvs.nwRenamings)) - B.I(transExpr(pattern.portId)(nwvs.nwRenamings)) < B.Int(pattern.vars.size))
+    asgn += B.Assume(B.C(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) - B.I(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) < B.Int(pattern.vars.size))
      
     for (chi <- nwvs.chInvariants) {
       asgn += BAssume(chi, nwvs.nwRenamings)
@@ -663,8 +670,8 @@ class Translator(
     }
     //asgn += B.Assume(B.Int(0) <= B.Int(1))
     asgn += Boogie.Assign(
-        B.C(transExpr(pattern.portId)(nwvs.nwRenamings)),
-        B.C(transExpr(pattern.portId)(nwvs.nwRenamings)) + B.Int(1))
+        B.C(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)),
+        B.C(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) + B.Int(1))
         
     for (r <- action.requires) {
       asgn += B.Assume(transExpr(r)(nwvs.nwRenamings))
@@ -694,7 +701,11 @@ class Translator(
     B.Assert(transExpr(chi.expr)(renamings), chi.expr.pos, completeMsg)
   }
   
-  def transExpr(id: String)(implicit renamings: Map[String,Expr]): Boogie.Expr = stmtTranslator.transExpr(Id(id))
+  def transExpr(id: String, t: Type)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
+    val i = Id(id)
+    i.typ = t
+    transExpr(i)
+  }
   def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = stmtTranslator.transExpr(exp)
   
   def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = stmtTranslator.transStmt(stmts)

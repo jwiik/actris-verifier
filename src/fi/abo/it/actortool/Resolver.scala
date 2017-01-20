@@ -7,10 +7,11 @@ import collection.mutable.ListBuffer
 object Resolver {
   
   sealed abstract class ResolverOutcome
-  case class Success() extends ResolverOutcome
+  case class Success(val rootCtx: Context) extends ResolverOutcome
   case class Errors(ss: List[(Position,String)]) extends ResolverOutcome
   
   sealed abstract class Context(val parentNode: ASTNode, val parentCtx: Context) {
+    def getErrors = List.empty[(Position,String)]
     def error(p: Position, msg: String)
     def lookUp(id: String): Option[Declaration] = None
     def currentAccessedElement: Option[Expr] = None
@@ -25,7 +26,8 @@ object Resolver {
   }
   
   sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor], val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
-    val errors: ListBuffer[(Position,String)] = new ListBuffer()
+    override def getErrors = errors.toList
+    private val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
     override def lookupRefTypeDecl(id: String): Option[TypeDecl] = userTypes.get(id)
   }
@@ -34,6 +36,7 @@ object Resolver {
   
   sealed abstract class ChildContext(override val parentNode: ASTNode, override val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
+    override def getErrors = parentCtx.getErrors
     override def error(p: Position, msg: String) = parentCtx.error(p,msg)
     override def lookupFunction(name: String): Option[FunctionDecl] = parentCtx.lookupFunction(name)
     override def containerActor = parentCtx.containerActor
@@ -72,7 +75,7 @@ object Resolver {
       else if (outports contains id)
         Some(Declaration(id,ChanType(outports(id).portType),false,None))
       else if (channels contains id) 
-        Some(Declaration(channels(id).id,ChanType(channels(id).typ),true,None))
+        Some(Declaration(channels(id).id,channels(id).typ,true,None))
       else if (entities contains id) 
         Some(Declaration(entities(id).id,ActorType(entities(id).actor),true,None))
       else  parentCtx.lookUp(id)
@@ -257,7 +260,7 @@ object Resolver {
         }
       } 
     } // End for
-    if (rootCtx.errors.isEmpty) Success() else Errors(rootCtx.errors.toList)
+    if (rootCtx.getErrors.isEmpty) Success(rootCtx) else Errors(rootCtx.getErrors.toList)
   }
   
   def resolveAction(actorCtx: ActorContext, action: Action, nwAction: Boolean) {
@@ -436,7 +439,7 @@ object Resolver {
         case (_,None) => ctx.error(c.to.pos, "Unknown port")
         case (Some(f),Some(t)) =>
           if (f.portType != t.portType) ctx.error(c.from.pos, "Incompatible port types")
-          c.typ = f.portType
+          c.typ = ChanType(f.portType)
           channels = channels + (c.id -> c)
       }
     }
@@ -486,16 +489,25 @@ object Resolver {
     }
   }
   
-  def resolveExpr(exp: Expr): ResolverOutcome = {
-    val ctx = new EmptyContext()
-    resolveExpr(ctx,exp)
-    if (ctx.errors.isEmpty) Success() else Errors(ctx.errors.toList)
+  def resolveExpr(exp: Expr, typeCtx: Context): ResolverOutcome = {
+    val ctx = new BasicContext(exp,typeCtx)
+    resolveExpr(typeCtx,exp)
+    assert(exp.typ != null)
+    val result = if (ctx.getErrors.isEmpty && exp.typ != null) Success(ctx) else Errors(ctx.getErrors.toList)
+    result match {
+      case Success(_) =>
+      case Errors(errs) => {
+        assert(false,errs)
+      }
+    }
+    result
   }
   
   def resolveExpr(ctx: Context, exp: Expr, t: Type) {
     if (t != resolveExpr(ctx,exp)) {
       ctx.error(exp.pos, "Expected type " + t.id)
     }
+    assert(exp.typ != null)
   }
   
   def resolveExpr(parentCtx: Context, exp: Expr): Type = {
@@ -557,6 +569,7 @@ object Resolver {
         val tExp = resolveExpr(ctx,e)
         if (!tExp.isRef) {
           ctx.error(e.pos, "Expected reference type, found: " + tExp.id)
+          fa.typ = UnknownType;
           UnknownType
         } 
         else {
@@ -567,21 +580,27 @@ object Resolver {
                 case "sqn" => Some(IntType)
                 case _ => None
               }
-              if (builtin.isDefined) builtin.get
+              if (builtin.isDefined) {
+                val builtinFieldType = builtin.get
+                fa.typ = builtinFieldType
+                builtinFieldType
+              }
               else {
                 // Its not a builtin field. Check if the field exists in the definition.
                 val fieldOpt = d.fields.find { d => d.id == f  }
                 fieldOpt match {
-                  case Some(field) => field.typ
+                  case Some(field) => fa.typ = field.typ; fa.typ
                   case None =>
                     ctx.error(e.pos, "Unknown field: " + f)
-                    UnknownType
+                    fa.typ = UnknownType
+                    fa.typ
                 }
               }
             }
             case None =>
               ctx.error(e.pos, "Undeclared reference type: " + refType.id)
-              UnknownType
+              fa.typ = UnknownType
+              fa.typ
           }
         }
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
@@ -681,6 +700,7 @@ object Resolver {
                   ctx.error(arg.pos, "Invalid type for function argument, expected " + par.typ.id + ", found " + aType.id)
                 }
               }
+              fa.typ = fd.output
               fd.output
             }
             else {
@@ -724,6 +744,7 @@ object Resolver {
           }
           case None => ctx.error(sm.pos, "Marker '" + m + "' used in invalid position")
         }
+        sm.typ = IntType
         IntType
       }
       case v@Id(id) =>
@@ -801,7 +822,9 @@ object Resolver {
   def resolveEqRelationalExpr(ctx: Context, exp: BinaryExpr): Type = {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
-    if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
+    if (!TypeUtil.isCompatible(t1, t2)) {
+      ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
+    }
     exp.typ = BoolType
     exp.typ
   }
@@ -956,6 +979,7 @@ object Resolver {
     if (!amountType.isInt) {
       ctx.error(fa.parameters(1).pos,"The second argument to function " + fa.name + " must be an integer")
     }
+    fa.typ = BoolType
     BoolType
   }
   

@@ -58,7 +58,8 @@ type Field a;
 type Actor;
 type CType = <a>[Chan a]@inttype@;
 type MType = <a>[Chan a][@inttype@]a;
-type HType = <a>[Ref,Field a]a;
+type Obj = <a>[Field a]a;
+type HType = [Ref]Obj;
 
 var M: MType;
 var C: CType;

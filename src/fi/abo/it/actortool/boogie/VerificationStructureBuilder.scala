@@ -2,6 +2,7 @@ package fi.abo.it.actortool.boogie
 
 import fi.abo.it.actortool._ 
 import scala.collection.mutable.ListBuffer
+import Elements._
 
 trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] {
   def buildStructure(entity: T): V
@@ -39,7 +40,7 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   
 }
 
-class ActorVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean) 
+class ActorVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean, val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
   
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
@@ -90,7 +91,7 @@ class ActorVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean
   
 }
 
-class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean) 
+class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean, val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[Network, NetworkVerificationStructure] {
   
   val tokensFinder = new TokensFinder()
@@ -104,18 +105,24 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
     
     val namePrefix = network.id+B.Sep
     
-    val buffer = new ListBuffer[(String,String)]
+    val buffer = new ListBuffer[(String,Id)]
     
     val chanDecls = new ListBuffer[BDecl]
     for (c <- connections) {
-      buffer += ((c.id,namePrefix+c.id))
-      chanDecls += BDecl(namePrefix+c.id,ChanType(c.typ))
+      buffer += ((c.id,makeId(namePrefix+c.id,c.typ)))
+      chanDecls += BDecl(namePrefix+c.id,c.typ)
     }
     
     val explicitTokensAsserts = tokensFinder.visit(userNwInvariants) ::: tokensFinder.visit(chInvariants) toSet
     val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
-    val implicitTokensAsserts = implicitTokensChs map { 
-      c => ActorInvariant(Assertion(FunctionApp("tokens",List(Id(c.id),IntLiteral(0))),false,Some("Unread tokens might be left on channel " + c.id)),true,false)
+    val implicitTokensAsserts = implicitTokensChs map { c =>
+      val predicate = FunctionApp("tokens",List(makeId(c.id,c.typ),IntLiteral(0)))
+      Resolver.resolveExpr(predicate, typeCtx) match {
+        case Resolver.Success(_) =>
+        case Resolver.Errors(errs) => assert(false,errs)
+      }
+      assert(predicate.typ != null)
+      ActorInvariant(Assertion(predicate,false,Some("Unread tokens might be left on channel " + c.id)),true,false)
     }
     val nwInvariants = userNwInvariants ::: implicitTokensAsserts
     
@@ -123,14 +130,14 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
     for (ip <- network.inports) {
       val ch = network.structure.get.getInputChannel(ip.id)
       ch match {
-        case Some(c) => buffer += ((ip.id,namePrefix+c.id))
+        case Some(c) => buffer += ((ip.id,makeId(namePrefix+c.id,c.typ)))
         case None =>
       }
     }
     for (op <- network.outports) {
       val ch = network.structure.get.getOutputChannel(op.id)
       ch match {
-        case Some(c) => buffer += ((op.id,namePrefix+c.id))
+        case Some(c) => buffer += ((op.id,makeId(namePrefix+c.id,c.typ)))
         case None =>
       }
     }
@@ -140,8 +147,8 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
       val source = scala.collection.mutable.HashMap.empty[PortRef,String]
       val target = scala.collection.mutable.HashMap.empty[PortRef,String]
       for (c <- connections) {
-        source(c.from) = tempRenamings(c.id)
-        target(c.to) = tempRenamings(c.id)
+        source(c.from) = tempRenamings(c.id).id
+        target(c.to) = tempRenamings(c.id).id
       }
       (source.toMap,target.toMap)
     }
@@ -159,16 +166,16 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
       
       val parameterArguments = actor.parameters.zip(e.arguments).map{ case (d,e) => (d.id,e) }.toMap
       
-      buffer += ((e.id,namePrefix+e.id))
+      buffer += ((e.id,makeId(namePrefix+e.id,ActorType(e.actor))))
      
       for (p <- actor.inports) {
         val newName = targetMap(PortRef(Some(e.id),p.id))
-        renameBuffer += ((p.id,Id(newName)))
+        renameBuffer += ((p.id,makeId(newName,ChanType(p.portType))))
       }
       
       for (p <- actor.outports) {
         val newName = sourceMap(PortRef(Some(e.id),p.id))
-        renameBuffer += ((p.id,Id(newName)))
+        renameBuffer += ((p.id,makeId(newName,ChanType(p.portType))))
       }
       
       for (p <- actor.parameters) {
@@ -181,7 +188,7 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
         val newName = "AV"+B.Sep+e.id+B.Sep+v.id
         subactorVarDecls += BDecl(newName,v.typ)
         variables += newName
-        renameBuffer += ((v.id,Id(newName)))
+        renameBuffer += ((v.id,makeId(newName,v.typ)))
       }
       
       val actionData = (actor.actions map { a => (a,collectEntityData(e,a,targetMap)) }).toMap
@@ -199,7 +206,7 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
     
     val tempRenames = buffer.toMap
     
-    val networkRenamings = buffer.map{ case (s1,s2) => (s1,Id(s2)) }.toMap
+    val networkRenamings = buffer.toMap
     val publicInvs = 
       entities flatMap { 
         entity => {
@@ -227,13 +234,13 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
       (for (c <- connections) yield {
         val name = tempRenames(c.id)
         val list1 = List(
-          B.Int(0) <= B.I(name),
-          B.I(name) <= B.R(name),
-          B.R(name) <= B.C(name))
-        val list2 = (if (c.isOutput) List(B.I(name) ==@ B.R(name)) else Nil)
+          B.Int(0) <= B.I(name.id),
+          B.I(name.id) <= B.R(name.id),
+          B.R(name.id) <= B.C(name.id))
+        val list2 = (if (c.isOutput) List(B.I(name.id) ==@ B.R(name.id)) else Nil)
         (list1 ::: list2).map(x => B.Assume(x))
       }).flatten
-
+      
     new NetworkVerificationStructure(
         network, 
         actions, 
@@ -264,8 +271,8 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
       for ((v,ind) <- ipat.vars.zipWithIndex) {
         val c = Elements.ch(cId,v.typ)
         val index = 
-          if (ind == 0) Elements.rd0(c.id) 
-          else Minus(Elements.rd0(c.id),IntLiteral(ind))
+          if (ind == 0) Elements.rd0(c.id,c.typ.asInstanceOf[ChanType]) 
+          else Minus(Elements.rd0(c.id,c.typ.asInstanceOf[ChanType]),IntLiteral(ind))
         val acc = Elements.chAcc(c,index)
         replacements += (v -> acc)
       }
@@ -275,7 +282,7 @@ class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boole
       for (v <- ipat.vars) yield {
         val inVar = ipat.portId + B.Sep + v.id
         vars += BDecl(inVar,B.Local(inVar,B.type2BType(v.typ)))
-        (v.id,Id(inVar))
+        (v.id,makeId(inVar,v.typ))
       }
     }).flatten.toMap
     

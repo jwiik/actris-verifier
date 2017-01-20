@@ -18,7 +18,15 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         case Assign(id,exp) => List(Boogie.Assign(transExpr(id),transExpr(exp)))
         case Assert(e) => List(B.Assert(transExpr(e), e.pos, "Condition might not hold"))
         case Assume(e) => List(B.Assume(transExpr(e)))
-        case Havoc(ids) => for (i <- ids) yield { Boogie.Havoc(transExpr(i)) }
+        case Havoc(ids) => for (i <- ids) yield {
+          assert(false) // Havoc should not appear in bodies
+          if (i.typ.isRef) {
+            Boogie.Havoc(Boogie.VarExpr(BMap.H))
+          }
+          else {
+            Boogie.Havoc(transExpr(i)) 
+          }
+        }
         case IfElse(ifCond,ifStmt,elseIfs,elseStmt) => {
           if (!elseIfs.isEmpty) {
             throw new RuntimeException("If-statements with else-if branches not supported yet")
@@ -35,6 +43,8 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
   
   
   def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
+    //println(exp)
+    assert(exp.typ != null, exp.toString)
     exp match {
       case And(e1,e2) => transExpr(e1) && transExpr(e2)
       case Or(e1,e2) => transExpr(e1) || transExpr(e2)
@@ -104,30 +114,6 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "tot@" => B.C(transExpr(params(0))) - B.I(transExpr(params(0)))
           case "str" => B.I(transExpr(params(0)))
           case "@" => B.I(transExpr(params(0)))
-//          case "sqn" => 
-//          case "sqn" => {
-//            if (!ftMode) throw new TranslationException(fa.pos, "Function '" + name + "' is only supported in FT-mode")
-//            
-//            if (params(0).isInstanceOf[Id] && params(0).asInstanceOf[Id].id == "this") B.SqnAct(B.This)
-//            else if (params(0).isInstanceOf[Id]) {
-//              val name = renamings(params(0).asInstanceOf[Id].id).asInstanceOf[Id].id
-//              Boogie.VarExpr(name+"#sqn")
-//            }
-//            else if (params(0).isInstanceOf[IndexAccessor]) {
-//              val accessor = params(0).asInstanceOf[IndexAccessor]
-//              val channel = transExpr(accessor.exp)
-//              val index = transExpr(accessor.suffix)
-//              B.SqnCh(channel, index)
-//            }
-//            else {
-//              throw new TranslationException(fa.pos, "Invalid argument passed to function " + name)
-//            }
-//            
-//          }
-//          case "currsqn" => {
-//            if (!ftMode) throw new TranslationException(fa.pos, "Function " + name + " is only supported in FT-mode")
-//            B.SqnAct(transExpr(params(0)))
-//          }
           case "next" => 
             val ch = transExpr(params(0))
             if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) minus transExpr(params(1)))
@@ -176,7 +162,6 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "sqn" => B.SqnField(tExpr)
           case _ => B.Field(tExpr, e.typ.asInstanceOf[RefType].id, f)
         }
-        
       }
       case ListLiteral(lst) => {
         var listlit: Boogie.Expr = B.intlst
@@ -207,7 +192,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
       case sm@SpecialMarker(mark) => {
         val name = sm.extraData("accessor").asInstanceOf[String]
-        val rename = renamings.getOrElse(name, Id(name))
+        val rename = renamings.getOrElse(name, {val i = Id(name); i.typ = sm.typ; i})
         val accessorName = transExpr(rename)
         mark match {
           case "@" => B.I(accessorName)
@@ -216,11 +201,11 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
           case "last" => B.C(accessorName)-B.Int(1)
         }
       }
-      case Id(id) => renamings.get(id) match {
-        case None => Boogie.VarExpr(id)
-        case Some(replacement) => replacement match {
-          case Id(newId) => Boogie.VarExpr(newId)
-          case x: Expr => transExpr(x)
+      case id@Id(name) => renamings.get(name) match {
+        case None => Boogie.VarExpr(name)
+        case Some(replacement) => {
+          //assert(replacement.typ == id.typ, replacement + ": " + replacement.typ + " -- " + id + ": " + id.typ)
+          transExpr(replacement)
         }
       } 
     }

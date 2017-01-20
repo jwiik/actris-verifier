@@ -15,9 +15,9 @@ object ActorTool {
   val DEBUG = true
   
   abstract class Verifier[U,T] {
-    def translateProgram(decls: List[TopDecl]): U
+    def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): U
     def verify(input: U): T
-    def translateAndVerify(decls: List[TopDecl]): T = verify(translateProgram(decls))
+    def translateAndVerify(decls: List[TopDecl], typeCtx: Resolver.Context): T = verify(translateProgram(decls,typeCtx))
   }
   
   class TranslationException(val pos: Position, val msg: String) extends Exception(msg) {
@@ -255,18 +255,18 @@ object ActorTool {
     if (program.isEmpty) return // Error message has already been displayed
     if (!params.DoTypecheck) return
     
-    val typeCheck = Resolver.resolve(program) match {
+    val typeCtx = Resolver.resolve(program) match {
       case Resolver.Errors(msgs) =>
         msgs foreach { case (pos,msg) => reportError(pos, msg) }; return
-      case Resolver.Success() =>
-        true
+      case Resolver.Success(rootCtx) =>
+        Some(rootCtx)
     }
     
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
     if (params.DoInfer) {
-      Inferencer.infer(program,params.InferModules,params.FTMode) match {
+      Inferencer.infer(program,typeCtx.get,params.InferModules,params.FTMode) match {
         case Inferencer.Errors(msgs) =>
           msgs foreach { case (pos,msg) => reportError(pos, msg) }; return
         case Inferencer.Success() =>
@@ -284,7 +284,7 @@ object ActorTool {
     
     val bplProg =
       try {
-        verifier.translateProgram(program);
+        verifier.translateProgram(program,typeCtx.get);
       } catch {
         case ex: TranslationException => reportError(ex.pos,ex.msg)
         return

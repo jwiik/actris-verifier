@@ -123,9 +123,13 @@ object B {
     VarExpr(BMap.M).apply(channel).apply(ind)
     //((VarExpr(BMap.M) apply channel) apply ind)
   
-  def Field(ref: Boogie.Expr, typeName: String, fieldName: String) = (VarExpr(BMap.H) apply(ref,VarExpr(typeName+"."+fieldName)))
-  def SqnField(ref: Boogie.Expr) = (VarExpr(BMap.H) apply(ref,VarExpr("sqn#")))
+  def Field(ref: Boogie.Expr, typeName: String, fieldName: String) = 
+    (VarExpr(BMap.H).apply(ref).apply(VarExpr(typeName+"."+fieldName)))
     
+  def SqnField(ref: Boogie.Expr) = VarExpr(BMap.H).apply(ref).apply(VarExpr("sqn#"))
+  
+  def Ref(ref: String) = VarExpr(BMap.H).apply(VarExpr(ref))
+  
   def State(id: String) = VarExpr(BMap.St) apply VarExpr(id)
   def State(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
   

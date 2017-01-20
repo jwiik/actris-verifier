@@ -27,7 +27,7 @@ object Inferencer {
   final val Modules = List(StaticClass,BulletInvariants,NWPreToInvariant,FTProperties).map(m => (m.name,m)).toMap
   private val DefaultModules = Set(StaticClass,BulletInvariants,NWPreToInvariant)
       
-  def infer(program: List[TopDecl], modules: List[String], ftMode: Boolean): InferenceOutcome = {
+  def infer(program: List[TopDecl], typeCtx: Resolver.Context, modules: List[String], ftMode: Boolean): InferenceOutcome = {
     val inferenceModules = modules match {
       case Nil => DefaultModules
       case List("default") => if (!ftMode) DefaultModules else DefaultModules ++ Set(FTProperties)
@@ -37,7 +37,7 @@ object Inferencer {
     val ctx = new Context
     
     for (module <- inferenceModules) {
-      for (a <- program) module.infer(ctx,a)
+      for (a <- program) module.infer(ctx,typeCtx,a)
     }
     
     return ctx.outcome
@@ -47,13 +47,14 @@ object Inferencer {
     override val name = "nw-precondition"
     val quantVar = Id("idx$"); quantVar.typ = IntType(32)
     
-    override def network(n: Network)(implicit ctx: Context): Unit = {
+    override def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context): Unit = {
       val disjuncts = n.actions flatMap { action => {
         if (action.requires isEmpty) Nil
         else List(action.requires reduceLeft { (a,b) => And(a,b) })
       }}
       if (!disjuncts.isEmpty) {
         val invariant = disjuncts reduceLeft { (a,b) => Or(a,b) }
+        Resolver.resolveExpr(invariant, typeCtx)
         n.addChannelInvariant(invariant, true)
         InvariantCount.add(1)
       }
@@ -101,7 +102,7 @@ object Inferencer {
     val NoInferAnnot = "noinfer"
     val quantVar = Id("idx$"); quantVar.typ = IntType(32)
     
-    override def actor(actor: BasicActor)(implicit ctx: Context): Unit = {
+    override def actor(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context): Unit = {
       val countInvariants = new ListBuffer[Expr]
       val valueInvariants = new ListBuffer[Expr]
       
@@ -155,12 +156,12 @@ object Inferencer {
         for (ip <- actor.inports) {
           val inRate = firstAction.portInputCount(ip.id)
           val ratedTot = 
-            if (inRate == 1) tot0(op.id)
-            else Times(lit(inRate),tot0(op.id))
+            if (inRate == 1) tot0(op.id,ChanType(op.portType))
+            else Times(lit(inRate),tot0(op.id,ChanType(op.portType)))
           
           val ratedRd =
-            if (outRate == 1) rd0(ip.id)
-            else Times(lit(outRate),rd0(ip.id))
+            if (outRate == 1) rd0(ip.id,ChanType(ip.portType))
+            else Times(lit(outRate),rd0(ip.id,ChanType(ip.portType)))
           
           val ratedDelayedTot = 
             if (delayedChannels contains op.id) Minus(ratedTot,lit(delayedChannels(op.id)))
@@ -180,7 +181,7 @@ object Inferencer {
           case None => lit(0)
           case Some(d) => lit(d)
         }
-        val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(op.id)))
+        val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(op.id,ChanType(op.portType))))
           
         for ((list,k) <- exps.zipWithIndex) {
           
@@ -212,6 +213,9 @@ object Inferencer {
         }
       } // for
       
+      countInvariants.foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
+      valueInvariants.foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
+      
       actor.addInvariants(countInvariants.toList, false)
       actor.addInvariants(valueInvariants.toList, false)
       InvariantCount.add(countInvariants.size+valueInvariants.size)
@@ -225,7 +229,7 @@ object Inferencer {
     val StaticAnnot = "static"
     val NoInferAnnot = "noinfer"
   
-    override def network(n: Network)(implicit ctx: Context) = {
+    override def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context) = {
       
       val countInvariants = new ListBuffer[Expr]
       val valueInvariants = new ListBuffer[Expr]
@@ -263,17 +267,18 @@ object Inferencer {
             val inChan = n.structure.get.incomingConnection(e.id, ip.id).get
             
             val ratedAt1 = 
-              if (inRate == 1) str(outChan.id)
-              else Times(lit(inRate),str(outChan.id))
+              if (inRate == 1) str(outChan.id,ChanType(op.portType))
+              else Times(lit(inRate),str(outChan.id,ChanType(op.portType)))
               
             val ratedAt2 = 
-              if (outRate == 1) str(inChan.id)
-              else Times(lit(outRate),str(inChan.id))
+              if (outRate == 1) str(inChan.id,ChanType(ip.portType))
+              else Times(lit(outRate),str(inChan.id,ChanType(ip.portType)))
               
             countInvariants += Eq(ratedAt1,ratedAt2)
           }
         } // for
       } // for
+      countInvariants foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
       n.addChannelInvariants(countInvariants.toList, false)
       InvariantCount.add(countInvariants.size)
     } // def network
@@ -285,7 +290,7 @@ object Inferencer {
     val quantVar = Id("idx$"); quantVar.typ = IntType(32)
     val soundnessChecks = true
     
-    override def network(n: Network)(implicit ctx: Context) {
+    override def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context) {
 //      val action = n.actions(0)
 //      for (ipat <- action.inputPattern) {
 //        val channel = n.structure.get.getInputChannel(ipat.portId).get
@@ -309,17 +314,17 @@ object Inferencer {
     
     val name: String
     
-    final def infer(ctx: Context, decl: TopDecl) = {
+    final def infer(ctx: Context, typeCtx: Resolver.Context, decl: TopDecl) = {
       decl match {
-        case n: Network => network(n)(ctx)
-        case a: BasicActor => actor(a)(ctx)
+        case n: Network => network(n,typeCtx)(ctx)
+        case a: BasicActor => actor(a,typeCtx)(ctx)
         case _ =>
       }
       ctx.outcome
     }
     
-    def network(n: Network)(implicit ctx: Context): Unit = {}
-    def actor(a: BasicActor)(implicit ctx: Context): Unit = {}
+    def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context): Unit = {}
+    def actor(a: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context): Unit = {}
   }
   
   abstract class StaticPropertyInferenceModule extends InferenceModule {

@@ -101,7 +101,9 @@ sealed case class Network(
   private var _channelInvariants: List[ChannelInvariant] = 
     for (m <- members.filter{ x => x.isChannelInvariant}) yield { m.asInstanceOf[ChannelInvariant] }
   
-  def channelInvariants = _channelInvariants
+  def channelInvariants = {
+    _channelInvariants
+  }
   
   def addChannelInvariant(chi: Expr, free: Boolean) { addChannelInvariants(List(chi), free) }
   

@@ -7,28 +7,18 @@ import scala.collection.mutable.ListBuffer
  */
 
 object Elements {
-  def rd0(id: String) = {
-    val fa = FunctionApp("rd",List(Id(id): Expr))
+  def rd0(id: String, chType: ChanType) = {
+    val fa = FunctionApp("rd",List(makeId(id,chType): Expr))
     fa.typ = IntType(32)
     fa
   }
-//  def urd(id: String) = {
-//    val fa = FunctionApp("urd",List(Id(id): Expr))
-//    fa.typ = IntType(32)
-//    fa
-//  }
-  def tot0(id: String) = {
-    val fa = FunctionApp("tot",List(Id(id): Expr))
+  def tot0(id: String, chType: ChanType) = {
+    val fa = FunctionApp("tot",List(makeId(id,chType): Expr))
     fa.typ = IntType(32)
     fa
   }
-  def str(id: String) = {
-    val fa = FunctionApp("str",List(Id(id): Expr))
-    fa.typ = IntType(32)
-    fa
-  }
-  def sqnAcc(acc: IndexAccessor) = {
-    val fa = FunctionApp("sqn", List(acc: Expr))
+  def str(id: String, chType: ChanType) = {
+    val fa = FunctionApp("str",List(makeId(id,chType): Expr))
     fa.typ = IntType(32)
     fa
   }
@@ -47,6 +37,8 @@ object Elements {
   }
   
   def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(32); li}
+  
+  def makeId(id: String, t: Type) = { val i = Id(id); i.typ = t; i }
 } 
 
 object TypeUtil {

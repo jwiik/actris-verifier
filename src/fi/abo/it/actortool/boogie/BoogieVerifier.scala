@@ -14,9 +14,9 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
 class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Boogie.Decl], Unit] {
   
-  def translateProgram(decls: List[TopDecl]): List[Boogie.Decl] = {
+  def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Boogie.Decl] = {
     val translator = new Translator(params.FixedBaseLength, params.FTMode, params.SmokeTest, false, params.BVMode)
-    translator.translateProgram(decls)
+    translator.translateProgram(decls, typeCtx)
   }
   
   def verify(bplProg: List[Boogie.Decl]): Unit = {
