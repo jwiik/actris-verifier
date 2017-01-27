@@ -158,10 +158,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       }
       case FieldAccessor(e,f) => {
         val tExpr = transExpr(e)
-        f match {
-          case "sqn" => B.SqnField(tExpr)
-          case _ => B.Field(tExpr, e.typ.asInstanceOf[RefType].id, f)
-        }
+        B.Field(tExpr, e.typ.asInstanceOf[RefType].id, f)
       }
       case ListLiteral(lst) => {
         var listlit: Boogie.Expr = B.intlst

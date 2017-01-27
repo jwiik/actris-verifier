@@ -127,9 +127,14 @@ object B {
   def Field(ref: Boogie.Expr, typeName: String, fieldName: String) = 
     (VarExpr(BMap.H).apply(ref).apply(VarExpr(FieldName(typeName,fieldName))))
     
-  def FieldName(typeName: String, fieldName: String) = typeName+"."+fieldName
+  def FieldName(typeName: String, fieldName: String) = {
+    fieldName match {
+      case "sqn" => "sqn#"
+      case x => typeName+"."+x
+    }
+  }
     
-  def SqnField(ref: Boogie.Expr) = VarExpr(BMap.H).apply(ref).apply(VarExpr("sqn#"))
+  //def SqnField(ref: Boogie.Expr) = VarExpr(BMap.H).apply(ref).apply(VarExpr("sqn#"))
   
   def Ref(ref: String) = VarExpr(BMap.H).apply(VarExpr(ref))
   
