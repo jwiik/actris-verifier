@@ -1,28 +1,28 @@
-type C(int i, int j)
+type Int(int i)
 
-actor Adjudicator int x1, int x2 ==> int y :
+actor Adjudicator Int x1, Int x2 ==> Int y :
 
   stream invariant tot(y) = rd(x2)
   stream invariant rd(x1) <= rd(x2)
   
   invariant rd(x2) = c
-  invariant (forall int i :: 0 <= i && i < rd(x2) ==> sqn(x2[i]) = i) 
-  invariant (forall int i :: 0 <= i && i < tot(y) ==> sqn(y[i]) = i)
+  invariant (forall int i :: 0 <= i && i < rd(x2) ==> x2[i].sqn = i) 
+  invariant (forall int i :: 0 <= i && i < tot(y) ==> y[i].sqn = i)
       
   int c;
 
   normal: action x1:[i], x2:[j] ==> y:[i]
-    guard sqn(i) = sqn(j) && sqn(i) = c
+    guard i.sqn = j.sqn && i.sqn = c
     do c := c+1;
   end
   
   timeout: action x2:[j] ==> y:[j] 
-    guard sqn(j) = c
+    guard j.sqn = c
     do c := c+1;
   end
   
   readoff: action x1:[i] ==>
-    guard sqn(i) < c
+    guard i.sqn < c
     requires rd(x1) < rd(x2)
   end
   

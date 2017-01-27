@@ -1,0 +1,28 @@
+type Int(int i)
+
+actor Split int in ==> Int out1, Int out2 :
+  
+  invariant c = tot(out1)
+  stream invariant rd(in) = tot(out1)
+  stream invariant tot(out1) = tot(out2)
+  //stream invariant (forall int i :: 0 <= i && i < tot(out1) ==> out1[i] = out2[i])
+  stream invariant (forall int i :: 0 <= i && i < tot(out1) ==> out1[i].sqn = i)
+  stream invariant (forall int i :: 0 <= i && i < tot(out1) ==> out1[i].sqn = out2[i].sqn)
+  
+  Int y1;
+  Int y2;
+  int c;
+  action in:[i] ==> out1:[y1], out2:[y2]
+    do 
+      y1.i := i;
+      y2.i := i;
+      y1.sqn := c;
+      y2.sqn := c;
+      assert y1.sqn = y2.sqn;
+      c := c+1;
+  end
+  
+  initialize ==>
+    do c := 0;
+  end
+end

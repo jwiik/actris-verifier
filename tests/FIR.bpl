@@ -1,22 +1,24 @@
 // ---------------------------------------------------------------
 // -- Types and global variables ---------------------------------
 // ---------------------------------------------------------------
-type Chan;
+type Ref;
+type Chan a;
 type Field a;
 type Actor;
-type CType = [Chan]int;
-type MType = <a>[Chan][int][Field a]a;
-type State;
+type CType = <a>[Chan a]int;
+type MType = <a>[Chan a][int]a;
+type Obj = <a>[Field a]a;
+type HType = [Ref]Obj;
 
 var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
 
+var H: HType;
+
 const unique this#: Actor;
 
-const unique data#int: Field int;
-const unique data#bool: Field bool;
 
 type List a = [int]a;
 var AT#intlst: List int;
@@ -61,11 +63,11 @@ axiom (forall a: int :: (
 // ---------------------------------------------------------------
 
 procedure add#init#0()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in1: Chan;
-  var in2: Chan;
-  var out: Chan;
+  var in1: Chan (int);
+  var in2: Chan (int);
+  var out: Chan (int);
   assume (in1 != in2) && (in1 != out) && (in2 != out);
   assume R[in1] == 0;
   assume R[in2] == 0;
@@ -73,15 +75,15 @@ procedure add#init#0()
   assert {:msg "Initialization might not establish the invariant (#0)"} R[in1] == C[out];
   assert {:msg "Initialization might not establish the invariant (#1)"} R[in2] == C[out];
   assert {:msg "Initialization might not establish the invariant (#2)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == (M[in1][idx$][data#int] + M[in2][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in1][idx$] + M[in2][idx$]))
   );
 }
 procedure add#anon$0#1()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in1: Chan;
-  var in2: Chan;
-  var out: Chan;
+  var in1: Chan (int);
+  var in2: Chan (int);
+  var out: Chan (int);
   var in1#0: int;
   var in2#0: int;
   assume (in1 != in2) && (in1 != out) && (in2 != out);
@@ -91,25 +93,25 @@ procedure add#anon$0#1()
   assume R[in1] == C[out];
   assume R[in2] == C[out];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == (M[in1][idx$][data#int] + M[in2][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in1][idx$] + M[in2][idx$]))
   );
-  in1#0 := M[in1][R[in1]][data#int];
+  in1#0 := M[in1][R[in1]];
   R[in1] := R[in1] + 1;
-  in2#0 := M[in2][R[in2]][data#int];
+  in2#0 := M[in2][R[in2]];
   R[in2] := R[in2] + 1;
-  M[out][C[out]][data#int] := in1#0 + in2#0;
+  M[out][C[out]] := in1#0 + in2#0;
   C[out] := C[out] + 1;
   assert {:msg "Action at 2.3 might not preserve invariant (#3)"} R[in1] == C[out];
   assert {:msg "Action at 2.3 might not preserve invariant (#4)"} R[in2] == C[out];
   assert {:msg "Action at 2.3 might not preserve invariant (#5)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == (M[in1][idx$][data#int] + M[in2][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in1][idx$] + M[in2][idx$]))
   );
 }
 procedure delay#init#2()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in: Chan;
-  var out: Chan;
+  var in: Chan (int);
+  var out: Chan (int);
   var data: int;
   var y: int;
   var k: int;
@@ -118,18 +120,18 @@ procedure delay#init#2()
   assume C[out] == 0;
   data := k;
   assert {:msg "9.20: Initialization might not establish the invariant (#6)"} (C[out] == 0) ==> (data == k);
-  assert {:msg "10.20: Initialization might not establish the invariant (#7)"} (C[out] > 0) ==> (data == M[in][R[in] - 1][data#int]);
+  assert {:msg "10.20: Initialization might not establish the invariant (#7)"} (C[out] > 0) ==> (data == M[in][R[in] - 1]);
   assert {:msg "11.20: Initialization might not establish the invariant (#8)"} R[in] == C[out];
-  assert {:msg "12.20: Initialization might not establish the invariant (#9)"} (C[out] > 0) ==> (M[out][0][data#int] == k);
+  assert {:msg "12.20: Initialization might not establish the invariant (#9)"} (C[out] > 0) ==> (M[out][0] == k);
   assert {:msg "13.21: Initialization might not establish the invariant (#10)"} (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[out] - 0)) ==> (M[out][idx][data#int] == M[in][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[out] - 0)) ==> (M[out][idx] == M[in][idx - 1])
   );
 }
 procedure delay#anon$2#3()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in: Chan;
-  var out: Chan;
+  var in: Chan (int);
+  var out: Chan (int);
   var data: int;
   var y: int;
   var k: int;
@@ -138,45 +140,45 @@ procedure delay#anon$2#3()
   assume 0 <= R[in];
   assume 0 <= C[out];
   assume (C[out] == 0) ==> (data == k);
-  assume (C[out] > 0) ==> (data == M[in][R[in] - 1][data#int]);
+  assume (C[out] > 0) ==> (data == M[in][R[in] - 1]);
   assume R[in] == C[out];
-  assume (C[out] > 0) ==> (M[out][0][data#int] == k);
+  assume (C[out] > 0) ==> (M[out][0] == k);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[out] - 0)) ==> (M[out][idx][data#int] == M[in][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[out] - 0)) ==> (M[out][idx] == M[in][idx - 1])
   );
-  in#0 := M[in][R[in]][data#int];
+  in#0 := M[in][R[in]];
   R[in] := R[in] + 1;
   y := data;
   data := in#0;
-  M[out][C[out]][data#int] := y;
+  M[out][C[out]] := y;
   C[out] := C[out] + 1;
   assert {:msg "9.20: Action at 16.3 might not preserve invariant (#11)"} (C[out] == 0) ==> (data == k);
-  assert {:msg "10.20: Action at 16.3 might not preserve invariant (#12)"} (C[out] > 0) ==> (data == M[in][R[in] - 1][data#int]);
+  assert {:msg "10.20: Action at 16.3 might not preserve invariant (#12)"} (C[out] > 0) ==> (data == M[in][R[in] - 1]);
   assert {:msg "11.20: Action at 16.3 might not preserve invariant (#13)"} R[in] == C[out];
-  assert {:msg "12.20: Action at 16.3 might not preserve invariant (#14)"} (C[out] > 0) ==> (M[out][0][data#int] == k);
+  assert {:msg "12.20: Action at 16.3 might not preserve invariant (#14)"} (C[out] > 0) ==> (M[out][0] == k);
   assert {:msg "13.21: Action at 16.3 might not preserve invariant (#15)"} (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[out] - 0)) ==> (M[out][idx][data#int] == M[in][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[out] - 0)) ==> (M[out][idx] == M[in][idx - 1])
   );
 }
 procedure mulc#init#4()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in: Chan;
-  var out: Chan;
+  var in: Chan (int);
+  var out: Chan (int);
   var c: int;
   assume in != out;
   assume R[in] == 0;
   assume C[out] == 0;
   assert {:msg "Initialization might not establish the invariant (#16)"} R[in] == C[out];
   assert {:msg "Initialization might not establish the invariant (#17)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == (c * M[in][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (c * M[in][idx$]))
   );
 }
 procedure mulc#anon$3#5()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in: Chan;
-  var out: Chan;
+  var in: Chan (int);
+  var out: Chan (int);
   var c: int;
   var in#0: int;
   assume in != out;
@@ -184,36 +186,36 @@ procedure mulc#anon$3#5()
   assume 0 <= C[out];
   assume R[in] == C[out];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == (c * M[in][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (c * M[in][idx$]))
   );
-  in#0 := M[in][R[in]][data#int];
+  in#0 := M[in][R[in]];
   R[in] := R[in] + 1;
-  M[out][C[out]][data#int] := c * in#0;
+  M[out][C[out]] := c * in#0;
   C[out] := C[out] + 1;
   assert {:msg "Action at 24.3 might not preserve invariant (#18)"} R[in] == C[out];
   assert {:msg "Action at 24.3 might not preserve invariant (#19)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == (c * M[in][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (c * M[in][idx$]))
   );
 }
 procedure rshiftc#init#6()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in: Chan;
-  var out: Chan;
+  var in: Chan (int);
+  var out: Chan (int);
   var s: int;
   assume in != out;
   assume R[in] == 0;
   assume C[out] == 0;
   assert {:msg "Initialization might not establish the invariant (#20)"} R[in] == C[out];
   assert {:msg "Initialization might not establish the invariant (#21)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == AT#RShift(M[in][idx$][data#int], s))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#RShift(M[in][idx$], s))
   );
 }
 procedure rshiftc#anon$4#7()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in: Chan;
-  var out: Chan;
+  var in: Chan (int);
+  var out: Chan (int);
   var s: int;
   var in#0: int;
   assume in != out;
@@ -221,23 +223,23 @@ procedure rshiftc#anon$4#7()
   assume 0 <= C[out];
   assume R[in] == C[out];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == AT#RShift(M[in][idx$][data#int], s))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#RShift(M[in][idx$], s))
   );
-  in#0 := M[in][R[in]][data#int];
+  in#0 := M[in][R[in]];
   R[in] := R[in] + 1;
-  M[out][C[out]][data#int] := AT#RShift(in#0, s);
+  M[out][C[out]] := AT#RShift(in#0, s);
   C[out] := C[out] + 1;
   assert {:msg "Action at 28.3 might not preserve invariant (#22)"} R[in] == C[out];
   assert {:msg "Action at 28.3 might not preserve invariant (#23)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$][data#int] == AT#RShift(M[in][idx$][data#int], s))
+    (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == AT#RShift(M[in][idx$], s))
   );
 }
 procedure split#init#8()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in: Chan;
-  var out1: Chan;
-  var out2: Chan;
+  var in: Chan (int);
+  var out1: Chan (int);
+  var out2: Chan (int);
   assume (in != out1) && (in != out2) && (out1 != out2);
   assume R[in] == 0;
   assume C[out1] == 0;
@@ -245,18 +247,18 @@ procedure split#init#8()
   assert {:msg "Initialization might not establish the invariant (#24)"} R[in] == C[out1];
   assert {:msg "Initialization might not establish the invariant (#25)"} R[in] == C[out2];
   assert {:msg "Initialization might not establish the invariant (#26)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$][data#int] == M[in][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$] == M[in][idx$])
   );
   assert {:msg "Initialization might not establish the invariant (#27)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$][data#int] == M[in][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$] == M[in][idx$])
   );
 }
 procedure split#anon$5#9()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
-  var in: Chan;
-  var out1: Chan;
-  var out2: Chan;
+  var in: Chan (int);
+  var out1: Chan (int);
+  var out2: Chan (int);
   var in#0: int;
   assume (in != out1) && (in != out2) && (out1 != out2);
   assume 0 <= R[in];
@@ -265,28 +267,28 @@ procedure split#anon$5#9()
   assume R[in] == C[out1];
   assume R[in] == C[out2];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$][data#int] == M[in][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$] == M[in][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$][data#int] == M[in][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$] == M[in][idx$])
   );
-  in#0 := M[in][R[in]][data#int];
+  in#0 := M[in][R[in]];
   R[in] := R[in] + 1;
-  M[out1][C[out1]][data#int] := in#0;
+  M[out1][C[out1]] := in#0;
   C[out1] := C[out1] + 1;
-  M[out2][C[out2]][data#int] := in#0;
+  M[out2][C[out2]] := in#0;
   C[out2] := C[out2] + 1;
   assert {:msg "Action at 32.3 might not preserve invariant (#28)"} R[in] == C[out1];
   assert {:msg "Action at 32.3 might not preserve invariant (#29)"} R[in] == C[out2];
   assert {:msg "Action at 32.3 might not preserve invariant (#30)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$][data#int] == M[in][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[out1]) ==> (M[out1][idx$] == M[in][idx$])
   );
   assert {:msg "Action at 32.3 might not preserve invariant (#31)"} (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$][data#int] == M[in][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$] == M[in][idx$])
   );
 }
 procedure iir#init#10()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -301,23 +303,23 @@ procedure iir#init#10()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -455,7 +457,7 @@ procedure iir#init#10()
   assert {:msg "Initialization of network 'iir' might not establish the network invariant: Unread tokens might be left on channel anon$23 (#64)"} (C[iir#anon$23] - R[iir#anon$23]) == 0;
 }
 procedure iir##delay#anon$2#11()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -470,23 +472,23 @@ procedure iir##delay#anon$2#11()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -565,163 +567,163 @@ procedure iir##delay#anon$2#11()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$9] - R[iir#anon$9]);
-  in#i := M[iir#anon$9][R[iir#anon$9]][data#int];
+  in#i := M[iir#anon$9][R[iir#anon$9]];
   R[iir#anon$9] := R[iir#anon$9] + 1;
   havoc AV#delay_1#y;
   havoc AV#delay_1#data;
-  M[iir#anon$10][C[iir#anon$10]][data#int] := AV#delay_1#y;
+  M[iir#anon$10][C[iir#anon$10]] := AV#delay_1#y;
   C[iir#anon$10] := C[iir#anon$10] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_1' might not preserve the channel invariant (#65)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_1' might not preserve the channel invariant (#66)"} I[iir#anon$18] == I[iir#anon$11];
@@ -741,7 +743,7 @@ procedure iir##delay#anon$2#11()
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_1' might not preserve the channel invariant (#80)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##delay#anon$2#12()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -756,23 +758,23 @@ procedure iir##delay#anon$2#12()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -851,163 +853,163 @@ procedure iir##delay#anon$2#12()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$12] - R[iir#anon$12]);
-  in#i := M[iir#anon$12][R[iir#anon$12]][data#int];
+  in#i := M[iir#anon$12][R[iir#anon$12]];
   R[iir#anon$12] := R[iir#anon$12] + 1;
   havoc AV#delay_2#y;
   havoc AV#delay_2#data;
-  M[iir#anon$13][C[iir#anon$13]][data#int] := AV#delay_2#y;
+  M[iir#anon$13][C[iir#anon$13]] := AV#delay_2#y;
   C[iir#anon$13] := C[iir#anon$13] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_2' might not preserve the channel invariant (#81)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_2' might not preserve the channel invariant (#82)"} I[iir#anon$18] == I[iir#anon$11];
@@ -1027,7 +1029,7 @@ procedure iir##delay#anon$2#12()
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_2' might not preserve the channel invariant (#96)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##delay#anon$2#13()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -1042,23 +1044,23 @@ procedure iir##delay#anon$2#13()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -1137,163 +1139,163 @@ procedure iir##delay#anon$2#13()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$15] - R[iir#anon$15]);
-  in#i := M[iir#anon$15][R[iir#anon$15]][data#int];
+  in#i := M[iir#anon$15][R[iir#anon$15]];
   R[iir#anon$15] := R[iir#anon$15] + 1;
   havoc AV#delay_3#y;
   havoc AV#delay_3#data;
-  M[iir#anon$16][C[iir#anon$16]][data#int] := AV#delay_3#y;
+  M[iir#anon$16][C[iir#anon$16]] := AV#delay_3#y;
   C[iir#anon$16] := C[iir#anon$16] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_3' might not preserve the channel invariant (#97)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_3' might not preserve the channel invariant (#98)"} I[iir#anon$18] == I[iir#anon$11];
@@ -1313,7 +1315,7 @@ procedure iir##delay#anon$2#13()
   assert {:msg "Action at 16.3 ('anon$2') for actor instance 'delay_3' might not preserve the channel invariant (#112)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##mulc#anon$3#14()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -1328,23 +1330,23 @@ procedure iir##mulc#anon$3#14()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -1423,161 +1425,161 @@ procedure iir##mulc#anon$3#14()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$8] - R[iir#anon$8]);
-  in#i := M[iir#anon$8][R[iir#anon$8]][data#int];
+  in#i := M[iir#anon$8][R[iir#anon$8]];
   R[iir#anon$8] := R[iir#anon$8] + 1;
-  M[iir#anon$17][C[iir#anon$17]][data#int] := 37 * in#i;
+  M[iir#anon$17][C[iir#anon$17]] := 37 * in#i;
   C[iir#anon$17] := C[iir#anon$17] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_1' might not preserve the channel invariant (#113)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_1' might not preserve the channel invariant (#114)"} I[iir#anon$18] == I[iir#anon$11];
@@ -1597,7 +1599,7 @@ procedure iir##mulc#anon$3#14()
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_1' might not preserve the channel invariant (#128)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##mulc#anon$3#15()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -1612,23 +1614,23 @@ procedure iir##mulc#anon$3#15()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -1707,161 +1709,161 @@ procedure iir##mulc#anon$3#15()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$11] - R[iir#anon$11]);
-  in#i := M[iir#anon$11][R[iir#anon$11]][data#int];
+  in#i := M[iir#anon$11][R[iir#anon$11]];
   R[iir#anon$11] := R[iir#anon$11] + 1;
-  M[iir#anon$18][C[iir#anon$18]][data#int] := 109 * in#i;
+  M[iir#anon$18][C[iir#anon$18]] := 109 * in#i;
   C[iir#anon$18] := C[iir#anon$18] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_2' might not preserve the channel invariant (#129)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_2' might not preserve the channel invariant (#130)"} I[iir#anon$18] == I[iir#anon$11];
@@ -1881,7 +1883,7 @@ procedure iir##mulc#anon$3#15()
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_2' might not preserve the channel invariant (#144)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##mulc#anon$3#16()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -1896,23 +1898,23 @@ procedure iir##mulc#anon$3#16()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -1991,161 +1993,161 @@ procedure iir##mulc#anon$3#16()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$14] - R[iir#anon$14]);
-  in#i := M[iir#anon$14][R[iir#anon$14]][data#int];
+  in#i := M[iir#anon$14][R[iir#anon$14]];
   R[iir#anon$14] := R[iir#anon$14] + 1;
-  M[iir#anon$19][C[iir#anon$19]][data#int] := 109 * in#i;
+  M[iir#anon$19][C[iir#anon$19]] := 109 * in#i;
   C[iir#anon$19] := C[iir#anon$19] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_3' might not preserve the channel invariant (#145)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_3' might not preserve the channel invariant (#146)"} I[iir#anon$18] == I[iir#anon$11];
@@ -2165,7 +2167,7 @@ procedure iir##mulc#anon$3#16()
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_3' might not preserve the channel invariant (#160)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##mulc#anon$3#17()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -2180,23 +2182,23 @@ procedure iir##mulc#anon$3#17()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -2275,161 +2277,161 @@ procedure iir##mulc#anon$3#17()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$16] - R[iir#anon$16]);
-  in#i := M[iir#anon$16][R[iir#anon$16]][data#int];
+  in#i := M[iir#anon$16][R[iir#anon$16]];
   R[iir#anon$16] := R[iir#anon$16] + 1;
-  M[iir#anon$20][C[iir#anon$20]][data#int] := 37 * in#i;
+  M[iir#anon$20][C[iir#anon$20]] := 37 * in#i;
   C[iir#anon$20] := C[iir#anon$20] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_4' might not preserve the channel invariant (#161)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_4' might not preserve the channel invariant (#162)"} I[iir#anon$18] == I[iir#anon$11];
@@ -2449,7 +2451,7 @@ procedure iir##mulc#anon$3#17()
   assert {:msg "Action at 24.3 ('anon$3') for actor instance 'mul_4' might not preserve the channel invariant (#176)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##add#anon$0#18()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -2464,23 +2466,23 @@ procedure iir##add#anon$0#18()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -2560,163 +2562,163 @@ procedure iir##add#anon$0#18()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume (1 <= (C[iir#anon$17] - R[iir#anon$17])) && (1 <= (C[iir#anon$18] - R[iir#anon$18]));
-  in1#i := M[iir#anon$17][R[iir#anon$17]][data#int];
+  in1#i := M[iir#anon$17][R[iir#anon$17]];
   R[iir#anon$17] := R[iir#anon$17] + 1;
-  in2#j := M[iir#anon$18][R[iir#anon$18]][data#int];
+  in2#j := M[iir#anon$18][R[iir#anon$18]];
   R[iir#anon$18] := R[iir#anon$18] + 1;
-  M[iir#anon$21][C[iir#anon$21]][data#int] := in1#i + in2#j;
+  M[iir#anon$21][C[iir#anon$21]] := in1#i + in2#j;
   C[iir#anon$21] := C[iir#anon$21] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_1' might not preserve the channel invariant (#177)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_1' might not preserve the channel invariant (#178)"} I[iir#anon$18] == I[iir#anon$11];
@@ -2736,7 +2738,7 @@ procedure iir##add#anon$0#18()
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_1' might not preserve the channel invariant (#192)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##add#anon$0#19()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -2751,23 +2753,23 @@ procedure iir##add#anon$0#19()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -2847,163 +2849,163 @@ procedure iir##add#anon$0#19()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume (1 <= (C[iir#anon$19] - R[iir#anon$19])) && (1 <= (C[iir#anon$20] - R[iir#anon$20]));
-  in1#i := M[iir#anon$19][R[iir#anon$19]][data#int];
+  in1#i := M[iir#anon$19][R[iir#anon$19]];
   R[iir#anon$19] := R[iir#anon$19] + 1;
-  in2#j := M[iir#anon$20][R[iir#anon$20]][data#int];
+  in2#j := M[iir#anon$20][R[iir#anon$20]];
   R[iir#anon$20] := R[iir#anon$20] + 1;
-  M[iir#anon$22][C[iir#anon$22]][data#int] := in1#i + in2#j;
+  M[iir#anon$22][C[iir#anon$22]] := in1#i + in2#j;
   C[iir#anon$22] := C[iir#anon$22] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_2' might not preserve the channel invariant (#193)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_2' might not preserve the channel invariant (#194)"} I[iir#anon$18] == I[iir#anon$11];
@@ -3023,7 +3025,7 @@ procedure iir##add#anon$0#19()
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_2' might not preserve the channel invariant (#208)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##add#anon$0#20()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -3038,23 +3040,23 @@ procedure iir##add#anon$0#20()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -3134,163 +3136,163 @@ procedure iir##add#anon$0#20()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume (1 <= (C[iir#anon$21] - R[iir#anon$21])) && (1 <= (C[iir#anon$22] - R[iir#anon$22]));
-  in1#i := M[iir#anon$21][R[iir#anon$21]][data#int];
+  in1#i := M[iir#anon$21][R[iir#anon$21]];
   R[iir#anon$21] := R[iir#anon$21] + 1;
-  in2#j := M[iir#anon$22][R[iir#anon$22]][data#int];
+  in2#j := M[iir#anon$22][R[iir#anon$22]];
   R[iir#anon$22] := R[iir#anon$22] + 1;
-  M[iir#anon$23][C[iir#anon$23]][data#int] := in1#i + in2#j;
+  M[iir#anon$23][C[iir#anon$23]] := in1#i + in2#j;
   C[iir#anon$23] := C[iir#anon$23] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_3' might not preserve the channel invariant (#209)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_3' might not preserve the channel invariant (#210)"} I[iir#anon$18] == I[iir#anon$11];
@@ -3310,7 +3312,7 @@ procedure iir##add#anon$0#20()
   assert {:msg "Action at 2.3 ('anon$0') for actor instance 'add_3' might not preserve the channel invariant (#224)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##split#anon$5#21()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -3325,23 +3327,23 @@ procedure iir##split#anon$5#21()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -3420,163 +3422,163 @@ procedure iir##split#anon$5#21()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$7] - R[iir#anon$7]);
-  in#i := M[iir#anon$7][R[iir#anon$7]][data#int];
+  in#i := M[iir#anon$7][R[iir#anon$7]];
   R[iir#anon$7] := R[iir#anon$7] + 1;
-  M[iir#anon$8][C[iir#anon$8]][data#int] := in#i;
+  M[iir#anon$8][C[iir#anon$8]] := in#i;
   C[iir#anon$8] := C[iir#anon$8] + 1;
-  M[iir#anon$9][C[iir#anon$9]][data#int] := in#i;
+  M[iir#anon$9][C[iir#anon$9]] := in#i;
   C[iir#anon$9] := C[iir#anon$9] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_1' might not preserve the channel invariant (#225)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_1' might not preserve the channel invariant (#226)"} I[iir#anon$18] == I[iir#anon$11];
@@ -3596,7 +3598,7 @@ procedure iir##split#anon$5#21()
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_1' might not preserve the channel invariant (#240)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##split#anon$5#22()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -3611,23 +3613,23 @@ procedure iir##split#anon$5#22()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -3706,163 +3708,163 @@ procedure iir##split#anon$5#22()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$10] - R[iir#anon$10]);
-  in#i := M[iir#anon$10][R[iir#anon$10]][data#int];
+  in#i := M[iir#anon$10][R[iir#anon$10]];
   R[iir#anon$10] := R[iir#anon$10] + 1;
-  M[iir#anon$11][C[iir#anon$11]][data#int] := in#i;
+  M[iir#anon$11][C[iir#anon$11]] := in#i;
   C[iir#anon$11] := C[iir#anon$11] + 1;
-  M[iir#anon$12][C[iir#anon$12]][data#int] := in#i;
+  M[iir#anon$12][C[iir#anon$12]] := in#i;
   C[iir#anon$12] := C[iir#anon$12] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_2' might not preserve the channel invariant (#241)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_2' might not preserve the channel invariant (#242)"} I[iir#anon$18] == I[iir#anon$11];
@@ -3882,7 +3884,7 @@ procedure iir##split#anon$5#22()
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_2' might not preserve the channel invariant (#256)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir##split#anon$5#23()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -3897,23 +3899,23 @@ procedure iir##split#anon$5#23()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -3992,163 +3994,163 @@ procedure iir##split#anon$5#23()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume 1 <= (C[iir#anon$13] - R[iir#anon$13]);
-  in#i := M[iir#anon$13][R[iir#anon$13]][data#int];
+  in#i := M[iir#anon$13][R[iir#anon$13]];
   R[iir#anon$13] := R[iir#anon$13] + 1;
-  M[iir#anon$14][C[iir#anon$14]][data#int] := in#i;
+  M[iir#anon$14][C[iir#anon$14]] := in#i;
   C[iir#anon$14] := C[iir#anon$14] + 1;
-  M[iir#anon$15][C[iir#anon$15]][data#int] := in#i;
+  M[iir#anon$15][C[iir#anon$15]] := in#i;
   C[iir#anon$15] := C[iir#anon$15] + 1;
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_3' might not preserve the channel invariant (#257)"} I[iir#anon$17] == I[iir#anon$8];
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_3' might not preserve the channel invariant (#258)"} I[iir#anon$18] == I[iir#anon$11];
@@ -4168,7 +4170,7 @@ procedure iir##split#anon$5#23()
   assert {:msg "Action at 32.3 ('anon$5') for actor instance 'spl_3' might not preserve the channel invariant (#272)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir#anon$6#input#in#24()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -4183,23 +4185,23 @@ procedure iir#anon$6#input#in#24()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -4278,80 +4280,80 @@ procedure iir#anon$6#input#in#24()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   C[iir#anon$7] := C[iir#anon$7] + 1;
   assert {:msg "Channel invariant might be falsified by network input (#273)"} I[iir#anon$17] == I[iir#anon$8];
@@ -4372,7 +4374,7 @@ procedure iir#anon$6#input#in#24()
   assert {:msg "Channel invariant might be falsified by network input (#288)"} I[iir#anon$15] == I[iir#anon$13];
 }
 procedure iir#anon$6#exit#25()
-  modifies C, R, M, I;
+  modifies C, R, M, I, H;
 {
   var iir#delay_1: Actor;
   var iir#delay_2: Actor;
@@ -4387,23 +4389,23 @@ procedure iir#anon$6#exit#25()
   var iir#spl_1: Actor;
   var iir#spl_2: Actor;
   var iir#spl_3: Actor;
-  var iir#anon$7: Chan;
-  var iir#anon$8: Chan;
-  var iir#anon$9: Chan;
-  var iir#anon$10: Chan;
-  var iir#anon$11: Chan;
-  var iir#anon$12: Chan;
-  var iir#anon$13: Chan;
-  var iir#anon$14: Chan;
-  var iir#anon$15: Chan;
-  var iir#anon$16: Chan;
-  var iir#anon$17: Chan;
-  var iir#anon$18: Chan;
-  var iir#anon$19: Chan;
-  var iir#anon$20: Chan;
-  var iir#anon$21: Chan;
-  var iir#anon$22: Chan;
-  var iir#anon$23: Chan;
+  var iir#anon$7: Chan (int);
+  var iir#anon$8: Chan (int);
+  var iir#anon$9: Chan (int);
+  var iir#anon$10: Chan (int);
+  var iir#anon$11: Chan (int);
+  var iir#anon$12: Chan (int);
+  var iir#anon$13: Chan (int);
+  var iir#anon$14: Chan (int);
+  var iir#anon$15: Chan (int);
+  var iir#anon$16: Chan (int);
+  var iir#anon$17: Chan (int);
+  var iir#anon$18: Chan (int);
+  var iir#anon$19: Chan (int);
+  var iir#anon$20: Chan (int);
+  var iir#anon$21: Chan (int);
+  var iir#anon$22: Chan (int);
+  var iir#anon$23: Chan (int);
   var AV#delay_1#data: int;
   var AV#delay_1#y: int;
   var AV#delay_2#data: int;
@@ -4481,80 +4483,80 @@ procedure iir#anon$6#exit#25()
   assume I[iir#anon$14] == I[iir#anon$13];
   assume I[iir#anon$15] == I[iir#anon$13];
   assume (C[iir#anon$10] == 0) ==> (AV#delay_1#data == 0);
-  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1][data#int]);
+  assume (C[iir#anon$10] > 0) ==> (AV#delay_1#data == M[iir#anon$9][R[iir#anon$9] - 1]);
   assume R[iir#anon$9] == C[iir#anon$10];
-  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0][data#int] == 0);
+  assume (C[iir#anon$10] > 0) ==> (M[iir#anon$10][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx][data#int] == M[iir#anon$9][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$10] - 0)) ==> (M[iir#anon$10][idx] == M[iir#anon$9][idx - 1])
   );
   assume (C[iir#anon$13] == 0) ==> (AV#delay_2#data == 0);
-  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1][data#int]);
+  assume (C[iir#anon$13] > 0) ==> (AV#delay_2#data == M[iir#anon$12][R[iir#anon$12] - 1]);
   assume R[iir#anon$12] == C[iir#anon$13];
-  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0][data#int] == 0);
+  assume (C[iir#anon$13] > 0) ==> (M[iir#anon$13][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx][data#int] == M[iir#anon$12][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$13] - 0)) ==> (M[iir#anon$13][idx] == M[iir#anon$12][idx - 1])
   );
   assume (C[iir#anon$16] == 0) ==> (AV#delay_3#data == 0);
-  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1][data#int]);
+  assume (C[iir#anon$16] > 0) ==> (AV#delay_3#data == M[iir#anon$15][R[iir#anon$15] - 1]);
   assume R[iir#anon$15] == C[iir#anon$16];
-  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0][data#int] == 0);
+  assume (C[iir#anon$16] > 0) ==> (M[iir#anon$16][0] == 0);
   assume (forall idx: int :: 
-    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx][data#int] == M[iir#anon$15][idx - 1][data#int])
+    ((0 + 1) <= idx) && (idx < (C[iir#anon$16] - 0)) ==> (M[iir#anon$16][idx] == M[iir#anon$15][idx - 1])
   );
   assume R[iir#anon$8] == C[iir#anon$17];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$][data#int] == (37 * M[iir#anon$8][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$17]) ==> (M[iir#anon$17][idx$] == (37 * M[iir#anon$8][idx$]))
   );
   assume R[iir#anon$11] == C[iir#anon$18];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$][data#int] == (109 * M[iir#anon$11][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$18]) ==> (M[iir#anon$18][idx$] == (109 * M[iir#anon$11][idx$]))
   );
   assume R[iir#anon$14] == C[iir#anon$19];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$][data#int] == (109 * M[iir#anon$14][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$19]) ==> (M[iir#anon$19][idx$] == (109 * M[iir#anon$14][idx$]))
   );
   assume R[iir#anon$16] == C[iir#anon$20];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$][data#int] == (37 * M[iir#anon$16][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$20]) ==> (M[iir#anon$20][idx$] == (37 * M[iir#anon$16][idx$]))
   );
   assume R[iir#anon$17] == C[iir#anon$21];
   assume R[iir#anon$18] == C[iir#anon$21];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$][data#int] == (M[iir#anon$17][idx$][data#int] + M[iir#anon$18][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$21]) ==> (M[iir#anon$21][idx$] == (M[iir#anon$17][idx$] + M[iir#anon$18][idx$]))
   );
   assume R[iir#anon$19] == C[iir#anon$22];
   assume R[iir#anon$20] == C[iir#anon$22];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$][data#int] == (M[iir#anon$19][idx$][data#int] + M[iir#anon$20][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$22]) ==> (M[iir#anon$22][idx$] == (M[iir#anon$19][idx$] + M[iir#anon$20][idx$]))
   );
   assume R[iir#anon$21] == C[iir#anon$23];
   assume R[iir#anon$22] == C[iir#anon$23];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$][data#int] == (M[iir#anon$21][idx$][data#int] + M[iir#anon$22][idx$][data#int]))
+    (0 <= idx$) && (idx$ < C[iir#anon$23]) ==> (M[iir#anon$23][idx$] == (M[iir#anon$21][idx$] + M[iir#anon$22][idx$]))
   );
   assume R[iir#anon$7] == C[iir#anon$8];
   assume R[iir#anon$7] == C[iir#anon$9];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$8]) ==> (M[iir#anon$8][idx$] == M[iir#anon$7][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$][data#int] == M[iir#anon$7][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$9]) ==> (M[iir#anon$9][idx$] == M[iir#anon$7][idx$])
   );
   assume R[iir#anon$10] == C[iir#anon$11];
   assume R[iir#anon$10] == C[iir#anon$12];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$11]) ==> (M[iir#anon$11][idx$] == M[iir#anon$10][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$][data#int] == M[iir#anon$10][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$12]) ==> (M[iir#anon$12][idx$] == M[iir#anon$10][idx$])
   );
   assume R[iir#anon$13] == C[iir#anon$14];
   assume R[iir#anon$13] == C[iir#anon$15];
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$14]) ==> (M[iir#anon$14][idx$] == M[iir#anon$13][idx$])
   );
   assume (forall idx$: int :: 
-    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$][data#int] == M[iir#anon$13][idx$][data#int])
+    (0 <= idx$) && (idx$ < C[iir#anon$15]) ==> (M[iir#anon$15][idx$] == M[iir#anon$13][idx$])
   );
   assume (C[iir#anon$7] - I[iir#anon$7]) == 1;
   assume !(1 <= (C[iir#anon$9] - R[iir#anon$9]));
@@ -4570,10 +4572,10 @@ procedure iir#anon$6#exit#25()
   assume !(1 <= (C[iir#anon$7] - R[iir#anon$7]));
   assume !(1 <= (C[iir#anon$10] - R[iir#anon$10]));
   assume !(1 <= (C[iir#anon$13] - R[iir#anon$13]));
-  assert {:msg "38.13: Network action postcondition might not hold (#289)"} (I[iir#anon$23] == 0) ==> (M[iir#anon$23][I[iir#anon$23]][data#int] == (37 * M[iir#anon$7][I[iir#anon$7]][data#int]));
-  assert {:msg "39.13: Network action postcondition might not hold (#290)"} (I[iir#anon$23] == 1) ==> (M[iir#anon$23][I[iir#anon$23]][data#int] == ((37 * M[iir#anon$7][I[iir#anon$7]][data#int]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1][data#int])));
-  assert {:msg "40.12: Network action postcondition might not hold (#291)"} (I[iir#anon$23] == 2) ==> (M[iir#anon$23][I[iir#anon$23]][data#int] == (((37 * M[iir#anon$7][I[iir#anon$7]][data#int]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1][data#int])) + (109 * M[iir#anon$7][I[iir#anon$7] - 2][data#int])));
-  assert {:msg "41.13: Network action postcondition might not hold (#292)"} (I[iir#anon$23] > 3) ==> (M[iir#anon$23][I[iir#anon$23]][data#int] == ((((37 * M[iir#anon$7][I[iir#anon$7]][data#int]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1][data#int])) + (109 * M[iir#anon$7][I[iir#anon$7] - 2][data#int])) + (37 * M[iir#anon$7][I[iir#anon$7] - 3][data#int])));
+  assert {:msg "38.13: Network action postcondition might not hold (#289)"} (I[iir#anon$23] == 0) ==> (M[iir#anon$23][I[iir#anon$23]] == (37 * M[iir#anon$7][I[iir#anon$7]]));
+  assert {:msg "39.13: Network action postcondition might not hold (#290)"} (I[iir#anon$23] == 1) ==> (M[iir#anon$23][I[iir#anon$23]] == ((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])));
+  assert {:msg "40.12: Network action postcondition might not hold (#291)"} (I[iir#anon$23] == 2) ==> (M[iir#anon$23][I[iir#anon$23]] == (((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])) + (109 * M[iir#anon$7][I[iir#anon$7] - 2])));
+  assert {:msg "41.13: Network action postcondition might not hold (#292)"} (I[iir#anon$23] > 3) ==> (M[iir#anon$23][I[iir#anon$23]] == ((((37 * M[iir#anon$7][I[iir#anon$7]]) + (109 * M[iir#anon$7][I[iir#anon$7] - 1])) + (109 * M[iir#anon$7][I[iir#anon$7] - 2])) + (37 * M[iir#anon$7][I[iir#anon$7] - 3])));
   R[iir#anon$23] := R[iir#anon$23] + 1;
   I := R;
   assert {:msg "The network might not preserve the channel invariant (#293)"} I[iir#anon$17] == I[iir#anon$8];

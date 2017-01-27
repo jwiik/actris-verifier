@@ -7,7 +7,8 @@ type Field a;
 type Actor;
 type CType = <a>[Chan a]int;
 type MType = <a>[Chan a][int]a;
-type HType = <a>[Ref,Field a]a;
+type Obj = <a>[Field a]a;
+type HType = [Ref]Obj;
 
 var M: MType;
 var C: CType;
@@ -17,10 +18,6 @@ var I: CType;
 var H: HType;
 
 const unique this#: Actor;
-
-
-type List a = [int]a;
-var AT#intlst: List int;
 
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
 
