@@ -225,7 +225,7 @@ object Boogie {
                Print(p.mod, ", ", { s: String => s }) +
                ";" + nl
          }) +
-         // Modified
+         // JW: Modified
          (if (!p.PrePost.isEmpty) Print(p.PrePost, nl, { spec: String => indent + spec }) + nl
          else "") +
          // End modified

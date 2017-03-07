@@ -461,7 +461,11 @@ class Translator(
     // Network action exit
     
     val inputBounds = for (c <- nwvs.connections.filter { _.isInput }) yield {
-      B.Assume(B.C(transExpr(c.id,c.typ)(nwvs.nwRenamings)) - B.I(transExpr(c.id,c.typ)(nwvs.nwRenamings)) ==@ B.Int(nwa.portInputCount(c.from.name)) /* B.BaseL*/)
+      if (nwa.portInputCount(c.from.name) > 0)
+        B.Assume(
+            B.C(transExpr(c.id,c.typ)(nwvs.nwRenamings)) - B.I(transExpr(c.id,c.typ)(nwvs.nwRenamings)) 
+            ==@ B.Int(nwa.portInputCount(c.from.name)))
+      else B.Assume(B.Bool(true))
     }
     
     val nwPre = for (r <- nwa.requires) yield 
@@ -682,7 +686,8 @@ class Translator(
     asgn ++= nwvs.basicAssumes
     //asgn += B.Local("x", B.type2BType(IntType(32)))
     
-    asgn += B.Assume(B.C(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) - B.I(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) < B.Int(pattern.vars.size))
+    asgn += 
+      B.Assume(B.C(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) - B.I(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) < B.Int(pattern.vars.size))
      
     for (chi <- nwvs.chInvariants) {
       asgn += BAssume(chi, nwvs.nwRenamings)
