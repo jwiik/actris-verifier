@@ -9,17 +9,17 @@ import scala.collection.mutable.ListBuffer
 object Elements {
   def rd0(id: String, chType: ChanType) = {
     val fa = FunctionApp("rd",List(makeId(id,chType): Expr))
-    fa.typ = IntType(32)
+    fa.typ = IntType(-1)
     fa
   }
   def tot0(id: String, chType: ChanType) = {
     val fa = FunctionApp("tot",List(makeId(id,chType): Expr))
-    fa.typ = IntType(32)
+    fa.typ = IntType(-1)
     fa
   }
   def str(id: String, chType: ChanType) = {
     val fa = FunctionApp("str",List(makeId(id,chType): Expr))
-    fa.typ = IntType(32)
+    fa.typ = IntType(-1)
     fa
   }
   
@@ -36,7 +36,7 @@ object Elements {
     ia
   }
   
-  def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(32); li}
+  def lit(i: Int) = { val li = IntLiteral(i); li.typ = IntType(-1); li}
   
   def makeId(id: String, t: Type) = { val i = Id(id); i.typ = t; i }
 } 
@@ -80,6 +80,7 @@ object TypeUtil {
   def isCompatible(t1: Type, t2: Type): Boolean = 
     (t1.isBool && t2.isBool) || 
     (t1.isInt && t2.isInt) ||
+    (t1.isBv && t2.isBv && t1.asInstanceOf[BvType].size == t2.asInstanceOf[BvType].size) ||
     (t1.isIndexed && t2.isIndexed && 
         isCompatible(t1.asInstanceOf[ListType].resultType, t2.asInstanceOf[ListType].resultType) && 
         isCompatible(t1.asInstanceOf[ListType].indexType, t2.asInstanceOf[ListType].indexType) &&
@@ -95,8 +96,8 @@ object TypeUtil {
   }
 
   def createIntOrUint(n: Long) = {
-    if (n >= 0) UintType(getSize(n))
-    else IntType(getSize(n))
+    if (n >= 0) UintType( -1 /*getSize(n)*/)
+    else IntType( -1 /*getSize(n)*/)
   }
 
 }

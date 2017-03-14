@@ -1,11 +1,11 @@
 package fi.abo.it.actortool.boogie
 
 import scala.util.parsing.input.Position
-
 import fi.abo.it.actortool.boogie.Boogie.VarExpr
 import fi.abo.it.actortool.boogie.Boogie.BType
 import fi.abo.it.actortool.boogie.Boogie.NamedType
 import fi.abo.it.actortool._
+import fi.abo.it.actortool.boogie.Boogie.BVLiteral
 
 
 
@@ -47,7 +47,7 @@ case class BDecl(val name: String, val decl: Boogie.LocalVar) {
 }
 object BDecl {
   def apply(name1: String, typ: Type) = new BDecl(name1,typ)
-  def apply(name1: String, bTyp: BType) = new BDecl(name1, B.Local(name1, bTyp))
+  def apply(name1: String, bTyp: BType) = new BDecl(name1, bTyp)
 }
 
 object B {
@@ -63,7 +63,7 @@ object B {
   def type2BType(t: Type): Boogie.BType = {
     assert(t != null)
     t match {
-      case IntType(x) =>  BType.Int // BType.BV(x)
+      case IntType(x) => BType.Int 
       case BoolType => BType.Bool
       case FloatType => BType.Real
       case HalfType => BType.Real
@@ -72,19 +72,23 @@ object B {
       case ActorType(_) => BType.Actor
       case ListType(contentType,_) => BType.List(type2BType(contentType))
       case RefType(_) => BType.Ref
+      case BvType(x) => BType.BV(x)
       case UnknownType =>
         assert(false, "Unknown types should not occur during the translation")
         null
     }
   }
   
-  def Local(id: String, tp: Type)(implicit bvMode: Boolean) = new Boogie.LocalVar(id, type2BType(tp))
+  def Local(id: String, tp: Type) = new Boogie.LocalVar(id, type2BType(tp))
   def Local(id: String, tp: BType) = new Boogie.LocalVar(id, tp)
   def ThisDecl = Local(BMap.This,BType.Actor)
   
   def Bool(b: Boolean) = Boogie.BoolLiteral(b)
   
   def Int(i: Int): Boogie.Expr = Int(i.toString)
+  
+  def IntBV(i: Int, size: Int): Boogie.Expr = BVLiteral(i.toString,size)
+  def IntBV(i: String, size: Int): Boogie.Expr = BVLiteral(i,size)
   
   def Int(i: String) = {
     Boogie.IntLiteral(i)
@@ -147,5 +151,8 @@ object B {
   
   //val BaseL = VarExpr(BMap.BaseL)
   val intlst = VarExpr("AT#intlst");
+  
+  //def Lte(a0: Boogie.Expr, a1: Boogie.Expr)(implicit bvMode: Boolean) = if (bvMode) B.Fun("AT#BvUle", a0, a1) else a0 <= a1
+  //def Minus(a0: Boogie.Expr, a1: Boogie.Expr)(implicit bvMode: Boolean) = if (bvMode) B.Fun("AT#BvSub", a0, a1) else a0 - a1
   
 }

@@ -465,6 +465,7 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isActor = false
   def isList = false
   def isRef = false
+  def isBv = false
 }
 
 sealed case class RefType(val name: String) extends Type(name) {
@@ -485,19 +486,20 @@ sealed abstract class PrimitiveType(name: String) extends Type(name)
 sealed abstract class AbstractIntType(name: String, val size: Int) extends PrimitiveType(name+"("+size+")") {
   override def isInt = true
   override def isNumeric = true
+  override def isBv = false
 }
-  
+
 sealed case class IntType(override val size: Int) extends AbstractIntType("int", size) {
   override def isSignedInt = true
 }
 
-object IntType extends IntType(32)
+object IntType extends IntType(-1)
 
 sealed case class UintType(override val size: Int) extends AbstractIntType("uint", size) {
   override def isUnsignedInt = true
 }
 
-object UintType extends UintType(32)
+object UintType extends UintType(-1)
 
 case object BoolType extends PrimitiveType("bool") {
   override def isBool = true
@@ -514,13 +516,17 @@ case object UnknownType extends Type("unknown") {
   override def isHalf = true
   override def isNumeric = true
 }
-case class ChanType(contentType: Type) extends IndexedType("Chan",contentType,IntType(32)) {
+case class ChanType(contentType: Type) extends IndexedType("Chan",contentType,IntType(-1)) {
   override def isChannel = true
 }
 case class ActorType(actor: DFActor) extends Type("actor") {
   override def isActor = true
 }
 case class ListType(contentType: Type, val size: Int) extends IndexedType(
-    "List("+contentType.id+","+size+")",contentType,IntType(32)) {
+    "List("+contentType.id+","+size+")",contentType,IntType(-1)) {
   override def isList = true
+}
+
+case class BvType(val size: Int) extends PrimitiveType("bv"+size) {
+  override def isBv = true
 }

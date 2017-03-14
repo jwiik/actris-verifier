@@ -4,9 +4,8 @@ import fi.abo.it.actortool._
 import scala.collection.mutable.ListBuffer
 import fi.abo.it.actortool.boogie.Boogie.UnaryExpr
 import fi.abo.it.actortool.ActorTool.TranslationException
-import fi.abo.it.actortool.ActorTool.TranslationException
 
-class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
+class StmtExpTranslator(val ftMode: Boolean) {
   /*
    * Translation of statements and expressions
    */
@@ -52,20 +51,20 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       case Iff(e1,e2) => transExpr(e1) <==> transExpr(e2)
       case Not(e) => UnaryExpr("!",transExpr(e)) 
       case Less(e1,e2) =>
-        if (bvMode) B.Fun("AT#BvUlt",transExpr(e1),transExpr(e2)) 
+        if (e1.typ.isBv) B.Fun("AT#BvUlt",transExpr(e1),transExpr(e2)) 
         else transExpr(e1) < transExpr(e2)
       case Greater(e1,e2) => transExpr(e1) > transExpr(e2)
       case AtLeast(e1,e2) => transExpr(e1) >= transExpr(e2)
       case AtMost(e1,e2) => 
-        if (bvMode) B.Fun("AT#BvUle",transExpr(e1),transExpr(e2)) 
+        if (e1.typ.isBv) B.Fun("AT#BvUle",transExpr(e1),transExpr(e2)) 
         else transExpr(e1) <= transExpr(e2)
       case Eq(e1,e2) => transExpr(e1) ==@ transExpr(e2)
       case NotEq(e1,e2) => transExpr(e1) !=@ transExpr(e2)
       case Plus(e1,e2) => 
-        if (bvMode) B.Fun("AT#BvAdd",transExpr(e1),transExpr(e2)) 
+        if (e1.typ.isBv) B.Fun("AT#BvAdd",transExpr(e1),transExpr(e2)) 
         else transExpr(e1) + transExpr(e2)
       case Minus(e1,e2) =>
-        if (bvMode) B.Fun("AT#BvSub",transExpr(e1),transExpr(e2)) 
+        if (e1.typ.isBv) B.Fun("AT#BvSub",transExpr(e1),transExpr(e2)) 
         else transExpr(e1) - transExpr(e2)
       case Times(e1,e2) => transExpr(e1) * transExpr(e2)
       case Div(e1,e2) => 
@@ -79,9 +78,16 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       case RShift(e1,e2) =>
         BoogiePrelude.addComponent(BitwisePL)
         Boogie.FunctionApp("AT#RShift",List(transExpr(e1),transExpr(e2)))
-      case LShift(e1,e2) =>
-        BoogiePrelude.addComponent(BitwisePL)
-        Boogie.FunctionApp("AT#LShift",List(transExpr(e1),transExpr(e2)))
+      case lsh@LShift(e1,e2) =>
+        if (lsh.typ.isBv) {
+          BoogiePrelude.addComponent(BitvectorPL.createPL(lsh.typ.asInstanceOf[BvType]))
+          Boogie.FunctionApp("AT#BvShl",List(transExpr(e1),transExpr(e2)))
+        }
+        else {
+          BoogiePrelude.addComponent(BitwisePL)
+          Boogie.FunctionApp("AT#LShift",List(transExpr(e1),transExpr(e2)))
+        }
+        
       case BWAnd(e1,e2) =>
         BoogiePrelude.addComponent(BitwisePL)
         Boogie.FunctionApp("AT#BvAnd",List(transExpr(e1),transExpr(e2)))
@@ -89,7 +95,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       case IfThenElse(c,e1,e2) => Boogie.Ite(transExpr(c),transExpr(e1),transExpr(e2))
       case Forall(vars,e,pat) => 
         Boogie.Forall(Nil,
-          for (v <- vars) yield Boogie.BVar(v.id,B.type2BType(v.typ)),
+          for (v <- vars) yield Boogie.BVar(v.id, B.type2BType(v.typ)),
           pat match {
             case None => Nil
             case Some(p) => List(Boogie.Trigger(List(transExpr(p))))
@@ -120,12 +126,12 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
             else B.ChannelIdx(ch,B.R(ch))
           case "prev" => 
             val ch = transExpr(params(0))
-            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) minus transExpr(params(1)))
-            else B.ChannelIdx(ch,B.R(ch) minus B.Int(1))
+            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) - transExpr(params(1)))
+            else B.ChannelIdx(ch,B.R(ch) - B.Int(1))
           case "last" => 
             val ch = transExpr(params(0))
-            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.C(ch) minus transExpr(params(1)))
-            else B.ChannelIdx(ch,B.C(ch) minus B.Int(1))
+            if (fa.parameters.size > 1) B.ChannelIdx(ch, B.C(ch) - transExpr(params(1)))
+            else B.ChannelIdx(ch, B.C(ch) - B.Int(1))
           case "history" => 
             val ch = transExpr(params(0))
             generateRangePredicate(params, B.Int(0), B.I(ch))
@@ -172,7 +178,7 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
       }
 
       case il@IntLiteral(i) =>
-        if (bvMode) {
+        if (il.typ.isBv) {
           assert(il.typ != null)
           val size = il.typ.asInstanceOf[AbstractIntType].size
           Boogie.BVLiteral(i.toString,32)
@@ -180,10 +186,11 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         else B.Int(i)
         
         
-      case HexLiteral(x) => {
+      case hl@HexLiteral(x) => {
         //val bigInt = x.toList.map("0123456789abcdef".indexOf(_)).map(BigInt(_)).reduceLeft(_ * 16 + _)
         val bigInt = Integer.parseInt(x, 16)
-        B.Int(bigInt.toString) // To decimal conversion
+        //B.Int(bigInt.toString) // To decimal conversion
+        B.IntBV(bigInt.toString,hl.typ.asInstanceOf[BvType].size)
       }
       case BoolLiteral(b) => Boogie.BoolLiteral(b)
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
@@ -194,8 +201,8 @@ class StmtExpTranslator(val ftMode: Boolean, implicit val bvMode: Boolean) {
         mark match {
           case "@" => B.I(accessorName)
           case "next" => B.R(accessorName)
-          case "prev" => B.R(accessorName)-B.Int(1)
-          case "last" => B.C(accessorName)-B.Int(1)
+          case "prev" => B.R(accessorName) - B.Int(1)
+          case "last" => B.C(accessorName) - B.Int(1)
         }
       }
       case id@Id(name) => renamings.get(name) match {

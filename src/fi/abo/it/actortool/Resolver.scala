@@ -620,76 +620,6 @@ object Resolver {
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType,IntType,IntType))
-//      case fa@FunctionApp("subvar",params) => {
-//        if (params.size != 2) {
-//          ctx.error(fa.pos, "Expected two arguments")
-//          UnknownType
-//        }
-//        else {
-//          val tActor = resolveExpr(ctx,params(0))
-//          if (!tActor.isActor) {
-//            ctx.error(fa.pos, "The first argument must be an actor instance")
-//            UnknownType
-//          }
-//          else {
-//            val name = params(1) match {
-//              case Id(id) => id
-//              case x => 
-//                ctx.error(x.pos, "The second argument to 'variable' must be a state identifier")
-//                return UnknownType
-//            }
-//            val actorDecl = tActor.asInstanceOf[ActorType].actor 
-//            val varDecl = actorDecl.variables.find { d => d.id == name }
-//            varDecl match {
-//              case Some(v) => 
-//                v.typ
-//              case None =>
-//                ctx.error(fa.pos, "Actor " + actorDecl.id + " does not declare any variable named '" + name + "'")
-//                UnknownType
-//            }
-//          }
-//        }
-//      }
-//      case fa@FunctionApp("state",params) => {
-//        if (params.size != 2) {
-//          ctx.error(fa.pos, "Expected two arguments")
-//          UnknownType
-//        }
-//        else {
-//          val tActor = resolveExpr(ctx,params(0))
-//          val state = params(1) match {
-//            case Id(id) => id
-//            case x => 
-//              ctx.error(x.pos, "The second argument to 'state' must be a state identifier")
-//              return UnknownType
-//          }
-//          tActor match {
-//            case ActorType(a) =>
-//              a match {
-//                case n: Network =>
-//                  ctx.error(params(0).pos, "Function 'state' cannot be used on networks")
-//                  UnknownType
-//                case ba: BasicActor =>
-//                  ba.schedule match {
-//                    case Some(schedule) =>
-//                      if (schedule.states contains state) {
-//                        return BoolType
-//                      }
-//                      else {
-//                        ctx.error(params(0).pos, "Actor " + ba.fullName + " has no state named " + state)
-//                        return UnknownType
-//                      }
-//                    case None => 
-//                      ctx.error(params(0).pos, "Actor " + ba.fullName + " has no FSM schedule")
-//                      return UnknownType
-//                  }
-//              }
-//            case _ =>
-//              ctx.error(params(0).pos, "Actor instance expected, found: " + tActor.id)
-//              UnknownType
-//          }
-//        }
-//      }
       case fa@FunctionApp(name,params) => {
         ctx.lookupFunction(name) match {
           case Some(fd) => {
@@ -733,7 +663,7 @@ object Resolver {
       }
       case l@BoolLiteral(_) => l.typ = BoolType; BoolType
       case l@IntLiteral(n) => l.typ = TypeUtil.createIntOrUint(n); l.typ
-      case hx@HexLiteral(x) => hx.typ = UintType(x.length*4); hx.typ
+      case hx@HexLiteral(x) => hx.typ = BvType(x.length*4); hx.typ
       case l@FloatLiteral(_) => throw new IllegalArgumentException()
       case sm@SpecialMarker(m) => {
         val accessor = findParentAccessor(ctx)
@@ -833,8 +763,8 @@ object Resolver {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
     
-    if (!t1.isInt && !t1.isUnsignedInt) ctx.error(exp.left.pos, "Shift operation only applicable on integers, found: " + t1.id)
-    if (!t2.isInt && !t2.isUnsignedInt) ctx.error(exp.right.pos, "Shift operation only applicable on integers, found: " + t2.id)
+    if (!t1.isInt && !t1.isUnsignedInt && !t1.isBv) ctx.error(exp.left.pos, "Shift operation only applicable on integers, found: " + t1.id)
+    if (!t2.isInt && !t2.isUnsignedInt && !t2.isBv) ctx.error(exp.right.pos, "Shift operation only applicable on integers, found: " + t2.id)
     //if (t1 != t2) ctx.error(exp.left.pos, "Shift operation applied to arguments of type: " + t1.id + " and " + t2.id ) 
     exp.typ = t1
     t1
@@ -861,7 +791,7 @@ object Resolver {
   def resolveChannelCountFunction(ctx: Context, fa: FunctionApp): Type = {
     if (fa.parameters.size != 1) {
       ctx.error(fa.pos,"Function " + fa.name + " takes exactly 1 argument")
-      return IntType(32)
+      return IntType(-1)
     }
     val param = fa.parameters(0)
     val paramType1 = resolveExpr(ctx,param)
@@ -884,8 +814,8 @@ object Resolver {
     
     
     
-    fa.typ = IntType(32)
-    IntType(32)
+    fa.typ = IntType(-1)
+    IntType(-1)
   }
    
   def resolveBoundPredicate(ctx: Context, fa: FunctionApp): Type = {

@@ -13,13 +13,11 @@ import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool._ 
 
 class Translator(
-    val fixedBaseLength: Int, 
     val ftMode: Boolean, 
     val smokeTest: Boolean,
-    val skipMutualExclusivenessCheck: Boolean,
-    implicit val bvMode: Boolean) {  
+    val skipMutualExclusivenessCheck: Boolean) {  
   
-  val stmtTranslator = new StmtExpTranslator(ftMode, bvMode); 
+  val stmtTranslator = new StmtExpTranslator(ftMode); 
   //val Inhalator = new Inhalator(stmtTranslator)
   //val Exhalator = new Exhalator(stmtTranslator)
   
@@ -36,8 +34,8 @@ class Translator(
   }
   
   def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Boogie.Decl] = {
-    val nwVerStructBuilder = new NetworkVerificationStructureBuilder(bvMode, ftMode, typeCtx)
-    val actorVerStructBuilder = new ActorVerificationStructureBuilder(bvMode, ftMode, typeCtx)
+    val nwVerStructBuilder = new NetworkVerificationStructureBuilder(ftMode, typeCtx)
+    val actorVerStructBuilder = new ActorVerificationStructureBuilder(ftMode, typeCtx)
     
     if (ftMode) BoogiePrelude.addComponent(SeqNumberingPL)
     
@@ -536,7 +534,7 @@ class Translator(
     
     for (ipat <- action.inputPattern) {
       val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
-      firingCondsBuffer += B.Int(ipat.numConsumed) lte B.Urd(cId)
+      firingCondsBuffer += B.Int(ipat.numConsumed) <= B.Urd(cId)
     }
     
     val renamedGuard = action.guard match {
@@ -684,7 +682,7 @@ class Translator(
     asgn ++= nwvs.subactorVarDecls  map { _.decl }
     asgn ++= (nwvs.uniquenessConditions map { B.Assume(_) })
     asgn ++= nwvs.basicAssumes
-    //asgn += B.Local("x", B.type2BType(IntType(32)))
+    //asgn += B.Local("x", B.type2BType(IntType(-1)))
     
     asgn += 
       B.Assume(B.C(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) - B.I(transExpr(pattern.portId,ChanType(pattern.vars(0).typ))(nwvs.nwRenamings)) < B.Int(pattern.vars.size))

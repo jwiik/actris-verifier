@@ -37,11 +37,11 @@ class Parser extends StandardTokenParsers {
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
-                       "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc"
+                       "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
-                       "-->", "::", "{", "}", "<<" , ">>", "@", "&")
+                       "-->", "::", "{", "}", "<<" , ">>", "@", "&", "~", "^")
                        
   def programUnit = (actorDecl | networkDecl | unitDecl | typeDecl)*
   
@@ -385,12 +385,15 @@ class Parser extends StandardTokenParsers {
   def typeName = primType | compositeType 
   
   def primType: Parser[Type] = positioned(
-    ("int" | "uint") ~ (opt("(" ~> "size" ~> "=" ~> numericLit <~ ")")) ^^ {
+    (("int" | "uint") ~ (opt("(" ~> "size" ~> "=" ~> numericLit <~ ")")) ^^ {
       case "int" ~ Some(size) => IntType(size.toInt)
-      case "int" ~ None => IntType(32) 
+      case "int" ~ None => IntType(-1) 
       case "uint" ~ Some(size) => UintType(size.toInt) 
-      case "uint" ~ None => UintType(32) 
-    }
+      case "uint" ~ None => UintType(-1) 
+    })
+    | (("bv" ~> "(" ~> "size" ~> "=" ~> numericLit <~ ")") ^^ {
+      case size => BvType(size.toInt)
+    })
     | "bool" ^^^ BoolType
   )
   

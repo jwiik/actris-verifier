@@ -40,7 +40,7 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   
 }
 
-class ActorVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean, val typeCtx: Resolver.Context) 
+class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
   
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
@@ -91,7 +91,7 @@ class ActorVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean
   
 }
 
-class NetworkVerificationStructureBuilder(val bvMode: Boolean, val ftMode: Boolean, val typeCtx: Resolver.Context) 
+class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[Network, NetworkVerificationStructure] {
   
   val tokensFinder = new TokensFinder()

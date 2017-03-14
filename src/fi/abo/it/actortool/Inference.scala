@@ -45,7 +45,7 @@ object Inferencer {
   
   object NWPreToInvariant extends InferenceModule {
     override val name = "nw-precondition"
-    val quantVar = Id("idx$"); quantVar.typ = IntType(32)
+    val quantVar = Id("idx$"); quantVar.typ = IntType(-1)
     
     override def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context): Unit = {
       val disjuncts = n.actions flatMap { action => {
@@ -100,7 +100,7 @@ object Inferencer {
     
     val StaticAnnot = "static"
     val NoInferAnnot = "noinfer"
-    val quantVar = Id("idx$"); quantVar.typ = IntType(32)
+    val quantVar = Id("idx$"); quantVar.typ = IntType(-1)
     
     override def actor(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context): Unit = {
       val countInvariants = new ListBuffer[Expr]
@@ -287,7 +287,7 @@ object Inferencer {
   object FTProperties extends InferenceModule {
     override val name = "ft-properties"
     
-    val quantVar = Id("idx$"); quantVar.typ = IntType(32)
+    val quantVar = Id("idx$"); quantVar.typ = IntType(-1)
     val soundnessChecks = true
     
     override def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context) {
@@ -301,7 +301,7 @@ object Inferencer {
 //        val quantBounds = And(AtMost(lowBound,quantVar),Less(quantVar,tot0(channel.id)))
 //        val cId = Id(channel.id); cId.typ = ChanType(ipat.vars(0).typ)
 //        val accessor = IndexAccessor(cId,quantVar); accessor.typ = ipat.vars(0).typ
-//        val sqn = sqnAcc(accessor); sqn.typ = IntType(32)
+//        val sqn = sqnAcc(accessor); sqn.typ = IntType(-1)
 //        val quantExp = Implies(quantBounds,Eq(sqn,quantVar))
 //        n.addChannelInvariant(Forall(List(quantVar),quantExp), !soundnessChecks)
 //        

@@ -67,16 +67,14 @@ object Boogie {
    def <==>(that: Expr) = BinaryExpr("<==>", this, that)
    def unary_! = UnaryExpr("!", this)
    def <=(that: Expr) = BinaryExpr("<=", this, that)
-   def lte(that: Expr)(implicit bvMode: Boolean) = 
-     if (bvMode) FunctionApp("AT#BvUle",List(this,that)) else BinaryExpr("<=", this, that)
+//   def lte(that: Expr)(implicit bvMode: Boolean) = 
+//     if (bvMode) FunctionApp("AT#BvUle",List(this,that)) else BinaryExpr("<=", this, that)
    def <(that: Expr) = BinaryExpr("<", this, that)
    def >=(that: Expr) = BinaryExpr(">=", this, that)
    def >(that: Expr) = BinaryExpr(">", this, that)
    def +(that: Expr) = BinaryExpr("+", this, that)
-   def plus(that: Expr)(implicit bvMode: Boolean) = 
-     if (bvMode) FunctionApp("AT#BvAdd",List(this,that)) else BinaryExpr("+", this, that)
-   def minus(that: Expr)(implicit bvMode: Boolean) = 
-     if (bvMode) FunctionApp("AT#BvSub",List(this,that)) else BinaryExpr("-", this, that)
+   def plus(that: Expr) = BinaryExpr("+", this, that)
+   def minus(that: Expr) =  BinaryExpr("-", this, that)
    def -(that: Expr) = BinaryExpr("-", this, that)
    def *(that: Expr) = BinaryExpr("*", this, that)
    def /(that: Expr) = BinaryExpr("div", this, that)

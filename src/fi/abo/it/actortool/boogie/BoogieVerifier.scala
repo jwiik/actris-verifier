@@ -15,15 +15,15 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Boogie.Decl], Unit] {
   
   def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Boogie.Decl] = {
-    val translator = new Translator(params.FixedBaseLength, params.FTMode, params.SmokeTest, false, params.BVMode)
+    val translator = new Translator(params.FTMode, params.SmokeTest, false)
     translator.translateProgram(decls, typeCtx)
   }
   
   def verify(bplProg: List[Boogie.Decl]): Unit = {
     val boogiePath = params.BoogiePath
 		val boogieArgs = params.BoogieArgs
-		if (params.BVMode) BoogiePrelude.addComponent(BitwisePL)
-    val bplText = BoogiePrelude.get(params.BVMode) + (bplProg map Boogie.Print).foldLeft(""){ (a, b) => a + b };
+		//if (params.BVMode) BoogiePrelude.addComponent(BitwisePL)
+    val bplText = BoogiePrelude.get + (bplProg map Boogie.Print).foldLeft(""){ (a, b) => a + b };
     val bplFilename = if (params.NoBplFile) "stdin.bpl" else params.BplFile
     if (params.PrintProgram) println(bplText)
     if (!params.NoBplFile) writeFile(bplFilename, bplText);

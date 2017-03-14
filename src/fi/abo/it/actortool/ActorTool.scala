@@ -50,7 +50,6 @@ object ActorTool {
     val NoBplFile: Boolean
     val BplFile: String
     val Timing: Int
-    val BVMode: Boolean
     val FixedBaseLength: Int
     val FTMode: Boolean
     val InferModules: List[String]
@@ -111,7 +110,7 @@ object ActorTool {
         case Param("noInfer") => aDoInfer = false
         case Param("noTranslate") => aDoTranslate = false
         case Param("noVerify") => aDoVerify = false
-        case Param("bvMode") => aBVMode = true
+        case Param("bvMode") => reportCommandLineError("parameter bvMode is obsolete.")
         case Param("ftMode") => aFTMode = true
         case Param("timings") => {
           value match {

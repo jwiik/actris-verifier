@@ -30,9 +30,10 @@ object BoogiePrelude {
   private var components: Set[PreludeComponent] = Set(TypesAndGlobalVarsPL,FooterPL)
 
   // get the prelude (with all components currently included)
-  def get(bvMode: Boolean): String = {
-    val l = components.toList.sortWith((a,b) => a compare b)
-    l.foldLeft("")((s:String,a:PreludeComponent) => s + (a.text.replace("@inttype@", if (bvMode) "bv32" else "int" )))
+  def get: String = {
+    val comps = components //+ PureBitwisePL
+    val l = comps.toList.sortWith((a,b) => a compare b)
+    l.foldLeft("")((s:String,a:PreludeComponent) => s + (a.text.replace("@inttype@", /*if (bvMode) "bv32" else*/ "int" )))
   }
 }
 
@@ -93,14 +94,60 @@ axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
 """
 }
 
+object PureBitwisePL extends PreludeComponent {
+  
+  
+  val text =
+"""
+function {:bvbuiltin "bvand"} AT#BvAnd(a: bv32, b: bv32): bv32;
+function {:bvbuiltin "bvadd"} AT#BvAdd(a: bv32, b: bv32): bv32;
+function {:bvbuiltin "bvsub"} AT#BvSub(a: bv32, b: bv32): bv32;
+function {:bvbuiltin "bvule"} AT#BvUle(a: bv32, b: bv32): bool;
+function {:bvbuiltin "bvult"} AT#BvUlt(a: bv32, b: bv32): bool;
+function AT#RShift(bv32,bv32): bv32;
+function AT#LShift(bv32,bv32): bv32;
+"""
+}
+
+class BitvectorPL(val size: Int) extends PreludeComponent {
+   private val template =
+"""
+function {:bvbuiltin "bvand"} AT#BvAnd(a: @bvsize@, b: @bvsize@): @bvsize@;
+function {:bvbuiltin "bvor"} AT#BvOr(a: @bvsize@, b: @bvsize@): @bvsize@;
+function {:bvbuiltin "bvnot"} AT#BvNot(a: @bvsize@): @bvsize@;
+function {:bvbuiltin "bvadd"} AT#BvAdd(a: @bvsize@, b: @bvsize@): @bvsize@;
+function {:bvbuiltin "bvsub"} AT#BvSub(a: @bvsize@, b: @bvsize@): @bvsize@;
+function {:bvbuiltin "bvmul"} AT#BvMul(a: @bvsize@, b: @bvsize@): @bvsize@;
+function {:bvbuiltin "bvshl"} AT#BvShl(@bvsize@,@bvsize@): @bvsize@;
+function {:bvbuiltin "bvlshr"} AT#BvLshr(@bvsize@,@bvsize@): @bvsize@;
+function {:bvbuiltin "bvashr"} AT#BvAshr(@bvsize@,@bvsize@): @bvsize@;
+function {:bvbuiltin "bvule"} AT#BvUle(a: @bvsize@, b: @bvsize@): bool;
+function {:bvbuiltin "bvult"} AT#BvUlt(a: @bvsize@, b: @bvsize@): bool;
+function {:bvbuiltin "bvuge"} AT#BvUge(a: @bvsize@, b: @bvsize@): bool;
+function {:bvbuiltin "bvugt"} AT#BvUgt(a: @bvsize@, b: @bvsize@): bool;
+"""
+   
+  val text = template.replace("@bvsize@", "bv"+size)
+
+  override def equals(that: Any): Boolean = that match {
+     case bvpl: BitvectorPL => bvpl.size == this.size
+     case _ => false
+  }
+   
+  override def hashCode: Int = BitvectorPL.hashCode+size
+}
+
+object BitvectorPL {
+  def createPL(size: Int) = new BitvectorPL(size)
+  def createPL(typ: BvType) = new BitvectorPL(typ.size)
+}
+
 object BitwisePL extends PreludeComponent {
   
   override def dependencies = Set(DivModAbsPL)
   
   val text =
 """
-function AT#BvAnd(a: int, b: int): int;
-
 function AT#RShift(int, int): int;
 function AT#LShift(int, int): int;
 axiom (forall a: int :: (
