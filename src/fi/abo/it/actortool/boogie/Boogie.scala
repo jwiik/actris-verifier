@@ -22,7 +22,7 @@ object Boogie {
 
  sealed abstract class BType
  case class NamedType(s: String) extends BType
- case class IndexedType(id: String, t: BType) extends BType
+ case class IndexedType(id: String, indices: List[BType]) extends BType
  
  // Added by JW
  case class BVType(size: Int) extends BType
@@ -197,8 +197,8 @@ object Boogie {
  def PrintType(t: BType): String = t match {
    case nt@ NamedType(s) =>
      s
-   case IndexedType(id,t) =>
-     id + " (" + PrintType(t) + ")"
+   case IndexedType(id,l) =>
+     id + " " + l.map{ t =>  "(" + PrintType(t) + ")" }.mkString(" ")
    // Added by JW
    case BVType(size) => "bv"+size
    //

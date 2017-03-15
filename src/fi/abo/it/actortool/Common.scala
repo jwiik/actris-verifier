@@ -170,6 +170,7 @@ abstract class ASTVisitor[T] {
   def visitStmt(stmt: Stmt)(implicit info: T) {
     stmt match {
       case Assign(id, exp)             => visitExpr(id); visitExpr(exp)
+      case MapAssign(id, exp)          => visitExpr(id); visitExpr(exp)
       case Assert(e)                   => visitExpr(e)
       case Assume(e)                   => visitExpr(e)
       case Havoc(vars)                 => for (v <- vars) visitId(v)
@@ -225,7 +226,10 @@ abstract class ASTVisitor[T] {
         visitExpr(l); visitExpr(r)
       case RShift(l, r) =>
         visitExpr(l); visitExpr(r)
-      case BWAnd(l,r) => visitExpr(l); visitExpr(r)
+      case BwAnd(l,r) => visitExpr(l); visitExpr(r)
+      case BwOr(l,r) => visitExpr(l); visitExpr(r)
+      case BwXor(l,r) => visitExpr(l); visitExpr(r)
+      case BwNot(l) => visitExpr(l)
       case UnMinus(e) => visitExpr(e)
       case IfThenElse(c, t, e) =>
         visitExpr(c); visitExpr(t); visitExpr(e)
@@ -255,7 +259,8 @@ abstract class ASTReplacingVisitor[A <: ASTNode, B <: ASTNode] {
 
   def visitStmt(stmt: Stmt)(implicit map: Map[A, B]): Stmt = {
     stmt match {
-      case Assign(id, exp)             => Assign(visitAssignable(id), visitExpr(exp))
+      case Assign(id, exp)             => Assign(visitId(id), visitExpr(exp))
+      case MapAssign(exp1, exp2)       => MapAssign(visitExpr(exp1), visitExpr(exp2))
       case Assert(e)                   => Assert(visitExpr(e))
       case Assume(e)                   => Assume(visitExpr(e))
       case Havoc(vars)                 => Havoc(for (v <- vars) yield visitId(v))
@@ -294,7 +299,10 @@ abstract class ASTReplacingVisitor[A <: ASTNode, B <: ASTNode] {
       case Mod(l, r)             => Mod(visitExpr(l), visitExpr(r))
       case RShift(l, r)          => RShift(visitExpr(l), visitExpr(r))
       case LShift(l, r)          => LShift(visitExpr(l), visitExpr(r))
-      case BWAnd(l, r)           => BWAnd(visitExpr(l), visitExpr(r))
+      case BwAnd(l, r)           => BwAnd(visitExpr(l), visitExpr(r))
+      case BwOr(l, r)            => BwOr(visitExpr(l), visitExpr(r))
+      case BwXor(l, r)           => BwXor(visitExpr(l), visitExpr(r))
+      case BwNot(l)              => BwNot(visitExpr(l))
       case UnMinus(e)            => UnMinus(visitExpr(e))
       case IfThenElse(c, t, e)   => IfThenElse(visitExpr(c), visitExpr(t), visitExpr(e))
       case Forall(v, e, None)    => Forall(v, visitExpr(e), None)

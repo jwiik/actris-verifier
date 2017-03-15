@@ -37,11 +37,12 @@ class Parser extends StandardTokenParsers {
                        "guard", "entities", "structure", "int", "bool", "invariant", "chinvariant", "end", 
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
-                       "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv"
+                       "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
+                       "Map"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
-                       "-->", "::", "{", "}", "<<" , ">>", "@", "&", "~", "^")
+                       "-->", "::", "{", "}", "<<" , ">>", "@", "&", "~", "^", "->")
                        
   def programUnit = (actorDecl | networkDecl | unitDecl | typeDecl)*
   
@@ -262,11 +263,13 @@ class Parser extends StandardTokenParsers {
   
   def cmpOp = "==" | "=" | "!=" | "<" | "<=" | ">=" | ">" 
   
-  def bitManipExpr: Parser[Expr] = positioned((addExpr ~ ((">>" | "<<" | "&") ~ addExpr *)) ^^{
+  def bitManipExpr: Parser[Expr] = positioned((addExpr ~ ((">>" | "<<" | "&" | "|" | "^") ~ addExpr *)) ^^{
     case e0 ~ rest => (rest foldLeft e0) {
       case (a, ">>" ~ b) => RShift(a,b)
       case (a, "<<" ~ b) => LShift(a,b)
-      case (a, "&" ~ b) => BWAnd(a,b)
+      case (a, "&" ~ b) => BwAnd(a,b)
+      case (a, "|" ~ b) => BwOr(a,b)
+      case (a, "^" ~ b) => BwXor(a,b)
     }
   }) 
   
@@ -289,6 +292,7 @@ class Parser extends StandardTokenParsers {
   def unaryExpr: Parser[Expr] = positioned(
     "-" ~> unaryExpr ^^ UnMinus | 
     "!" ~> unaryExpr ^^ Not |
+    "~" ~> unaryExpr ^^ BwNot |
     quantifier |
     "(" ~> expression <~ ")" ^^ { case e => e } |
     functionApp |
@@ -374,12 +378,15 @@ class Parser extends StandardTokenParsers {
     "assert" ~> expression <~ Semi ^^ Assert |
     "assume" ~> expression <~ Semi ^^ Assume |
     "havoc" ~> repsep(ident,",") <~ Semi ^^ {case ids => Havoc(ids map { Id(_) })} |
-    assignable ~ (":=" ~> expression) <~ Semi ^^ {
-      case (id ~ exp) => Assign(id.asInstanceOf[Assignable],exp) // FIXME ugly typecast
-    }
+    (identifier ~ (":=" ~> expression) <~ Semi ^^ {
+      case (id ~ exp) => Assign(id,exp)
+    }) |
+    (suffixExpr ~ (":=" ~> expression) <~ Semi ^^ {
+      case (id ~ exp) => MapAssign(id,exp)
+    })
   )
   
-  def assignable = suffixExpr | identifier
+  //def assignable = suffixExpr | identifier
   
   
   def typeName = primType | compositeType 
@@ -400,6 +407,9 @@ class Parser extends StandardTokenParsers {
   def compositeType: Parser[Type] = positioned(
     ("List" ~> ("(" ~> "type" ~> ":" ~> typeName ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")") ^^ {
       case (contType ~ size) => ListType(contType,size.toInt)
+    }) |
+    ("Map" ~> ("(" ~>  typeName ~ "->" ~ typeName) <~ ")" ^^ {
+      case (domainType ~ "->" ~ rangeType) => MapType(domainType,rangeType)
     }) |
     (ident ^^ {case id => RefType(id)})
   )

@@ -520,7 +520,15 @@ object Resolver {
       case op: Mod => resolveNumericBinaryExpr(ctx, op)
       case op: RShift => resolveBWExpr(ctx,op) // t1
       case op: LShift => resolveBWExpr(ctx,op) // LubSumPow
-      case op: BWAnd => resolveBWExpr(ctx,op)
+      case op: BwAnd => resolveBWExpr(ctx,op)
+      case op: BwOr => resolveBWExpr(ctx,op)
+      case op: BwXor => resolveBWExpr(ctx,op)
+      case op@BwNot(e) => {
+        val t = resolveExpr(ctx,e)
+        if (!t.isBv) ctx.error(op.pos, "Expected bit vector type, found: " + t.id)
+        op.typ = t
+        op.typ
+      }
       case m@UnMinus(e) =>
         val t = resolveExpr(ctx,e)
         if (!t.isNumeric) ctx.error(m.pos, "Expected numeric type, found: " + t.id)
@@ -763,9 +771,22 @@ object Resolver {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
     
-    if (!t1.isInt && !t1.isUnsignedInt && !t1.isBv) ctx.error(exp.left.pos, "Shift operation only applicable on integers, found: " + t1.id)
-    if (!t2.isInt && !t2.isUnsignedInt && !t2.isBv) ctx.error(exp.right.pos, "Shift operation only applicable on integers, found: " + t2.id)
-    //if (t1 != t2) ctx.error(exp.left.pos, "Shift operation applied to arguments of type: " + t1.id + " and " + t2.id ) 
+    if (!t1.isBv) {
+      ctx.error(exp.left.pos, "Operator only applicable bit vectors, found: " + t1.id)
+      return UnknownType
+    }
+    if (!t2.isBv) {
+      ctx.error(exp.right.pos, "Operator only applicable bit vectors, found: " + t2.id)
+      return UnknownType
+    }
+    
+    val bvt1 = t1.asInstanceOf[BvType]
+    val bvt2 = t2.asInstanceOf[BvType]
+    
+    if (bvt1.size != bvt2.size) {
+      ctx.error(exp.pos, "Mismatching bit vector sizes " + bvt1.size + " and " + bvt2.size)
+    }
+    
     exp.typ = t1
     t1
     
@@ -948,6 +969,11 @@ object Resolver {
         val et = resolveExpr(ctx, exp)
         if (!TypeUtil.isCompatible(it, et)) 
           ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable of type " + it.id)
+      case MapAssign(e1,e2) =>
+        val it = resolveExpr(ctx,e1)
+        val et = resolveExpr(ctx,e2)
+        if (!TypeUtil.isCompatible(it, et)) 
+          ctx.error(e1.pos, "Cannot assign value of type " + et.id + " to datatype")
       case While(cond,invs,body) =>
         resolveExpr(ctx,cond,BoolType)
         for (i <- invs) resolveExpr(ctx,i,BoolType)

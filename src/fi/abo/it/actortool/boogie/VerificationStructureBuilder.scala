@@ -48,7 +48,10 @@ class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolv
         
     val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
 
-    val uniquenessConidition = createUniquenessCondition(portChans).reduceLeft((a,b) => (a && b))
+    val uniquenessConiditions = createUniquenessCondition(portChans)
+    val uniquenessCondition = 
+      if (!uniquenessConiditions.isEmpty) uniquenessConiditions.reduceLeft((a,b) => (a && b))
+      else B.Bool(true)
 
     val actorVars = new ListBuffer[BDecl]()
     
@@ -80,7 +83,7 @@ class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolv
         portChans,
         actorVars.toList,
         actorParamDecls,
-        uniquenessConidition,
+        uniquenessCondition,
         priorityList,
         basicAssumes,
         initAssumes,
@@ -290,7 +293,7 @@ class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Reso
       case Assign(x,_) => {
         x match {
           case id: Id => List(id)
-          case fa: FieldAccessor => List(fa)
+          //case fa: FieldAccessor => List(fa)
           case _ => assert(false); Nil
         }
       }

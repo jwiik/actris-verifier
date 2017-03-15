@@ -327,6 +327,10 @@ sealed case class UnMinus(val exp: Expr) extends Expr {
 
 sealed case class Not(val exp: Expr) extends Expr
 
+sealed case class BwNot(val exp: Expr) extends Expr {
+  val operator = "~"
+}
+
 sealed abstract class BinaryExpr(val left: Expr, val right: Expr) extends Expr {
   val operator: String
 }
@@ -364,8 +368,14 @@ sealed case class RShift(override val left: Expr, override val right: Expr) exte
 sealed case class LShift(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
   override val operator = "<<"
 }
-sealed case class BWAnd(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
+sealed case class BwAnd(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
   override val operator = "&"
+}
+sealed case class BwOr(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
+  override val operator = "|"
+}
+sealed case class BwXor(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
+  override val operator = "^"
 }
 sealed case class Eq(override val left: Expr, override val right: Expr) extends BinaryExpr(left,right) {
   override val operator = "="
@@ -439,7 +449,8 @@ sealed case class SpecialMarker(val value: String) extends Expr {
 }
 
 sealed abstract class Stmt extends ASTNode
-sealed case class Assign(val id: Assignable, val expr: Expr) extends Stmt
+sealed case class Assign(val id: Id, val expr: Expr) extends Stmt
+sealed case class MapAssign(val id: Expr, val expr: Expr) extends Stmt
 sealed case class IfElse(val ifCond: Expr, val ifStmt: List[Stmt], val elseIfs: List[ElseIf], val elseStmt: List[Stmt]) extends Stmt
 sealed case class ElseIf(val cond: Expr, val stmt: List[Stmt])
 sealed case class While(val cond: Expr, val invariants: List[Expr], val stmt: List[Stmt]) extends Stmt
@@ -466,6 +477,7 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isList = false
   def isRef = false
   def isBv = false
+  def isMap = false
 }
 
 sealed case class RefType(val name: String) extends Type(name) {
@@ -526,7 +538,9 @@ case class ListType(contentType: Type, val size: Int) extends IndexedType(
     "List("+contentType.id+","+size+")",contentType,IntType(-1)) {
   override def isList = true
 }
-
+case class MapType(val domainType: Type, val rangeType: Type) extends IndexedType("Map[" + domainType.id + "-->" + rangeType.id + "]", rangeType, domainType) {
+  override def isMap = true
+}
 case class BvType(val size: Int) extends PrimitiveType("bv"+size) {
   override def isBv = true
 }

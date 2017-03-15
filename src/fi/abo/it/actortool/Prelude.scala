@@ -27,20 +27,20 @@ object BoogiePrelude {
   //val predicates: Set[Predicate] = Set()
   
   // default components
-  private var components: Set[PreludeComponent] = Set(TypesAndGlobalVarsPL,FooterPL)
+  private var components: Set[PreludeComponent] = Set(TypesAndGlobalVarsPL)
 
   // get the prelude (with all components currently included)
   def get: String = {
-    val comps = components //+ PureBitwisePL
-    val l = comps.toList.sortWith((a,b) => a compare b)
-    l.foldLeft("")((s:String,a:PreludeComponent) => s + (a.text.replace("@inttype@", /*if (bvMode) "bv32" else*/ "int" )))
+    var l = components.toList.sortWith((a,b) => a compare b)
+    l = l.:+ (FooterPL)
+    l.foldLeft("")((s:String,a:PreludeComponent) => s + a.text)
   }
 }
 
 sealed abstract class PreludeComponent {
   // determines the order in which the components are output
   def compare(that: PreludeComponent): Boolean = {
-    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,SeqNumberingPL,DivModAbsPL,BitwisePL,FooterPL)
+    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,SeqNumberingPL,DivModAbsPL,BitwisePL,MapPL)
     if (!order.contains(this)) false
     else order.indexOf(this) < order.indexOf(that)
   }
@@ -57,8 +57,8 @@ type Ref;
 type Chan a;
 type Field a;
 type Actor;
-type CType = <a>[Chan a]@inttype@;
-type MType = <a>[Chan a][@inttype@]a;
+type CType = <a>[Chan a]int;
+type MType = <a>[Chan a][int]a;
 type Obj = <a>[Field a]a;
 type HType = [Ref]Obj;
 
@@ -77,8 +77,7 @@ function AT#Min(x:int, y: int): int { if x <= y then x else y }
 
 object SeqNumberingPL extends PreludeComponent {
   val text = 
-"""
-// -- Sequence numbering for FT ----------------------------------
+"""// -- Sequence numbering for FT ----------------------------------
 const unique sqn#: Field int;
 """
 }
@@ -86,6 +85,9 @@ const unique sqn#: Field int;
 object DivModAbsPL extends PreludeComponent {
   val text =
 """
+// ---------------------------------------------------------------
+// -- Integer division and modulo --------------------------------
+// ---------------------------------------------------------------
 function AT#Abs(x: int): int { if 0 <= x then x else -x }
 function AT#Div(int, int): int;
 function AT#Mod(int, int): int;
@@ -94,40 +96,32 @@ axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
 """
 }
 
-object PureBitwisePL extends PreludeComponent {
-  
-  
-  val text =
-"""
-function {:bvbuiltin "bvand"} AT#BvAnd(a: bv32, b: bv32): bv32;
-function {:bvbuiltin "bvadd"} AT#BvAdd(a: bv32, b: bv32): bv32;
-function {:bvbuiltin "bvsub"} AT#BvSub(a: bv32, b: bv32): bv32;
-function {:bvbuiltin "bvule"} AT#BvUle(a: bv32, b: bv32): bool;
-function {:bvbuiltin "bvult"} AT#BvUlt(a: bv32, b: bv32): bool;
-function AT#RShift(bv32,bv32): bv32;
-function AT#LShift(bv32,bv32): bv32;
-"""
-}
-
 class BitvectorPL(val size: Int) extends PreludeComponent {
    private val template =
 """
-function {:bvbuiltin "bvand"} AT#BvAnd(a: @bvsize@, b: @bvsize@): @bvsize@;
-function {:bvbuiltin "bvor"} AT#BvOr(a: @bvsize@, b: @bvsize@): @bvsize@;
-function {:bvbuiltin "bvnot"} AT#BvNot(a: @bvsize@): @bvsize@;
-function {:bvbuiltin "bvadd"} AT#BvAdd(a: @bvsize@, b: @bvsize@): @bvsize@;
-function {:bvbuiltin "bvsub"} AT#BvSub(a: @bvsize@, b: @bvsize@): @bvsize@;
-function {:bvbuiltin "bvmul"} AT#BvMul(a: @bvsize@, b: @bvsize@): @bvsize@;
-function {:bvbuiltin "bvshl"} AT#BvShl(@bvsize@,@bvsize@): @bvsize@;
-function {:bvbuiltin "bvlshr"} AT#BvLshr(@bvsize@,@bvsize@): @bvsize@;
-function {:bvbuiltin "bvashr"} AT#BvAshr(@bvsize@,@bvsize@): @bvsize@;
-function {:bvbuiltin "bvule"} AT#BvUle(a: @bvsize@, b: @bvsize@): bool;
-function {:bvbuiltin "bvult"} AT#BvUlt(a: @bvsize@, b: @bvsize@): bool;
-function {:bvbuiltin "bvuge"} AT#BvUge(a: @bvsize@, b: @bvsize@): bool;
-function {:bvbuiltin "bvugt"} AT#BvUgt(a: @bvsize@, b: @bvsize@): bool;
+// ---------------------------------------------------------------
+// -- Bit vector operations --------------------------------------
+// ---------------------------------------------------------------
+// Size: @bvsize@
+function {:bvbuiltin "bvand"} AT#BvAnd@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvor"} AT#BvOr@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvnot"} AT#BvNot@bvsize@(a: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvadd"} AT#BvAdd@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvsub"} AT#BvSub@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvmul"} AT#BvMul@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvshl"} AT#BvShl@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvlshr"} AT#BvLshr@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvashr"} AT#BvAshr@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvule"} AT#BvUle@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
+function {:bvbuiltin "bvult"} AT#BvUlt@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
+function {:bvbuiltin "bvuge"} AT#BvUge@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
+function {:bvbuiltin "bvugt"} AT#BvUgt@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
+function AT#BvXor@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+
+axiom (forall a,b: bv@bvsize@ :: AT#BvXor@bvsize@(a,b) == AT#BvAnd@bvsize@(AT#BvOr@bvsize@(a,b), AT#BvNot@bvsize@(AT#BvAnd@bvsize@(a,b))) );
 """
    
-  val text = template.replace("@bvsize@", "bv"+size)
+  val text = template.replace("@bvsize@", size.toString)
 
   override def equals(that: Any): Boolean = that match {
      case bvpl: BitvectorPL => bvpl.size == this.size
@@ -148,6 +142,9 @@ object BitwisePL extends PreludeComponent {
   
   val text =
 """
+// ---------------------------------------------------------------
+// -- Shift operations for integers ------------------------------
+// ---------------------------------------------------------------
 function AT#RShift(int, int): int;
 function AT#LShift(int, int): int;
 axiom (forall a: int :: (
@@ -183,6 +180,30 @@ object ChAggregates extends PreludeComponent {
 """
 function AT#ChSum(Chan int, int): int;
 axiom (forall ch: Chan int, limit: int :: (AT#ChSum(ch,limit) == ch[limit]+AT#ChSum(ch,limit-1)));
+"""
+}
+
+object MapPL extends PreludeComponent {
+  
+  //override def dependencies = Set(DivModAbsPL)
+  
+  val text =
+"""
+// ---------------------------------------------------------------
+// -- Axiomatisation for map data type ---------------------------
+// ---------------------------------------------------------------
+type Map a b;
+
+function Map#Select<T,U>(Map T U, T): U;
+function Map#Store<T,U>(Map T U, T, U): Map T U;
+axiom (
+  forall<T,U> m: Map T U, k1: T, val: U :: { Map#Store(m,k1,val) }
+    Map#Select(Map#Store(m,k1,val),k1) == val
+);
+axiom (
+  forall<T,U> m: Map T U, k1: T, k2: T, val: U :: { Map#Select(Map#Store(m,k1,val),k2) }
+    k1 != k2 ==> Map#Select(Map#Store(m,k1,val),k2) == Map#Select(m,k2)
+);
 """
 }
 

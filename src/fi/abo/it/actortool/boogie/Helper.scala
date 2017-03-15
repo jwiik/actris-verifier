@@ -26,8 +26,8 @@ object BMap extends Enumeration {
 
 object BType {
   //def Chan(arg: BType) = Boogie.IndexedType("Chan", arg)
-  def Chan(arg: BType) = Boogie.IndexedType("Chan", arg)
-  def Field(arg: BType) = Boogie.IndexedType("Field", arg)
+  def Chan(arg: BType) = Boogie.IndexedType("Chan", List(arg))
+  def Field(arg: BType) = Boogie.IndexedType("Field", List(arg))
   def ParamField(param: String) = Boogie.NamedType("Field " + param)
   def M = NamedType("MType")
   def C = NamedType("CType")
@@ -38,7 +38,8 @@ object BType {
   def BV(size: Int) = Boogie.BVType(size)
   def State = NamedType("State")
   def Actor = NamedType("Actor")
-  def List(cType: BType) = Boogie.IndexedType("List", cType)
+  def ListType(cType: BType) = Boogie.IndexedType("List", List(cType))
+  def MapType(dType: BType, rType: BType) = Boogie.IndexedType("Map", List(dType,rType))
 }
 
 case class BDecl(val name: String, val decl: Boogie.LocalVar) {
@@ -70,9 +71,10 @@ object B {
       case UintType(_) => BType.Int // BType.BV(x)
       case ChanType(contentType) => BType.Chan(type2BType(contentType))
       case ActorType(_) => BType.Actor
-      case ListType(contentType,_) => BType.List(type2BType(contentType))
+      case ListType(contentType,_) => BType.ListType(type2BType(contentType))
       case RefType(_) => BType.Ref
       case BvType(x) => BType.BV(x)
+      case MapType(d,r) => BType.MapType(type2BType(d),type2BType(r))
       case UnknownType =>
         assert(false, "Unknown types should not occur during the translation")
         null
