@@ -1,0 +1,57 @@
+actor qpskMod() 
+// Inputs:
+bv(size=32) chip              // Packets of 32 chips.
+// Outputs:
+==> 
+bv(size=8) symb               // I-Q symbols. Range: [-128, 127]
+:
+	// mapping of chips to I-Q samples
+	function q7_map( bv(size=32) bit ) --> bv(size=8) :
+		255 * bit - 128	
+	end
+	
+	List(type: bv(size=8), size=32) IQ;
+
+	// transforms a chip to I-Q modulated samples and sends
+	action 
+		chip:[ c_in ] ==> 
+		symb:[
+			IQ[0],IQ[1],IQ[2],IQ[3],IQ[4],IQ[5],IQ[6],IQ[7],
+			IQ[8],IQ[9],IQ[10],IQ[11],IQ[12],IQ[13],IQ[14],IQ[15],
+			IQ[16],IQ[17],IQ[18],IQ[19],IQ[20],IQ[21],IQ[22],IQ[23],
+			IQ[24],IQ[25],IQ[26],IQ[27],IQ[28],IQ[29],IQ[30],IQ[31]]
+	do
+		IQ[0] := q7_map((c_in >> 0x00000000) & 0x00000001);
+		IQ[1] := q7_map((c_in >> 0x00000001) & 0x00000001);
+		IQ[2] := q7_map((c_in >> 0x00000002) & 0x00000001);
+		IQ[3] := q7_map((c_in >> 0x00000003) & 0x00000001);
+		IQ[4] := q7_map((c_in >> 0x00000004) & 0x00000001);
+		IQ[5] := q7_map((c_in >> 0x00000005) & 0x00000001);
+		IQ[6] := q7_map((c_in >> 0x00000006) & 0x00000001);
+		IQ[7] := q7_map((c_in >> 0x00000007) & 0x00000001);
+		IQ[8] := q7_map((c_in >> 0x00000008) & 0x00000001);
+		IQ[9] := q7_map((c_in >> 0x00000009) & 0x00000001);
+		IQ[10] := q7_map((c_in >> 0x0000000A) & 0x00000001);
+		IQ[11] := q7_map((c_in >> 0x0000000B) & 0x00000001);
+		IQ[12] := q7_map((c_in >> 0x0000000C) & 0x00000001);
+		IQ[13] := q7_map((c_in >> 0x0000000D) & 0x00000001);
+		IQ[14] := q7_map((c_in >> 0x0000000E) & 0x00000001);
+		IQ[15] := q7_map((c_in >> 0x0000000F) & 0x00000001);
+		IQ[16] := q7_map((c_in >> 0x00000010) & 0x00000001);
+		IQ[17] := q7_map((c_in >> 0x00000011) & 0x00000001);
+		IQ[18] := q7_map((c_in >> 0x00000012) & 0x00000001);
+		IQ[19] := q7_map((c_in >> 0x00000013) & 0x00000001);
+		IQ[20] := q7_map((c_in >> 0x00000014) & 0x00000001);
+		IQ[21] := q7_map((c_in >> 0x00000015) & 0x00000001);
+		IQ[22] := q7_map((c_in >> 0x00000016) & 0x00000001);
+		IQ[23] := q7_map((c_in >> 0x00000017) & 0x00000001);
+		IQ[24] := q7_map((c_in >> 0x00000018) & 0x00000001);
+		IQ[25] := q7_map((c_in >> 0x00000019) & 0x00000001);
+		IQ[26] := q7_map((c_in >> 0x0000001A) & 0x00000001);
+		IQ[27] := q7_map((c_in >> 0x0000001B) & 0x00000001);
+		IQ[28] := q7_map((c_in >> 0x0000001C) & 0x00000001);
+		IQ[29] := q7_map((c_in >> 0x0000001D) & 0x00000001);
+		IQ[30] := q7_map((c_in >> 0x0000001E) & 0x00000001);
+		IQ[31] := q7_map((c_in >> 0x0000001F) & 0x00000001);
+	end
+end

@@ -1,0 +1,117 @@
+actor pulseShape() 
+// Inputs:
+bv(size=8) symb,           // I-Q symbols from QPSK modulator 
+bv(size=8) len       		// Payload length
+// Outputs:
+==> 
+bool done,          // Flag to terminate
+bv(size=8) hsp             // Half-sine pulse samples
+:
+
+	bv(size=8) symb_mem;     // Temporary storage for symbol values during transmission
+                                    // the current hsp. range: [0...8] 
+	bv(size=8) body_iterations;   // Number of times the "body" part of the transmission has to be repeated 
+	bv(size=8) body_index;        // Number of times the "body" part of the transmission has been repeated
+
+    bv(size=8) FILT_COEFF0 = 0x00;         // Static filter coefficients for half-sine pulse generation
+    bv(size=8) FILT_COEFF1 = 0x31;
+    bv(size=8) FILT_COEFF2 = 0x5a;
+    bv(size=8) FILT_COEFF3 = 0x76;
+    bv(size=8) FILT_COEFF4 = 0x7f;
+    
+    List(type: bv(size=8), size=16) hsps
+    
+    invariant St = 0 || St = 1
+    int St;
+
+	// fixed-point multiplication with shift
+	function mul8( bv(size=8) x, bv(size=8) y ) --> bv(size=8) :
+		(x * y) >> 7
+	end
+	
+	initialize ==>
+	do
+		St := 0
+	end
+
+	// init action
+	// Fired when payload length is known
+	init: action len:[len_in] ==>
+	guard St = 0
+	do
+		body_iterations := (len_in * int2bv(32,8)); 
+		body_index := 0x00;
+		symb_mem := 0x7F;
+		St := 1;
+	end
+
+	// tx-body action
+	// Consumes 2, produces 16 samples
+	tx_body: action 
+		symb:[ symb_1, symb_2 ] ==> 
+		hsp:[ hsps[0],hsps[1],hsps[2],hsps[3],hsps[4],hsps[5],hsps[6],hsps[7],
+			hsps[8],hsps[9],hsps[10],hsps[11],hsps[12],hsps[13],hsps[14],hsps[15] ]
+	guard
+		St = 1 &&
+		body_index < body_iterations
+	do	
+		hsps[0] := mul8(FILT_COEFF0, symb_1);
+		hsps[1] := mul8(FILT_COEFF4, symb_mem);
+	
+		hsps[2] := mul8(FILT_COEFF1, symb_1);
+		hsps[3] := mul8(FILT_COEFF3, symb_mem);
+	
+		hsps[4] := mul8(FILT_COEFF2, symb_1);
+		hsps[5] := mul8(FILT_COEFF2, symb_mem);
+	
+		hsps[6] := mul8(FILT_COEFF3, symb_1);
+		hsps[7] := mul8(FILT_COEFF1, symb_mem);
+	
+		hsps[8] := mul8(FILT_COEFF4, symb_1);
+		hsps[9] := mul8(FILT_COEFF0, symb_2);
+	
+		hsps[10] := mul8(FILT_COEFF3, symb_1);
+		hsps[11] := mul8(FILT_COEFF1, symb_2);
+	
+		hsps[12] := mul8(FILT_COEFF2, symb_1);
+		hsps[13] := mul8(FILT_COEFF2, symb_2);
+	
+		hsps[14] := mul8(FILT_COEFF1, symb_1);
+		hsps[15] := mul8(FILT_COEFF3, symb_2);
+	
+		symb_mem := symb_2;
+		body_index := body_index + 0x01; 
+		St := 1;
+	end
+
+	// tx_tail action
+	// Finalizes the transmission signal with the fixed 0x7F value
+	tx_tail: action ==> hsp:[ hsps[0],hsps[1],hsps[2],hsps[3],hsps[4],hsps[5],hsps[6],hsps[7] ], done: [ true ]
+	guard
+		St = 1 &&
+		body_index = body_iterations
+	do
+		hsps[0] := mul8(FILT_COEFF0, 0x7F);
+		hsps[1] := mul8(FILT_COEFF4, symb_mem);
+	
+		hsps[2] := mul8(FILT_COEFF1, 0x7F);
+		hsps[3] := mul8(FILT_COEFF3, symb_mem);
+	
+		hsps[4] := mul8(FILT_COEFF2, 0x7F);
+		hsps[5] := mul8(FILT_COEFF2, symb_mem);
+	
+		hsps[6] := mul8(FILT_COEFF3, 0x7F);
+		hsps[7] := mul8(FILT_COEFF1, symb_mem);
+		
+		St := 0;
+	end
+
+	schedule fsm s_start :
+		s_start ( init ) --> s_idle;
+		s_idle ( tx_body ) --> s_idle;
+		s_idle ( tx_tail ) --> s_start;
+	end
+
+
+end
+
