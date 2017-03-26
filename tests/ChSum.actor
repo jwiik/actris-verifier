@@ -1,0 +1,14 @@
+actor ChSum int x ==> int y:
+  
+  invariant rd(x) = tot(y)
+  invariant tot(y) > 0 ==> y[last] = chsum(x)
+
+  int sum;
+
+  initialize ==>
+    do sum := 0;
+  end
+  action x:[i] ==> y:[sum] 
+    do sum := sum+i;
+  end
+end

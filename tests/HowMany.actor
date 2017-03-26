@@ -1,0 +1,59 @@
+actor HowMany int In, int Cin, int Ain ==> bool Out, int Cout, int Aout:
+  
+  int curr;
+  int amount;
+  
+  int rd_str;
+  int tot_str;
+  
+  invariant 0 <= curr && curr <= amount
+  invariant rd(In) > 0 ==> amount = In[prev]
+  invariant tot(Out) - tot_str = curr
+  
+  initialize ==>
+  do
+    rd_str := 0;
+    tot_str := 0;
+    curr := 0;
+    amount := 0;
+  end
+  
+  action In:[i] ==>
+  guard curr = amount
+  requires 0 <= i
+  do 
+    rd_str := rd(In);
+    tot_str := tot(Out);
+    amount := i;
+    curr := 0;
+  end
+  
+  action ==> Out:[true]
+  guard curr < amount
+  do
+    curr := curr+1;
+  end
+  
+end
+
+network HowManyNet int In ==> bool Out:
+
+  action In:1 ==> Out:1
+    requires In[@] = 1
+  end
+  
+  chinvariant rd@(In) = 0 ==> tot@(Out) = 0
+  chinvariant tot@(In) > 0 ==> tot@(Out) <= In[@]
+  chinvariant tot@(In) <= 1
+  chinvariant tot@(In) > 0 ==> 0 <= In[@]
+
+  entities
+    a = HowMany()
+  end
+  
+  structure 
+    In --> a.In; 
+    a.Out --> Out 
+  end
+
+end

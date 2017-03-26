@@ -19,10 +19,6 @@ var H: HType;
 
 const unique this#: Actor;
 
-
-type List a = [int]a;
-var AT#intlst: List int;
-
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
 
 function AT#Abs(x: int): int { if 0 <= x then x else -x }
@@ -4262,7 +4258,6 @@ procedure iir#anon$6#input#in#24()
   assume I[iir#anon$23] <= R[iir#anon$23];
   assume R[iir#anon$23] <= C[iir#anon$23];
   assume I[iir#anon$23] == R[iir#anon$23];
-  assume (C[iir#anon$7] - I[iir#anon$7]) < 1;
   assume I[iir#anon$17] == I[iir#anon$8];
   assume I[iir#anon$18] == I[iir#anon$11];
   assume I[iir#anon$19] == I[iir#anon$14];
