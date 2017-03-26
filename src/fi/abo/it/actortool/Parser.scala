@@ -298,6 +298,7 @@ class Parser extends StandardTokenParsers {
     functionApp |
     suffixExpr |
     listLiteral |
+    //range |
     atom
   )
   
@@ -335,10 +336,16 @@ class Parser extends StandardTokenParsers {
       })
   
   def listLiteral: Parser[Expr] = positioned(
-      ("[" ~> repsep(expression,",") <~ "]") ^^{
+      (("[" ~> repsep(expression,",") <~ "]") ^^{
         case lst => ListLiteral(lst)
       })
-      
+    ) 
+//  def range: Parser[Expr] = positioned(
+//      (numericLit ~ ".." ~ numericLit) ^^{
+//        case start ~ ".." ~ end => Range(start.toInt,end.toInt)
+//      })
+  
+  
   def suffixExpr: Parser[Expr] = positioned(
       atom ~ (suffixThing *) ^^ {
         case e ~ sfxs => sfxs.foldLeft(e) { (t,a) => val result = a(t); result.pos = t.pos; result }

@@ -12,6 +12,7 @@ class ActorVerificationStructure(
     val inports: List[InPort],
     val outports: List[OutPort],
     val invariants: List[ActorInvariant],
+    val functionDecls: List[FunctionDecl],
     val channelDecls: List[BDecl],
     val actorVarDecls: List[BDecl],
     val actorParamDecls: List[BDecl],
@@ -19,6 +20,7 @@ class ActorVerificationStructure(
     val priorityMap: Map[Action,List[Action]],
     val basicAssumes: List[Boogie.Assume],
     val initAssumes: List[Boogie.Assume],
+    val renamings: Map[String,Id],
     val namePrefix: String) extends VerificationStructure[BasicActor]
 
 

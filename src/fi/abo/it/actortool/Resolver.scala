@@ -628,6 +628,19 @@ object Resolver {
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType,IntType,IntType))
+      case fa@FunctionApp("int2bv",params) => {
+        if (params.size != 2) {
+          ctx.error(fa.pos, "int2bv takes two integer literals as argument")
+        }
+        if (!params(0).isInstanceOf[IntLiteral] || !params(1).isInstanceOf[IntLiteral]) {
+          ctx.error(fa.pos, "int2bv takes two integer literals as argument")
+        }
+        val value = params(0).asInstanceOf[IntLiteral].value
+        val size = params(1).asInstanceOf[IntLiteral].value
+        fa.typ = BvType(size)
+        BvType(size)
+      }
+      case fa@FunctionApp("chsum",params) => resolveSimpleFunction(ctx,fa,List(ChanType(IntType),IntType))
       case fa@FunctionApp(name,params) => {
         ctx.lookupFunction(name) match {
           case Some(fd) => {
@@ -726,12 +739,14 @@ object Resolver {
   def resolveNumericBinaryExpr(ctx: Context, exp: BinaryExpr): Type = {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
-    if (!t1.isNumeric) ctx.error(exp.left.pos, "Expected numeric type, found: " + t1.id)
-    if (!t2.isNumeric) ctx.error(exp.right.pos, "Expected numeric type, found: " + t2.id)
+    if (!t1.isNumeric && !t1.isBv) ctx.error(exp.left.pos, "Expected numeric type, found: " + t1.id)
+    if (!t2.isNumeric && !t2.isBv) ctx.error(exp.right.pos, "Expected numeric type, found: " + t2.id)
     if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
     
     exp.typ = TypeUtil.getLub(t1, t2) match {
-      case None => UnknownType
+      case None => 
+        ctx.error(exp.pos, "Incompatible types: " + t1 + " and " + t2)
+        UnknownType
       case Some(t) => t
     }
     
@@ -750,8 +765,8 @@ object Resolver {
   def resolveRelationalExpr(ctx: Context, exp: BinaryExpr): Type = {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
-    if (!t1.isNumeric) ctx.error(exp.left.pos, "Expected numeric type: " + exp.left)
-    if (!t2.isNumeric) ctx.error(exp.right.pos, "Expected numeric type: " + exp.right)
+    if (!t1.isNumeric && !t1.isBv) ctx.error(exp.left.pos, "Expected numeric type: " + exp.left)
+    if (!t2.isNumeric && !t2.isBv) ctx.error(exp.right.pos, "Expected numeric type: " + exp.right)
     if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
     exp.typ = BoolType
     exp.typ

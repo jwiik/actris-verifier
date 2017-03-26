@@ -45,7 +45,6 @@ class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolv
   
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
     val prefix = actor.id+B.Sep
-        
     val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
 
     val uniquenessConiditions = createUniquenessCondition(portChans)
@@ -73,6 +72,7 @@ class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolv
 
     val priorityList = buildPriorityMap(actor)
     
+    val funDeclRenamings = actor.getFunctionDecls map { fd => (fd.name,Id(prefix+fd.name)) } toMap
     
     return new ActorVerificationStructure(
         actor,
@@ -80,6 +80,7 @@ class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolv
         actor.inports,
         actor.outports,
         actor.actorInvariants,
+        actor.getFunctionDecls,
         portChans,
         actorVars.toList,
         actorParamDecls,
@@ -87,6 +88,7 @@ class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolv
         priorityList,
         basicAssumes,
         initAssumes,
+        funDeclRenamings,
         prefix)
   }
   
@@ -226,9 +228,12 @@ class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Reso
     val uniquenessConidition1 = 
       if (entityDeclList.size > 1) List(createUniquenessCondition(entityDeclList).reduceLeft((a,b) => (a && b)))
       else Nil
-    val uniquenessConidition2 = 
-      if (chanDeclList.size > 1) List(createUniquenessCondition(chanDeclList).reduceLeft((a,b) => (a && b)))
+    println(chanDeclList)
+    val uniquenessConidition2 = {
+      val condition = createUniquenessCondition(chanDeclList)
+      if (condition.size > 1) List(condition.reduceLeft((a,b) => (a && b)))
       else Nil
+    }
     val uniquenessConditions = uniquenessConidition1 ::: uniquenessConidition2
     
     

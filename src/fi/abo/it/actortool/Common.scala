@@ -57,6 +57,11 @@ object TypeUtil {
       val su = t1.asInstanceOf[UintType].size
       val si = t2.asInstanceOf[IntType].size
       return Some(if (si > su) IntType(si) else IntType(su + 1))
+    }
+    else if (t1.isBv && t2.isBv) {
+      val su = t1.asInstanceOf[BvType].size
+      val si = t2.asInstanceOf[BvType].size
+      if (su == si) Some(t1) else None
     } else return None
   }
 

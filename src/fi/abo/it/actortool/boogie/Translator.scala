@@ -70,6 +70,9 @@ class Translator(
     val actionRenamings = collection.mutable.Map[Action,Map[String,Id]]()
     var allInpatDecls = Set.empty[BDecl]
     
+    val bFunDecls = translateFunctionDecl(avs.functionDecls,avs.namePrefix)
+    decls ++= bFunDecls
+    
     decls += translateActorInit(avs)
     
     for (a <- avs.actions) {
@@ -86,7 +89,7 @@ class Translator(
       if (!a.init) {
         val higherPrioActions = avs.priorityMap(a)
         val higherPrioGuards = higherPrioActions map { h => actionFiringRules(h) }
-        decls ++= translateActorAction(a, avs, allInpatDecls.toList, actionRenamings(a), actionFiringRules(a), higherPrioGuards)
+        decls ++= translateActorAction(a, avs, allInpatDecls.toList, avs.renamings ++ actionRenamings(a), actionFiringRules(a), higherPrioGuards)
       }
     }
     
@@ -162,15 +165,15 @@ class Translator(
     val initAction = avs.actions.find { x => x.init } 
     initAction match {
       case Some(a) => {
-        asgn ++= transStmt( a.body )(Map.empty)
+        asgn ++= transStmt( a.body )(avs.renamings)
         asgn ++= (for (q <- a.ensures) yield {
-          B.Assert(transExpr(q)(Map.empty), q.pos, "Action postcondition might not hold")
+          B.Assert(transExpr(q)(avs.renamings), q.pos, "Action postcondition might not hold")
         })
      
         for (opat <- a.outputPattern) {
           val cId = opat.portId
           for (v <- opat.exps) {
-            asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(Map.empty))
+            asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(avs.renamings))
             asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
           }
         }
@@ -180,7 +183,7 @@ class Translator(
     
     for (inv <- avs.invariants) {
       if (!inv.assertion.free) 
-        asgn += B.Assert(transExpr(inv.expr)(Map.empty),inv.expr.pos, "Initialization might not establish the invariant")
+        asgn += B.Assert(transExpr(inv.expr)(avs.renamings),inv.expr.pos, "Initialization might not establish the invariant")
     }
     
     createBoogieProc(Uniquifier.get(avs.namePrefix+"init"),asgn.toList)
@@ -196,16 +199,10 @@ class Translator(
         renamingsBuffer += ((v.id, {val id = Id(name); id.typ = v.typ; id} ))
         val lVar = B.Local(name, v.typ)
         inpatDeclBuffer += BDecl(name,lVar)
-//        if (ftMode) {
-//          val sqnName = name+"#sqn"
-//          renamingsBuffer += ((v.id+"#sqn", Id(sqnName)))
-//          val sqnLVar = B.Local(sqnName, IntType)
-//          inpatDeclBuffer += BDecl(sqnName,sqnLVar)
-//        }
       }
       patterns += B.Int(ipat.vars.size) <= B.C(ipat.portId)-B.R(ipat.portId)
     }
-    val renamings = renamingsBuffer.toMap
+    val renamings = avs.renamings ++ renamingsBuffer.toMap
     val guards =
        (a.guard match {
          case None => Nil
@@ -237,7 +234,7 @@ class Translator(
      
      if (!a.init) {
        // Assume invariants
-       asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(Map.empty)))
+       asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(avs.renamings)))
      }
      
      val guards =
@@ -286,7 +283,7 @@ class Translator(
      
      for (inv <- avs.invariants) {
        if (!inv.assertion.free) 
-         asgn += B.Assert(transExpr(inv.expr)(Map.empty),inv.expr.pos, "Action at " + a.pos + " might not preserve invariant")
+         asgn += B.Assert(transExpr(inv.expr)(avs.renamings),inv.expr.pos, "Action at " + a.pos + " might not preserve invariant")
      }
      
      val proc = createBoogieProc(Uniquifier.get(avs.namePrefix+a.fullName),asgn.toList)
@@ -294,6 +291,16 @@ class Translator(
      List(proc)
    }
   
+  def translateFunctionDecl(funDecls: List[FunctionDecl], prefix: String): List[Boogie.Function] = {
+    funDecls map {
+      fd => {
+        Boogie.Function(
+            prefix+fd.name,
+            fd.inputs map { i => Boogie.BVar(i.id, B.type2BType(i.typ)) },
+            Boogie.BVar("out", B.type2BType(fd.output)))
+      }
+    }
+  }
 
       
   def translateNetwork(nwvs: NetworkVerificationStructure): List[Boogie.Decl] = {
@@ -732,8 +739,14 @@ class Translator(
     i.typ = t
     transExpr(i)
   }
-  def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = stmtTranslator.transExpr(exp)
+  def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
+    val (expr,ctx) = stmtTranslator.transExpr(exp)
+    expr
+  }
   
-  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = stmtTranslator.transStmt(stmts)
+  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = {
+    val (bStmt,ctx) = stmtTranslator.transStmt(stmts)
+    bStmt
+  }
 
 }

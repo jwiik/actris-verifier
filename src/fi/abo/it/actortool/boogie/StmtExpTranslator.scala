@@ -4,35 +4,49 @@ import fi.abo.it.actortool._
 import scala.collection.mutable.ListBuffer
 import fi.abo.it.actortool.boogie.Boogie.UnaryExpr
 import fi.abo.it.actortool.ActorTool.TranslationException
+import scala.util.parsing.input.Position
+import fi.abo.it.actortool.ActorTool.TranslationException
+
+class TranslatorContext(val renamings: Map[String,Expr]) {
+  private val childContexts = new ListBuffer[TranslatorContext]
+//  private val wfChecks = new ListBuffer[(Position,String,Boogie.Expr)]
+//  def addAssertion(pos: Position, msg: String, e: Boogie.Expr) { wfChecks += ((pos,msg,e)) }
+//  def getAssertions: List[Boogie.Assert] = {
+//    val childAsserts = childContexts flatMap {ctx => ctx.getAssertions } toList
+//    val asserts = wfChecks.toList map { case (pos,msg,e) => B.Assert(e,pos,msg) }
+//    wfChecks.clear
+//    childAsserts:::asserts
+//  }
+  def newChildContext = {
+    val ctx = new TranslatorContext(renamings)
+    childContexts += ctx
+    ctx
+  }
+}
 
 class StmtExpTranslator(val ftMode: Boolean) {
   /*
    * Translation of statements and expressions
    */
   
-  private class Context(val renamings: Map[String,Expr]) {
-    private val wfChecks = new ListBuffer[Boogie.Expr]
-    def addAssertion(e: Boogie.Expr) { wfChecks += e }
-    def getAssertions = wfChecks.toList map { e => B.Assert(e) }
-    def childContext = new Context(renamings)
+  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): (List[Boogie.Stmt],TranslatorContext) = {
+    val ctx = new TranslatorContext(renamings)
+    (transStmtI(stmts)(ctx), ctx)
   }
   
-  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = {
-    transStmtI(stmts)(new Context(renamings))
-  }
-  
-  def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
-    transExprI(exp)(new Context(renamings))
+  def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): (Boogie.Expr,TranslatorContext) = {
+    val ctx = new TranslatorContext(renamings)
+    (transExprI(exp)(ctx),ctx)
   }
 
-  def transStmtI(stmts: List[Stmt])(implicit context: Context): List[Boogie.Stmt] = {
+  def transStmtI(stmts: List[Stmt])(implicit context: TranslatorContext): List[Boogie.Stmt] = {
     val bStmts = new ListBuffer[Boogie.Stmt]()
     for (s <- stmts) {
-      val ctx = context.childContext
+      val ctx = context.newChildContext
       bStmts ++= (s match {
         case Assign(id,exp) => {
           val stmt = List(Boogie.Assign(transExprI(id),transExprI(exp)))
-          ctx.getAssertions ::: stmt
+          stmt
         }
         case MapAssign(e1,e2) => {
           BoogiePrelude.addComponent(MapPL)
@@ -42,15 +56,15 @@ class StmtExpTranslator(val ftMode: Boolean) {
           val index = acc.suffix
           val stmt = 
             List(Boogie.Assign(transExprI(map)(ctx),B.Fun("Map#Store",transExprI(map)(ctx),transExprI(index)(ctx),elem)))
-          ctx.getAssertions ::: stmt
+          stmt
         }
         case Assert(e) => {
           val stmt = List(B.Assert(transExprI(e)(ctx), e.pos, "Condition might not hold"))
-          ctx.getAssertions ::: stmt
+          stmt
         }
         case Assume(e) => {
           val stmt = List(B.Assume(transExprI(e)(ctx)))
-          ctx.getAssertions ::: stmt
+          stmt
         }
         case Havoc(ids) => {
           val s = (for (i <- ids) yield {
@@ -62,14 +76,14 @@ class StmtExpTranslator(val ftMode: Boolean) {
               Boogie.Havoc(transExprI(i)(ctx)) 
             }
           })
-          ctx.getAssertions ::: s
+          s
         }
         case IfElse(ifCond,ifStmt,elseIfs,elseStmt) => {
           if (!elseIfs.isEmpty) {
             throw new RuntimeException("If-statements with else-if branches not supported yet")
           }
           val stmt = List(Boogie.If(transExprI(ifCond)(ctx),transStmtI(ifStmt)(ctx),transStmtI(elseStmt)(ctx)))
-          ctx.getAssertions ::: stmt
+          stmt
         }
         case While(_,_,_) =>
           throw new RuntimeException("Loops not supported yet")
@@ -80,7 +94,7 @@ class StmtExpTranslator(val ftMode: Boolean) {
   }
   
   
-  def transExprI(exp: Expr)(implicit context: Context): Boogie.Expr = {
+  def transExprI(exp: Expr)(implicit context: TranslatorContext): Boogie.Expr = {
     //println(exp)
     assert(exp.typ != null, exp.toString)
     exp match {
@@ -89,23 +103,35 @@ class StmtExpTranslator(val ftMode: Boolean) {
       case Implies(e1,e2) => transExprI(e1) ==> transExprI(e2)
       case Iff(e1,e2) => transExprI(e1) <==> transExprI(e2)
       case Not(e) => UnaryExpr("!",transExprI(e)) 
-      case Less(e1,e2) =>
-        if (e1.typ.isBv) B.Fun("AT#BvUlt",transExprI(e1),transExprI(e2)) 
+      case op@Less(e1,e2) =>
+        if (e1.typ.isBv) {
+          getBitVectorFunction("AT#BvUlt", List(transExprI(e1),transExprI(e2)), e1.typ)
+        }
         else transExprI(e1) < transExprI(e2)
       case Greater(e1,e2) => transExprI(e1) > transExprI(e2)
       case AtLeast(e1,e2) => transExprI(e1) >= transExprI(e2)
-      case AtMost(e1,e2) => 
-        if (e1.typ.isBv) B.Fun("AT#BvUle",transExprI(e1),transExprI(e2)) 
+      case op@AtMost(e1,e2) => 
+        if (e1.typ.isBv) {
+          getBitVectorFunction("AT#BvUle", List(transExprI(e1),transExprI(e2)), e1.typ)
+        }
         else transExprI(e1) <= transExprI(e2)
       case Eq(e1,e2) => transExprI(e1) ==@ transExprI(e2)
       case NotEq(e1,e2) => transExprI(e1) !=@ transExprI(e2)
-      case Plus(e1,e2) => 
-        if (e1.typ.isBv) B.Fun("AT#BvAdd",transExprI(e1),transExprI(e2)) 
+      case op@Plus(e1,e2) => 
+        if (e1.typ.isBv) {
+          getBitVectorFunction("AT#BvAdd", List(transExprI(e1),transExprI(e2)), op.typ)
+        }
         else transExprI(e1) + transExprI(e2)
-      case Minus(e1,e2) =>
-        if (e1.typ.isBv) B.Fun("AT#BvSub",transExprI(e1),transExprI(e2)) 
+      case op@Minus(e1,e2) =>
+        if (e1.typ.isBv) {
+          getBitVectorFunction("AT#BvSub", List(transExprI(e1),transExprI(e2)), op.typ)
+        }
         else transExprI(e1) - transExprI(e2)
-      case Times(e1,e2) => transExprI(e1) * transExprI(e2)
+      case op@Times(e1,e2) => 
+        if (e1.typ.isBv) {
+          getBitVectorFunction("AT#BvMul", List(transExprI(e1),transExprI(e2)), op.typ)
+        }
+        else transExprI(e1) * transExprI(e2)
       case Div(e1,e2) => 
         BoogiePrelude.addComponent(DivModAbsPL)
         Boogie.FunctionApp("AT#Div",List(transExprI(e1),transExprI(e2)))
@@ -197,10 +223,27 @@ class StmtExpTranslator(val ftMode: Boolean) {
           case "subvar" => {
             Boogie.VarExpr("AV" + B.Sep + params(0).asInstanceOf[Id].id + B.Sep + params(1).asInstanceOf[Id].id)
           }
+          case "int2bv" => {
+            val value = params(0).asInstanceOf[IntLiteral].value
+            val size = params(1).asInstanceOf[IntLiteral].value
+            Boogie.BVLiteral(value.toString,size)
+          }
+          case "chsum" => {
+            val param = transExprI(params(0))
+            val limit = B.R(param)
+            val mm = Boogie.VarExpr(BMap.M)
+            BoogiePrelude.addComponent(ChAggregates)
+            Boogie.FunctionApp("AT#ChSum",List(mm,param,limit))
+          }
           case x => {
             // User-defined function
             val args = params.map(p => transExprI(p))
-            Boogie.FunctionApp("UDef"+B.Sep+x, args)
+            context.renamings.get(x) match {
+              case Some(name) =>
+                Boogie.FunctionApp(name.asInstanceOf[Id].id, args)
+              case None =>
+                throw new TranslationException(fa.pos, "Error, unknown function")
+            }
           }
         }
       }
@@ -208,8 +251,8 @@ class StmtExpTranslator(val ftMode: Boolean) {
         val tExpr = transExprI(e)
         val index = transExprI(i)
         if (e.typ.isChannel) B.ChannelIdx(tExpr,index)
-        if (e.typ.isMap) {
-          //context.addAssertion(B.Bool(false))
+        else if (e.typ.isMap || e.typ.isList) {
+          //context.addAssertion(i.pos, "Index might be out of bounds", B.Bool(true))
           BoogiePrelude.addComponent(MapPL)
           B.Fun("Map#Select", tExpr,index)
         }
@@ -268,7 +311,7 @@ class StmtExpTranslator(val ftMode: Boolean) {
     }
   }
   
-  def generateRangePredicate(params: List[Expr], start: Boogie.Expr, end: Boogie.Expr)(implicit context: Context) = {
+  def generateRangePredicate(params: List[Expr], start: Boogie.Expr, end: Boogie.Expr)(implicit context: TranslatorContext) = {
     if (params.size == 2) {
       val ch = transExprI(params(0))
       val ind = transExprI(params(1))

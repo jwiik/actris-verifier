@@ -250,7 +250,6 @@ object ActorTool {
     
     timings += (Step.Parse -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
-    
     if (program.isEmpty) return // Error message has already been displayed
     if (!params.DoTypecheck) return
     

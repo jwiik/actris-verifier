@@ -38,7 +38,6 @@ object BType {
   def BV(size: Int) = Boogie.BVType(size)
   def State = NamedType("State")
   def Actor = NamedType("Actor")
-  def ListType(cType: BType) = Boogie.IndexedType("List", List(cType))
   def MapType(dType: BType, rType: BType) = Boogie.IndexedType("Map", List(dType,rType))
 }
 
@@ -71,10 +70,16 @@ object B {
       case UintType(_) => BType.Int // BType.BV(x)
       case ChanType(contentType) => BType.Chan(type2BType(contentType))
       case ActorType(_) => BType.Actor
-      case ListType(contentType,_) => BType.ListType(type2BType(contentType))
+      case ListType(contentType,_) =>{
+        BoogiePrelude.addComponent(MapPL)
+        BType.MapType(BType.Int,type2BType(contentType))
+      }
       case RefType(_) => BType.Ref
       case BvType(x) => BType.BV(x)
-      case MapType(d,r) => BType.MapType(type2BType(d),type2BType(r))
+      case MapType(d,r) => {
+        BoogiePrelude.addComponent(MapPL)
+        BType.MapType(type2BType(d),type2BType(r))
+      }
       case UnknownType =>
         assert(false, "Unknown types should not occur during the translation")
         null

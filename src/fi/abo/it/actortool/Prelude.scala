@@ -178,8 +178,16 @@ object ChAggregates extends PreludeComponent {
   
   val text =
 """
-function AT#ChSum(Chan int, int): int;
-axiom (forall ch: Chan int, limit: int :: (AT#ChSum(ch,limit) == ch[limit]+AT#ChSum(ch,limit-1)));
+function AT#ChSum(MType, Chan int, int): int;
+axiom (
+  forall mm: MType, ch: Chan int, limit: int :: {AT#ChSum(mm,ch,limit)} {AT#ChSum(mm,ch,limit-1)} 
+    (limit > 0 ==> AT#ChSum(mm,ch,limit) == mm[ch][limit-1]+AT#ChSum(mm,ch,limit-1)) &&
+    (limit == 0 ==> AT#ChSum(mm,ch,limit) == 0)
+);
+axiom (
+  forall mm: MType, ch: Chan int :: {AT#ChSum(mm,ch,0)} 
+    AT#ChSum(mm,ch,0) == 0
+);
 """
 }
 

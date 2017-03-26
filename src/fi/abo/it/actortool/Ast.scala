@@ -85,6 +85,8 @@ sealed case class BasicActor(
     override val members: List[Member]) 
     extends DFActor(annotations,id,parameters,inports,outports,members) {
   
+  def getFunctionDecls = members.filter { x => x.isFunctionDecl } map { _.asInstanceOf[FunctionDecl] } 
+  
   override def isActor = true
 }
 
@@ -430,6 +432,7 @@ case class FieldAccessor(override val exp: Expr, val suffix: String) extends Suf
 sealed case class FunctionApp(val name: String, val parameters: List[Expr]) extends Expr
 
 sealed case class ListLiteral(val elements: List[Expr]) extends Expr
+//sealed case class Range(val start: Int, val end: Int) extends Expr
 
 
 sealed case class Id(val id: String) extends Assignable
