@@ -1,37 +1,14 @@
 actor HowMany int In, int Cin, int Ain ==> bool Out, int Cout, int Aout:
   
-  int curr;
-  int amount;
+  initialize ==> Cout:[0], Aout:[0] end
   
-  int rd_str;
-  int tot_str;
-  
-  invariant 0 <= curr && curr <= amount
-  invariant rd(In) > 0 ==> amount = In[prev]
-  invariant tot(Out) - tot_str = curr
-  
-  initialize ==>
-  do
-    rd_str := 0;
-    tot_str := 0;
-    curr := 0;
-    amount := 0;
+  action In:[i], Cin:[curr], Ain:[amount] ==> Cout:[0], Aout:[i]
+    guard curr = amount
+    requires 0 <= i
   end
   
-  action In:[i] ==>
-  guard curr = amount
-  requires 0 <= i
-  do 
-    rd_str := rd(In);
-    tot_str := tot(Out);
-    amount := i;
-    curr := 0;
-  end
-  
-  action ==> Out:[true]
-  guard curr < amount
-  do
-    curr := curr+1;
+  action Cin:[curr], Ain:[amount] ==> Out:[true], Cout:[curr+1], Aout:[amount]
+    guard curr < amount
   end
   
 end
@@ -42,18 +19,49 @@ network HowManyNet int In ==> bool Out:
     requires In[@] = 1
   end
   
-  chinvariant rd@(In) = 0 ==> tot@(Out) = 0
-  chinvariant tot@(In) > 0 ==> tot@(Out) <= In[@]
+  action In:1 ==> Out:2
+    requires In[@] = 2
+  end
+  
+  action In:1 ==> Out:100
+    requires In[@] = 100
+  end
+  
+  // Feedback loop state variables
+  invariant tokens(curr,1) && tokens(amount,1)
+  invariant curr[next] = amount[next]
+  
+  // The feedback loop state variables during nw execution
+  chinvariant tokens(curr,1) && tokens(amount,1)
+  chinvariant curr[next] <= amount[next]
+  
+  // If no input token has been read, curr = amount
+  chinvariant rd@(In) = 0 ==> curr[next] = amount[next]
+  
+  // If the input token has been read, amount = In[@]
+  chinvariant rd@(In) > 0 ==> In[@] = amount[next]
+  
+  // Only one input token will be read during nw execution
   chinvariant tot@(In) <= 1
+  
+  // If we have an input token, it is larger than 0
   chinvariant tot@(In) > 0 ==> 0 <= In[@]
-
+  
+  // If we have not read any input token, then we also have no output tokens
+  chinvariant rd@(In) = 0 ==> tot@(Out) = 0
+  
+  // If we have read an input token, then the total amount of tokens is curr[next]
+  chinvariant rd@(In) > 0 ==> tot@(Out) = curr[next]
+  
   entities
     a = HowMany()
   end
   
   structure 
-    In --> a.In; 
-    a.Out --> Out 
+    input:  In --> a.In;
+    curr:   a.Cout --> a.Cin;
+    amount: a.Aout --> a.Ain;
+    output: a.Out --> Out 
   end
 
 end
