@@ -1,0 +1,191 @@
+actor headerAdd()
+// Inputs: 
+bv(size=8) pl_bits,   // payload bits from upper layer 
+int St_in,
+bv(size=8) octet_count_in,
+bv(size=8) octet_index_in
+// Outputs:
+==> 
+bv(size=8) data,      // header + payload data
+bv(size=8) len,       // header + payload length
+int St_out,
+bv(size=8) octet_count_out,
+bv(size=8) octet_index_out
+:
+    // variable to hold payload length
+	bv(size=8) octet_count;
+	
+	// variable to count processed payload octets
+	bv(size=8) octet_index;
+
+	// static variable
+	int HEADER_LEN = 5;
+	
+	// the standard-defined header content
+	Map(bv(size=8) -> bv(size=8)) Header; //= [0, 0, 0, 0, 167];
+	
+	bv(size=8) data_out;
+
+	// init action
+	// initializes the data source
+	initialize ==> octet_index_out:[0x00], octet_count_out:[0x00], St_out:[0]
+	end
+	
+	// get_data_len action
+	// wait for packet to be available
+	// send payload length information to pulse shaper
+	get_data_len: action 
+			pl_bits:[ bits_in ],
+			octet_index_in: [octet_index], 
+			octet_count_in: [octet_count],
+			St_in:[St]
+		==> 
+			octet_index_out: [0x00], 
+			octet_count_out: [bits_in + 0x05 + 0x01], 
+			St_out: [1],  
+			len: [bits_in + 0x05 + 0x01]
+	guard 
+	  St = 0
+	end
+
+	// send_header action
+	// transmit one octet belonging to header
+	send_header: action
+			octet_index_in: [octet_index], 
+			octet_count_in: [octet_count],
+			St_in:[St] 
+		==> 
+			St_out: [1],
+			octet_index_out: [octet_index + 0x01], 
+			octet_count_out: [octet_count], 
+			data:[ data_out ]
+	guard
+		octet_index < 0x05 &&
+		St = 1
+	do
+		data_out := Header[octet_index];
+	end
+
+	// send_length action
+	// transmit payload length in data as part of data frame
+	send_length: action 
+			octet_index_in: [octet_index], 
+			octet_count_in: [octet_count],
+			St_in:[St] 
+		==> 
+			St_out: [2],
+			octet_index_out: [octet_index + 0x01], 
+			octet_count_out: [octet_count], 
+			data:[ octet_count - 0x05 - 0x01 ]
+	guard 
+		octet_index = 0x05 &&
+		St = 1
+	end
+
+	// send_payload_octet
+	// transmit one octet of the data coming from higher layer
+	send_payload_octet: action 
+			pl_bits:[ bits_in ],
+			octet_index_in: [octet_index], 
+			octet_count_in: [octet_count],
+			St_in:[St] 
+		==> 
+			St_out: [if octet_index + 0x01 = octet_count then 0 else 2 end],
+			octet_index_out: [octet_index + 0x01], 
+			octet_count_out: [octet_count], 
+			data:[ bits_in ]
+	guard
+		octet_index < octet_count &&
+		St = 2
+	end
+
+	// done action
+	// transition back to waiting for a new data frame
+	//done: action 
+	//	octet_index_in: [octet_index], 
+	//	octet_count_in: [octet_count],
+	//	St_in:[St] 
+	//==>
+	//	St_out: [0],
+	//	octet_index_out: [octet_index], 
+	//	octet_count_out: [octet_count]
+	//guard
+	//	octet_index = octet_count &&
+	//	St = 2
+	//end
+
+	//schedule fsm s_idle :
+	//	s_idle ( get_data_len ) --> s_header;
+	//	s_header ( send_header ) --> s_header;
+	//	s_header ( send_length ) --> s_payload;
+	//	s_payload ( send_payload_octet ) --> s_payload;
+	//	s_payload ( done ) --> s_idle;
+	//end
+
+	//priority
+		//send_header > send_length
+		//send_payload_octet > done
+	//end
+end
+
+
+network NW bv(size=8) pl_bits ==> bv(size=8) data, bv(size=8) len :
+
+  action pl_bits:2 ==> data:7, len:1
+    requires pl_bits[@] = 0x01
+    //ensures St[next] = 0
+    //ensures octet_index[next] = octet_count[next]
+    //ensures urd(pl_bits) = 0
+    //ensures urd(len) = 1
+    //ensures urd(data) = 7
+  end
+  
+  // Feedback loop state variables
+  invariant tokens(octet_count,1) && tokens(octet_index,1) && tokens(St,1)
+  invariant St[next] = 0 && octet_index[next] = octet_count[next]
+  
+  // We always have a token on feedback loops
+  chinvariant tokens(octet_count,1) && tokens(octet_index,1) && tokens(St,1)
+  
+  // octet_index is between 0 and octet_count
+  chinvariant 0x00 <= octet_index[next] && octet_index[next] <= octet_count[next]
+  
+  // St is 0, 1 or 2
+  chinvariant 0 <= St[next] && St[next] <= 2
+  
+  chinvariant tot@(input) <= 2
+  chinvariant tot@(input) > 0 ==> input[@] = 0x01
+  
+  chinvariant St[next] = 0 ==> octet_index[next] = octet_count[next]
+  chinvariant St[next] = 1 ==> 0x00 <= octet_index[next] && octet_index[next] <= 0x05
+  chinvariant St[next] = 2 ==> 0x06 <= octet_index[next] && octet_index[next] < octet_count[next]
+  
+  chinvariant St[next] = 0 && rd@(input) = 0 ==> tot@(data) = 0
+  chinvariant St[next] = 0 && rd@(input) > 0 ==> tot@(data) = bv2int(octet_count[next])
+  
+  chinvariant St[next] = 1 ==> rd@(input) = 1
+  chinvariant St[next] = 1 || St[next] = 2 ==> tot@(data) = bv2int(octet_index[next])
+  chinvariant St[next] = 2 ==> rd@(input) = tot@(data)-5
+
+  chinvariant St[next] = 0 <==> (rd@(input) = 0 || rd@(input) = 2)
+  
+  chinvariant rd@(input) = 0 ==> tot@(len) = 0
+  chinvariant rd@(input) > 0 ==> octet_count[next] = input[@] + 0x06
+  
+  chinvariant rd@(input) > 0 ==> tot@(len) = 1
+  
+      
+  entities
+    a = headerAdd()
+  end
+  
+  structure 
+    input:  pl_bits --> a.pl_bits;
+    octet_count:  a.octet_count_out --> a.octet_count_in;
+    octet_index:  a.octet_index_out --> a.octet_index_in;
+    St:     a.St_out --> a.St_in;
+    data:   a.data --> data;
+    len:    a.len --> len;
+  end
+
+end
