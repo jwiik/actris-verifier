@@ -40,7 +40,7 @@ object BoogiePrelude {
 sealed abstract class PreludeComponent {
   // determines the order in which the components are output
   def compare(that: PreludeComponent): Boolean = {
-    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,SeqNumberingPL,DivModAbsPL,BitwisePL,MapPL)
+    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,SeqNumberingPL,DivModAbsPL,BitwisePL,MapPL,Bitvector2IntPL)
     if (!order.contains(this)) false
     else order.indexOf(this) < order.indexOf(that)
   }
@@ -66,12 +66,19 @@ var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
+var B: CType;
 
 var H: HType;
 
 const unique this#: Actor;
 
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
+function AT#Ite<T>(bool, T, T): T;
+axiom (
+  forall<T> cond: bool, thn: T, els: T :: { AT#Ite(cond, thn, els) }
+    (cond ==> AT#Ite(cond,thn,els) == thn &&
+    !cond ==> AT#Ite(cond,thn,els) == els)
+);
 """
 }
 
@@ -129,6 +136,34 @@ axiom (forall a,b: bv@bvsize@ :: AT#BvXor@bvsize@(a,b) == AT#BvAnd@bvsize@(AT#Bv
   }
    
   override def hashCode: Int = BitvectorPL.hashCode+size
+}
+
+object Bitvector2IntPL extends PreludeComponent {
+    val text =
+"""
+// ---------------------------------------------------------------
+// -- Bitvector to integer ---------------------------------------
+// ---------------------------------------------------------------
+function AT#Bit0(vec: bv8): bool { AT#BvAnd8(vec,1bv8) != 0bv8 }
+function AT#Bit1(vec: bv8): bool { AT#BvAnd8(vec,2bv8) != 0bv8 }
+function AT#Bit2(vec: bv8): bool { AT#BvAnd8(vec,4bv8) != 0bv8 }
+function AT#Bit3(vec: bv8): bool { AT#BvAnd8(vec,8bv8) != 0bv8 }
+function AT#Bit4(vec: bv8): bool { AT#BvAnd8(vec,16bv8) != 0bv8 }
+function AT#Bit5(vec: bv8): bool { AT#BvAnd8(vec,32bv8) != 0bv8 }
+function AT#Bit6(vec: bv8): bool { AT#BvAnd8(vec,64bv8) != 0bv8 }
+function AT#Bit7(vec: bv8): bool { AT#BvAnd8(vec,128bv8) != 0bv8 }
+
+function AT#Bv2Int(vec: bv8): int {
+  128*( if AT#Bit7(vec) then 1 else 0 ) +
+  64*( if AT#Bit6(vec) then 1 else 0 ) +
+  32*( if AT#Bit5(vec) then 1 else 0 ) +
+  16*( if AT#Bit4(vec) then 1 else 0 ) +
+  8*( if AT#Bit3(vec) then 1 else 0 ) +
+  4*( if AT#Bit2(vec) then 1 else 0 ) +
+  2*( if AT#Bit1(vec) then 1 else 0 ) +
+  1*( if AT#Bit0(vec) then 1 else 0 )
+}
+"""
 }
 
 object BitvectorPL {

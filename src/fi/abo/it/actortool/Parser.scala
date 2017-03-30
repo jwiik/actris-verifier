@@ -38,7 +38,7 @@ class Parser extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "Map"
+                       "Map", "if", "then", "else"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -294,6 +294,7 @@ class Parser extends StandardTokenParsers {
     "!" ~> unaryExpr ^^ Not |
     "~" ~> unaryExpr ^^ BwNot |
     quantifier |
+    ifthenelse |
     "(" ~> expression <~ ")" ^^ { case e => e } |
     functionApp |
     suffixExpr |
@@ -308,6 +309,13 @@ class Parser extends StandardTokenParsers {
       case "exists" ~ decls ~ (pat ~ exp) => Exists(decls,exp,pat)
     }
   )
+  
+  def ifthenelse: Parser[Expr] = positioned(
+    (("if" ~> expression) ~ ("then" ~> expression) ~ ("else" ~> expression) <~ "end") ^^  {
+      case cond ~ thn ~ els => IfThenElse(cond,thn,els)
+    }
+  )
+      
   
   def quantOp = "forall" | "exists"
   

@@ -487,6 +487,7 @@ class Translator(
     asgn ++= (nwvs.subactorVarDecls  map { _.decl })
     asgn ++= (nwvs.uniquenessConditions map {B.Assume(_)})
     asgn ++= nwvs.basicAssumes
+    asgn += B.Assume(nwvs.actionRatePredicates(nwa))
     for (chi <- nwvs.chInvariants) {
       asgn += BAssume(chi,nwvs.nwRenamings)
     }
@@ -689,6 +690,7 @@ class Translator(
     asgn ++= nwvs.subactorVarDecls  map { _.decl }
     asgn ++= (nwvs.uniquenessConditions map { B.Assume(_) })
     asgn ++= nwvs.basicAssumes
+    asgn += B.Assume(nwvs.actionRatePredicates(action))
     //asgn += B.Local("x", B.type2BType(IntType(-1)))
     
     asgn += 

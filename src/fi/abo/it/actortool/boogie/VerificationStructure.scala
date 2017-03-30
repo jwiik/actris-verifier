@@ -42,6 +42,7 @@ class NetworkVerificationStructure(
     val entityDecls: List[BDecl],
     val subactorVarDecls: List[BDecl],
     val uniquenessConditions: List[Boogie.Expr],
+    val actionRatePredicates: Map[Action,Boogie.Expr],
     val basicAssumes: List[Boogie.Assume],
     val namePrefix: String) extends VerificationStructure[Network] {
   

@@ -194,6 +194,7 @@ class StmtExpTranslator(val ftMode: Boolean) {
           case "tot@" => B.C(transExprI(params(0))) - B.I(transExprI(params(0)))
           case "str" => B.I(transExprI(params(0)))
           case "@" => B.I(transExprI(params(0)))
+          case "rate" => B.B(transExprI(params(0)))
           case "next" => 
             val ch = transExprI(params(0))
             if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) minus transExprI(params(1)))
@@ -227,6 +228,10 @@ class StmtExpTranslator(val ftMode: Boolean) {
             val value = params(0).asInstanceOf[IntLiteral].value
             val size = params(1).asInstanceOf[IntLiteral].value
             Boogie.BVLiteral(value.toString,size)
+          }
+          case "bv2int" => {
+            BoogiePrelude.addComponent(Bitvector2IntPL)
+            Boogie.FunctionApp("AT#Bv2Int",List(transExprI(params(0))))
           }
           case "chsum" => {
             val param = transExprI(params(0))

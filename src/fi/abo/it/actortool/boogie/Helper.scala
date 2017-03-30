@@ -17,6 +17,7 @@ object BMap extends Enumeration {
   final val M = "M"
   final val I = "I"
   final val H = "H"
+  final val B = "B"
   final val St = "St"
   final val SqnCh = "SqnCh"
   final val SqnActor = "SqnAct"
@@ -113,10 +114,12 @@ object B {
   def C(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.C) apply channel)
   def R(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.R) apply channel)
   def I(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.I) apply channel)
+  def B(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.B) apply channel)
     
   def R(channel: String): Boogie.Expr = R(Boogie.VarExpr(channel))
   def C(channel: String): Boogie.Expr = C(Boogie.VarExpr(channel))
   def I(channel: String): Boogie.Expr = I(Boogie.VarExpr(channel))
+  def B(channel: String): Boogie.Expr = B(Boogie.VarExpr(channel))
   
   def Urd(channel: String): Boogie.Expr = C(channel) - R(channel)
   def Urd(channel: Boogie.Expr): Boogie.Expr = C(channel) - R(channel)

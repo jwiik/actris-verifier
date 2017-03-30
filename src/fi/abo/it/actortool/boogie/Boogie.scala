@@ -326,7 +326,7 @@ object Boogie {
      Print(args, ", ", { e: Expr => PrintExpr(e, false) }) +
      ")"
    case Ite(con, thn, els) =>
-     "ite(" + PrintExpr(con) + ", " + PrintExpr(thn) + ", " + PrintExpr(els) + ")"
+     "(if " + PrintExpr(con) + " then " + PrintExpr(thn) + " else " + PrintExpr(els) + ")"
    case Trigger(ts) => Print(ts,", ", PrintExpr)
    case Forall(ts, xs, triggers, body) =>
      "(forall" +

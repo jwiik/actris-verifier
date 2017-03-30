@@ -228,7 +228,7 @@ class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Reso
     val uniquenessConidition1 = 
       if (entityDeclList.size > 1) List(createUniquenessCondition(entityDeclList).reduceLeft((a,b) => (a && b)))
       else Nil
-    println(chanDeclList)
+
     val uniquenessConidition2 = {
       val condition = createUniquenessCondition(chanDeclList)
       if (condition.size > 1) List(condition.reduceLeft((a,b) => (a && b)))
@@ -236,8 +236,17 @@ class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Reso
     }
     val uniquenessConditions = uniquenessConidition1 ::: uniquenessConidition2
     
+    val actionRatePreds = 
+      (for (a <- network.actions) yield {
+        val predicates = 
+          (network.inports map { ip => B.B(networkRenamings(ip.id).id) ==@ B.Int(a.portInputCount(ip.id)) }) :::
+          (network.outports map { op => B.B(networkRenamings(op.id).id) ==@ B.Int(a.portOutputCount(op.id)) })
+        (a,predicates.reduceLeft((a,b) => (a && b)))
+      }).toMap
     
     
+    val actionRateDisjunction = if (actionRatePreds.isEmpty) B.Bool(true) else actionRatePreds.values.reduceLeft((a,b) => (a || b))
+      
     val basicAssumes =
       (for (c <- connections) yield {
         val name = tempRenames(c.id)
@@ -247,7 +256,7 @@ class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Reso
           B.R(name.id) <= B.C(name.id))
         val list2 = (if (c.isOutput) List(B.I(name.id) ==@ B.R(name.id)) else Nil)
         (list1 ::: list2).map(x => B.Assume(x))
-      }).flatten
+      }).flatten ::: List(B.Assume(actionRateDisjunction))
       
     new NetworkVerificationStructure(
         network, 
@@ -264,6 +273,7 @@ class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Reso
         entityDeclList:::chanDeclList,
         subactorVarDecls.toList,
         uniquenessConditions,
+        actionRatePreds,
         basicAssumes,
         namePrefix)
   }

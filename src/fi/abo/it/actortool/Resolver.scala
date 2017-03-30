@@ -616,6 +616,7 @@ object Resolver {
       case fa@FunctionApp("tot@",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("rd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot",params) => resolveChannelCountFunction(ctx, fa)
+      case fa@FunctionApp("rate",params) => resolveChannelCountFunction(ctx, fa)
 //      case fa@FunctionApp("sqn",params) => resolveSqnFunction(ctx, fa)
 //      case fa@FunctionApp("currsqn",params) => resolveSqnFunction(ctx, fa)
       case fa@FunctionApp("str",params) => resolveChannelCountFunction(ctx, fa)
@@ -639,6 +640,17 @@ object Resolver {
         val size = params(1).asInstanceOf[IntLiteral].value
         fa.typ = BvType(size)
         BvType(size)
+      }
+      case fa@FunctionApp("bv2int",params) => {
+        if (params.size != 1) {
+          ctx.error(fa.pos, "bv2int takes one argument, a bitvector")
+        }
+        val argT = resolveExpr(ctx, params(0))
+        if (!argT.isBv) {
+          ctx.error(fa.pos, "bv2int takes a bitvector as argument, found: " + argT.id)
+        }
+        fa.typ = IntType
+        IntType
       }
       case fa@FunctionApp("chsum",params) => resolveSimpleFunction(ctx,fa,List(ChanType(IntType),IntType))
       case fa@FunctionApp(name,params) => {
