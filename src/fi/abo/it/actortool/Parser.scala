@@ -14,9 +14,13 @@ import java.io.File
 import scala.language.postfixOps
 
 class Parser extends StandardTokenParsers {
-    
-  def parseFile(file: File) = 
+  
+  var currFile: File = null
+  
+  def parseFile(file: File) = {
+    currFile = file
     phrase(programUnit)(new lexical.Scanner(new PagedSeqReader(PagedSeq fromFile file)))
+  }
   def Semi = ";" ?
     
   class LexerWithHex extends StdLexical {    
@@ -46,13 +50,13 @@ class Parser extends StandardTokenParsers {
                        
   def programUnit = (actorDecl | networkDecl | unitDecl | typeDecl)*
   
-  def annotation = positioned(("@" ~> ident) ^^ { case id => Annotation(id)})
+  def annotation = filePositioned(("@" ~> ident) ^^ { case id => Annotation(id)})
   
-  def unitDecl = positioned(("unit" ~> ident ~ (":" ~> (varDecl*)) <~ "end" ) ^^ {
+  def unitDecl = filePositioned(("unit" ~> ident ~ (":" ~> (varDecl*)) <~ "end" ) ^^ {
     case (id ~ decls) => DataUnit(id,decls)
   })
   
-  def actorDecl = positioned(
+  def actorDecl = filePositioned(
      ((annotation *) ~ 
          ("actor" ~> ident ~ 
          ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ 
@@ -65,7 +69,7 @@ class Parser extends StandardTokenParsers {
          BasicActor(a, id, Nil, inports, outports, members)
     })
     
-  def networkDecl = positioned(
+  def networkDecl = filePositioned(
       ((annotation *) ~
           ("network" ~> ident ~ 
           ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ 
@@ -78,69 +82,69 @@ class Parser extends StandardTokenParsers {
         Network(a, id, Nil, inports, outports, members)
     })
   
-  def typeDecl = positioned(("type" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")" ?)) ^^ {
+  def typeDecl = filePositioned(("type" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")" ?)) ^^ {
     case (id ~ Some(params)) => TypeDecl(RefType(id),params)
     case (id ~ None) => TypeDecl(RefType(id),Nil)
   })  
   
-  def formalParam = positioned(
+  def formalParam = filePositioned(
       (typeName ~ ident) ^^ {
         case (tName ~ id) => Declaration(id,tName,true,None)
       }  
     )
-  def inPortDecl: Parser[InPort] = positioned((typeName ~ ident) ^^ {
+  def inPortDecl: Parser[InPort] = filePositioned((typeName ~ ident) ^^ {
     case (tName ~ id) => InPort(id,tName)
   })
   
-  def outPortDecl: Parser[OutPort] = positioned((typeName ~ ident) ^^{
+  def outPortDecl: Parser[OutPort] = filePositioned((typeName ~ ident) ^^{
     case (tName ~ id) => OutPort(id,tName)
   })
   
   def actorMember: Parser[Member] = 
-    positioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl)
+    filePositioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl)
   
-  def networkMember: Parser[Member] = positioned(
+  def networkMember: Parser[Member] = filePositioned(
       actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl)
   
-  def entitiesBlock: Parser[Entities] = positioned(("entities" ~> repsep(entityDecl,Semi) <~ (Semi?) <~ "end") ^^ {
+  def entitiesBlock: Parser[Entities] = filePositioned(("entities" ~> repsep(entityDecl,Semi) <~ (Semi?) <~ "end") ^^ {
     case entities => Entities(entities)
   })
   
-  def structureBlock: Parser[Structure] = positioned(("structure" ~> repsep(connection,Semi) <~ (Semi?) <~ "end") ^^ {
+  def structureBlock: Parser[Structure] = filePositioned(("structure" ~> repsep(connection,Semi) <~ (Semi?) <~ "end") ^^ {
     case connections => Structure(connections)
   })
   
   
   
   def scheduleBlock: Parser[Schedule] = 
-    positioned(("schedule" ~> "fsm" ~ ident ~ (":" ~> repsep(transition,Semi) <~ (Semi?) <~ "end")) ^^ {
+    filePositioned(("schedule" ~> "fsm" ~ ident ~ (":" ~> repsep(transition,Semi) <~ (Semi?) <~ "end")) ^^ {
       case  "fsm" ~ init ~ transitions => Schedule(init,transitions)
     })
   
   def functionDecl: Parser[FunctionDecl] =
-    positioned(("function" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")") ~ ("-->" ~> typeName) ~ (":" ~> expression) <~ "end") ^^ {
+    filePositioned(("function" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")") ~ ("-->" ~> typeName) ~ (":" ~> expression) <~ "end") ^^ {
       case (name ~ inputs ~ output ~ body) => FunctionDecl(name,inputs,output,body)
     })
   //def schedType = "fsm" | "regexp" 
     
   def priorityBlock: Parser[Priority] = 
-    positioned(("priority" ~> repsep(prioOrder,";") <~ "end") ^^ {
+    filePositioned(("priority" ~> repsep(prioOrder,";") <~ "end") ^^ {
       case actions => Priority(actions)
     })
   
   def prioOrder = (ident ~ (">" ~> ident)) ^^ { case s1 ~ s2  => (Id(s1),Id(s2)) }
     
-  def entityDecl = positioned(opt(annotation) ~ ident ~ ("=" ~> (ident ~ paramList)) ^^ {
+  def entityDecl = filePositioned(opt(annotation) ~ ident ~ ("=" ~> (ident ~ paramList)) ^^ {
     case None ~ name ~ (actorId ~ params) => Instance(name,actorId,params,Nil)
     case Some(annot) ~ name ~ (actorId ~ params) => Instance(name,actorId,params,List(annot))
   })
   
-  def connection = positioned(opt(annotation) ~ opt(ident <~ ":") ~ (portRef ~ ("-->" ~> portRef)) ^^ {
+  def connection = filePositioned(opt(annotation) ~ opt(ident <~ ":") ~ (portRef ~ ("-->" ~> portRef)) ^^ {
     case None ~ id ~ (from ~ to) => Connection(id,from,to,Nil)
     case Some(annot) ~ id ~ (from ~ to) => Connection(id,from,to,List(annot))
   })
   
-  def transition = positioned(ident ~ ("(" ~> ident <~ ")") ~ ("-->" ~> ident) ^^ {
+  def transition = filePositioned(ident ~ ("(" ~> ident <~ ")") ~ ("-->" ~> ident) ^^ {
     case (from ~ act ~ to)  => Transition(act,from,to)
   })
   
@@ -148,24 +152,24 @@ class Parser extends StandardTokenParsers {
     case exps => exps
   })
   
-  def actorInvDecl = positioned((opt("free") ~ opt("stream") ~ "invariant" ~ expression) ^^ {
+  def actorInvDecl = filePositioned((opt("free") ~ opt("stream") ~ "invariant" ~ expression) ^^ {
     case free ~ stream ~ _ ~ expr => {
       ActorInvariant(Assertion(expr, free.isDefined),false, stream.isDefined)
     }
   })
   
-  def chInvDecl = positioned(( opt("free") ~ "chinvariant" ~ expression) ^^ {
+  def chInvDecl = filePositioned(( opt("free") ~ "chinvariant" ~ expression) ^^ {
     case None ~ _ ~ expr => ChannelInvariant(Assertion(expr,false),false)
     case Some(_) ~ _ ~ expr => ChannelInvariant(Assertion(expr,true),false)
   })
   
-  def varDecl = positioned((typeName ~ ident ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {
+  def varDecl = filePositioned((typeName ~ ident ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {
     case (typ ~ id ~ None) => Declaration(id,typ,false,None)
     case (typ ~ id ~ Some("=" ~ value)) => Declaration(id,typ,true,Some(value))
     case (typ ~ id ~ Some(":=" ~ value)) => Declaration(id,typ,false,Some(value))
   })
    
-  def actionDecl: Parser[Action] = positioned(
+  def actionDecl: Parser[Action] = filePositioned(
     (((ident <~ ":")?) ~ 
         opt(actionClass) ~
         ("action" | "initialize") ~ 
@@ -200,13 +204,13 @@ class Parser extends StandardTokenParsers {
   
   def inputPattern = inputPatternRng | inputPatternNum
   
-  def inputPatternRng = positioned(
+  def inputPatternRng = filePositioned(
       (ident ~ (":" ~> "[" ~> repsep(identifier,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
     case (port ~ vars ~ Some(rep)) => InputPattern(port, vars, rep.toInt)
     case (port ~ vars ~ None) => InputPattern(port, vars, 1)
   })
   
-  def inputPatternNum = positioned(
+  def inputPatternNum = filePositioned(
       (ident ~ (":" ~> numericLit) ~ opt("repeat" ~> numericLit)) ^^ {
     case (port ~ num ~ Some(rep)) =>
       InputPattern(port, varList(port+"$v",num.toInt), rep.toInt)
@@ -216,12 +220,12 @@ class Parser extends StandardTokenParsers {
   
   def outputPattern = outputPatternRng | outputPatternNum
   
-  def outputPatternRng = positioned((ident ~ (":" ~> "[" ~> repsep(expression,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
+  def outputPatternRng = filePositioned((ident ~ (":" ~> "[" ~> repsep(expression,",") <~ "]") ~ opt("repeat" ~> numericLit)) ^^ {
     case (port ~ exps ~ Some(rep)) => OutputPattern(port, exps, rep.toInt)
     case (port ~ exps ~ None) => OutputPattern(port, exps, 1)
   })
   
-  def outputPatternNum = positioned((ident ~ (":" ~> numericLit) ~ opt("repeat" ~> numericLit)) ^^ {
+  def outputPatternNum = filePositioned((ident ~ (":" ~> numericLit) ~ opt("repeat" ~> numericLit)) ^^ {
     case (port ~ num ~ Some(rep)) => OutputPattern(port, varList(port+"$v",num.toInt), rep.toInt)
     case (port ~ num ~ None) => OutputPattern(port, varList(port+"$v",num.toInt), 1)
   })
@@ -229,19 +233,19 @@ class Parser extends StandardTokenParsers {
   def varList(prefix: String, length: Int) = for (i <- List.range(0,length)) yield Id(prefix+"$"+i)
 
   
-  def expression: Parser[Expr] = positioned(iffExpr) 
+  def expression: Parser[Expr] = filePositioned(iffExpr) 
   
-  def iffExpr: Parser[Expr] = positioned((implExpr ~ ("<==>" ~> iffExpr ?)) ^^ {
+  def iffExpr: Parser[Expr] = filePositioned((implExpr ~ ("<==>" ~> iffExpr ?)) ^^ {
     case (e ~ None) => e
     case (e1 ~ Some(e2)) => Iff(e1,e2)
   })
   
-  def implExpr: Parser[Expr] = positioned((logicalExpr ~ ("==>" ~> implExpr ?)) ^^ {
+  def implExpr: Parser[Expr] = filePositioned((logicalExpr ~ ("==>" ~> implExpr ?)) ^^ {
     case (e ~ None) => e
     case (e1 ~ Some(e2)) => Implies(e1,e2)
   })
   
-  def logicalExpr: Parser[Expr] = positioned(cmpExpr ~ (( ("&&" ~ cmpExpr +) | ("||" ~ cmpExpr +) )?) ^^ {
+  def logicalExpr: Parser[Expr] = filePositioned(cmpExpr ~ (( ("&&" ~ cmpExpr +) | ("||" ~ cmpExpr +) )?) ^^ {
     case e ~ None => e
     case e0 ~ Some(rest) => 
       (rest foldLeft e0) {
@@ -250,7 +254,7 @@ class Parser extends StandardTokenParsers {
       }
   })
   
-  def cmpExpr: Parser[Expr] = positioned((bitManipExpr ~ ((cmpOp ~ bitManipExpr) ?)) ^^ {
+  def cmpExpr: Parser[Expr] = filePositioned((bitManipExpr ~ ((cmpOp ~ bitManipExpr) ?)) ^^ {
     case e ~ None => e
     case e1 ~ Some("==" ~ e2) => Eq(e1,e2)
     case e1 ~ Some("=" ~ e2) => Eq(e1,e2)
@@ -263,7 +267,7 @@ class Parser extends StandardTokenParsers {
   
   def cmpOp = "==" | "=" | "!=" | "<" | "<=" | ">=" | ">" 
   
-  def bitManipExpr: Parser[Expr] = positioned((addExpr ~ ((">>" | "<<" | "&" | "|" | "^") ~ addExpr *)) ^^{
+  def bitManipExpr: Parser[Expr] = filePositioned((addExpr ~ ((">>" | "<<" | "&" | "|" | "^") ~ addExpr *)) ^^{
     case e0 ~ rest => (rest foldLeft e0) {
       case (a, ">>" ~ b) => RShift(a,b)
       case (a, "<<" ~ b) => LShift(a,b)
@@ -273,13 +277,13 @@ class Parser extends StandardTokenParsers {
     }
   }) 
   
-  def addExpr: Parser[Expr] = positioned((mulExpr ~ (("+" | "-") ~ mulExpr *)) ^^{
+  def addExpr: Parser[Expr] = filePositioned((mulExpr ~ (("+" | "-") ~ mulExpr *)) ^^{
     case e0 ~ rest => (rest foldLeft e0) {
             case (a, "+" ~ b) => Plus(a,b)
             case (a, "-" ~ b) => Minus(a,b) }
   })
   
-  def mulExpr: Parser[Expr] = positioned((unaryExpr ~ (("*" | "/" | "%") ~ unaryExpr *)) ^^{
+  def mulExpr: Parser[Expr] = filePositioned((unaryExpr ~ (("*" | "/" | "%") ~ unaryExpr *)) ^^{
     case e0 ~ rest => (rest foldLeft e0) {
       case (a, "*" ~ b) => Times(a,b)
       case (a, "/" ~ b) => Div(a,b)
@@ -289,7 +293,7 @@ class Parser extends StandardTokenParsers {
   
   
   
-  def unaryExpr: Parser[Expr] = positioned(
+  def unaryExpr: Parser[Expr] = filePositioned(
     "-" ~> unaryExpr ^^ UnMinus | 
     "!" ~> unaryExpr ^^ Not |
     "~" ~> unaryExpr ^^ BwNot |
@@ -303,14 +307,14 @@ class Parser extends StandardTokenParsers {
     atom
   )
   
-  def quantifier: Parser[Expr] = positioned(
+  def quantifier: Parser[Expr] = filePositioned(
     quantOp ~ repsep(declaration,",") ~ ("::" ~> (pattern ?) ~ expression) ^^ {
       case "forall" ~ decls ~ (pat ~ exp) => Forall(decls,exp,pat)
       case "exists" ~ decls ~ (pat ~ exp) => Exists(decls,exp,pat)
     }
   )
   
-  def ifthenelse: Parser[Expr] = positioned(
+  def ifthenelse: Parser[Expr] = filePositioned(
     (("if" ~> expression) ~ ("then" ~> expression) ~ ("else" ~> expression) <~ "end") ^^  {
       case cond ~ thn ~ els => IfThenElse(cond,thn,els)
     }
@@ -319,44 +323,44 @@ class Parser extends StandardTokenParsers {
   
   def quantOp = "forall" | "exists"
   
-  def declaration = positioned(typeName ~ ident ^^ {
+  def declaration = filePositioned(typeName ~ ident ^^ {
     case (t ~ id) => Declaration(id,t,false,None)
   })
   
-  def pattern: Parser[Expr] = positioned("{" ~> expression <~ "}")
+  def pattern: Parser[Expr] = filePositioned("{" ~> expression <~ "}")
   
-  def portRef = positioned(ident ~ ("." ~> ident ?) ^^ {
+  def portRef = filePositioned(ident ~ ("." ~> ident ?) ^^ {
     case a0 ~ None => PortRef(None,a0)
     case a0 ~ Some(a1) => PortRef(Some(a0),a1)
   })
   
   def functionApp = (functionAppSpecialMarker | functionAppStandard)
   
-  def functionAppStandard: Parser[Expr] = positioned(
+  def functionAppStandard: Parser[Expr] = filePositioned(
       (ident ~ opt(marker) ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
         case (id ~ None ~ params) => FunctionApp(id,params)
         case (id ~ Some(sm) ~ params) => FunctionApp(id+sm.value,params)
       })
       
-  def functionAppSpecialMarker: Parser[Expr] = positioned(
+  def functionAppSpecialMarker: Parser[Expr] = filePositioned(
       (marker ~ ("(" ~> repsep(expression,",") <~ ")")) ^^ {
         case (SpecialMarker(m) ~ params) => FunctionApp(m,params)
       })
   
-  def listLiteral: Parser[Expr] = positioned(
+  def listLiteral: Parser[Expr] = filePositioned(
       (("[" ~> repsep(expression,",") <~ "]") ^^{
         case lst => ListLiteral(lst)
       })
     ) 
-//  def range: Parser[Expr] = positioned(
+//  def range: Parser[Expr] = filePositioned(
 //      (numericLit ~ ".." ~ numericLit) ^^{
 //        case start ~ ".." ~ end => Range(start.toInt,end.toInt)
 //      })
   
   
-  def suffixExpr: Parser[Expr] = positioned(
+  def suffixExpr: Parser[Expr] = filePositioned(
       atom ~ (suffixThing *) ^^ {
-        case e ~ sfxs => sfxs.foldLeft(e) { (t,a) => val result = a(t); result.pos = t.pos; result }
+        case e ~ sfxs => sfxs.foldLeft(e) { (t,a) => val result = a(t); result.setPos(t.pos) }
       }
   )
   
@@ -365,7 +369,7 @@ class Parser extends StandardTokenParsers {
     | ("." ~> ident) ^^ {case e1 => { e0: Expr => FieldAccessor(e0,e1)}})
   }
   
-  def atom: Parser[Expr] = positioned(
+  def atom: Parser[Expr] = filePositioned(
     boolLiteral | 
     identifier |
     marker |
@@ -378,18 +382,18 @@ class Parser extends StandardTokenParsers {
   def hexaNumericLit: Parser[String] =
     elem("hex-number", _.isInstanceOf[HexaNumericLit]) ^^ (_.chars)
   
-  def boolLiteral = positioned(
+  def boolLiteral = filePositioned(
     "true" ^^^ BoolLiteral(true) |
     "false" ^^^ BoolLiteral(false)
   )
   
-  def marker = positioned( ("@" | "next" | "last" | "prev") ^^ { case n => SpecialMarker(n) } )
+  def marker = filePositioned( ("@" | "next" | "last" | "prev") ^^ { case n => SpecialMarker(n) } )
     
-  def identifier = positioned(ident ^^ Id)
+  def identifier = filePositioned(ident ^^ Id)
   
   def statementBody: Parser[List[Stmt]] = (statement *)
   
-  def statement: Parser[Stmt] = positioned(
+  def statement: Parser[Stmt] = filePositioned(
     "assert" ~> expression <~ Semi ^^ Assert |
     "assume" ~> expression <~ Semi ^^ Assume |
     "havoc" ~> repsep(ident,",") <~ Semi ^^ {case ids => Havoc(ids map { Id(_) })} |
@@ -406,7 +410,7 @@ class Parser extends StandardTokenParsers {
   
   def typeName = primType | compositeType 
   
-  def primType: Parser[Type] = positioned(
+  def primType: Parser[Type] = filePositioned(
     (("int" | "uint") ~ (opt("(" ~> "size" ~> "=" ~> numericLit <~ ")")) ^^ {
       case "int" ~ Some(size) => IntType(size.toInt)
       case "int" ~ None => IntType(-1) 
@@ -419,7 +423,7 @@ class Parser extends StandardTokenParsers {
     | "bool" ^^^ BoolType
   )
   
-  def compositeType: Parser[Type] = positioned(
+  def compositeType: Parser[Type] = filePositioned(
     ("List" ~> ("(" ~> "type" ~> ":" ~> typeName ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")") ^^ {
       case (contType ~ size) => ListType(contType,size.toInt)
     }) |
@@ -428,4 +432,14 @@ class Parser extends StandardTokenParsers {
     }) |
     (ident ^^ {case id => RefType(id)})
   )
+  
+  def filePositioned[T <: ASTNode](p : => Parser[T]) : Parser[T] = Parser {
+    in => p(in) match {
+      case Success(t, in1) => {
+        if (t.pos == NoFilePosition) t.setPos(Some(currFile.getName),in.pos)
+        Success(t,in1)
+      }
+      case ns: NoSuccess => ns
+    }
+  }
 }

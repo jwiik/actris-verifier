@@ -1,10 +1,39 @@
 package fi.abo.it.actortool
 
 import scala.util.parsing.input.Positional
+import scala.util.parsing.input.Position
 
-trait ASTNode extends Positional {
+trait FilePosition extends Position {
+  def fileName: Option[String]
+  def lineContents = null
+  override def toString = fileName match {
+    case Some(file) => file + "(" + line + "." + column  + ")"
+    case None => "<unknown_file>(" + line + "." + column  + ")"
+  }
+}
+
+case class ConcretePosition(
+    override val fileName: Option[String], 
+    override val line: Int, 
+    override val column: Int) extends FilePosition
+
+object NoFilePosition extends FilePosition {
+  def fileName = None
+  def line = -1
+  def column = -1
+}
+
+trait ASTNode {
   val annotations: List[Annotation] = Nil
   def hasAnnotation(name: String) = annotations.exists { a => a.name == name }
+  private var _pos: FilePosition = NoFilePosition 
+  def pos: FilePosition = _pos
+  def setPos(newPos: FilePosition): this.type = { _pos = newPos; this }
+  def setPos(fileName: Option[String], newPos: Position): this.type = { 
+    _pos = ConcretePosition(fileName, newPos.line, newPos.column); 
+    this 
+  }
+  
 }
 
 sealed abstract class TopDecl(val id: String) extends ASTNode {

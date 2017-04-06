@@ -230,8 +230,15 @@ class StmtExpTranslator(val ftMode: Boolean) {
             Boogie.BVLiteral(value.toString,size)
           }
           case "bv2int" => {
-            BoogiePrelude.addComponent(Bitvector2IntPL)
-            Boogie.FunctionApp("AT#Bv2Int",List(transExprI(params(0))))
+            val size = params(0).typ.asInstanceOf[BvType].size
+            BoogiePrelude.addComponent(BitvectorPL.createPL(size))
+            BoogiePrelude.addComponent(Bitvector2IntPL.createPL(size))
+            Boogie.FunctionApp("AT#Bv2Int"+size,List(transExprI(params(0))))
+          }
+          case "bvconcat" => {
+            val param1 = transExprI(params(0))
+            val param2 = transExprI(params(1))
+            Boogie.BinaryExpr("++", param1, param2)
           }
           case "chsum" => {
             val param = transExprI(params(0))

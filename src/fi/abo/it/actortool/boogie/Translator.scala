@@ -37,8 +37,6 @@ class Translator(
     val nwVerStructBuilder = new NetworkVerificationStructureBuilder(ftMode, typeCtx)
     val actorVerStructBuilder = new ActorVerificationStructureBuilder(ftMode, typeCtx)
     
-    if (ftMode) BoogiePrelude.addComponent(SeqNumberingPL)
-    
     //var userTypes = Map.empty[String,NamedType]
         
     val bProgram = decls flatMap {

@@ -652,6 +652,25 @@ object Resolver {
         fa.typ = IntType
         IntType
       }
+      case fa@FunctionApp("bvconcat",params) => {
+        if (params.size != 2) {
+          ctx.error(fa.pos, "bvconcat takes two integer literals as argument")
+        }
+        val arg1T = resolveExpr(ctx, params(0))
+        val arg2T = resolveExpr(ctx, params(1))
+        if (arg1T.isBv && arg2T.isBv) {
+          fa.typ = BvType(arg1T.asInstanceOf[BvType].size + arg2T.asInstanceOf[BvType].size)
+        }
+        else if (!arg1T.isBv) {
+          ctx.error(fa.pos, "The first argument to bvconcat, found: " + arg1T.id)
+          fa.typ = UnknownType
+        }
+        else if (!arg2T.isBv) {
+          ctx.error(fa.pos, "The second argument to bvconcat, found: " + arg2T.id)
+          fa.typ = UnknownType
+        }
+        fa.typ
+      }
       case fa@FunctionApp("chsum",params) => resolveSimpleFunction(ctx,fa,List(ChanType(IntType),IntType))
       case fa@FunctionApp(name,params) => {
         ctx.lookupFunction(name) match {

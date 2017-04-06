@@ -7,6 +7,8 @@ package fi.abo.it.actortool.boogie
 
 import scala.util.parsing.input.Position
 import scala.util.parsing.input.NoPosition
+import fi.abo.it.actortool.FilePosition
+import fi.abo.it.actortool.NoFilePosition
 
 object Boogie {
  
@@ -133,7 +135,7 @@ object Boogie {
    def this(xs: List[BVar], trigger: Trigger, body: Expr) = this(Nil, xs, List(trigger), body)
  }
  case class Lambda(ta: List[TVar], xs: List[BVar], body: Expr) extends Expr
-
+ 
  case class Ite(con: Expr, thn: Expr, els: Expr) extends Expr
 
  case class BVar(id: String, t: BType) {
@@ -259,6 +261,7 @@ object Boogie {
       (if (assert.pos != null) 
         (assert.pos match {
          case NoPosition => ""
+         case NoFilePosition => ""
          case pos: Position => pos + ": " 
         }) 
        else "")

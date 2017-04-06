@@ -10,7 +10,6 @@ object BoogiePrelude {
       }
       components = components + comp
     }
-    
   }
 
   // removes a component from the prelude. use with great care, as other parts of
@@ -27,25 +26,32 @@ object BoogiePrelude {
   //val predicates: Set[Predicate] = Set()
   
   // default components
-  private var components: Set[PreludeComponent] = Set(TypesAndGlobalVarsPL)
+  private var components: Set[PreludeComponent] = Set(TypesAndGlobalVarsPL,FooterPL)
 
   // get the prelude (with all components currently included)
   def get: String = {
-    var l = components.toList.sortWith((a,b) => a compare b)
-    l = l.:+ (FooterPL)
+    var l = components.toList.sorted
     l.foldLeft("")((s:String,a:PreludeComponent) => s + a.text)
   }
 }
 
-sealed abstract class PreludeComponent {
+object PreludeOrder {
+  val Order = List(TypesAndGlobalVarsPL,DivModAbsPL,MapPL,BitwisePL,BitvectorPL,Bitvector2IntPL,ChAggregates,FooterPL)
+}
+
+sealed abstract class PreludeComponent extends Ordered[PreludeComponent]  {
   // determines the order in which the components are output
-  def compare(that: PreludeComponent): Boolean = {
-    val order: List[PreludeComponent] = List(TypesAndGlobalVarsPL,SeqNumberingPL,DivModAbsPL,BitwisePL,MapPL,Bitvector2IntPL)
-    if (!order.contains(this)) false
-    else order.indexOf(this) < order.indexOf(that)
+  
+  def compare(that: PreludeComponent) = {
+    if (!PreludeOrder.Order.contains(this) || !PreludeOrder.Order.contains(that)) { 
+      throw new RuntimeException("Prelude components not properly set up: " + this + " " + that)
+    }
+    PreludeOrder.Order.indexOf(this) compare PreludeOrder.Order.indexOf(that)
   }
+
   def text: String
   def dependencies = Set.empty[PreludeComponent]
+  override def toString = this.getClass.getSimpleName
 }
 
 object TypesAndGlobalVarsPL extends PreludeComponent {
@@ -82,13 +88,6 @@ axiom (
 """
 }
 
-object SeqNumberingPL extends PreludeComponent {
-  val text = 
-"""// -- Sequence numbering for FT ----------------------------------
-const unique sqn#: Field int;
-"""
-}
-
 object DivModAbsPL extends PreludeComponent {
   val text =
 """
@@ -103,7 +102,7 @@ axiom (forall a,b: int :: 0 <= AT#Mod(a,b) && AT#Mod(a,b) < AT#Abs(b));
 """
 }
 
-class BitvectorPL(val size: Int) extends PreludeComponent {
+class BitvectorSubPL(val size: Int) extends PreludeComponent {
    private val template =
 """
 // ---------------------------------------------------------------
@@ -131,44 +130,89 @@ axiom (forall a,b: bv@bvsize@ :: AT#BvXor@bvsize@(a,b) == AT#BvAnd@bvsize@(AT#Bv
   val text = template.replace("@bvsize@", size.toString)
 
   override def equals(that: Any): Boolean = that match {
-     case bvpl: BitvectorPL => bvpl.size == this.size
+     case bvpl: BitvectorSubPL => bvpl.size == this.size
      case _ => false
   }
    
   override def hashCode: Int = BitvectorPL.hashCode+size
 }
 
-object Bitvector2IntPL extends PreludeComponent {
-    val text =
+class Bitvector2IntSubPL(val size: Int) extends PreludeComponent {
+  
+  val bitFuncTemplate = "AT#Bit@bitnum@bv@bvsize@(@argument@)"
+  
+  val bitFuncDeclTemplate = 
+    "function AT#Bit@bitnum@bv@bvsize@(vec: bv@bvsize@): bool { AT#BvAnd@bvsize@(vec,@bitexp@bv@bvsize@) != 0bv@bvsize@ }"
+  
+  val bv2intDeclTemplate = "function AT#Bv2Int@bvsize@(vec: bv@bvsize@): int { @expr@ }"
+  
+  def generateBitFunc(n: Int) = bitFuncDeclTemplate.replace("@bvsize@", size.toString).replace("@bitnum@", n.toString)
+  
+  def generateBv2Int = {
+    "function AT#Bv2Int" + size + "(vec: bv" + size  + "): int {\n  " +
+    (for (i <- 0 to size-1) yield {
+      val bitFunc = bitFuncTemplate
+        .replace("@bitnum@", i.toString)
+        .replace("@argument@", "vec")
+        .replace("@bvsize@", size.toString)
+       "(if " + bitFunc + " then " + scala.math.pow(2,i).toLong.toString + " else 0)"
+    }).mkString(" +\n  ") + 
+    "\n}\n"
+  }
+  
+  def generateText: String = {
+    header+
+    "// Size: " + size + "\n" +
+    (for (i <- 0 to size-1) yield {
+      bitFuncDeclTemplate
+        .replace("@bvsize@", size.toString)
+        .replace("@bitnum@", i.toString)
+        .replace("@bitexp@", scala.math.pow(2,i).toLong.toString)
+    }).mkString("\n") + "\n\n" +
+    generateBv2Int
+  }
+  
+  val header = 
 """
 // ---------------------------------------------------------------
 // -- Bitvector to integer ---------------------------------------
 // ---------------------------------------------------------------
-function AT#Bit0(vec: bv8): bool { AT#BvAnd8(vec,1bv8) != 0bv8 }
-function AT#Bit1(vec: bv8): bool { AT#BvAnd8(vec,2bv8) != 0bv8 }
-function AT#Bit2(vec: bv8): bool { AT#BvAnd8(vec,4bv8) != 0bv8 }
-function AT#Bit3(vec: bv8): bool { AT#BvAnd8(vec,8bv8) != 0bv8 }
-function AT#Bit4(vec: bv8): bool { AT#BvAnd8(vec,16bv8) != 0bv8 }
-function AT#Bit5(vec: bv8): bool { AT#BvAnd8(vec,32bv8) != 0bv8 }
-function AT#Bit6(vec: bv8): bool { AT#BvAnd8(vec,64bv8) != 0bv8 }
-function AT#Bit7(vec: bv8): bool { AT#BvAnd8(vec,128bv8) != 0bv8 }
-
-function AT#Bv2Int(vec: bv8): int {
-  128*( if AT#Bit7(vec) then 1 else 0 ) +
-  64*( if AT#Bit6(vec) then 1 else 0 ) +
-  32*( if AT#Bit5(vec) then 1 else 0 ) +
-  16*( if AT#Bit4(vec) then 1 else 0 ) +
-  8*( if AT#Bit3(vec) then 1 else 0 ) +
-  4*( if AT#Bit2(vec) then 1 else 0 ) +
-  2*( if AT#Bit1(vec) then 1 else 0 ) +
-  1*( if AT#Bit0(vec) then 1 else 0 )
-}
 """
+  
+  val text = generateText
+  
+  override def equals(that: Any): Boolean = that match {
+     case bvpl: Bitvector2IntSubPL => bvpl.size == this.size
+     case _ => false
+  }
+  
+  override def hashCode: Int = Bitvector2IntPL.hashCode+size
 }
 
-object BitvectorPL {
-  def createPL(size: Int) = new BitvectorPL(size)
-  def createPL(typ: BvType) = new BitvectorPL(typ.size)
+
+object BitvectorPL extends PreludeComponent {
+  def createPL(size: Int): this.type = { subPLs = subPLs + new BitvectorSubPL(size); BitvectorPL }
+  def createPL(typ: BvType): this.type = createPL(typ.size)
+  
+  private var subPLs: Set[BitvectorSubPL] = Set.empty
+  
+  def text = {
+    subPLs.foldLeft("")((s:String,a:PreludeComponent) => s + a.text)
+  }
+  
+}
+
+object Bitvector2IntPL extends PreludeComponent {
+  
+  def createPL(size: Int): this.type = { subPLs = subPLs + new Bitvector2IntSubPL(size); Bitvector2IntPL }
+  def createPL(typ: BvType): this.type = createPL(typ.size)
+  
+  private var subPLs: Set[Bitvector2IntSubPL] = Set.empty
+  
+  def text = {
+    subPLs.foldLeft("")((s:String,a:PreludeComponent) => s + a.text)
+  }
+  
 }
 
 object BitwisePL extends PreludeComponent {
