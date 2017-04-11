@@ -40,7 +40,7 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   
 }
 
-class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolver.Context) 
+class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
   
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
@@ -58,6 +58,19 @@ class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolv
       val newName = decl.id
       actorVars  += BDecl(newName,decl.typ)
     }
+    
+//    println(typeCtx.getClass.getName)
+//    val constantPreds = 
+//      actor.variables.filter(_.constant) map { d => 
+//        val id = Id(d.id)
+//        id.typ = d.typ
+//        val pred = Eq(Id(d.id),d.value.get)
+//        Resolver.resolveExpr(typeCtx, pred, BoolType) match {
+//          case Resolver.Success(_) =>
+//          case Resolver.Errors(errs) => assert(false,errs)
+//        }
+//        pred
+//      }
     
     val actorParamDecls = actor.parameters map {p => BDecl(p.id,p.typ)}
     
@@ -96,7 +109,7 @@ class ActorVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolv
   
 }
 
-class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Resolver.Context) 
+class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[Network, NetworkVerificationStructure] {
   
   val tokensFinder = new TokensFinder()
@@ -289,20 +302,24 @@ class NetworkVerificationStructureBuilder(val ftMode: Boolean, val typeCtx: Reso
       for ((v,ind) <- ipat.vars.zipWithIndex) {
         val c = Elements.ch(cId,v.typ)
         val index = 
-          if (ind == 0) Elements.rd0(c.id,c.typ.asInstanceOf[ChanType]) 
-          else Minus(Elements.rd0(c.id,c.typ.asInstanceOf[ChanType]),IntLiteral(ind))
+          if (ind == 0) Elements.rd(c.id,c.typ.asInstanceOf[ChanType]) 
+          else Minus(Elements.rd(c.id,c.typ.asInstanceOf[ChanType]),IntLiteral(ind))
         val acc = Elements.chAcc(c,index)
         replacements += (v -> acc)
       }
     }
     
-    val patternVarRenamings = (for (ipat <- action.inputPattern) yield {
-      for (v <- ipat.vars) yield {
-        val inVar = ipat.portId + B.Sep + v.id
-        vars += BDecl(inVar,B.Local(inVar,B.type2BType(v.typ)))
-        (v.id,makeId(inVar,v.typ))
+    val patternVarRenamings: Map[String,Id] = 
+      if (instance.actor.isNetwork) Map.empty
+      else {
+        (for (ipat <- action.inputPattern) yield {
+          for (v <- ipat.vars) yield {
+            val inVar = ipat.portId + B.Sep + v.id
+            vars += BDecl(inVar,B.Local(inVar,B.type2BType(v.typ)))
+            (v.id,makeId(inVar,v.typ))
+          }
+        }).flatten.toMap
       }
-    }).flatten.toMap
     
     val assignedVars = action.body flatMap { a => a match {
       case Assign(x,_) => {

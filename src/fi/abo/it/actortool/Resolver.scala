@@ -3,6 +3,7 @@ package fi.abo.it.actortool
 import scala.util.parsing.input.Position
 import scala.util.parsing.input.Positional
 import collection.mutable.ListBuffer
+import fi.abo.it.actortool.ActorTool.TranslationException
 
 object Resolver {
   
@@ -23,6 +24,7 @@ object Resolver {
     def lookupInport(id: String): Option[InPort] = None
     def lookupOutport(id: String): Option[OutPort] = None
     def lookupRefTypeDecl(id: String): Option[TypeDecl] = None 
+    def variables: List[Declaration]
   }
   
   sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor], val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
@@ -30,6 +32,7 @@ object Resolver {
     private val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
     override def lookupRefTypeDecl(id: String): Option[TypeDecl] = userTypes.get(id)
+    override def variables = List.empty
   }
   
   sealed class EmptyContext extends RootContext(null,Map.empty,Map.empty)
@@ -45,6 +48,7 @@ object Resolver {
     override def lookupInport(id: String) = parentCtx.lookupInport(id)
     override def lookupOutport(id: String) = parentCtx.lookupOutport(id)
     override def lookupRefTypeDecl(id: String) = parentCtx.lookupRefTypeDecl(id)
+    override def variables = vars.values.toList
   }
   
   sealed class ActorContext(val actor: DFActor,
@@ -491,23 +495,25 @@ object Resolver {
   
   def resolveExpr(exp: Expr, typeCtx: Context): ResolverOutcome = {
     val ctx = new BasicContext(exp,typeCtx)
-    resolveExpr(typeCtx,exp)
+    resolveExpr(ctx,exp)
     assert(exp.typ != null)
     val result = if (ctx.getErrors.isEmpty && exp.typ != null) Success(ctx) else Errors(ctx.getErrors.toList)
     result match {
       case Success(_) =>
       case Errors(errs) => {
+        throw new TranslationException(exp.pos, "Error resolving type of expression: '" + exp + "': " + (errs map { case (pos,msg) => pos + ": " + msg } ) )
         assert(false,errs)
       }
     }
     result
   }
   
-  def resolveExpr(ctx: Context, exp: Expr, t: Type) {
+  def resolveExpr(ctx: Context, exp: Expr, t: Type): ResolverOutcome = {
     if (t != resolveExpr(ctx,exp)) {
       ctx.error(exp.pos, "Expected type " + t.id)
     }
     assert(exp.typ != null)
+    if (ctx.getErrors.isEmpty && exp.typ != null) Success(ctx) else Errors(ctx.getErrors.toList)
   }
   
   def resolveExpr(parentCtx: Context, exp: Expr): Type = {
@@ -518,8 +524,8 @@ object Resolver {
       case op: Times => resolveNumericBinaryExpr(ctx, op)
       case op: Div => resolveNumericBinaryExpr(ctx, op)
       case op: Mod => resolveNumericBinaryExpr(ctx, op)
-      case op: RShift => resolveBWExpr(ctx,op) // t1
-      case op: LShift => resolveBWExpr(ctx,op) // LubSumPow
+      case op: RShift => resolveBitShifts(ctx,op) // t1
+      case op: LShift => resolveBitShifts(ctx,op) // LubSumPow
       case op: BwAnd => resolveBWExpr(ctx,op)
       case op: BwOr => resolveBWExpr(ctx,op)
       case op: BwXor => resolveBWExpr(ctx,op)
@@ -811,6 +817,21 @@ object Resolver {
     }
     exp.typ = BoolType
     exp.typ
+  }
+  
+  def resolveBitShifts(ctx: Context, exp: BinaryExpr): Type = {
+    assert(List("<<",">>") contains  (exp.operator))
+    val t1 = resolveExpr(ctx, exp.left)
+    val t2 = resolveExpr(ctx, exp.right)
+    if (t1.isBv && t2.isBv) resolveBWExpr(ctx,exp)
+    else if (t1.isInt && t2.isInt) {
+      exp.typ = IntType
+      IntType
+    }
+    else {
+      ctx.error(exp.left.pos, "Operator not applicable to arguments of type '" + t1.id + "' and '" + t2.id + "'")
+      UnknownType
+    }
   }
   
   def resolveBWExpr(ctx: Context, exp: BinaryExpr): Type = {

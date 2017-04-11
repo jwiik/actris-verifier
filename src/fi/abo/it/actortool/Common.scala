@@ -7,18 +7,28 @@ import scala.collection.mutable.ListBuffer
  */
 
 object Elements {
-  def rd0(id: String, chType: ChanType) = {
+  def rd(id: String, chType: ChanType) = {
     val fa = FunctionApp("rd",List(makeId(id,chType): Expr))
     fa.typ = IntType(-1)
     fa
   }
-  def tot0(id: String, chType: ChanType) = {
+  def tot(id: String, chType: ChanType) = {
     val fa = FunctionApp("tot",List(makeId(id,chType): Expr))
     fa.typ = IntType(-1)
     fa
   }
-  def str(id: String, chType: ChanType) = {
+  def bullet(id: String, chType: ChanType) = {
     val fa = FunctionApp("str",List(makeId(id,chType): Expr))
+    fa.typ = IntType(-1)
+    fa
+  }
+  def rdb(id: String, chType: ChanType) = {
+    val fa = FunctionApp("rd@",List(makeId(id,chType): Expr))
+    fa.typ = IntType(-1)
+    fa
+  }
+  def totb(id: String, chType: ChanType) = {
+    val fa = FunctionApp("tot@",List(makeId(id,chType): Expr))
     fa.typ = IntType(-1)
     fa
   }

@@ -12,12 +12,11 @@ import fi.abo.it.actortool.boogie.Boogie.UnaryExpr
 import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool._ 
 
-class Translator(
-    val ftMode: Boolean, 
+class Translator( 
     val smokeTest: Boolean,
     val skipMutualExclusivenessCheck: Boolean) {  
   
-  val stmtTranslator = new StmtExpTranslator(ftMode); 
+  val stmtTranslator = new StmtExpTranslator(); 
   //val Inhalator = new Inhalator(stmtTranslator)
   //val Exhalator = new Exhalator(stmtTranslator)
   
@@ -34,8 +33,9 @@ class Translator(
   }
   
   def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Boogie.Decl] = {
-    val nwVerStructBuilder = new NetworkVerificationStructureBuilder(ftMode, typeCtx)
-    val actorVerStructBuilder = new ActorVerificationStructureBuilder(ftMode, typeCtx)
+    assert(typeCtx.getErrors.isEmpty)
+    val nwVerStructBuilder = new NetworkVerificationStructureBuilder(typeCtx)
+    val actorVerStructBuilder = new ActorVerificationStructureBuilder(typeCtx)
     
     //var userTypes = Map.empty[String,NamedType]
         
@@ -587,9 +587,14 @@ class Translator(
       var repeats = 0
       while (repeats < ipat.repeat) {
         val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
-        for (v <- ipat.vars) {
-          asgn += Boogie.Assign(transExpr(v.id,v.typ)(renamings),B.ChannelIdx(cId,v.typ,B.R(cId)))
-          asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
+        if (actor.isNetwork) {
+          asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(ipat.vars.size))
+        }
+        else {
+          for (v <- ipat.vars) {
+            asgn += Boogie.Assign(transExpr(v.id,v.typ)(renamings),B.ChannelIdx(cId,v.typ,B.R(cId)))
+            asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
+          }
         }
         repeats = repeats+1
       }
@@ -638,14 +643,14 @@ class Translator(
       val cId = nwvs.sourceMap(PortRef(Some(instance.id),opat.portId))
       var repeats = 0
       while (repeats < opat.repeat) {
-        for (e <- opat.exps) {
-          if (!actor.isInstanceOf[Network]) {
+        if (actor.isNetwork) {
+          asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(opat.exps.size))
+        }
+        else {
+          for (e <- opat.exps) {
             asgn += Boogie.Assign(B.ChannelIdx(cId,e.typ,B.C(cId)),transExpr(e)(renamings))
+            asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(1))
           }
-//          if (ftMode) {
-//            asgn += Boogie.Assign(B.SqnCh(cId,B.C(cId)),B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)))
-//          }
-          asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(1))
         }
         repeats = repeats+1
       }

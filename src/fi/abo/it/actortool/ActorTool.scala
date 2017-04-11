@@ -51,11 +51,12 @@ object ActorTool {
     val BplFile: String
     val Timing: Int
     val FixedBaseLength: Int
-    val FTMode: Boolean
     val InferModules: List[String]
     val SmokeTest: Boolean
     val ReplaceMaps: Boolean
     val BoogieTimeout: Int
+    val AssumeGenInvs: Boolean
+    val ComponentsToVerify: List[String]
     final lazy val help = "actortool [option] <filename>+\n"
   }
   
@@ -73,13 +74,13 @@ object ActorTool {
     var aDoVerify = true
     var aTiming = if (DEBUG) 2 else 1
     var aInferModules = List("default")
-    var aBVMode = false
     var aSoundnessChecks = false
     var aFixedBaseLength = 0
-    var aFTMode = false
     var aSmokeTest = false
     var aReplaceMaps = false
-    var aBoogieTimeout = 60
+    var aBoogieTimeout = 300
+    var aAssumeInvs = true
+    var aToVerify: List[String] = List.empty
     
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -111,7 +112,7 @@ object ActorTool {
         case Param("noTranslate") => aDoTranslate = false
         case Param("noVerify") => aDoVerify = false
         case Param("bvMode") => reportCommandLineError("parameter bvMode is obsolete.")
-        case Param("ftMode") => aFTMode = true
+        case Param("noAssumeGenInvs") => aAssumeInvs = false
         case Param("timings") => {
           value match {
             case Some(v) =>
@@ -156,6 +157,16 @@ object ActorTool {
         }
         case Param("smokeTest") => aSmokeTest = true
         case Param("replaceMaps") => aReplaceMaps = true
+        case Param("toVerify") => {
+          value match {
+            case Some(list) => {
+              aToVerify = list.split(",").toList
+            }
+            case None =>
+              reportCommandLineError("parameter toVerify takes a comma-separated list of components to verify.")
+              return None
+          }
+        }
         case Param(x) => 
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -193,11 +204,11 @@ object ActorTool {
         val Timing = aTiming
         val InferModules = aInferModules
         val FixedBaseLength = aFixedBaseLength
-        val BVMode = aBVMode
-        val FTMode = aFTMode
+        val AssumeGenInvs = aAssumeInvs
         val SmokeTest = aSmokeTest
         val ReplaceMaps = aReplaceMaps
         val BoogieTimeout = aBoogieTimeout
+        val ComponentsToVerify = aToVerify
     })
   }
   
@@ -243,7 +254,7 @@ object ActorTool {
     var startTime = System.nanoTime
     var tmpTime = startTime
     
-    var program = parsePrograms(params) match {
+    val program = parsePrograms(params) match {
       case Some(p) => p
       case None => return //illegal program, errors have already been displayed
     }
@@ -264,7 +275,7 @@ object ActorTool {
     tmpTime = System.nanoTime
     
     if (params.DoInfer) {
-      Inferencer.infer(program,typeCtx.get,params.InferModules,params.FTMode) match {
+      Inferencer.infer(program,typeCtx.get,params.InferModules,params.AssumeGenInvs) match {
         case Inferencer.Errors(msgs) =>
           msgs foreach { case (pos,msg) => reportError(pos, msg) }; return
         case Inferencer.Success() =>
@@ -280,9 +291,13 @@ object ActorTool {
     
     val verifier = new BoogieVerifier(params)
     
+    val componentsToVerify = 
+      if (params.ComponentsToVerify.isEmpty) program
+      else program.filter { x => params.ComponentsToVerify.contains(x.id) }
+    
     val bplProg =
       try {
-        verifier.translateProgram(program,typeCtx.get);
+        verifier.translateProgram(componentsToVerify,typeCtx.get);
       } catch {
         case ex: TranslationException => reportError(ex.pos,ex.msg)
         return
@@ -309,7 +324,27 @@ object ActorTool {
         println(s + ": %1.3fs".format (timings(s)/1000000000.0))
       }
     }
-    println("Number of generated invariants: " + Inferencer.getNumGeneratedInvariants) 
+    
+    println("Number of invariants: ")
+    var totUserProvided, totGenerated = 0
+    componentsToVerify map { 
+      c => c match {
+        case ba: BasicActor => 
+          val generated = (ba.actorInvariants.count { inv => inv.generated })
+          val userProvided = ba.actorInvariants.size - generated
+          totUserProvided += userProvided
+          totGenerated += generated
+          println(ba.fullName + " U:" + userProvided + " G:" + generated)
+        case nw: Network => 
+          val generated = (nw.actorInvariants.count { inv => inv.generated }) + (nw.channelInvariants.count { inv => inv.generated })
+          val userProvided = (nw.actorInvariants.size + nw.channelInvariants.size) - generated
+          totUserProvided += userProvided
+          totGenerated += generated
+          println(nw.fullName + " U:" + userProvided + " G:" + generated)
+        case _ =>
+      }
+    }
+    println("Total U:" + totUserProvided + " G:" + totGenerated)
 	}
   
   def writeFile(filename: String, text: String) {

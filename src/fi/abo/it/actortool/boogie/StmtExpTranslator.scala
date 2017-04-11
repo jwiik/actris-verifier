@@ -24,7 +24,7 @@ class TranslatorContext(val renamings: Map[String,Expr]) {
   }
 }
 
-class StmtExpTranslator(val ftMode: Boolean) {
+class StmtExpTranslator() {
   /*
    * Translation of statements and expressions
    */

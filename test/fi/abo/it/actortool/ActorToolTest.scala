@@ -25,11 +25,11 @@ class ActorToolTestSuite extends FunSuite {
       val Timing = 1
       val FixedBaseLength = 0
       val InferModules = List("default")
-      val BVMode = false
-      val FTMode = false
+      val AssumeGenInvs = true
       val SmokeTest = false
       val ReplaceMaps = false
       val BoogieTimeout = 5
+      val ComponentsToVerify = List.empty
     }
   
   
