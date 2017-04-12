@@ -1,15 +1,8 @@
-lazy val commonSettings = Seq(
-  name := "actris",
-  version := "0.2.0",
-  organization := "fi.abo.it",
-  scalaVersion := "2.11.7"
-)
+name := "actris"
+organization := "fi.abo.it"
+version := "0.2.0"
+scalaVersion := "2.11.8"
 
-lazy val root = 
-  (project in file(".")).
-  settings(commonSettings: _*)
-
-scalaSource in Compile := baseDirectory.value / "src"
-
-
+libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.5"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
