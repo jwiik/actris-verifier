@@ -3,11 +3,8 @@ package fi.abo.it.actortool
 import org.scalatest.FunSuite
 import org.scalatest.BeforeAndAfter
 import java.io.File
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import scala.sys.process._
 
-@RunWith(classOf[JUnitRunner])
 class ActorToolTestSuite extends FunSuite {
   
   def createParams(filePath: String) =
