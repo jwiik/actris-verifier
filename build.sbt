@@ -1,6 +1,6 @@
 lazy val commonSettings = Seq(
-  name := "actortool",
-  version := "0.1.0",
+  name := "actris",
+  version := "0.2.0",
   organization := "fi.abo.it",
   scalaVersion := "2.11.7"
 )
