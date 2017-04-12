@@ -1,0 +1,5 @@
+actor Bv2Int bv(size=32) in ==> int out :
+
+  action in:[x] ==> out:[bv2int(x)] end
+
+end
