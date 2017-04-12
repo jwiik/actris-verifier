@@ -3,13 +3,13 @@ actor delay(int k) int operand_1 ==> int result :
   int data;
   int y;
   
-  //invariant tot(result) = 0 ==> data = k
-  //invariant tot(result) > 0 ==> data = prev(operand_1)
   stream invariant rd(operand_1) = tot(result)
-  //stream invariant tot(result) > 0 ==> result[0] = k
-  //stream invariant (forall int idx :: every(result,idx,1,0) ==> result[idx] = operand_1[idx-1])
   
-  initialize ==> do data := k end
+  initialize ==> 
+  do 
+    data := k 
+  end
+  
   action operand_1:[i] ==> result:[y] 
   do 
   	y := data;

@@ -14,12 +14,19 @@ var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
+var B: CType;
 
 var H: HType;
 
 const unique this#: Actor;
 
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
+function AT#Ite<T>(bool, T, T): T;
+axiom (
+  forall<T> cond: bool, thn: T, els: T :: { AT#Ite(cond, thn, els) }
+    (cond ==> AT#Ite(cond,thn,els) == thn &&
+    !cond ==> AT#Ite(cond,thn,els) == els)
+);
 
 // ---------------------------------------------------------------
 // -- Axiomatisation for map data type ---------------------------
@@ -72,6 +79,8 @@ procedure qpskMod#init#0()
   assume true;
   assume R[chip] == 0;
   assume C[symb] == 0;
+  assert {:msg "qpskMod.cal(13.19): Initialization might not establish the invariant (#0)"} (32 * R[chip]) == C[symb];
+  assert {:msg "Initialization might not establish the invariant (#1)"} (32 * R[chip]) == C[symb];
 }
 procedure qpskMod#anon$0#1()
   modifies C, R, M, I, H;
@@ -83,6 +92,8 @@ procedure qpskMod#anon$0#1()
   assume true;
   assume 0 <= R[chip];
   assume 0 <= C[symb];
+  assume (32 * R[chip]) == C[symb];
+  assume (32 * R[chip]) == C[symb];
   chip#0 := M[chip][R[chip]];
   R[chip] := R[chip] + 1;
   IQ := Map#Store(IQ, 0, qpskMod#q7_map(AT#BvAnd32(AT#BvLshr32(chip#0, 0bv32), 1bv32)));
@@ -181,4 +192,6 @@ procedure qpskMod#anon$0#1()
   C[symb] := C[symb] + 1;
   M[symb][C[symb]] := Map#Select(IQ, 31);
   C[symb] := C[symb] + 1;
+  assert {:msg "qpskMod.cal(13.19): Action at qpskMod.cal(18.2) might not preserve invariant (#2)"} (32 * R[chip]) == C[symb];
+  assert {:msg "Action at qpskMod.cal(18.2) might not preserve invariant (#3)"} (32 * R[chip]) == C[symb];
 }

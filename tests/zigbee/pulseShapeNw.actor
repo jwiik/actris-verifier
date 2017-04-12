@@ -2,15 +2,15 @@ actor pulseShape()
 // Inputs:
 bv(size=8) symb,           // I-Q symbols from QPSK modulator 
 bv(size=8) len,       		// Payload length
-bv(size=8) body_iterations_in,
-bv(size=8) body_index_in,
+bv(size=14) body_iterations_in,
+bv(size=14) body_index_in,
 int St_in
 // Outputs:
 ==> 
 bool done,          // Flag to terminate
 bv(size=8) hsp,             // Half-sine pulse samples
-bv(size=8) body_iterations_out,
-bv(size=8) body_index_out,
+bv(size=14) body_iterations_out,
+bv(size=14) body_index_out,
 int St_out
 :
 
@@ -34,8 +34,8 @@ int St_out
 	
 	initialize 
 		==>
-		body_iterations_out:[0x00],
-		body_index_out:[0x00],
+		body_iterations_out:[int2bv(0,14)],
+		body_index_out:[int2bv(0,14)],
 		St_out:[0]
 	end
 
@@ -47,8 +47,8 @@ int St_out
 			body_index_in:[body_index],
 			St_in:[St]
 		==>
-			body_iterations_out:[len_in * int2bv(32,8)],
-			body_index_out:[0x00],
+			body_iterations_out:[bvconcat(int2bv(0,6),len_in) * int2bv(32,14)],
+			body_index_out:[int2bv(0,14)],
 			St_out:[1]
 	guard St = 0
 	do
@@ -66,8 +66,8 @@ int St_out
 		hsp:[ hsps[0],hsps[1],hsps[2],hsps[3],hsps[4],hsps[5],hsps[6],hsps[7],
 			hsps[8],hsps[9],hsps[10],hsps[11],hsps[12],hsps[13],hsps[14],hsps[15] ],
 		body_iterations_out:[body_iterations],
-		body_index_out:[body_index + 0x01],
-		St_out:[ if body_index + 0x01 = body_iterations then 2 else 1 end ]
+		body_index_out:[body_index + int2bv(1,14)],
+		St_out:[1]
 	guard
 		St = 1 &&
 		body_index < body_iterations
@@ -112,7 +112,7 @@ int St_out
 		body_index_out:[body_index],
 		St_out:[0]
 	guard
-		St = 2 &&
+		St = 1 &&
 		body_index = body_iterations
 	do
 		hsps[0] := mul8(FILT_COEFF0, 0x7F);
@@ -128,72 +128,50 @@ int St_out
 		hsps[7] := mul8(FILT_COEFF1, symb_mem);
 		
 	end
-
-	schedule fsm s_start :
-		s_start ( init ) --> s_idle;
-		s_idle ( tx_body ) --> s_idle;
-		s_idle ( tx_tail ) --> s_start;
-	end
 	
 end
 
 network pulseShapeNw bv(size=8) symb, bv(size=8) len ==> bool done, bv(size=8) hsp :
-
-  action symb:128, len:1 ==> done:1, hsp:1032 
-    requires len[@] = 0x02
-    ensures rd@(len) = 1
-    ensures rd@(symb) = 128
-    ensures urd(symb) = 0
-    ensures urd(len) = 0
-    ensures St[next] = 0
-    //ensures rd@(symb) = 64
-    ensures tot@(done) = 1
-    //ensures tot@(hsp) = 520
+  
+  action symb:576, len:1 ==> done:1, hsp:4616
+    requires len[@] = 0x09
   end
-
+  
+  chinvariant @(symb) = 576*@(done)
+  chinvariant @(len) = @(done)
+  chinvariant @(hsp) = 4616*@(len)
+  
   // Feedback loops
   invariant tokens(body_iterations,1) && tokens(body_index,1) && tokens(St,1)
+  invariant St[next] = 0
   chinvariant tokens(body_iterations,1) && tokens(body_index,1) && tokens(St,1)
   
   // State is 0, 1 or, body_index between 0 and body_iterations
-  chinvariant St[next] = 0 || St[next] = 1 || St[next] = 2
-  chinvariant 0x00 <= body_index[next] && body_index[next] <= body_iterations[next]
+  chinvariant St[next] = 0 || St[next] = 1
+  chinvariant int2bv(0,14) <= body_index[next] && body_index[next] <= body_iterations[next]
   
-  // The total number of tokens on inputs is <= rate
-  chinvariant tot@(symb) <= rate(symb) && tot@(len) <= rate(len)
-  chinvariant tot@(done) <= rate(done) && tot@(hsp) <= rate(hsp)
-      
+  chinvariant tot@(len) = 1 ==> rate(symb) = 64*bv2int(len[@])
   chinvariant rd@(len) = 1 ==> (
-    body_iterations[next] = 0x02 * int2bv(32,8) &&
+    body_iterations[next] = bvconcat(int2bv(0,6),len[@]) * int2bv(32,14) &&
     2*bv2int(body_iterations[next]) = rate(symb) &&
     rd@(symb)  = 2*bv2int(body_index[next])
   )
-    
-  chinvariant St[next] = 1 || St[next] = 2 ==> (
+   
+  chinvariant St[next] = 1 ==> (
     rd@(symb)  = 2*bv2int(body_index[next]) &&
     tot@(hsp)  = 16*bv2int(body_index[next]) &&
+    16*rd@(symb) = 2*tot@(hsp) &&
     tot@(done) = 0 &&
     rd@(len)   = 1
   )
-  
-  chinvariant St[next] = 2 ==> (
-    body_index[next] = body_iterations[next]
-  )
-  
-  chinvariant St[next] = 1 ==> (
-    body_index[next] < body_iterations[next]
-  )
-  
-  chinvariant St[next] = 0 ==> (
-    body_index[next] = body_iterations[next]
-  )
-  
+
   chinvariant St[next] = 0 && rd@(len) = 1 ==> (
     rd@(symb)  = 2*bv2int(body_iterations[next]) &&
     tot@(hsp)  = 16*bv2int(body_iterations[next])+8 &&
+    16*rd@(symb) = 2*(tot@(hsp)-8) &&
     tot@(done) = 1
   )
-  
+
   chinvariant St[next] = 0 && rd@(len) = 0 ==> (
     rd@(symb)  = 0 &&
     tot@(hsp)  = 0 &&

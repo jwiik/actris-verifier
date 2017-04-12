@@ -47,6 +47,27 @@ axiom (
 // ---------------------------------------------------------------
 // -- Bit vector operations --------------------------------------
 // ---------------------------------------------------------------
+// Size: 14
+function {:bvbuiltin "bvand"} AT#BvAnd14(a: bv14, b: bv14): bv14;
+function {:bvbuiltin "bvor"} AT#BvOr14(a: bv14, b: bv14): bv14;
+function {:bvbuiltin "bvnot"} AT#BvNot14(a: bv14): bv14;
+function {:bvbuiltin "bvadd"} AT#BvAdd14(a: bv14, b: bv14): bv14;
+function {:bvbuiltin "bvsub"} AT#BvSub14(a: bv14, b: bv14): bv14;
+function {:bvbuiltin "bvmul"} AT#BvMul14(a: bv14, b: bv14): bv14;
+function {:bvbuiltin "bvshl"} AT#BvShl14(bv14,bv14): bv14;
+function {:bvbuiltin "bvlshr"} AT#BvLshr14(bv14,bv14): bv14;
+function {:bvbuiltin "bvashr"} AT#BvAshr14(bv14,bv14): bv14;
+function {:bvbuiltin "bvule"} AT#BvUle14(a: bv14, b: bv14): bool;
+function {:bvbuiltin "bvult"} AT#BvUlt14(a: bv14, b: bv14): bool;
+function {:bvbuiltin "bvuge"} AT#BvUge14(a: bv14, b: bv14): bool;
+function {:bvbuiltin "bvugt"} AT#BvUgt14(a: bv14, b: bv14): bool;
+function AT#BvXor14(a: bv14, b: bv14): bv14;
+
+axiom (forall a,b: bv14 :: AT#BvXor14(a,b) == AT#BvAnd14(AT#BvOr14(a,b), AT#BvNot14(AT#BvAnd14(a,b))) );
+
+// ---------------------------------------------------------------
+// -- Bit vector operations --------------------------------------
+// ---------------------------------------------------------------
 // Size: 8
 function {:bvbuiltin "bvand"} AT#BvAnd8(a: bv8, b: bv8): bv8;
 function {:bvbuiltin "bvor"} AT#BvOr8(a: bv8, b: bv8): bv8;
@@ -68,24 +89,61 @@ axiom (forall a,b: bv8 :: AT#BvXor8(a,b) == AT#BvAnd8(AT#BvOr8(a,b), AT#BvNot8(A
 // ---------------------------------------------------------------
 // -- Bitvector to integer ---------------------------------------
 // ---------------------------------------------------------------
-function AT#Bit0(vec: bv8): bool { AT#BvAnd8(vec,1bv8) != 0bv8 }
-function AT#Bit1(vec: bv8): bool { AT#BvAnd8(vec,2bv8) != 0bv8 }
-function AT#Bit2(vec: bv8): bool { AT#BvAnd8(vec,4bv8) != 0bv8 }
-function AT#Bit3(vec: bv8): bool { AT#BvAnd8(vec,8bv8) != 0bv8 }
-function AT#Bit4(vec: bv8): bool { AT#BvAnd8(vec,16bv8) != 0bv8 }
-function AT#Bit5(vec: bv8): bool { AT#BvAnd8(vec,32bv8) != 0bv8 }
-function AT#Bit6(vec: bv8): bool { AT#BvAnd8(vec,64bv8) != 0bv8 }
-function AT#Bit7(vec: bv8): bool { AT#BvAnd8(vec,128bv8) != 0bv8 }
+// Size: 8
+function AT#Bit0bv8(vec: bv8): bool { AT#BvAnd8(vec,1bv8) != 0bv8 }
+function AT#Bit1bv8(vec: bv8): bool { AT#BvAnd8(vec,2bv8) != 0bv8 }
+function AT#Bit2bv8(vec: bv8): bool { AT#BvAnd8(vec,4bv8) != 0bv8 }
+function AT#Bit3bv8(vec: bv8): bool { AT#BvAnd8(vec,8bv8) != 0bv8 }
+function AT#Bit4bv8(vec: bv8): bool { AT#BvAnd8(vec,16bv8) != 0bv8 }
+function AT#Bit5bv8(vec: bv8): bool { AT#BvAnd8(vec,32bv8) != 0bv8 }
+function AT#Bit6bv8(vec: bv8): bool { AT#BvAnd8(vec,64bv8) != 0bv8 }
+function AT#Bit7bv8(vec: bv8): bool { AT#BvAnd8(vec,128bv8) != 0bv8 }
 
-function AT#Bv2Int(vec: bv8): int {
-  128*( if AT#Bit7(vec) then 1 else 0 ) +
-  64*( if AT#Bit6(vec) then 1 else 0 ) +
-  32*( if AT#Bit5(vec) then 1 else 0 ) +
-  16*( if AT#Bit4(vec) then 1 else 0 ) +
-  8*( if AT#Bit3(vec) then 1 else 0 ) +
-  4*( if AT#Bit2(vec) then 1 else 0 ) +
-  2*( if AT#Bit1(vec) then 1 else 0 ) +
-  1*( if AT#Bit0(vec) then 1 else 0 )
+function AT#Bv2Int8(vec: bv8): int {
+  (if AT#Bit0bv8(vec) then 1 else 0) +
+  (if AT#Bit1bv8(vec) then 2 else 0) +
+  (if AT#Bit2bv8(vec) then 4 else 0) +
+  (if AT#Bit3bv8(vec) then 8 else 0) +
+  (if AT#Bit4bv8(vec) then 16 else 0) +
+  (if AT#Bit5bv8(vec) then 32 else 0) +
+  (if AT#Bit6bv8(vec) then 64 else 0) +
+  (if AT#Bit7bv8(vec) then 128 else 0)
+}
+
+// ---------------------------------------------------------------
+// -- Bitvector to integer ---------------------------------------
+// ---------------------------------------------------------------
+// Size: 14
+function AT#Bit0bv14(vec: bv14): bool { AT#BvAnd14(vec,1bv14) != 0bv14 }
+function AT#Bit1bv14(vec: bv14): bool { AT#BvAnd14(vec,2bv14) != 0bv14 }
+function AT#Bit2bv14(vec: bv14): bool { AT#BvAnd14(vec,4bv14) != 0bv14 }
+function AT#Bit3bv14(vec: bv14): bool { AT#BvAnd14(vec,8bv14) != 0bv14 }
+function AT#Bit4bv14(vec: bv14): bool { AT#BvAnd14(vec,16bv14) != 0bv14 }
+function AT#Bit5bv14(vec: bv14): bool { AT#BvAnd14(vec,32bv14) != 0bv14 }
+function AT#Bit6bv14(vec: bv14): bool { AT#BvAnd14(vec,64bv14) != 0bv14 }
+function AT#Bit7bv14(vec: bv14): bool { AT#BvAnd14(vec,128bv14) != 0bv14 }
+function AT#Bit8bv14(vec: bv14): bool { AT#BvAnd14(vec,256bv14) != 0bv14 }
+function AT#Bit9bv14(vec: bv14): bool { AT#BvAnd14(vec,512bv14) != 0bv14 }
+function AT#Bit10bv14(vec: bv14): bool { AT#BvAnd14(vec,1024bv14) != 0bv14 }
+function AT#Bit11bv14(vec: bv14): bool { AT#BvAnd14(vec,2048bv14) != 0bv14 }
+function AT#Bit12bv14(vec: bv14): bool { AT#BvAnd14(vec,4096bv14) != 0bv14 }
+function AT#Bit13bv14(vec: bv14): bool { AT#BvAnd14(vec,8192bv14) != 0bv14 }
+
+function AT#Bv2Int14(vec: bv14): int {
+  (if AT#Bit0bv14(vec) then 1 else 0) +
+  (if AT#Bit1bv14(vec) then 2 else 0) +
+  (if AT#Bit2bv14(vec) then 4 else 0) +
+  (if AT#Bit3bv14(vec) then 8 else 0) +
+  (if AT#Bit4bv14(vec) then 16 else 0) +
+  (if AT#Bit5bv14(vec) then 32 else 0) +
+  (if AT#Bit6bv14(vec) then 64 else 0) +
+  (if AT#Bit7bv14(vec) then 128 else 0) +
+  (if AT#Bit8bv14(vec) then 256 else 0) +
+  (if AT#Bit9bv14(vec) then 512 else 0) +
+  (if AT#Bit10bv14(vec) then 1024 else 0) +
+  (if AT#Bit11bv14(vec) then 2048 else 0) +
+  (if AT#Bit12bv14(vec) then 4096 else 0) +
+  (if AT#Bit13bv14(vec) then 8192 else 0)
 }
 
 // ---------------------------------------------------------------
@@ -98,13 +156,13 @@ procedure pulseShape#init#0()
 {
   var symb: Chan (bv8);
   var len: Chan (bv8);
-  var body_iterations_in: Chan (bv8);
-  var body_index_in: Chan (bv8);
+  var body_iterations_in: Chan (bv14);
+  var body_index_in: Chan (bv14);
   var St_in: Chan (int);
   var done: Chan (bool);
   var hsp: Chan (bv8);
-  var body_iterations_out: Chan (bv8);
-  var body_index_out: Chan (bv8);
+  var body_iterations_out: Chan (bv14);
+  var body_index_out: Chan (bv14);
   var St_out: Chan (int);
   var symb_mem: bv8;
   var body_iterations: bv8;
@@ -115,7 +173,7 @@ procedure pulseShape#init#0()
   var FILT_COEFF3: bv8;
   var FILT_COEFF4: bv8;
   var hsps: Map (int) (bv8);
-  assume (symb != len) && (symb != body_iterations_in) && (symb != body_index_in) && (symb != hsp) && (symb != body_iterations_out) && (symb != body_index_out) && (len != body_iterations_in) && (len != body_index_in) && (len != hsp) && (len != body_iterations_out) && (len != body_index_out) && (body_iterations_in != body_index_in) && (body_iterations_in != hsp) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != hsp) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (hsp != body_iterations_out) && (hsp != body_index_out) && (body_iterations_out != body_index_out);
+  assume (symb != len) && (symb != hsp) && (len != hsp) && (body_iterations_in != body_index_in) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (body_iterations_out != body_index_out);
   assume R[symb] == 0;
   assume R[len] == 0;
   assume R[body_iterations_in] == 0;
@@ -126,9 +184,9 @@ procedure pulseShape#init#0()
   assume C[body_iterations_out] == 0;
   assume C[body_index_out] == 0;
   assume C[St_out] == 0;
-  M[body_iterations_out][C[body_iterations_out]] := 0bv8;
+  M[body_iterations_out][C[body_iterations_out]] := 0bv14;
   C[body_iterations_out] := C[body_iterations_out] + 1;
-  M[body_index_out][C[body_index_out]] := 0bv8;
+  M[body_index_out][C[body_index_out]] := 0bv14;
   C[body_index_out] := C[body_index_out] + 1;
   M[St_out][C[St_out]] := 0;
   C[St_out] := C[St_out] + 1;
@@ -138,13 +196,13 @@ procedure pulseShape#init#1()
 {
   var symb: Chan (bv8);
   var len: Chan (bv8);
-  var body_iterations_in: Chan (bv8);
-  var body_index_in: Chan (bv8);
+  var body_iterations_in: Chan (bv14);
+  var body_index_in: Chan (bv14);
   var St_in: Chan (int);
   var done: Chan (bool);
   var hsp: Chan (bv8);
-  var body_iterations_out: Chan (bv8);
-  var body_index_out: Chan (bv8);
+  var body_iterations_out: Chan (bv14);
+  var body_index_out: Chan (bv14);
   var St_out: Chan (int);
   var symb_mem: bv8;
   var body_iterations: bv8;
@@ -155,13 +213,13 @@ procedure pulseShape#init#1()
   var FILT_COEFF3: bv8;
   var FILT_COEFF4: bv8;
   var hsps: Map (int) (bv8);
+  var body_index_in#0: bv14;
+  var body_iterations_in#0: bv14;
   var symb#0: bv8;
   var St_in#0: int;
-  var body_index_in#0: bv8;
   var len#0: bv8;
-  var body_iterations_in#0: bv8;
   var symb#1: bv8;
-  assume (symb != len) && (symb != body_iterations_in) && (symb != body_index_in) && (symb != hsp) && (symb != body_iterations_out) && (symb != body_index_out) && (len != body_iterations_in) && (len != body_index_in) && (len != hsp) && (len != body_iterations_out) && (len != body_index_out) && (body_iterations_in != body_index_in) && (body_iterations_in != hsp) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != hsp) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (hsp != body_iterations_out) && (hsp != body_index_out) && (body_iterations_out != body_index_out);
+  assume (symb != len) && (symb != hsp) && (len != hsp) && (body_iterations_in != body_index_in) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (body_iterations_out != body_index_out);
   assume 0 <= R[symb];
   assume 0 <= R[len];
   assume 0 <= R[body_iterations_in];
@@ -182,9 +240,9 @@ procedure pulseShape#init#1()
   R[St_in] := R[St_in] + 1;
   assume St_in#0 == 0;
   symb_mem := 127bv8;
-  M[body_iterations_out][C[body_iterations_out]] := AT#BvMul8(len#0, 32bv8);
+  M[body_iterations_out][C[body_iterations_out]] := AT#BvMul14(0bv6 ++ len#0, 32bv14);
   C[body_iterations_out] := C[body_iterations_out] + 1;
-  M[body_index_out][C[body_index_out]] := 0bv8;
+  M[body_index_out][C[body_index_out]] := 0bv14;
   C[body_index_out] := C[body_index_out] + 1;
   M[St_out][C[St_out]] := 1;
   C[St_out] := C[St_out] + 1;
@@ -194,13 +252,13 @@ procedure pulseShape#tx_body#2()
 {
   var symb: Chan (bv8);
   var len: Chan (bv8);
-  var body_iterations_in: Chan (bv8);
-  var body_index_in: Chan (bv8);
+  var body_iterations_in: Chan (bv14);
+  var body_index_in: Chan (bv14);
   var St_in: Chan (int);
   var done: Chan (bool);
   var hsp: Chan (bv8);
-  var body_iterations_out: Chan (bv8);
-  var body_index_out: Chan (bv8);
+  var body_iterations_out: Chan (bv14);
+  var body_index_out: Chan (bv14);
   var St_out: Chan (int);
   var symb_mem: bv8;
   var body_iterations: bv8;
@@ -211,13 +269,13 @@ procedure pulseShape#tx_body#2()
   var FILT_COEFF3: bv8;
   var FILT_COEFF4: bv8;
   var hsps: Map (int) (bv8);
+  var body_index_in#0: bv14;
+  var body_iterations_in#0: bv14;
   var symb#0: bv8;
   var St_in#0: int;
-  var body_index_in#0: bv8;
   var len#0: bv8;
-  var body_iterations_in#0: bv8;
   var symb#1: bv8;
-  assume (symb != len) && (symb != body_iterations_in) && (symb != body_index_in) && (symb != hsp) && (symb != body_iterations_out) && (symb != body_index_out) && (len != body_iterations_in) && (len != body_index_in) && (len != hsp) && (len != body_iterations_out) && (len != body_index_out) && (body_iterations_in != body_index_in) && (body_iterations_in != hsp) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != hsp) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (hsp != body_iterations_out) && (hsp != body_index_out) && (body_iterations_out != body_index_out);
+  assume (symb != len) && (symb != hsp) && (len != hsp) && (body_iterations_in != body_index_in) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (body_iterations_out != body_index_out);
   assume 0 <= R[symb];
   assume 0 <= R[len];
   assume 0 <= R[body_iterations_in];
@@ -238,7 +296,7 @@ procedure pulseShape#tx_body#2()
   R[body_index_in] := R[body_index_in] + 1;
   St_in#0 := M[St_in][R[St_in]];
   R[St_in] := R[St_in] + 1;
-  assume (St_in#0 == 1) && AT#BvUlt8(body_index_in#0, body_iterations_in#0);
+  assume (St_in#0 == 1) && AT#BvUlt14(body_index_in#0, body_iterations_in#0);
   hsps := Map#Store(hsps, 0, pulseShape#mul8(FILT_COEFF0, symb#0));
   hsps := Map#Store(hsps, 1, pulseShape#mul8(FILT_COEFF4, symb_mem));
   hsps := Map#Store(hsps, 2, pulseShape#mul8(FILT_COEFF1, symb#0));
@@ -290,9 +348,9 @@ procedure pulseShape#tx_body#2()
   C[hsp] := C[hsp] + 1;
   M[body_iterations_out][C[body_iterations_out]] := body_iterations_in#0;
   C[body_iterations_out] := C[body_iterations_out] + 1;
-  M[body_index_out][C[body_index_out]] := AT#BvAdd8(body_index_in#0, 1bv8);
+  M[body_index_out][C[body_index_out]] := AT#BvAdd14(body_index_in#0, 1bv14);
   C[body_index_out] := C[body_index_out] + 1;
-  M[St_out][C[St_out]] := (if AT#BvAdd8(body_index_in#0, 1bv8) == body_iterations_in#0 then 2 else 1);
+  M[St_out][C[St_out]] := 1;
   C[St_out] := C[St_out] + 1;
 }
 procedure pulseShape#tx_tail#3()
@@ -300,13 +358,13 @@ procedure pulseShape#tx_tail#3()
 {
   var symb: Chan (bv8);
   var len: Chan (bv8);
-  var body_iterations_in: Chan (bv8);
-  var body_index_in: Chan (bv8);
+  var body_iterations_in: Chan (bv14);
+  var body_index_in: Chan (bv14);
   var St_in: Chan (int);
   var done: Chan (bool);
   var hsp: Chan (bv8);
-  var body_iterations_out: Chan (bv8);
-  var body_index_out: Chan (bv8);
+  var body_iterations_out: Chan (bv14);
+  var body_index_out: Chan (bv14);
   var St_out: Chan (int);
   var symb_mem: bv8;
   var body_iterations: bv8;
@@ -317,13 +375,13 @@ procedure pulseShape#tx_tail#3()
   var FILT_COEFF3: bv8;
   var FILT_COEFF4: bv8;
   var hsps: Map (int) (bv8);
+  var body_index_in#0: bv14;
+  var body_iterations_in#0: bv14;
   var symb#0: bv8;
   var St_in#0: int;
-  var body_index_in#0: bv8;
   var len#0: bv8;
-  var body_iterations_in#0: bv8;
   var symb#1: bv8;
-  assume (symb != len) && (symb != body_iterations_in) && (symb != body_index_in) && (symb != hsp) && (symb != body_iterations_out) && (symb != body_index_out) && (len != body_iterations_in) && (len != body_index_in) && (len != hsp) && (len != body_iterations_out) && (len != body_index_out) && (body_iterations_in != body_index_in) && (body_iterations_in != hsp) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != hsp) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (hsp != body_iterations_out) && (hsp != body_index_out) && (body_iterations_out != body_index_out);
+  assume (symb != len) && (symb != hsp) && (len != hsp) && (body_iterations_in != body_index_in) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (body_iterations_out != body_index_out);
   assume 0 <= R[symb];
   assume 0 <= R[len];
   assume 0 <= R[body_iterations_in];
@@ -340,7 +398,7 @@ procedure pulseShape#tx_tail#3()
   R[body_index_in] := R[body_index_in] + 1;
   St_in#0 := M[St_in][R[St_in]];
   R[St_in] := R[St_in] + 1;
-  assume (St_in#0 == 2) && (body_index_in#0 == body_iterations_in#0);
+  assume (St_in#0 == 1) && (body_index_in#0 == body_iterations_in#0);
   hsps := Map#Store(hsps, 0, pulseShape#mul8(FILT_COEFF0, 127bv8));
   hsps := Map#Store(hsps, 1, pulseShape#mul8(FILT_COEFF4, symb_mem));
   hsps := Map#Store(hsps, 2, pulseShape#mul8(FILT_COEFF1, 127bv8));
@@ -379,13 +437,13 @@ procedure pulseShape##GuardWD#4()
 {
   var symb: Chan (bv8);
   var len: Chan (bv8);
-  var body_iterations_in: Chan (bv8);
-  var body_index_in: Chan (bv8);
+  var body_iterations_in: Chan (bv14);
+  var body_index_in: Chan (bv14);
   var St_in: Chan (int);
   var done: Chan (bool);
   var hsp: Chan (bv8);
-  var body_iterations_out: Chan (bv8);
-  var body_index_out: Chan (bv8);
+  var body_iterations_out: Chan (bv14);
+  var body_index_out: Chan (bv14);
   var St_out: Chan (int);
   var symb_mem: bv8;
   var body_iterations: bv8;
@@ -396,16 +454,16 @@ procedure pulseShape##GuardWD#4()
   var FILT_COEFF3: bv8;
   var FILT_COEFF4: bv8;
   var hsps: Map (int) (bv8);
-  var body_iterations_in#0: bv8;
+  var body_index_in#0: bv14;
   var len#0: bv8;
-  var body_index_in#0: bv8;
   var St_in#0: int;
   var symb#1: bv8;
   var symb#0: bv8;
-  assume (symb != len) && (symb != body_iterations_in) && (symb != body_index_in) && (symb != hsp) && (symb != body_iterations_out) && (symb != body_index_out) && (len != body_iterations_in) && (len != body_index_in) && (len != hsp) && (len != body_iterations_out) && (len != body_index_out) && (body_iterations_in != body_index_in) && (body_iterations_in != hsp) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != hsp) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (hsp != body_iterations_out) && (hsp != body_index_out) && (body_iterations_out != body_index_out);
-  assert {:msg "1.1: The actions 'init' and 'tx_body' of actor 'pulseShape' might not have mutually exclusive guards (#0)"} !(true && (1 <= (C[len] - R[len])) && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 0) && true && (2 <= (C[symb] - R[symb])) && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 1) && AT#BvUlt8(body_index_in#0, body_iterations_in#0));
-  assert {:msg "1.1: The actions 'init' and 'tx_tail' of actor 'pulseShape' might not have mutually exclusive guards (#1)"} !(true && (1 <= (C[len] - R[len])) && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 0) && true && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 2) && (body_index_in#0 == body_iterations_in#0));
-  assert {:msg "1.1: The actions 'tx_body' and 'tx_tail' of actor 'pulseShape' might not have mutually exclusive guards (#2)"} !(true && (2 <= (C[symb] - R[symb])) && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 1) && AT#BvUlt8(body_index_in#0, body_iterations_in#0) && true && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 2) && (body_index_in#0 == body_iterations_in#0));
+  var body_iterations_in#0: bv14;
+  assume (symb != len) && (symb != hsp) && (len != hsp) && (body_iterations_in != body_index_in) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (body_iterations_out != body_index_out);
+  assert {:msg "pulseShapeNw.actor(1.1): The actions 'init' and 'tx_body' of actor 'pulseShape' might not have mutually exclusive guards (#0)"} !(true && (1 <= (C[len] - R[len])) && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 0) && true && (2 <= (C[symb] - R[symb])) && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 1) && AT#BvUlt14(body_index_in#0, body_iterations_in#0));
+  assert {:msg "pulseShapeNw.actor(1.1): The actions 'init' and 'tx_tail' of actor 'pulseShape' might not have mutually exclusive guards (#1)"} !(true && (1 <= (C[len] - R[len])) && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 0) && true && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 1) && (body_index_in#0 == body_iterations_in#0));
+  assert {:msg "pulseShapeNw.actor(1.1): The actions 'tx_body' and 'tx_tail' of actor 'pulseShape' might not have mutually exclusive guards (#2)"} !(true && (2 <= (C[symb] - R[symb])) && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 1) && AT#BvUlt14(body_index_in#0, body_iterations_in#0) && true && (1 <= (C[body_iterations_in] - R[body_iterations_in])) && (1 <= (C[body_index_in] - R[body_index_in])) && (1 <= (C[St_in] - R[St_in])) && (St_in#0 == 1) && (body_index_in#0 == body_iterations_in#0));
 }
 procedure pulseShapeNw#init#5()
   modifies C, R, M, I, H;
@@ -413,8 +471,8 @@ procedure pulseShapeNw#init#5()
   var pulseShapeNw#a: Actor;
   var pulseShapeNw#in_symb: Chan (bv8);
   var pulseShapeNw#in_len: Chan (bv8);
-  var pulseShapeNw#body_iterations: Chan (bv8);
-  var pulseShapeNw#body_index: Chan (bv8);
+  var pulseShapeNw#body_iterations: Chan (bv14);
+  var pulseShapeNw#body_index: Chan (bv14);
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
@@ -427,7 +485,7 @@ procedure pulseShapeNw#init#5()
   var AV#a#FILT_COEFF3: bv8;
   var AV#a#FILT_COEFF4: bv8;
   var AV#a#hsps: Map (int) (bv8);
-  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#body_iterations) && (pulseShapeNw#in_symb != pulseShapeNw#body_index) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#body_iterations) && (pulseShapeNw#in_len != pulseShapeNw#body_index) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index) && (pulseShapeNw#body_iterations != pulseShapeNw#out_hsp) && (pulseShapeNw#body_index != pulseShapeNw#out_hsp);
+  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index);
   assume 0 <= I[pulseShapeNw#in_symb];
   assume I[pulseShapeNw#in_symb] <= R[pulseShapeNw#in_symb];
   assume R[pulseShapeNw#in_symb] <= C[pulseShapeNw#in_symb];
@@ -451,7 +509,7 @@ procedure pulseShapeNw#init#5()
   assume I[pulseShapeNw#out_done] <= R[pulseShapeNw#out_done];
   assume R[pulseShapeNw#out_done] <= C[pulseShapeNw#out_done];
   assume I[pulseShapeNw#out_done] == R[pulseShapeNw#out_done];
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
   assume C[pulseShapeNw#in_symb] == 0;
   assume R[pulseShapeNw#in_symb] == 0;
   assume C[pulseShapeNw#in_len] == 0;
@@ -466,30 +524,34 @@ procedure pulseShapeNw#init#5()
   assume R[pulseShapeNw#out_hsp] == 0;
   assume C[pulseShapeNw#out_done] == 0;
   assume R[pulseShapeNw#out_done] == 0;
-  M[pulseShapeNw#body_iterations][C[pulseShapeNw#body_iterations]] := 0bv8;
+  M[pulseShapeNw#body_iterations][C[pulseShapeNw#body_iterations]] := 0bv14;
   C[pulseShapeNw#body_iterations] := C[pulseShapeNw#body_iterations] + 1;
-  M[pulseShapeNw#body_index][C[pulseShapeNw#body_index]] := 0bv8;
+  M[pulseShapeNw#body_index][C[pulseShapeNw#body_index]] := 0bv14;
   C[pulseShapeNw#body_index] := C[pulseShapeNw#body_index] + 1;
   M[pulseShapeNw#St][C[pulseShapeNw#St]] := 0;
   C[pulseShapeNw#St] := C[pulseShapeNw#St] + 1;
-  assert {:msg "156.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#3)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "159.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#4)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assert {:msg "160.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#5)"} AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "163.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#6)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assert {:msg "164.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#7)"} ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assert {:msg "166.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#8)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assert {:msg "172.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#9)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assert {:msg "179.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#10)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "183.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#11)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "187.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#12)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "191.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#13)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
-  assert {:msg "197.15: Initialization of network 'pulseShapeNw' might not establish the channel invariant (#14)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
+  assert {:msg "pulseShapeNw.actor(140.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#3)"} I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assert {:msg "pulseShapeNw.actor(141.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#4)"} I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assert {:msg "pulseShapeNw.actor(142.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#5)"} I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
+  assert {:msg "pulseShapeNw.actor(147.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#6)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(150.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#7)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assert {:msg "pulseShapeNw.actor(151.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#8)"} AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assert {:msg "pulseShapeNw.actor(153.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#9)"} ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assert {:msg "pulseShapeNw.actor(154.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#10)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assert {:msg "pulseShapeNw.actor(160.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#11)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assert {:msg "pulseShapeNw.actor(168.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#12)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assert {:msg "pulseShapeNw.actor(175.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#13)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
   I := R;
-  assert {:msg "155.13: Initialization of network 'pulseShapeNw' might not establish the network invariant (#15)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel in_symb (#16)"} (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb]) == 0;
-  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel in_len (#17)"} (C[pulseShapeNw#in_len] - R[pulseShapeNw#in_len]) == 0;
-  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel out_hsp (#18)"} (C[pulseShapeNw#out_hsp] - R[pulseShapeNw#out_hsp]) == 0;
-  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel out_done (#19)"} (C[pulseShapeNw#out_done] - R[pulseShapeNw#out_done]) == 0;
+  assert {:msg "pulseShapeNw.actor(145.13): Initialization of network 'pulseShapeNw' might not establish the network invariant (#14)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(146.13): Initialization of network 'pulseShapeNw' might not establish the network invariant (#15)"} M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0;
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant (#16)"} R[pulseShapeNw#in_symb] == (576 * C[pulseShapeNw#out_done]);
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant (#17)"} R[pulseShapeNw#in_len] == C[pulseShapeNw#out_done];
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant (#18)"} (4616 * R[pulseShapeNw#in_symb]) == (576 * C[pulseShapeNw#out_hsp]);
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant (#19)"} (4616 * R[pulseShapeNw#in_len]) == C[pulseShapeNw#out_hsp];
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel in_symb (#20)"} (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb]) == 0;
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel in_len (#21)"} (C[pulseShapeNw#in_len] - R[pulseShapeNw#in_len]) == 0;
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel out_hsp (#22)"} (C[pulseShapeNw#out_hsp] - R[pulseShapeNw#out_hsp]) == 0;
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel out_done (#23)"} (C[pulseShapeNw#out_done] - R[pulseShapeNw#out_done]) == 0;
 }
 procedure pulseShapeNw##pulseShape#init#6()
   modifies C, R, M, I, H;
@@ -497,8 +559,8 @@ procedure pulseShapeNw##pulseShape#init#6()
   var pulseShapeNw#a: Actor;
   var pulseShapeNw#in_symb: Chan (bv8);
   var pulseShapeNw#in_len: Chan (bv8);
-  var pulseShapeNw#body_iterations: Chan (bv8);
-  var pulseShapeNw#body_index: Chan (bv8);
+  var pulseShapeNw#body_iterations: Chan (bv14);
+  var pulseShapeNw#body_index: Chan (bv14);
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
@@ -512,10 +574,10 @@ procedure pulseShapeNw##pulseShape#init#6()
   var AV#a#FILT_COEFF4: bv8;
   var AV#a#hsps: Map (int) (bv8);
   var len#len_in: bv8;
-  var body_iterations_in#body_iterations: bv8;
-  var body_index_in#body_index: bv8;
+  var body_iterations_in#body_iterations: bv14;
+  var body_index_in#body_index: bv14;
   var St_in#St: int;
-  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#body_iterations) && (pulseShapeNw#in_symb != pulseShapeNw#body_index) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#body_iterations) && (pulseShapeNw#in_len != pulseShapeNw#body_index) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index) && (pulseShapeNw#body_iterations != pulseShapeNw#out_hsp) && (pulseShapeNw#body_index != pulseShapeNw#out_hsp);
+  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index);
   assume 0 <= I[pulseShapeNw#in_symb];
   assume I[pulseShapeNw#in_symb] <= R[pulseShapeNw#in_symb];
   assume R[pulseShapeNw#in_symb] <= C[pulseShapeNw#in_symb];
@@ -539,20 +601,20 @@ procedure pulseShapeNw##pulseShape#init#6()
   assume I[pulseShapeNw#out_done] <= R[pulseShapeNw#out_done];
   assume R[pulseShapeNw#out_done] <= C[pulseShapeNw#out_done];
   assume I[pulseShapeNw#out_done] == R[pulseShapeNw#out_done];
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
+  assume I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assume I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assume I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
   assume ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assume AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assume ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assume AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assume ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
   assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= 576) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= 1);
   assume (1 <= (C[pulseShapeNw#in_len] - R[pulseShapeNw#in_len])) && (1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0);
   len#len_in := M[pulseShapeNw#in_len][R[pulseShapeNw#in_len]];
   R[pulseShapeNw#in_len] := R[pulseShapeNw#in_len] + 1;
@@ -563,24 +625,23 @@ procedure pulseShapeNw##pulseShape#init#6()
   St_in#St := M[pulseShapeNw#St][R[pulseShapeNw#St]];
   R[pulseShapeNw#St] := R[pulseShapeNw#St] + 1;
   havoc AV#a#symb_mem;
-  M[pulseShapeNw#body_iterations][C[pulseShapeNw#body_iterations]] := AT#BvMul8(len#len_in, 32bv8);
+  M[pulseShapeNw#body_iterations][C[pulseShapeNw#body_iterations]] := AT#BvMul14(0bv6 ++ len#len_in, 32bv14);
   C[pulseShapeNw#body_iterations] := C[pulseShapeNw#body_iterations] + 1;
-  M[pulseShapeNw#body_index][C[pulseShapeNw#body_index]] := 0bv8;
+  M[pulseShapeNw#body_index][C[pulseShapeNw#body_index]] := 0bv14;
   C[pulseShapeNw#body_index] := C[pulseShapeNw#body_index] + 1;
   M[pulseShapeNw#St][C[pulseShapeNw#St]] := 1;
   C[pulseShapeNw#St] := C[pulseShapeNw#St] + 1;
-  assert {:msg "156.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#20)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "159.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#21)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assert {:msg "160.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#22)"} AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "163.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#23)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assert {:msg "164.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#24)"} ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assert {:msg "166.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#25)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assert {:msg "172.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#26)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assert {:msg "179.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#27)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "183.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#28)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "187.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#29)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "191.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#30)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
-  assert {:msg "197.15: Action at 44.2 ('init') for actor instance 'a' might not preserve the channel invariant (#31)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
+  assert {:msg "pulseShapeNw.actor(140.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#24)"} I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assert {:msg "pulseShapeNw.actor(141.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#25)"} I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assert {:msg "pulseShapeNw.actor(142.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#26)"} I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
+  assert {:msg "pulseShapeNw.actor(147.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#27)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(150.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#28)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assert {:msg "pulseShapeNw.actor(151.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#29)"} AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assert {:msg "pulseShapeNw.actor(153.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#30)"} ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assert {:msg "pulseShapeNw.actor(154.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#31)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assert {:msg "pulseShapeNw.actor(160.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#32)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assert {:msg "pulseShapeNw.actor(168.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#33)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assert {:msg "pulseShapeNw.actor(175.15): Action at pulseShapeNw.actor(44.2) ('init') for actor instance 'a' might not preserve the channel invariant (#34)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
 }
 procedure pulseShapeNw##pulseShape#tx_body#7()
   modifies C, R, M, I, H;
@@ -588,8 +649,8 @@ procedure pulseShapeNw##pulseShape#tx_body#7()
   var pulseShapeNw#a: Actor;
   var pulseShapeNw#in_symb: Chan (bv8);
   var pulseShapeNw#in_len: Chan (bv8);
-  var pulseShapeNw#body_iterations: Chan (bv8);
-  var pulseShapeNw#body_index: Chan (bv8);
+  var pulseShapeNw#body_iterations: Chan (bv14);
+  var pulseShapeNw#body_index: Chan (bv14);
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
@@ -604,10 +665,10 @@ procedure pulseShapeNw##pulseShape#tx_body#7()
   var AV#a#hsps: Map (int) (bv8);
   var symb#symb_1: bv8;
   var symb#symb_2: bv8;
-  var body_iterations_in#body_iterations: bv8;
-  var body_index_in#body_index: bv8;
+  var body_iterations_in#body_iterations: bv14;
+  var body_index_in#body_index: bv14;
   var St_in#St: int;
-  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#body_iterations) && (pulseShapeNw#in_symb != pulseShapeNw#body_index) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#body_iterations) && (pulseShapeNw#in_len != pulseShapeNw#body_index) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index) && (pulseShapeNw#body_iterations != pulseShapeNw#out_hsp) && (pulseShapeNw#body_index != pulseShapeNw#out_hsp);
+  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index);
   assume 0 <= I[pulseShapeNw#in_symb];
   assume I[pulseShapeNw#in_symb] <= R[pulseShapeNw#in_symb];
   assume R[pulseShapeNw#in_symb] <= C[pulseShapeNw#in_symb];
@@ -631,21 +692,21 @@ procedure pulseShapeNw##pulseShape#tx_body#7()
   assume I[pulseShapeNw#out_done] <= R[pulseShapeNw#out_done];
   assume R[pulseShapeNw#out_done] <= C[pulseShapeNw#out_done];
   assume I[pulseShapeNw#out_done] == R[pulseShapeNw#out_done];
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
+  assume I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assume I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assume I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
   assume ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assume AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assume ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assume AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assume ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
   assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
-  assume (2 <= (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb])) && (1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) && AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= 576) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= 1);
+  assume (2 <= (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb])) && (1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) && AT#BvUlt14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
   symb#symb_1 := M[pulseShapeNw#in_symb][R[pulseShapeNw#in_symb]];
   R[pulseShapeNw#in_symb] := R[pulseShapeNw#in_symb] + 1;
   symb#symb_2 := M[pulseShapeNw#in_symb][R[pulseShapeNw#in_symb]];
@@ -691,22 +752,21 @@ procedure pulseShapeNw##pulseShape#tx_body#7()
   C[pulseShapeNw#out_hsp] := C[pulseShapeNw#out_hsp] + 1;
   M[pulseShapeNw#body_iterations][C[pulseShapeNw#body_iterations]] := body_iterations_in#body_iterations;
   C[pulseShapeNw#body_iterations] := C[pulseShapeNw#body_iterations] + 1;
-  M[pulseShapeNw#body_index][C[pulseShapeNw#body_index]] := AT#BvAdd8(body_index_in#body_index, 1bv8);
+  M[pulseShapeNw#body_index][C[pulseShapeNw#body_index]] := AT#BvAdd14(body_index_in#body_index, 1bv14);
   C[pulseShapeNw#body_index] := C[pulseShapeNw#body_index] + 1;
-  M[pulseShapeNw#St][C[pulseShapeNw#St]] := (if AT#BvAdd8(body_index_in#body_index, 1bv8) == body_iterations_in#body_iterations then 2 else 1);
+  M[pulseShapeNw#St][C[pulseShapeNw#St]] := 1;
   C[pulseShapeNw#St] := C[pulseShapeNw#St] + 1;
-  assert {:msg "156.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#32)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "159.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#33)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assert {:msg "160.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#34)"} AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "163.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#35)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assert {:msg "164.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#36)"} ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assert {:msg "166.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#37)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assert {:msg "172.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#38)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assert {:msg "179.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#39)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "183.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#40)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "187.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#41)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "191.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#42)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
-  assert {:msg "197.15: Action at 60.2 ('tx_body') for actor instance 'a' might not preserve the channel invariant (#43)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
+  assert {:msg "pulseShapeNw.actor(140.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#35)"} I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assert {:msg "pulseShapeNw.actor(141.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#36)"} I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assert {:msg "pulseShapeNw.actor(142.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#37)"} I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
+  assert {:msg "pulseShapeNw.actor(147.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#38)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(150.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#39)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assert {:msg "pulseShapeNw.actor(151.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#40)"} AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assert {:msg "pulseShapeNw.actor(153.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#41)"} ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assert {:msg "pulseShapeNw.actor(154.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#42)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assert {:msg "pulseShapeNw.actor(160.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#43)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assert {:msg "pulseShapeNw.actor(168.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#44)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assert {:msg "pulseShapeNw.actor(175.15): Action at pulseShapeNw.actor(60.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#45)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
 }
 procedure pulseShapeNw##pulseShape#tx_tail#8()
   modifies C, R, M, I, H;
@@ -714,8 +774,8 @@ procedure pulseShapeNw##pulseShape#tx_tail#8()
   var pulseShapeNw#a: Actor;
   var pulseShapeNw#in_symb: Chan (bv8);
   var pulseShapeNw#in_len: Chan (bv8);
-  var pulseShapeNw#body_iterations: Chan (bv8);
-  var pulseShapeNw#body_index: Chan (bv8);
+  var pulseShapeNw#body_iterations: Chan (bv14);
+  var pulseShapeNw#body_index: Chan (bv14);
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
@@ -728,10 +788,10 @@ procedure pulseShapeNw##pulseShape#tx_tail#8()
   var AV#a#FILT_COEFF3: bv8;
   var AV#a#FILT_COEFF4: bv8;
   var AV#a#hsps: Map (int) (bv8);
-  var body_iterations_in#body_iterations: bv8;
-  var body_index_in#body_index: bv8;
+  var body_iterations_in#body_iterations: bv14;
+  var body_index_in#body_index: bv14;
   var St_in#St: int;
-  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#body_iterations) && (pulseShapeNw#in_symb != pulseShapeNw#body_index) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#body_iterations) && (pulseShapeNw#in_len != pulseShapeNw#body_index) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index) && (pulseShapeNw#body_iterations != pulseShapeNw#out_hsp) && (pulseShapeNw#body_index != pulseShapeNw#out_hsp);
+  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index);
   assume 0 <= I[pulseShapeNw#in_symb];
   assume I[pulseShapeNw#in_symb] <= R[pulseShapeNw#in_symb];
   assume R[pulseShapeNw#in_symb] <= C[pulseShapeNw#in_symb];
@@ -755,21 +815,21 @@ procedure pulseShapeNw##pulseShape#tx_tail#8()
   assume I[pulseShapeNw#out_done] <= R[pulseShapeNw#out_done];
   assume R[pulseShapeNw#out_done] <= C[pulseShapeNw#out_done];
   assume I[pulseShapeNw#out_done] == R[pulseShapeNw#out_done];
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
+  assume I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assume I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assume I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
   assume ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assume AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assume ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assume AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assume ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
   assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
-  assume (1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) && (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= 576) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= 1);
+  assume (1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) && (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
   body_iterations_in#body_iterations := M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]];
   R[pulseShapeNw#body_iterations] := R[pulseShapeNw#body_iterations] + 1;
   body_index_in#body_index := M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]];
@@ -800,18 +860,17 @@ procedure pulseShapeNw##pulseShape#tx_tail#8()
   C[pulseShapeNw#body_index] := C[pulseShapeNw#body_index] + 1;
   M[pulseShapeNw#St][C[pulseShapeNw#St]] := 0;
   C[pulseShapeNw#St] := C[pulseShapeNw#St] + 1;
-  assert {:msg "156.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#44)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "159.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#45)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assert {:msg "160.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#46)"} AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "163.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#47)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assert {:msg "164.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#48)"} ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assert {:msg "166.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#49)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assert {:msg "172.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#50)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assert {:msg "179.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#51)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "183.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#52)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "187.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#53)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "191.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#54)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
-  assert {:msg "197.15: Action at 104.2 ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#55)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
+  assert {:msg "pulseShapeNw.actor(140.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#46)"} I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assert {:msg "pulseShapeNw.actor(141.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#47)"} I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assert {:msg "pulseShapeNw.actor(142.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#48)"} I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
+  assert {:msg "pulseShapeNw.actor(147.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#49)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(150.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#50)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assert {:msg "pulseShapeNw.actor(151.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#51)"} AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assert {:msg "pulseShapeNw.actor(153.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#52)"} ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assert {:msg "pulseShapeNw.actor(154.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#53)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assert {:msg "pulseShapeNw.actor(160.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#54)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assert {:msg "pulseShapeNw.actor(168.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#55)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assert {:msg "pulseShapeNw.actor(175.15): Action at pulseShapeNw.actor(104.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#56)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
 }
 procedure pulseShapeNw#anon$1#input#symb#9()
   modifies C, R, M, I, H;
@@ -819,8 +878,8 @@ procedure pulseShapeNw#anon$1#input#symb#9()
   var pulseShapeNw#a: Actor;
   var pulseShapeNw#in_symb: Chan (bv8);
   var pulseShapeNw#in_len: Chan (bv8);
-  var pulseShapeNw#body_iterations: Chan (bv8);
-  var pulseShapeNw#body_index: Chan (bv8);
+  var pulseShapeNw#body_iterations: Chan (bv14);
+  var pulseShapeNw#body_index: Chan (bv14);
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
@@ -833,7 +892,7 @@ procedure pulseShapeNw#anon$1#input#symb#9()
   var AV#a#FILT_COEFF3: bv8;
   var AV#a#FILT_COEFF4: bv8;
   var AV#a#hsps: Map (int) (bv8);
-  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#body_iterations) && (pulseShapeNw#in_symb != pulseShapeNw#body_index) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#body_iterations) && (pulseShapeNw#in_len != pulseShapeNw#body_index) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index) && (pulseShapeNw#body_iterations != pulseShapeNw#out_hsp) && (pulseShapeNw#body_index != pulseShapeNw#out_hsp);
+  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index);
   assume 0 <= I[pulseShapeNw#in_symb];
   assume I[pulseShapeNw#in_symb] <= R[pulseShapeNw#in_symb];
   assume R[pulseShapeNw#in_symb] <= C[pulseShapeNw#in_symb];
@@ -857,37 +916,37 @@ procedure pulseShapeNw#anon$1#input#symb#9()
   assume I[pulseShapeNw#out_done] <= R[pulseShapeNw#out_done];
   assume R[pulseShapeNw#out_done] <= C[pulseShapeNw#out_done];
   assume I[pulseShapeNw#out_done] == R[pulseShapeNw#out_done];
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
-  assume (C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) < 128;
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
+  assume (C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) < 576;
+  assume I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assume I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assume I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
   assume ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assume AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assume ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assume AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assume ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
   assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= 576) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= 1);
   C[pulseShapeNw#in_symb] := C[pulseShapeNw#in_symb] + 1;
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
-  assert {:msg "156.15: Channel invariant might be falsified by network input (#56)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "159.15: Channel invariant might be falsified by network input (#57)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assert {:msg "160.15: Channel invariant might be falsified by network input (#58)"} AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "163.15: Channel invariant might be falsified by network input (#59)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assert {:msg "164.15: Channel invariant might be falsified by network input (#60)"} ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assert {:msg "166.15: Channel invariant might be falsified by network input (#61)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assert {:msg "172.15: Channel invariant might be falsified by network input (#62)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assert {:msg "179.15: Channel invariant might be falsified by network input (#63)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "183.15: Channel invariant might be falsified by network input (#64)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "187.15: Channel invariant might be falsified by network input (#65)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "191.15: Channel invariant might be falsified by network input (#66)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
-  assert {:msg "197.15: Channel invariant might be falsified by network input (#67)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assert {:msg "143.14: Channel invariant might be falsified by network input (#68)"} M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assert {:msg "pulseShapeNw.actor(140.15): Channel invariant might be falsified by network input (#57)"} I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assert {:msg "pulseShapeNw.actor(141.15): Channel invariant might be falsified by network input (#58)"} I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assert {:msg "pulseShapeNw.actor(142.15): Channel invariant might be falsified by network input (#59)"} I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
+  assert {:msg "pulseShapeNw.actor(147.15): Channel invariant might be falsified by network input (#60)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(150.15): Channel invariant might be falsified by network input (#61)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assert {:msg "pulseShapeNw.actor(151.15): Channel invariant might be falsified by network input (#62)"} AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assert {:msg "pulseShapeNw.actor(153.15): Channel invariant might be falsified by network input (#63)"} ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assert {:msg "pulseShapeNw.actor(154.15): Channel invariant might be falsified by network input (#64)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assert {:msg "pulseShapeNw.actor(160.15): Channel invariant might be falsified by network input (#65)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assert {:msg "pulseShapeNw.actor(168.15): Channel invariant might be falsified by network input (#66)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assert {:msg "pulseShapeNw.actor(175.15): Channel invariant might be falsified by network input (#67)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
+  assert {:msg "pulseShapeNw.actor(137.14): Channel invariant might be falsified by network input (#68)"} M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assert {:msg "Channel invariant might be falsified by network input (#69)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= 576) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= 1);
 }
 procedure pulseShapeNw#anon$1#input#len#10()
   modifies C, R, M, I, H;
@@ -895,8 +954,8 @@ procedure pulseShapeNw#anon$1#input#len#10()
   var pulseShapeNw#a: Actor;
   var pulseShapeNw#in_symb: Chan (bv8);
   var pulseShapeNw#in_len: Chan (bv8);
-  var pulseShapeNw#body_iterations: Chan (bv8);
-  var pulseShapeNw#body_index: Chan (bv8);
+  var pulseShapeNw#body_iterations: Chan (bv14);
+  var pulseShapeNw#body_index: Chan (bv14);
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
@@ -909,7 +968,7 @@ procedure pulseShapeNw#anon$1#input#len#10()
   var AV#a#FILT_COEFF3: bv8;
   var AV#a#FILT_COEFF4: bv8;
   var AV#a#hsps: Map (int) (bv8);
-  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#body_iterations) && (pulseShapeNw#in_symb != pulseShapeNw#body_index) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#body_iterations) && (pulseShapeNw#in_len != pulseShapeNw#body_index) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index) && (pulseShapeNw#body_iterations != pulseShapeNw#out_hsp) && (pulseShapeNw#body_index != pulseShapeNw#out_hsp);
+  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index);
   assume 0 <= I[pulseShapeNw#in_symb];
   assume I[pulseShapeNw#in_symb] <= R[pulseShapeNw#in_symb];
   assume R[pulseShapeNw#in_symb] <= C[pulseShapeNw#in_symb];
@@ -933,37 +992,37 @@ procedure pulseShapeNw#anon$1#input#len#10()
   assume I[pulseShapeNw#out_done] <= R[pulseShapeNw#out_done];
   assume R[pulseShapeNw#out_done] <= C[pulseShapeNw#out_done];
   assume I[pulseShapeNw#out_done] == R[pulseShapeNw#out_done];
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
   assume (C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) < 1;
+  assume I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assume I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assume I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
   assume ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assume AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assume ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assume AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assume ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
   assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= 576) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= 1);
   C[pulseShapeNw#in_len] := C[pulseShapeNw#in_len] + 1;
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
-  assert {:msg "156.15: Channel invariant might be falsified by network input (#69)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "159.15: Channel invariant might be falsified by network input (#70)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assert {:msg "160.15: Channel invariant might be falsified by network input (#71)"} AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "163.15: Channel invariant might be falsified by network input (#72)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assert {:msg "164.15: Channel invariant might be falsified by network input (#73)"} ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assert {:msg "166.15: Channel invariant might be falsified by network input (#74)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assert {:msg "172.15: Channel invariant might be falsified by network input (#75)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assert {:msg "179.15: Channel invariant might be falsified by network input (#76)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "183.15: Channel invariant might be falsified by network input (#77)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "187.15: Channel invariant might be falsified by network input (#78)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "191.15: Channel invariant might be falsified by network input (#79)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
-  assert {:msg "197.15: Channel invariant might be falsified by network input (#80)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assert {:msg "143.14: Channel invariant might be falsified by network input (#81)"} M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assert {:msg "pulseShapeNw.actor(140.15): Channel invariant might be falsified by network input (#70)"} I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assert {:msg "pulseShapeNw.actor(141.15): Channel invariant might be falsified by network input (#71)"} I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assert {:msg "pulseShapeNw.actor(142.15): Channel invariant might be falsified by network input (#72)"} I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
+  assert {:msg "pulseShapeNw.actor(147.15): Channel invariant might be falsified by network input (#73)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(150.15): Channel invariant might be falsified by network input (#74)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assert {:msg "pulseShapeNw.actor(151.15): Channel invariant might be falsified by network input (#75)"} AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assert {:msg "pulseShapeNw.actor(153.15): Channel invariant might be falsified by network input (#76)"} ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assert {:msg "pulseShapeNw.actor(154.15): Channel invariant might be falsified by network input (#77)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assert {:msg "pulseShapeNw.actor(160.15): Channel invariant might be falsified by network input (#78)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assert {:msg "pulseShapeNw.actor(168.15): Channel invariant might be falsified by network input (#79)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assert {:msg "pulseShapeNw.actor(175.15): Channel invariant might be falsified by network input (#80)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
+  assert {:msg "pulseShapeNw.actor(137.14): Channel invariant might be falsified by network input (#81)"} M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assert {:msg "Channel invariant might be falsified by network input (#82)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= 576) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= 1);
 }
 procedure pulseShapeNw#anon$1#exit#11()
   modifies C, R, M, I, H;
@@ -971,8 +1030,8 @@ procedure pulseShapeNw#anon$1#exit#11()
   var pulseShapeNw#a: Actor;
   var pulseShapeNw#in_symb: Chan (bv8);
   var pulseShapeNw#in_len: Chan (bv8);
-  var pulseShapeNw#body_iterations: Chan (bv8);
-  var pulseShapeNw#body_index: Chan (bv8);
+  var pulseShapeNw#body_iterations: Chan (bv14);
+  var pulseShapeNw#body_index: Chan (bv14);
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
@@ -985,7 +1044,7 @@ procedure pulseShapeNw#anon$1#exit#11()
   var AV#a#FILT_COEFF3: bv8;
   var AV#a#FILT_COEFF4: bv8;
   var AV#a#hsps: Map (int) (bv8);
-  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#body_iterations) && (pulseShapeNw#in_symb != pulseShapeNw#body_index) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#body_iterations) && (pulseShapeNw#in_len != pulseShapeNw#body_index) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index) && (pulseShapeNw#body_iterations != pulseShapeNw#out_hsp) && (pulseShapeNw#body_index != pulseShapeNw#out_hsp);
+  assume (pulseShapeNw#in_symb != pulseShapeNw#in_len) && (pulseShapeNw#in_symb != pulseShapeNw#out_hsp) && (pulseShapeNw#in_len != pulseShapeNw#out_hsp) && (pulseShapeNw#body_iterations != pulseShapeNw#body_index);
   assume 0 <= I[pulseShapeNw#in_symb];
   assume I[pulseShapeNw#in_symb] <= R[pulseShapeNw#in_symb];
   assume R[pulseShapeNw#in_symb] <= C[pulseShapeNw#in_symb];
@@ -1009,51 +1068,49 @@ procedure pulseShapeNw#anon$1#exit#11()
   assume I[pulseShapeNw#out_done] <= R[pulseShapeNw#out_done];
   assume R[pulseShapeNw#out_done] <= C[pulseShapeNw#out_done];
   assume I[pulseShapeNw#out_done] == R[pulseShapeNw#out_done];
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
-  assume (B[pulseShapeNw#in_symb] == 128) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 1032);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
+  assume (B[pulseShapeNw#in_symb] == 576) && (B[pulseShapeNw#in_len] == 1) && (B[pulseShapeNw#out_done] == 1) && (B[pulseShapeNw#out_hsp] == 4616);
+  assume I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assume I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assume I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
   assume ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assume AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assume ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assume ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assume AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assume ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assume ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
   assume (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
-  assume (C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 128;
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
+  assume ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= 576) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= 1);
+  assume (C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 576;
   assume (C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1;
-  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 2bv8;
+  assume M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]] == 9bv8;
   assume !((1 <= (C[pulseShapeNw#in_len] - R[pulseShapeNw#in_len])) && (1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0));
-  assume !((2 <= (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb])) && (1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) && AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]));
-  assume !((1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) && (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]));
-  assert {:msg "144.13: Network action postcondition might not hold (#82)"} (R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1;
-  assert {:msg "145.13: Network action postcondition might not hold (#83)"} (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 128;
-  assert {:msg "146.13: Network action postcondition might not hold (#84)"} (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb]) == 0;
-  assert {:msg "147.13: Network action postcondition might not hold (#85)"} (C[pulseShapeNw#in_len] - R[pulseShapeNw#in_len]) == 0;
-  assert {:msg "148.13: Network action postcondition might not hold (#86)"} M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0;
-  assert {:msg "150.13: Network action postcondition might not hold (#87)"} (C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1;
-  R[pulseShapeNw#out_hsp] := R[pulseShapeNw#out_hsp] + 1032;
+  assume !((2 <= (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb])) && (1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) && AT#BvUlt14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]));
+  assume !((1 <= (C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations])) && (1 <= (C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index])) && (1 <= (C[pulseShapeNw#St] - R[pulseShapeNw#St])) && (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) && (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]));
+  R[pulseShapeNw#out_hsp] := R[pulseShapeNw#out_hsp] + 4616;
   R[pulseShapeNw#out_done] := R[pulseShapeNw#out_done] + 1;
   I := R;
-  assert {:msg "156.15: The network might not preserve the channel invariant (#88)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "159.15: The network might not preserve the channel invariant (#89)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1)) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2);
-  assert {:msg "160.15: The network might not preserve the channel invariant (#90)"} AT#BvUle8(0bv8, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "163.15: The network might not preserve the channel invariant (#91)"} ((C[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) <= B[pulseShapeNw#in_symb]) && ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) <= B[pulseShapeNw#in_len]);
-  assert {:msg "164.15: The network might not preserve the channel invariant (#92)"} ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) <= B[pulseShapeNw#out_done]) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) <= B[pulseShapeNw#out_hsp]);
-  assert {:msg "166.15: The network might not preserve the channel invariant (#93)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul8(2bv8, 32bv8)) && ((2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
-  assert {:msg "172.15: The network might not preserve the channel invariant (#94)"} ((M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2)) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
-  assert {:msg "179.15: The network might not preserve the channel invariant (#95)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 2) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "183.15: The network might not preserve the channel invariant (#96)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> AT#BvUlt8(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "187.15: The network might not preserve the channel invariant (#97)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) ==> (M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]] == M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
-  assert {:msg "191.15: The network might not preserve the channel invariant (#98)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
-  assert {:msg "197.15: The network might not preserve the channel invariant (#99)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
-  assert {:msg "155.13: The network might not preserve the network invariant (#100)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel in_symb (#101)"} (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel in_len (#102)"} (C[pulseShapeNw#in_len] - R[pulseShapeNw#in_len]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel out_hsp (#103)"} (C[pulseShapeNw#out_hsp] - R[pulseShapeNw#out_hsp]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel out_done (#104)"} (C[pulseShapeNw#out_done] - R[pulseShapeNw#out_done]) == 0;
+  assert {:msg "pulseShapeNw.actor(140.15): The network might not preserve the channel invariant (#83)"} I[pulseShapeNw#in_symb] == (576 * I[pulseShapeNw#out_done]);
+  assert {:msg "pulseShapeNw.actor(141.15): The network might not preserve the channel invariant (#84)"} I[pulseShapeNw#in_len] == I[pulseShapeNw#out_done];
+  assert {:msg "pulseShapeNw.actor(142.15): The network might not preserve the channel invariant (#85)"} I[pulseShapeNw#out_hsp] == (4616 * I[pulseShapeNw#in_len]);
+  assert {:msg "pulseShapeNw.actor(147.15): The network might not preserve the channel invariant (#86)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(150.15): The network might not preserve the channel invariant (#87)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) || (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1);
+  assert {:msg "pulseShapeNw.actor(151.15): The network might not preserve the channel invariant (#88)"} AT#BvUle14(0bv14, M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]) && AT#BvUle14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]], M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]);
+  assert {:msg "pulseShapeNw.actor(153.15): The network might not preserve the channel invariant (#89)"} ((C[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (B[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]])));
+  assert {:msg "pulseShapeNw.actor(154.15): The network might not preserve the channel invariant (#90)"} ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> (M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M[pulseShapeNw#in_len][I[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) == B[pulseShapeNw#in_symb]) && ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]])));
+  assert {:msg "pulseShapeNw.actor(160.15): The network might not preserve the channel invariant (#91)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M[pulseShapeNw#body_index][R[pulseShapeNw#body_index]]))) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * (C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1);
+  assert {:msg "pulseShapeNw.actor(168.15): The network might not preserve the channel invariant (#92)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 1) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]]))) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M[pulseShapeNw#body_iterations][R[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb])) == (2 * ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) - 8))) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 1);
+  assert {:msg "pulseShapeNw.actor(175.15): The network might not preserve the channel invariant (#93)"} (M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0) && ((R[pulseShapeNw#in_len] - I[pulseShapeNw#in_len]) == 0) ==> ((R[pulseShapeNw#in_symb] - I[pulseShapeNw#in_symb]) == 0) && ((C[pulseShapeNw#out_hsp] - I[pulseShapeNw#out_hsp]) == 0) && ((C[pulseShapeNw#out_done] - I[pulseShapeNw#out_done]) == 0);
+  assert {:msg "pulseShapeNw.actor(145.13): The network might not preserve the network invariant (#94)"} ((C[pulseShapeNw#body_iterations] - R[pulseShapeNw#body_iterations]) == 1) && ((C[pulseShapeNw#body_index] - R[pulseShapeNw#body_index]) == 1) && ((C[pulseShapeNw#St] - R[pulseShapeNw#St]) == 1);
+  assert {:msg "pulseShapeNw.actor(146.13): The network might not preserve the network invariant (#95)"} M[pulseShapeNw#St][R[pulseShapeNw#St]] == 0;
+  assert {:msg "The network might not preserve the network invariant (#96)"} R[pulseShapeNw#in_symb] == (576 * C[pulseShapeNw#out_done]);
+  assert {:msg "The network might not preserve the network invariant (#97)"} R[pulseShapeNw#in_len] == C[pulseShapeNw#out_done];
+  assert {:msg "The network might not preserve the network invariant (#98)"} (4616 * R[pulseShapeNw#in_symb]) == (576 * C[pulseShapeNw#out_hsp]);
+  assert {:msg "The network might not preserve the network invariant (#99)"} (4616 * R[pulseShapeNw#in_len]) == C[pulseShapeNw#out_hsp];
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel in_symb (#100)"} (C[pulseShapeNw#in_symb] - R[pulseShapeNw#in_symb]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel in_len (#101)"} (C[pulseShapeNw#in_len] - R[pulseShapeNw#in_len]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel out_hsp (#102)"} (C[pulseShapeNw#out_hsp] - R[pulseShapeNw#out_hsp]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel out_done (#103)"} (C[pulseShapeNw#out_done] - R[pulseShapeNw#out_done]) == 0;
 }

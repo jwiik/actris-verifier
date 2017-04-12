@@ -14,12 +14,35 @@ var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
+var B: CType;
 
 var H: HType;
 
 const unique this#: Actor;
 
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
+function AT#Ite<T>(bool, T, T): T;
+axiom (
+  forall<T> cond: bool, thn: T, els: T :: { AT#Ite(cond, thn, els) }
+    (cond ==> AT#Ite(cond,thn,els) == thn &&
+    !cond ==> AT#Ite(cond,thn,els) == els)
+);
+
+// ---------------------------------------------------------------
+// -- Axiomatisation for map data type ---------------------------
+// ---------------------------------------------------------------
+type Map a b;
+
+function Map#Select<T,U>(Map T U, T): U;
+function Map#Store<T,U>(Map T U, T, U): Map T U;
+axiom (
+  forall<T,U> m: Map T U, k1: T, val: U :: { Map#Store(m,k1,val) }
+    Map#Select(Map#Store(m,k1,val),k1) == val
+);
+axiom (
+  forall<T,U> m: Map T U, k1: T, k2: T, val: U :: { Map#Select(Map#Store(m,k1,val),k2) }
+    k1 != k2 ==> Map#Select(Map#Store(m,k1,val),k2) == Map#Select(m,k2)
+);
 
 // ---------------------------------------------------------------
 // -- Bit vector operations --------------------------------------
@@ -43,22 +66,6 @@ function AT#BvXor8(a: bv8, b: bv8): bv8;
 axiom (forall a,b: bv8 :: AT#BvXor8(a,b) == AT#BvAnd8(AT#BvOr8(a,b), AT#BvNot8(AT#BvAnd8(a,b))) );
 
 // ---------------------------------------------------------------
-// -- Axiomatisation for map data type ---------------------------
-// ---------------------------------------------------------------
-type Map a b;
-
-function Map#Select<T,U>(Map T U, T): U;
-function Map#Store<T,U>(Map T U, T, U): Map T U;
-axiom (
-  forall<T,U> m: Map T U, k1: T, val: U :: { Map#Store(m,k1,val) }
-    Map#Select(Map#Store(m,k1,val),k1) == val
-);
-axiom (
-  forall<T,U> m: Map T U, k1: T, k2: T, val: U :: { Map#Select(Map#Store(m,k1,val),k2) }
-    k1 != k2 ==> Map#Select(Map#Store(m,k1,val),k2) == Map#Select(m,k2)
-);
-
-// ---------------------------------------------------------------
 // -- End of prelude ---------------------------------------------
 // ---------------------------------------------------------------
 
@@ -73,6 +80,7 @@ procedure chipMapper#init#0()
   assume true;
   assume R[data] == 0;
   assume C[chip] == 0;
+  assert {:msg "17.19: Initialization might not establish the invariant (#0)"} (2 * R[data]) == C[chip];
 }
 procedure chipMapper#anon$0#1()
   modifies C, R, M, I, H;
@@ -86,6 +94,7 @@ procedure chipMapper#anon$0#1()
   assume true;
   assume 0 <= R[data];
   assume 0 <= C[chip];
+  assume (2 * R[data]) == C[chip];
   data#0 := M[data][R[data]];
   R[data] := R[data] + 1;
   lsn := AT#BvAnd8(data#0, 15bv8);
@@ -94,4 +103,5 @@ procedure chipMapper#anon$0#1()
   C[chip] := C[chip] + 1;
   M[chip][C[chip]] := Map#Select(Chip_map_table, msn);
   C[chip] := C[chip] + 1;
+  assert {:msg "17.19: Action at 25.2 might not preserve invariant (#1)"} (2 * R[data]) == C[chip];
 }

@@ -10,6 +10,8 @@ bv(size=8) symb               // I-Q symbols. Range: [-128, 127]
 		255 * bit - 128	
 	end
 	
+	//stream invariant 32*rd(chip) = tot(symb)
+	
 	List(type: bv(size=8), size=32) IQ;
 
 	// transforms a chip to I-Q modulated samples and sends

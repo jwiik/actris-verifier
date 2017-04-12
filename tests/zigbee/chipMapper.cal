@@ -14,6 +14,8 @@ bv(size=8) data              // header and payload data samples as 8-bit unsigne
 								 0x6931dee0, 0x931dee06, 0x31dee069, 0x1dee0693];*/
 	/*function Chip_map_table(bv(size=8) in) --> bv(size=32): 0x744ac39b end*/
 	
+	//stream invariant 2*rd(data) = tot(chip) 
+	
 	Map(bv(size=8) -> bv(size=32)) Chip_map_table;
 	
 	bv(size=8) lsn;

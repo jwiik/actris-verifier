@@ -30,7 +30,6 @@ network Net int in ==> int out1, int out2 :
   end
   
   chinvariant @(b) = @(d)+@(c)
-  chinvariant 0 < tot@(in) ==> in[@] = 1 || in[@] = -1
   chinvariant 0 < rd@(b) && b[@] >= 0 ==> tot@(d) = 0
   chinvariant 0 < rd@(b) && b[@] < 0  ==> tot@(c) = 0
     

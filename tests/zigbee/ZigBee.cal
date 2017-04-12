@@ -1,12 +1,17 @@
 network ZigBee bv(size=8) pl_bits ==> bool done, bv(size=8) hsp:
 
-  action pl_bits:1 ==> done:1, hsp:1 end
+  action pl_bits:4 ==> done:1, hsp:4616
+    requires pl_bits[@] = 0x03
+  end
+  
+  chinvariant tot@(pl_bits) > 0 ==> pl_bits[@] = 0x03
+  chinvariant rd@(pl_bits) > 0 ==> ch_len[@] = 0x03 + 0x06
 
   entities
-    ha = headerAdd();
+    ha = headerAddNw();
     cm = chipMapper();
     qm = qpskMod();
-    ps = pulseShape();
+    ps = pulseShapeNw();
   end
   
   structure

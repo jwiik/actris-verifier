@@ -1,7 +1,0 @@
-actor ECU int in ==> int out:
-
-  
-
-end
-
-actor GPU int in ==> int out:
