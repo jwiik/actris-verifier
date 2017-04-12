@@ -12,7 +12,7 @@ import fi.abo.it.actortool.boogie.BoogieVerifier
 
 object ActorTool {
   
-  val DEBUG = true
+  val DEBUG = false
   
   abstract class Verifier[U,T] {
     def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): U
@@ -63,7 +63,7 @@ object ActorTool {
   //val actorSystem = ActorSystem("actortool")
   
   def parseCommandLine(args: Array[String]): Option[CommandLineParameters] = {
-    var aBoogiePath = if (DEBUG) "./boogie" else "boogie"
+    var aBoogiePath = "./boogie"
     var aBoogieArgs = ""
     var aPrintProgram = if (DEBUG) true else false
     var aNoBplFile = if (DEBUG) false else true
