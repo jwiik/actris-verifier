@@ -117,7 +117,7 @@ class Translator(
   def createMutualExclusivenessCheck(
       avs: ActorVerificationStructure, guards: List[(Action,Boogie.Expr)], inpatDecls: Set[BDecl]): Option[Boogie.Proc] = {
     
-    val nonInitActions = avs.actions.filter { a => !a.init } size
+    val nonInitActions = (avs.actions.filter { a => !a.init }).size
     
     if (nonInitActions > 1) {      
       val decls = 
@@ -206,8 +206,8 @@ class Translator(
          case None => Nil
          case Some(e) => List(transExpr(e)(renamings))
        })
-    val pattern = if (patterns isEmpty) B.Bool(true) else patterns.reduceLeft((a,b) => a && b)
-    val guard = if (guards isEmpty) B.Bool(true) else guards.reduceLeft((a,b) => a && b)
+    val pattern = if (patterns.isEmpty) B.Bool(true) else patterns.reduceLeft((a,b) => a && b)
+    val guard = if (guards.isEmpty) B.Bool(true) else guards.reduceLeft((a,b) => a && b)
     (pattern, guard, inpatDeclBuffer.toList, renamings)
   }
   
@@ -426,7 +426,7 @@ class Translator(
       val actor = inst.actor
       
       val priorityList = nwvs.entityData(inst).priorities
-      val firingRules = priorityList.keys map { ca => (ca, transSubActionFiringRules(inst, ca, nwvs)) } toMap
+      val firingRules = (priorityList.keys map { ca => (ca, transSubActionFiringRules(inst, ca, nwvs)) }).toMap
       
       for ((ca,higherPrioActions) <- priorityList) {
         if (!ca.init) {

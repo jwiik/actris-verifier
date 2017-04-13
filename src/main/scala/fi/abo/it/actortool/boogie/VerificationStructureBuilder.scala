@@ -20,7 +20,7 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   }
   
   protected def buildPriorityMap(actor: DFActor) = {
-    var orderedActions = actor.actions filter { a => !a.init } map {a => (a,Nil: List[Action])} toMap
+    var orderedActions = (actor.actions filter { a => !a.init } map {a => (a,Nil: List[Action])}).toMap
     
     actor.priority match {
       case Some(pr) => {
@@ -85,7 +85,7 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
 
     val priorityList = buildPriorityMap(actor)
     
-    val funDeclRenamings = actor.getFunctionDecls map { fd => (fd.name,Id(prefix+fd.name)) } toMap
+    val funDeclRenamings = (actor.getFunctionDecls map { fd => (fd.name,Id(prefix+fd.name)) }).toMap
     
     return new ActorVerificationStructure(
         actor,
@@ -131,7 +131,7 @@ class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context)
       chanDecls += BDecl(namePrefix+c.id,c.typ)
     }
     
-    val explicitTokensAsserts = tokensFinder.visit(userNwInvariants) ::: tokensFinder.visit(chInvariants) toSet
+    val explicitTokensAsserts = (tokensFinder.visit(userNwInvariants) ::: tokensFinder.visit(chInvariants)).toSet
     val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
     val implicitTokensAsserts = implicitTokensChs map { c =>
       val predicate = FunctionApp("tokens",List(makeId(c.id,c.typ),IntLiteral(0)))

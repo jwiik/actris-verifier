@@ -47,7 +47,7 @@ object Inferencer {
     
     def generatePreconditionDisjunction(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
       val disjuncts = n.actions flatMap { action => {
-        if (action.requires isEmpty) Nil
+        if (action.requires.isEmpty) Nil
         else List(action.requires reduceLeft { (a,b) => And(a,b) })
       }}
       if (!disjuncts.isEmpty) {
