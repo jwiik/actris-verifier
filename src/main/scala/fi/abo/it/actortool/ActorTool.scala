@@ -57,6 +57,7 @@ object ActorTool {
     val BoogieTimeout: Int
     val AssumeGenInvs: Boolean
     val ComponentsToVerify: List[String]
+    val PrintInvariantStats: Boolean
     final lazy val help = "actortool [option] <filename>+\n"
   }
   
@@ -80,6 +81,7 @@ object ActorTool {
     var aReplaceMaps = false
     var aBoogieTimeout = 300
     var aAssumeInvs = true
+    var aPrintInvariantStats = false
     var aToVerify: List[String] = List.empty
     
     lazy val help = {
@@ -167,6 +169,7 @@ object ActorTool {
               return None
           }
         }
+        case Param("printInvariantStats") => aPrintInvariantStats = true
         case Param(x) => 
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -209,6 +212,7 @@ object ActorTool {
         val ReplaceMaps = aReplaceMaps
         val BoogieTimeout = aBoogieTimeout
         val ComponentsToVerify = aToVerify
+        val PrintInvariantStats = aPrintInvariantStats
     })
   }
   
@@ -325,26 +329,28 @@ object ActorTool {
       }
     }
     
-    println("Number of invariants: ")
-    var totUserProvided, totGenerated = 0
-    componentsToVerify map { 
-      c => c match {
-        case ba: BasicActor => 
-          val generated = (ba.actorInvariants.count { inv => inv.generated })
-          val userProvided = ba.actorInvariants.size - generated
-          totUserProvided += userProvided
-          totGenerated += generated
-          println(ba.fullName + " U:" + userProvided + " G:" + generated)
-        case nw: Network => 
-          val generated = (nw.actorInvariants.count { inv => inv.generated }) + (nw.channelInvariants.count { inv => inv.generated })
-          val userProvided = (nw.actorInvariants.size + nw.channelInvariants.size) - generated
-          totUserProvided += userProvided
-          totGenerated += generated
-          println(nw.fullName + " U:" + userProvided + " G:" + generated)
-        case _ =>
+    if (params.PrintInvariantStats) {
+      println("Number of invariants: ")
+      var totUserProvided, totGenerated = 0
+      componentsToVerify map { 
+        c => c match {
+          case ba: BasicActor => 
+            val generated = (ba.actorInvariants.count { inv => inv.generated })
+            val userProvided = ba.actorInvariants.size - generated
+            totUserProvided += userProvided
+            totGenerated += generated
+            println(ba.fullName + " U:" + userProvided + " G:" + generated)
+          case nw: Network => 
+            val generated = (nw.actorInvariants.count { inv => inv.generated }) + (nw.channelInvariants.count { inv => inv.generated })
+            val userProvided = (nw.actorInvariants.size + nw.channelInvariants.size) - generated
+            totUserProvided += userProvided
+            totGenerated += generated
+            println(nw.fullName + " U:" + userProvided + " G:" + generated)
+          case _ =>
+        }
       }
+      println("Total U:" + totUserProvided + " G:" + totGenerated)
     }
-    println("Total U:" + totUserProvided + " G:" + totGenerated)
 	}
   
   def writeFile(filename: String, text: String) {

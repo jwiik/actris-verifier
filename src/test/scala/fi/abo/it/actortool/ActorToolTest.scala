@@ -11,6 +11,7 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       "AddDelay.actor",
       "IIR.actor",
       "FIR.actor",
+      "Nested.actor",
       "DataDependent.actor",
       "zigbee/ZigBee.actor"
       )
@@ -19,7 +20,7 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
     for (path <- TestSet) {
       val file = new File("tests/"+path)
       println("\n\n===============================")
-      println("Running " + file.getName)
+      println("Verifying " + file.getName)
       ActorTool.verify(createParams(file.getAbsolutePath))
     }
   }
@@ -44,5 +45,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val ReplaceMaps = false
       val BoogieTimeout = 5
       val ComponentsToVerify = List.empty
+      val PrintInvariantStats = false
     } 
 }
