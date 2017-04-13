@@ -64,7 +64,7 @@ object ActorTool {
   //val actorSystem = ActorSystem("actortool")
   
   def parseCommandLine(args: Array[String]): Option[CommandLineParameters] = {
-    var aBoogiePath = "./boogie"
+    var aBoogiePath = "boogie"
     var aBoogieArgs = ""
     var aPrintProgram = if (DEBUG) true else false
     var aNoBplFile = if (DEBUG) false else true
