@@ -271,6 +271,18 @@ object Resolver {
     if (action.init && action.inputPattern.length > 0) {
       actorCtx.error(action.pos, "Input patterns not allowed for intialize actions")
     }
+    if (action.init && action.contract) {
+      actorCtx.error(action.pos, "An initialize action cannot be a contract action")
+    }
+    if (action.contract && action.guard.isDefined) {
+      actorCtx.error(action.pos, "A contract action cannot have guards")
+    }
+    if (action.contract && !action.body.isEmpty) {
+      actorCtx.error(action.pos, "A contract action cannot have a body")
+    }
+    if (action.contract && !action.variables.isEmpty) {
+      actorCtx.error(action.pos, "A contract action cannot declare variables")
+    }
     var vars = Map[String,Declaration]()
     var portWithPat = Set[String]()
     for (inPat <- action.inputPattern) {

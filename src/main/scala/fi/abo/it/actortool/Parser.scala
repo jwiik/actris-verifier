@@ -42,7 +42,7 @@ class Parser extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "Map", "if", "then", "else"
+                       "Map", "if", "then", "else", "contract"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -171,37 +171,27 @@ class Parser extends StandardTokenParsers {
    
   def actionDecl: Parser[Action] = filePositioned(
     (((ident <~ ":")?) ~ 
-        opt(actionClass) ~
+        opt("contract") ~
         ("action" | "initialize") ~ 
         repsep(inputPattern,",") ~ 
         ("==>" ~> repsep(outputPattern,",")) ~
-        ("guard" ~> expression ?) ~
-        //("var" ~> repsep(varDecl,",") ?) ~
         ("requires" ~> expression *) ~
         ("ensures" ~> expression *) ~
+        ("guard" ~> expression ?) ~
+        opt("var" ~> repsep(varDecl,",")) ~
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
-          case (id ~ cl ~ label ~ inputs ~ outputs ~ guard ~ /*vars ~*/ requires ~ ensures  ~ stmtOpt) => 
+          case (id ~ cl ~ label ~ inputs ~ outputs ~ requires ~ ensures ~ guard ~ vars  ~ stmtOpt) => 
             val init = label == "initialize"
-            val actClass = cl match {
-              case Some("primary") => ActionClass.Primary
-              case Some("error") => ActionClass.Error
-              case Some("recovery") => ActionClass.Recovery
-              case None => ActionClass.Normal
-              case Some(x) => 
-                // Should not happen
-                throw new RuntimeException("Invalid keyword: " + x)
-            }
+            val contract = cl.isDefined
             val stmt = stmtOpt match {
               case Some(s) => s
               case None => Nil
             }
-            Action(id,actClass,init,inputs,outputs,guard,requires,ensures,/*vars.getOrElse(Nil)*/ Nil,stmt)
+            Action(id,contract,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
     }
   )
-  
-  def actionClass = ("primary" | "error" | "recovery")
-  
+    
   def inputPattern = inputPatternRng | inputPatternNum
   
   def inputPatternRng = filePositioned(

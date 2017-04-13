@@ -178,13 +178,9 @@ object Count {
   def reset = {i = -1}
 }
 
-object ActionClass extends Enumeration {
-  type ActionClass = Value
-  val Normal, Primary, Error, Recovery = Value
-}
 
 sealed case class Action(
-    val label: Option[String], val aClass: ActionClass.Value, val init: Boolean, 
+    val label: Option[String], val contract: Boolean, val init: Boolean, 
     val inputPattern: List[InputPattern], val outputPattern: List[OutputPattern],
     val guard: Option[Expr], 
     val requires: List[Expr], val ensures: List[Expr], variables: List[Declaration],
