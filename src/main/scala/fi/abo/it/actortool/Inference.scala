@@ -46,7 +46,7 @@ object Inferencer {
     }
     
     def generatePreconditionDisjunction(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
-      val disjuncts = n.actions flatMap { action => {
+      val disjuncts = n.contractActions flatMap { action => {
         if (action.requires.isEmpty) Nil
         else List(action.requires reduceLeft { (a,b) => And(a,b) })
       }}
@@ -64,16 +64,18 @@ object Inferencer {
             val preds = 
               for (ip <- n.inports) yield {
                 action.inputPattern.find { pat => pat.portId == ip.id } match {
-                  case Some(pattern) => AtMost(totb(ip.id,ChanType(ip.portType)), IntLiteral(pattern.vars.size))
+                  case Some(pattern) => AtMost(totb(ip.id,ChanType(ip.portType)), IntLiteral(pattern.rate))
                   case None => Eq(totb(ip.id,ChanType(ip.portType)), IntLiteral(0))
                 }
               }
             preds.reduceLeft { (a,b) => And(a,b) }
           }
         }
-      val invariant = disjuncts reduceLeft { (a,b) => Or(a,b) }
-      Resolver.resolveExpr(invariant, typeCtx)
-      n.addChannelInvariant(invariant, assumeInvs)
+      if (!disjuncts.isEmpty) {
+        val invariant =  disjuncts reduceLeft { (a,b) => Or(a,b) }
+        Resolver.resolveExpr(invariant, typeCtx)
+        n.addChannelInvariant(invariant, assumeInvs)
+      }
     }
     
   }
@@ -109,9 +111,9 @@ object Inferencer {
       
     }
     
-    def collectData(actor: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context): (Action,Map[String,Int]) = {
-      val firstAction = actor.actions.filter{ a => !a.init }(0)
-      val initAction = actor.actions.find{ a => a.init }
+    def collectData(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context): (ActorAction,Map[String,Int]) = {
+      val firstAction = actor.actorActions.filter{ a => !a.init }(0)
+      val initAction = actor.actorActions.find{ a => a.init }
       
       val delayedChannels = initAction match {
         case Some(a) => {
@@ -124,9 +126,11 @@ object Inferencer {
     
     def generateCountInvariants(actor: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
       val countInvariants = new ListBuffer[Expr]
+
+      val (firstAction,delayedChannels) = 
+        if (actor.isActor) collectData(actor.asInstanceOf[BasicActor], typeCtx)
+        else (actor.contractActions(0),Map.empty[String,Int])
       
-      val (firstAction,delayedChannels) = collectData(actor, typeCtx)
-        
       for (op <- actor.outports) {
         
         val outRate = firstAction.outportRate(op.id)
@@ -134,9 +138,10 @@ object Inferencer {
         val replacements = {
           val inputs = (for (ipat <- firstAction.inputPattern) yield {
             val inRate = firstAction.inportRate(ipat.portId)
+            val portType = actor.getInport(ipat.portId).get.portType
             var i = 0
-            for (v <- ipat.vars) yield {
-              val cId = Id(ipat.portId); cId.typ = ChanType(v.typ)
+            for (v <- 0 to ipat.rate) yield {
+              val cId = Id(ipat.portId); cId.typ = ChanType(portType)
               val rated = (inRate,outRate) match {
                 case (1,1) => quantVar
                 case (x,1) => Times(lit(x),quantVar)
@@ -148,7 +153,7 @@ object Inferencer {
                 if (delayedChannels contains op.id) Minus(idx,lit(delayedChannels(op.id)))
                 else idx
               val acc = IndexAccessor(cId,delayAdjustedIdx)
-              acc.typ = v.typ
+              acc.typ = portType
               i = i+1
               (v -> acc)
             }
@@ -214,9 +219,9 @@ object Inferencer {
           (inputs/*:::params*/).toMap
         }
         
-        val exps = (for (i <- 0 to firstAction.portOutputPattern(op.id).get.exps.size-1) yield {
-          (for (a <- actor.actions.filter{ !_.init  }) yield {
-            (a.guard,a.portOutputPattern(op.id).get.exps(i))
+        val exps = (for (i <- 0 to firstAction.portOutputPattern(op.id).get.rate-1) yield {
+          (for (a <- actor.actorActions.filter{ !_.init  }) yield {
+            (a.guard,a.portOutputPattern(op.id).get.asInstanceOf[OutputPattern].exps(i))
           })
         }).toList
         
@@ -229,7 +234,7 @@ object Inferencer {
         for ((list,k) <- exps.zipWithIndex) {
           
           val bounds = // If there is more than one output we need differentiate with mod
-            if (1 < firstAction.portOutputPattern(op.id).get.exps.size) 
+            if (1 < firstAction.portOutputPattern(op.id).get.asInstanceOf[OutputPattern].exps.size) 
               And(quantBounds,Eq(Mod(quantVar,lit(outRate)),lit(k)))
             else 
               quantBounds
@@ -296,7 +301,9 @@ object Inferencer {
       }
 
       for (e <- entities) {
-        val action = e.actor.actions.filter{ a => !a.init }(0)
+        val action = 
+          if (e.actor.isActor) e.actor.actorActions.filter{ a => !a.init }(0)
+          else e.actor.contractActions(0)
         
         for (op <- e.actor.outports) {
           

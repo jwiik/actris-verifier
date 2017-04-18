@@ -93,7 +93,7 @@ object Resolver {
     override def containerActor = Some(actor)
   }
   
-  sealed class ActionContext(val action: Action, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
+  sealed class ActionContext(val action: AbstractAction, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
   
   sealed class BasicContext(val action: ASTNode, override val parentCtx: Context) extends ChildContext(action, parentCtx, Map.empty)
   
@@ -161,11 +161,11 @@ object Resolver {
           val ctx = new ActorContext(a, rootCtx, vars.toMap, inports.toMap, outports.toMap, functions.toMap)
           var schedule: Option[Schedule] = None
           var priority: Option[Priority] = None
-          val actions = new ListBuffer[Action]()
+          val actions = new ListBuffer[ActorAction]()
           for (m <- a.members) m match {
             case ca: ContractAction =>
               resolveContractAction(ctx,ca)
-            case ac: Action => 
+            case ac: ActorAction => 
               resolveAction(ctx,ac)
               actions += ac
             case ActorInvariant(Assertion(e,_,_),_,_) => resolveExpr(ctx,e,BoolType)
@@ -234,24 +234,24 @@ object Resolver {
           for (m <- n.members) {
             m match {
               case ca: ContractAction => resolveContractAction(ctx,ca)
-              case ac@Action(_,_,_,_,guard,_,_,vars,body) => {
-                assert(false)
-                guard match {
-                  case Some(g) => 
-                    return Errors(List((g.pos,"Network actions are not allowed to have guards")))
-                  case None => // OK
-                }
-                body match {
-                  case Nil =>
-                  case x :: _ => 
-                    return Errors(List((ac.pos,"Network actions are not allowed to have bodies")))
-                }
-                vars match {
-                  case x::rest => 
-                    return Errors(List((ac.pos,"Network actions cannot declare variables")))
-                  case Nil =>
-                }
-                resolveAction(ctx, ac)
+              case ac@ActorAction(_,_,_,_,guard,_,_,vars,body) => {
+                return Errors(List((ac.pos,"Networks cannot have normal actions, use 'contract' keyword instead")))
+//                guard match {
+//                  case Some(g) => 
+//                    return Errors(List((g.pos,"Network actions are not allowed to have guards")))
+//                  case None => // OK
+//                }
+//                body match {
+//                  case Nil =>
+//                  case x :: _ => 
+//                    return Errors(List((ac.pos,"Network actions are not allowed to have bodies")))
+//                }
+//                vars match {
+//                  case x::rest => 
+//                    return Errors(List((ac.pos,"Network actions cannot declare variables")))
+//                  case Nil =>
+//                }
+//                resolveAction(ctx, ac)
               }
               case e: Entities =>  // Already handled
               case s: Structure => // Already handled 
@@ -273,9 +273,16 @@ object Resolver {
   
   def resolveContractAction(actorCtx: ActorContext, action: ContractAction) {
     if (!checkActionWellformedness(actorCtx, action)) return
+    
+    val ctx = new ActionContext(action, actorCtx, Map.empty)
+    
+    for (pre <- action.requires) resolveExpr(ctx, pre, BoolType)
+    
+    for (post <- action.ensures) resolveExpr(ctx, post, BoolType)
+    
   }
   
-  def resolveAction(actorCtx: ActorContext, action: Action) {
+  def resolveAction(actorCtx: ActorContext, action: ActorAction) {
     if (action.init && action.inputPattern.length > 0) {
       actorCtx.error(action.pos, "Input patterns not allowed for intialize actions")
       return
@@ -329,7 +336,7 @@ object Resolver {
     resolveStmt(ctx,action.body)
   }
   
-  def checkActionWellformedness[T<:Pattern,U<:Pattern](actorCtx: ActorContext, action: AbstractAction[T,U]): Boolean = {
+  def checkActionWellformedness(actorCtx: ActorContext, action: AbstractAction): Boolean = {
     var portWithPat = Set[String]()
     for (inPat <- action.inputPattern) {
       if (portWithPat contains inPat.portId) {
@@ -453,7 +460,7 @@ object Resolver {
     channels
   }
   
-  def resolveSchedule(ctx: Context, actions: List[Action], sch: Schedule): Set[String] = {
+  def resolveSchedule(ctx: Context, actions: List[ActorAction], sch: Schedule): Set[String] = {
     import scala.collection.mutable.ListMap
     val states = new scala.collection.mutable.HashSet[String]
     val trans = new ListMap[String,ListMap[String,String]]
@@ -481,7 +488,7 @@ object Resolver {
     states.toSet
   }
   
-  def resolvePriority(ctx: Context, actions: List[Action], priority: Priority) = {
+  def resolvePriority(ctx: Context, actions: List[ActorAction], priority: Priority) = {
     
     for ((a1,a2) <- priority.orders) {
       if (a1.id == a2.id) {
@@ -497,6 +504,7 @@ object Resolver {
   }
   
   def resolveExpr(exp: Expr, typeCtx: Context): ResolverOutcome = {
+    assert(typeCtx.getErrors.isEmpty)
     val ctx = new BasicContext(exp,typeCtx)
     resolveExpr(ctx,exp)
     assert(exp.typ != null)

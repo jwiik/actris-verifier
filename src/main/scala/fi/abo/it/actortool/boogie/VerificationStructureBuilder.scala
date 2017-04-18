@@ -19,15 +19,19 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
     }
   }
   
-  protected def buildPriorityMap(actor: DFActor) = {
-    var orderedActions = (actor.actions filter { a => !a.init } map {a => (a,Nil: List[Action])}).toMap
+  protected def buildPriorityMap(actor: DFActor): Map[AbstractAction,List[AbstractAction]] = {
+    if (actor.isNetwork) {
+      return (actor.contractActions map { a => (a,Nil: List[AbstractAction]) }).toMap
+    }
+    
+    var orderedActions: Map[AbstractAction,List[AbstractAction]] = (actor.actorActions filter { a => !a.init } map {a => (a,Nil: List[AbstractAction])}).toMap
     
     actor.priority match {
       case Some(pr) => {
         for ((a1,a2) <- pr.orders) {
           // Assuming valid label
-          val act1 = actor.actions.find{ a => a.fullName == a1.id }.get
-          val act2 = actor.actions.find{ a => a.fullName == a2.id }.get
+          val act1 = actor.actorActions.find{ a => a.fullName == a1.id }.get
+          val act2 = actor.actorActions.find{ a => a.fullName == a2.id }.get
           // act1 is the higher prio action. We now add act1 as a higher prio action to act2
           val current = act1 :: orderedActions(act2)
           orderedActions = orderedActions + (act2 -> current)
@@ -84,7 +88,8 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
     
     return new ActorVerificationStructure(
         actor,
-        actor.actions,
+        actor.actorActions,
+        actor.contractActions,
         actor.inports,
         actor.outports,
         actor.actorInvariants,
@@ -111,7 +116,7 @@ class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context)
   val tokensFinder = new TokensFinder()
   
   def buildStructure(network: Network): NetworkVerificationStructure = {
-    val actions = network.actions
+    val actions = network.contractActions
     val userNwInvariants = network.actorInvariants
     val chInvariants = network.channelInvariants
     val connections = network.structure.get.connections
@@ -205,7 +210,7 @@ class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context)
         renameBuffer += ((v.id,makeId(newName,v.typ)))
       }
       
-      val actionData = (actor.actions map { a => (a,collectEntityData(e,a,targetMap)) }).toMap
+      val actionData = (actor.actorActions map { a => (a,collectEntityData(e,a,targetMap)) }).toMap
       val priorityMap = buildPriorityMap(actor)
 
       
@@ -246,7 +251,7 @@ class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context)
     val uniquenessConditions = uniquenessConidition1 ::: uniquenessConidition2
     
     val actionRatePreds = 
-      (for (a <- network.actions) yield {
+      (for (a <- network.contractActions) yield {
         val predicates = 
           (network.inports map { ip => B.B(networkRenamings(ip.id).id) ==@ B.Int(a.inportRate(ip.id)) }) :::
           (network.outports map { op => B.B(networkRenamings(op.id).id) ==@ B.Int(a.outportRate(op.id)) })
@@ -287,7 +292,7 @@ class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context)
         namePrefix)
   }
   
-  def collectEntityData(instance: Instance, action: Action, targetMap: Map[PortRef, String]) = {
+  def collectEntityData(instance: Instance, action: ActorAction, targetMap: Map[PortRef, String]) = {
     val actor = instance.actor
     val vars = new ListBuffer[BDecl]()
     

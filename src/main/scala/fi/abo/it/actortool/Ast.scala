@@ -73,8 +73,14 @@ sealed abstract class DFActor(
     _invariants = _invariants:::newInvariants
   }
   
-  lazy val actions: List[Action] =
-    members.filter { x => x.isAction } map { x => x.asInstanceOf[Action] }
+  lazy val actions: List[AbstractAction] =
+    members.filter { x => x.isAction } map { x => x.asInstanceOf[AbstractAction] }
+    
+  lazy val actorActions: List[ActorAction] =
+    members.filter { x => x.isActorAction } map { x => x.asInstanceOf[ActorAction] }
+    
+  lazy val contractActions: List[ContractAction] =
+    members.filter { x => x.isContractAction } map { x => x.asInstanceOf[ContractAction] }
   
   lazy val variables: List[Declaration] = 
     members.filter { x => x.isDeclaration } map { x => x.asInstanceOf[Declaration] }
@@ -170,7 +176,8 @@ sealed abstract class Member extends ASTNode {
   def isStructure = false
   def isSchedule = false
   def isFunctionDecl = false
-  def isContract = false
+  def isContractAction = false
+  def isActorAction = false
 }
 
 object Count {
@@ -179,66 +186,64 @@ object Count {
   def reset = {i = -1}
 }
 
-sealed abstract class AbstractAction[T <: Pattern, U <: Pattern] extends Member {
+sealed abstract class AbstractAction extends Member {
   
   val label: Option[String]
-  val inputPattern: List[T]
-  val outputPattern: List[U]
+  val inputPattern: List[Pattern]
+  val outputPattern: List[Pattern]
+  val requires: List[Expr]
+  val ensures: List[Expr]
   val allPatterns = inputPattern ::: outputPattern
+  val guard: Option[Expr] = None
+  val variables: List[Declaration] = List.empty
+  val body: List[Stmt] = List.empty
   
-  def inportRate(portId: String): Int
-  def outportRate(portId: String): Int
+  override def isAction = true
+  
+  def init: Boolean = false
+  
   
   def portInputPattern(portId: String) = inputPattern.find(p => p.portId == portId)
   def portOutputPattern(portId: String) = outputPattern.find(p => p.portId == portId)
+  
+  def inportRate(portId: String) = portInputPattern(portId) match {
+    case None => 0
+    case Some(i) => i.rate
+  }
+  
+  def outportRate(portId: String) = portOutputPattern(portId) match {
+    case None => 0
+    case Some(i) => i.rate
+  }
+  
+  val fullName = label.getOrElse("anon$"+Count.next)
   
 }
 
 sealed case class ContractAction(
     override val label: Option[String], 
-    val inputPattern: List[NwPattern],
-    val outputPattern: List[NwPattern],
-    val requires: List[Expr], 
-    val ensures: List[Expr]) extends AbstractAction[NwPattern,NwPattern] {
+    override val inputPattern: List[NwPattern],
+    override val outputPattern: List[NwPattern],
+    override val requires: List[Expr], 
+    override val ensures: List[Expr]) extends AbstractAction {
   
-  override def isContract = true
   
-  override def inportRate(portId: String) = portInputPattern(portId) match {
-    case None => 0
-    case Some(p) => p.rate
-  }
-  
-  override def outportRate(portId: String) = portOutputPattern(portId) match {
-    case None => 0
-    case Some(p) => p.rate
-  }
+  override def isContractAction = true
   
 }
 
-sealed case class Action(
+sealed case class ActorAction(
     override val label: Option[String], 
-    val init: Boolean, 
+    override val init: Boolean, 
     override val inputPattern: List[InputPattern], 
     override val outputPattern: List[OutputPattern],
-    val guard: Option[Expr], 
-    val requires: List[Expr], 
-    val ensures: List[Expr], 
-    val variables: List[Declaration],
-    val body: List[Stmt]) extends AbstractAction[InputPattern,OutputPattern] {
+    override val guard: Option[Expr], 
+    override val requires: List[Expr], 
+    override val ensures: List[Expr],
+    override val variables: List[Declaration],
+    override val body: List[Stmt]) extends AbstractAction {
   
-  override def isAction = true
-  
-  override def inportRate(portId: String) = portInputPattern(portId) match {
-    case None => 0
-    case Some(i) => i.vars.size
-  }
-  
-  override def outportRate(portId: String) = portOutputPattern(portId) match {
-    case None => 0
-    case Some(i) => i.exps.size
-  }
-  
-  val fullName = label.getOrElse("anon$"+Count.next)
+  override def isActorAction = true
   
 }
 

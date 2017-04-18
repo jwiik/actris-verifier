@@ -169,7 +169,7 @@ class Parser extends StandardTokenParsers {
     case (typ ~ id ~ Some(":=" ~ value)) => Declaration(id,typ,false,Some(value))
   })
    
-  def actionDecl: Parser[Action] = filePositioned(
+  def actionDecl: Parser[ActorAction] = filePositioned(
     (((ident <~ ":")?) ~ 
         ("action" | "initialize") ~ 
         repsep(inputPattern,",") ~ 
@@ -186,7 +186,7 @@ class Parser extends StandardTokenParsers {
               case Some(s) => s
               case None => Nil
             }
-            Action(id,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
+            ActorAction(id,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
     }
   )
   
