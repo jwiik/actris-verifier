@@ -1,0 +1,41 @@
+actor Add int in1, int in2 ==> int out :
+  action in1:[i], in2:[j] ==> out:[i+j] end
+end
+
+actor Split int in ==> int out1, int out2 :
+  action in:[i] ==> out1:[i], out2:[i] end
+end
+
+actor Delay(int k) int in ==> int out :
+  initialize ==> out:[k] end
+  action in:[i] ==> out:[i] end
+end
+
+network Net int in ==> int out :
+  
+  action in:1 ==> out:1
+    requires 0 <= in[@]
+    ensures out[0] = in[0]
+    ensures out[@] >= in[@]
+    ensures 0 < @(out) ==> out[@] = out[@-1]+in[@]
+  end
+  
+  invariant tokens(b,1)
+  chinvariant b[0] = 0
+  chinvariant 0 <= b[@]
+  
+  entities
+    add = Add();
+    del = Delay(0);
+    spl = Split();
+  end
+  
+  structure
+    a: in --> add.in1;
+    b: del.out --> add.in2;
+    c: add.out --> spl.in;
+    d: spl.out1 --> out;
+    e: spl.out2 --> del.in;
+  end
+
+end
