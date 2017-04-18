@@ -18,4 +18,12 @@ It is then possible to create a distributable package using:
 sbt pack
 ```
 
-The distribution is created in the folder ```target/pack```.
+The distribution is created in the folder ```target/pack```. This folder can be renamed and/or moved as the user wishes.
+
+## Running
+
+To run the tool, issue the following command:
+
+```
+<path_to_tool>/bin/actris <input_source_file>
+```
