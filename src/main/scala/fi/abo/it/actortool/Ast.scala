@@ -178,31 +178,71 @@ object Count {
   def reset = {i = -1}
 }
 
-
-sealed case class Action(
-    val label: Option[String], val contract: Boolean, val init: Boolean, 
-    val inputPattern: List[InputPattern], val outputPattern: List[OutputPattern],
-    val guard: Option[Expr], 
-    val requires: List[Expr], val ensures: List[Expr], variables: List[Declaration],
-    val body: List[Stmt]) extends Member {
+sealed abstract class AbstractAction[T <: Pattern, U <: Pattern] extends Member {
   
   override def isAction = true
+  def isContract: Boolean
   
-  def portInputCount(portId: String) = portInputPattern(portId) match {
+  val label: Option[String]
+  val inputPattern: List[T]
+  val outputPattern: List[U]
+  val allPatterns = inputPattern ::: outputPattern
+  
+  def inportRate(portId: String): Int
+  def outportRate(portId: String): Int
+  
+  def portInputPattern(portId: String) = inputPattern.find(p => p.portId == portId)
+  def portOutputPattern(portId: String) = outputPattern.find(p => p.portId == portId)
+  
+}
+
+sealed case class ContractAction(
+    override val label: Option[String], 
+    val inputPattern: List[NwPattern],
+    val outputPattern: List[NwPattern],
+    val requires: List[Expr], 
+    val ensures: List[Expr]) extends AbstractAction[NwPattern,NwPattern] {
+  
+  override def isContract = true
+  
+  override def inportRate(portId: String) = portInputPattern(portId) match {
+    case None => 0
+    case Some(p) => p.rate
+  }
+  
+  override def outportRate(portId: String) = portOutputPattern(portId) match {
+    case None => 0
+    case Some(p) => p.rate
+  }
+  
+}
+
+sealed case class Action(
+    override val label: Option[String], 
+    val init: Boolean, 
+    override val inputPattern: List[InputPattern], 
+    override val outputPattern: List[OutputPattern],
+    val guard: Option[Expr], 
+    val requires: List[Expr], 
+    val ensures: List[Expr], 
+    val variables: List[Declaration],
+    val body: List[Stmt]) extends AbstractAction[InputPattern,OutputPattern] {
+  
+  override def isAction = true
+  override def isContract = false
+  
+  override def inportRate(portId: String) = portInputPattern(portId) match {
     case None => 0
     case Some(i) => i.vars.size
   }
   
-  def portOutputCount(portId: String) = portOutputPattern(portId) match {
+  override def outportRate(portId: String) = portOutputPattern(portId) match {
     case None => 0
     case Some(i) => i.exps.size
   }
   
-  def portInputPattern(portId: String) = inputPattern.find(p => p.portId == portId)
-  
-  def portOutputPattern(portId: String) = outputPattern.find(p => p.portId == portId)
-  
   val fullName = label.getOrElse("anon$"+Count.next)
+  
 }
 
 sealed case class Declaration(val id: String, val typ: Type, 
@@ -336,14 +376,20 @@ sealed case class OutPort(override val id: String, override val portType: Type) 
   override def outPort = true
 }
 
-sealed abstract class Pattern(val portId: String, val list: List[Expr], val repeat: Int) extends ASTNode
+sealed abstract class Pattern(val portId: String, val repeat: Int) extends ASTNode {
+  def rate: Int
+}
 
-sealed case class InputPattern(override val portId: String, val vars: List[Id], override val repeat: Int) extends Pattern(portId,vars,repeat) {
+sealed case class InputPattern(override val portId: String, val vars: List[Id], override val repeat: Int) extends Pattern(portId,repeat) {
   def numConsumed = vars.size
+  override def rate = vars.size
 }
-sealed case class OutputPattern(override val portId: String, val exps: List[Expr], override val repeat: Int) extends Pattern(portId,exps,repeat) {
+sealed case class OutputPattern(override val portId: String, val exps: List[Expr], override val repeat: Int) extends Pattern(portId,repeat) {
   def numProduced = exps.size
+  override def rate = exps.size
 }
+sealed case class NwPattern(override val portId: String, override val rate: Int) extends Pattern(portId,1)
+
 
 sealed abstract class Expr extends ASTNode {
   var typ: Type = null

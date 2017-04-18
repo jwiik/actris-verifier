@@ -464,10 +464,10 @@ class Translator(
     // Network action exit
     
     val inputBounds = for (c <- nwvs.connections.filter { _.isInput }) yield {
-      if (nwa.portInputCount(c.from.name) > 0)
+      if (nwa.inportRate(c.from.name) > 0)
         B.Assume(
             B.C(transExpr(c.id,c.typ)(nwvs.nwRenamings)) - B.I(transExpr(c.id,c.typ)(nwvs.nwRenamings)) 
-            ==@ B.Int(nwa.portInputCount(c.from.name)))
+            ==@ B.Int(nwa.inportRate(c.from.name)))
       else B.Assume(B.Bool(true))
     }
     
@@ -501,7 +501,7 @@ class Translator(
         // Match network output channels
         case pf@PortRef(None,port) => {
           val name = nwvs.targetMap(pf)
-          asgn += Boogie.Assign(B.R(Boogie.VarExpr(name)), B.R(Boogie.VarExpr(name)) +  (B.Int(nwa.portOutputCount(port))))
+          asgn += Boogie.Assign(B.R(Boogie.VarExpr(name)), B.R(Boogie.VarExpr(name)) +  (B.Int(nwa.outportRate(port))))
         }
         case _ =>
       }

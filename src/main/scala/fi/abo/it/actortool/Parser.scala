@@ -188,7 +188,7 @@ class Parser extends StandardTokenParsers {
               case Some(s) => s
               case None => Nil
             }
-            Action(id,contract,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
+            Action(id,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
     }
   )
     

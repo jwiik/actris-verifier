@@ -45,7 +45,12 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
   
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
     val prefix = actor.id+B.Sep
+    
+    val stateChanRenamings = (actor.variables map { p => (p.id, Id("Ch" + B.Sep + p.id)) } ).toMap
+    
     val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
+    val stateChans = (actor.variables map { p => BDecl(stateChanRenamings(p.id).id, ChanType(p.typ)) } )
+    val chans = portChans ::: stateChans
 
     val uniquenessConiditions = createUniquenessCondition(portChans)
     val uniquenessCondition = 
@@ -59,28 +64,18 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
       actorVars  += BDecl(newName,decl.typ)
     }
     
-//    println(typeCtx.getClass.getName)
-//    val constantPreds = 
-//      actor.variables.filter(_.constant) map { d => 
-//        val id = Id(d.id)
-//        id.typ = d.typ
-//        val pred = Eq(Id(d.id),d.value.get)
-//        Resolver.resolveExpr(typeCtx, pred, BoolType) match {
-//          case Resolver.Success(_) =>
-//          case Resolver.Errors(errs) => assert(false,errs)
-//        }
-//        pred
-//      }
-    
     val actorParamDecls = actor.parameters map {p => BDecl(p.id,p.typ)}
     
     val basicAssumes =
       (actor.inports map { p => B.Assume(B.Int(0) <= B.R(p.id)) }) :::
-      (actor.outports map { p => B.Assume(B.Int(0) <= B.C(p.id)) })
+      (actor.outports map { p => B.Assume(B.Int(0) <= B.C(p.id)) }) :::
+      (actor.variables map { p => B.Assume(B.Int(0) <= B.R(stateChanRenamings(p.id).id) && B.C(stateChanRenamings(p.id).id) ==@ B.R(stateChanRenamings(p.id).id) + B.Int(1)) })
     
     val initAssumes = 
       (actor.inports map { p => B.Assume(B.R(p.id) ==@ B.Int(0)) }) :::
-      (actor.outports map { p => B.Assume(B.C(p.id) ==@ B.Int(0)) })
+      (actor.outports map { p => B.Assume(B.C(p.id) ==@ B.Int(0)) }) :::
+      (actor.variables map { p => B.Assume(B.R(stateChanRenamings(p.id).id) ==@ B.Int(0) && B.C(stateChanRenamings(p.id).id) ==@ B.Int(0))  })
+
     
 
     val priorityList = buildPriorityMap(actor)
@@ -94,7 +89,7 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
         actor.outports,
         actor.actorInvariants,
         actor.getFunctionDecls,
-        portChans,
+        portChans:::stateChans,
         actorVars.toList,
         actorParamDecls,
         uniquenessCondition,
@@ -102,6 +97,7 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
         basicAssumes,
         initAssumes,
         funDeclRenamings,
+        stateChanRenamings,
         prefix)
   }
   
@@ -252,8 +248,8 @@ class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context)
     val actionRatePreds = 
       (for (a <- network.actions) yield {
         val predicates = 
-          (network.inports map { ip => B.B(networkRenamings(ip.id).id) ==@ B.Int(a.portInputCount(ip.id)) }) :::
-          (network.outports map { op => B.B(networkRenamings(op.id).id) ==@ B.Int(a.portOutputCount(op.id)) })
+          (network.inports map { ip => B.B(networkRenamings(ip.id).id) ==@ B.Int(a.inportRate(ip.id)) }) :::
+          (network.outports map { op => B.B(networkRenamings(op.id).id) ==@ B.Int(a.outportRate(op.id)) })
         (a,predicates.reduceLeft((a,b) => (a && b)))
       }).toMap
     

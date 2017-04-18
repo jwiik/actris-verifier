@@ -129,11 +129,11 @@ object Inferencer {
         
       for (op <- actor.outports) {
         
-        val outRate = firstAction.portOutputCount(op.id)
+        val outRate = firstAction.outportRate(op.id)
           
         val replacements = {
           val inputs = (for (ipat <- firstAction.inputPattern) yield {
-            val inRate = firstAction.portInputCount(ipat.portId)
+            val inRate = firstAction.inportRate(ipat.portId)
             var i = 0
             for (v <- ipat.vars) yield {
               val cId = Id(ipat.portId); cId.typ = ChanType(v.typ)
@@ -158,7 +158,7 @@ object Inferencer {
         }
         
         for (ip <- actor.inports) {
-          val inRate = firstAction.portInputCount(ip.id)
+          val inRate = firstAction.inportRate(ip.id)
           val ratedTot = 
             if (inRate == 1) tot(op.id,ChanType(op.portType))
             else Times(lit(inRate),tot(op.id,ChanType(op.portType)))
@@ -186,11 +186,11 @@ object Inferencer {
       
       for (op <- actor.outports) {
         
-        val outRate = firstAction.portOutputCount(op.id)
+        val outRate = firstAction.outportRate(op.id)
         
         val replacements = {
           val inputs = (for (ipat <- firstAction.inputPattern) yield {
-            val inRate = firstAction.portInputCount(ipat.portId)
+            val inRate = firstAction.inportRate(ipat.portId)
             var i = 0
             for (v <- ipat.vars) yield {
               val cId = Id(ipat.portId); cId.typ = ChanType(v.typ)
@@ -300,11 +300,11 @@ object Inferencer {
         
         for (op <- e.actor.outports) {
           
-          val outRate = action.portOutputCount(op.id)
+          val outRate = action.outportRate(op.id)
           val outChan = n.structure.get.outgoingConnections(e.id, op.id).get
             
           for (ip <- e.actor.inports) {
-            val inRate = action.portInputCount(ip.id)
+            val inRate = action.inportRate(ip.id)
             val inChan = n.structure.get.incomingConnection(e.id, ip.id).get
             
             val ratedAt1 = 
@@ -352,13 +352,13 @@ object Inferencer {
       val ports = (actor.inports:::actor.outports map { _.id }).toSet
       for (action <- actor.actions.filter { !_.init }) {
         var seenPorts = ports
-        for (pat <- action.inputPattern ::: action.outputPattern) {
+        for (pat <- action.allPatterns) {
           seenPorts = seenPorts - pat.portId
           portRates.get(pat.portId) match {
             case Some(rate) =>
-              if (pat.list.size != rate) return false
+              if (pat.rate != rate) return false
             case None =>
-              portRates += (pat.portId -> pat.list.size)
+              portRates += (pat.portId -> pat.rate)
           }
         }
         for (p <- seenPorts) {

@@ -163,6 +163,9 @@ object Resolver {
           var priority: Option[Priority] = None
           val actions = new ListBuffer[Action]()
           for (m <- a.members) m match {
+            case ca: ContractAction =>
+              //resolveAction(ctx,ca,false)
+              assert(false)
             case ac: Action => 
               resolveAction(ctx,ac,false)
               actions += ac
@@ -231,7 +234,8 @@ object Resolver {
                     
           for (m <- n.members) {
             m match {
-              case ac@Action(_,_,_,_,_,guard,_,_,vars,body) => {
+              case ca: ContractAction => assert(false)
+              case ac@Action(_,_,_,_,guard,_,_,vars,body) => {
                 guard match {
                   case Some(g) => 
                     return Errors(List((g.pos,"Network actions are not allowed to have guards")))
@@ -271,16 +275,16 @@ object Resolver {
     if (action.init && action.inputPattern.length > 0) {
       actorCtx.error(action.pos, "Input patterns not allowed for intialize actions")
     }
-    if (action.init && action.contract) {
+    if (action.init && action.isContract) {
       actorCtx.error(action.pos, "An initialize action cannot be a contract action")
     }
-    if (action.contract && action.guard.isDefined) {
+    if (action.isContract && action.guard.isDefined) {
       actorCtx.error(action.pos, "A contract action cannot have guards")
     }
-    if (action.contract && !action.body.isEmpty) {
+    if (action.isContract && !action.body.isEmpty) {
       actorCtx.error(action.pos, "A contract action cannot have a body")
     }
-    if (action.contract && !action.variables.isEmpty) {
+    if (action.isContract && !action.variables.isEmpty) {
       actorCtx.error(action.pos, "A contract action cannot declare variables")
     }
     var vars = Map[String,Declaration]()
@@ -335,7 +339,7 @@ object Resolver {
       val port = actorCtx.outports(outPat.portId)
       assert(port.portType != null)
       for ((e,i) <- (outPat.exps.zipWithIndex) ) {
-        if (nwAction) {
+        if (nwAction || action.isContract) {
           e match {
             case id@Id(name) => ctx.lookUp(name) match {
               case None => // Do nothing, this is just a dummy variable
