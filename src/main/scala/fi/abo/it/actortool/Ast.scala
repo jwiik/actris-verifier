@@ -170,6 +170,7 @@ sealed abstract class Member extends ASTNode {
   def isStructure = false
   def isSchedule = false
   def isFunctionDecl = false
+  def isContract = false
 }
 
 object Count {
@@ -179,9 +180,6 @@ object Count {
 }
 
 sealed abstract class AbstractAction[T <: Pattern, U <: Pattern] extends Member {
-  
-  override def isAction = true
-  def isContract: Boolean
   
   val label: Option[String]
   val inputPattern: List[T]
@@ -229,7 +227,6 @@ sealed case class Action(
     val body: List[Stmt]) extends AbstractAction[InputPattern,OutputPattern] {
   
   override def isAction = true
-  override def isContract = false
   
   override def inportRate(portId: String) = portInputPattern(portId) match {
     case None => 0

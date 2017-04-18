@@ -164,10 +164,9 @@ object Resolver {
           val actions = new ListBuffer[Action]()
           for (m <- a.members) m match {
             case ca: ContractAction =>
-              //resolveAction(ctx,ca,false)
-              assert(false)
+              resolveContractAction(ctx,ca)
             case ac: Action => 
-              resolveAction(ctx,ac,false)
+              resolveAction(ctx,ac)
               actions += ac
             case ActorInvariant(Assertion(e,_,_),_,_) => resolveExpr(ctx,e,BoolType)
             case ChannelInvariant(Assertion(e,_,_),_) => resolveExpr(ctx,e,BoolType)
@@ -234,8 +233,9 @@ object Resolver {
                     
           for (m <- n.members) {
             m match {
-              case ca: ContractAction => assert(false)
+              case ca: ContractAction => resolveContractAction(ctx,ca)
               case ac@Action(_,_,_,_,guard,_,_,vars,body) => {
+                assert(false)
                 guard match {
                   case Some(g) => 
                     return Errors(List((g.pos,"Network actions are not allowed to have guards")))
@@ -251,7 +251,7 @@ object Resolver {
                     return Errors(List((ac.pos,"Network actions cannot declare variables")))
                   case Nil =>
                 }
-                resolveAction(ctx, ac, true)
+                resolveAction(ctx, ac)
               }
               case e: Entities =>  // Already handled
               case s: Structure => // Already handled 
@@ -271,34 +271,20 @@ object Resolver {
     if (rootCtx.getErrors.isEmpty) Success(rootCtx) else Errors(rootCtx.getErrors.toList)
   }
   
-  def resolveAction(actorCtx: ActorContext, action: Action, nwAction: Boolean) {
+  def resolveContractAction(actorCtx: ActorContext, action: ContractAction) {
+    if (!checkActionWellformedness(actorCtx, action)) return
+  }
+  
+  def resolveAction(actorCtx: ActorContext, action: Action) {
     if (action.init && action.inputPattern.length > 0) {
       actorCtx.error(action.pos, "Input patterns not allowed for intialize actions")
+      return
     }
-    if (action.init && action.isContract) {
-      actorCtx.error(action.pos, "An initialize action cannot be a contract action")
-    }
-    if (action.isContract && action.guard.isDefined) {
-      actorCtx.error(action.pos, "A contract action cannot have guards")
-    }
-    if (action.isContract && !action.body.isEmpty) {
-      actorCtx.error(action.pos, "A contract action cannot have a body")
-    }
-    if (action.isContract && !action.variables.isEmpty) {
-      actorCtx.error(action.pos, "A contract action cannot declare variables")
-    }
+    
+    if (!checkActionWellformedness(actorCtx, action)) return
+    
     var vars = Map[String,Declaration]()
-    var portWithPat = Set[String]()
     for (inPat <- action.inputPattern) {
-      if (portWithPat contains inPat.portId) {
-        actorCtx.error(inPat.pos, "Multiple patterns for port: " + inPat.portId)
-        return
-      }
-      else portWithPat = portWithPat + inPat.portId
-      if (! (actorCtx.inports contains inPat.portId)) {
-        actorCtx.error(inPat.pos, "Undeclared inport: " + inPat.portId)
-        return
-      }
       val pDecl = actorCtx.inports(inPat.portId)
       for (v <- inPat.vars) {
         if (vars contains v.id) actorCtx.error(inPat.pos, "Variable name already used: " + v.id)
@@ -306,12 +292,6 @@ object Resolver {
         v.typ = actorCtx.inports(inPat.portId).portType
         vars = vars + (d.id -> d)
       }
-      
-//      inPat.repeat match {
-//        case Some(r) => resolveExpr(actorCtx, r, IntType(32))
-//        case None =>
-//      }
-      
     }
     for (v <- action.variables) {
       if (vars contains v.id) actorCtx.error(v.pos, "Variable name already used: " + v.id)
@@ -327,40 +307,19 @@ object Resolver {
     for (pre <- action.requires) resolveExpr(ctx, pre, BoolType)
     
     for (outPat <- action.outputPattern) {
-      if (portWithPat contains outPat.portId) {
-        actorCtx.error(outPat.pos, "Multiple patterns for port: " + outPat.portId)
-        return
-      }
-      else portWithPat = portWithPat + outPat.portId
-      if (! (actorCtx.outports contains outPat.portId)) {
-        actorCtx.error(outPat.pos, "Undeclared outport: " + outPat.portId)
-        return
-      }
       val port = actorCtx.outports(outPat.portId)
       assert(port.portType != null)
       for ((e,i) <- (outPat.exps.zipWithIndex) ) {
-        if (nwAction || action.isContract) {
-          e match {
-            case id@Id(name) => ctx.lookUp(name) match {
-              case None => // Do nothing, this is just a dummy variable
-              case Some(_) => resolveExpr(ctx,e,port.portType)
-            }
-            case _ => resolveExpr(ctx,e,port.portType)
+        val eType = resolveExpr(ctx,e)
+        if (eType.isList) {
+          assert(false);
+        }
+        else {
+          if (!TypeUtil.isCompatible(eType, port.portType)) {
+            ctx.error(e.pos, 
+                "Expression type " + eType.id + " does not match port type " + port.portType.id)
           }
         }
-        else /* basic actor */ {
-          val eType = resolveExpr(ctx,e)
-          if (eType.isList) {
-            assert(false);
-          }
-          else {
-            if (!TypeUtil.isCompatible(eType, port.portType)) {
-              ctx.error(e.pos, 
-                  "Expression type " + eType.id + " does not match port type " + port.portType.id)
-            }
-          }
-        }
-        
       }
     }
     
@@ -368,6 +327,34 @@ object Resolver {
     for (post <- action.ensures) resolveExpr(postCtx, post, BoolType)
     
     resolveStmt(ctx,action.body)
+  }
+  
+  def checkActionWellformedness[T<:Pattern,U<:Pattern](actorCtx: ActorContext, action: AbstractAction[T,U]): Boolean = {
+    var portWithPat = Set[String]()
+    for (inPat <- action.inputPattern) {
+      if (portWithPat contains inPat.portId) {
+        actorCtx.error(inPat.pos, "Multiple patterns for port: " + inPat.portId)
+        return false
+      }
+      else portWithPat = portWithPat + inPat.portId
+      if (! (actorCtx.inports contains inPat.portId)) {
+        actorCtx.error(inPat.pos, "Undeclared inport: " + inPat.portId)
+        return false
+      }
+    }
+    
+    for (outPat <- action.outputPattern) {
+      if (portWithPat contains outPat.portId) {
+        actorCtx.error(outPat.pos, "Multiple patterns for port: " + outPat.portId)
+        return false
+      }
+      else portWithPat = portWithPat + outPat.portId
+      if (! (actorCtx.outports contains outPat.portId)) {
+        actorCtx.error(outPat.pos, "Undeclared outport: " + outPat.portId)
+        return false
+      }
+    }
+    return true
   }
   
   def resolveEntities(ctx: ActorContext, e: Entities): Map[String,Instance] = {

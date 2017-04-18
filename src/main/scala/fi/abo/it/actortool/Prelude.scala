@@ -79,12 +79,6 @@ var H: HType;
 const unique this#: Actor;
 
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
-function AT#Ite<T>(bool, T, T): T;
-axiom (
-  forall<T> cond: bool, thn: T, els: T :: { AT#Ite(cond, thn, els) }
-    (cond ==> AT#Ite(cond,thn,els) == thn &&
-    !cond ==> AT#Ite(cond,thn,els) == els)
-);
 """
 }
 

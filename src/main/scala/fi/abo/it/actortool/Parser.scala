@@ -101,10 +101,10 @@ class Parser extends StandardTokenParsers {
   })
   
   def actorMember: Parser[Member] = 
-    filePositioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl)
+    filePositioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl | contractActionDecl)
   
   def networkMember: Parser[Member] = filePositioned(
-      actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl)
+      actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl | contractActionDecl)
   
   def entitiesBlock: Parser[Entities] = filePositioned(("entities" ~> repsep(entityDecl,Semi) <~ (Semi?) <~ "end") ^^ {
     case entities => Entities(entities)
@@ -171,7 +171,6 @@ class Parser extends StandardTokenParsers {
    
   def actionDecl: Parser[Action] = filePositioned(
     (((ident <~ ":")?) ~ 
-        opt("contract") ~
         ("action" | "initialize") ~ 
         repsep(inputPattern,",") ~ 
         ("==>" ~> repsep(outputPattern,",")) ~
@@ -181,9 +180,8 @@ class Parser extends StandardTokenParsers {
         opt("var" ~> repsep(varDecl,",")) ~
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
-          case (id ~ cl ~ label ~ inputs ~ outputs ~ requires ~ ensures ~ guard ~ vars  ~ stmtOpt) => 
+          case (id ~ label ~ inputs ~ outputs ~ requires ~ ensures ~ guard ~ vars  ~ stmtOpt) => 
             val init = label == "initialize"
-            val contract = cl.isDefined
             val stmt = stmtOpt match {
               case Some(s) => s
               case None => Nil
@@ -191,6 +189,22 @@ class Parser extends StandardTokenParsers {
             Action(id,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
     }
   )
+  
+  def contractActionDecl: Parser[ContractAction] = filePositioned(
+    (((ident <~ ":")?) ~ 
+          "contract" ~
+          repsep(inputPattern,",") ~ 
+          ("==>" ~> repsep(outputPattern,",")) ~
+          ("requires" ~> expression *) ~
+          ("ensures" ~> expression *)
+          <~ "end") ^^ {
+            case (id ~ _ ~ inputs ~ outputs ~ requires ~ ensures) => 
+              ContractAction(id, inputs map { ip => toNwPattern(ip) } , outputs map { op => toNwPattern(op) } ,requires,ensures)
+    }
+  )
+   
+  def toNwPattern(ip: InputPattern) = NwPattern(ip.portId, ip.vars.size)
+  def toNwPattern(ip: OutputPattern) = NwPattern(ip.portId, ip.exps.size)
     
   def inputPattern = inputPatternRng | inputPatternNum
   
