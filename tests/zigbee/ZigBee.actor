@@ -134,7 +134,7 @@ end
 
 network headerAddNw bv(size=8) pl_bits ==> bv(size=8) data, bv(size=8) len :
 
-  action pl_bits:4 ==> data:9, len:1
+  contract pl_bits:4 ==> data:9, len:1
     requires bv2int(pl_bits[@]) = rate(pl_bits)-1
     ensures len[@] = pl_bits[@] + 0x06
   end
@@ -327,7 +327,7 @@ end
 
 network pulseShapeNw bv(size=8) symb, bv(size=8) len ==> bool done, bv(size=8) hsp :
   
-  action symb:576, len:1 ==> done:1, hsp:4616
+  contract symb:576, len:1 ==> done:1, hsp:4616
     requires len[@] = 0x09
   end
   
@@ -450,7 +450,7 @@ end
 
 network ZigBee bv(size=8) pl_bits ==> bool done, bv(size=8) hsp:
 
-  action pl_bits:4 ==> done:1, hsp:4616
+  contract pl_bits:4 ==> done:1, hsp:4616
     requires pl_bits[@] = 0x03
   end
   

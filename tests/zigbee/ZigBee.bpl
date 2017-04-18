@@ -21,12 +21,6 @@ var H: HType;
 const unique this#: Actor;
 
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
-function AT#Ite<T>(bool, T, T): T;
-axiom (
-  forall<T> cond: bool, thn: T, els: T :: { AT#Ite(cond, thn, els) }
-    (cond ==> AT#Ite(cond,thn,els) == thn &&
-    !cond ==> AT#Ite(cond,thn,els) == els)
-);
 
 // ---------------------------------------------------------------
 // -- Axiomatisation for map data type ---------------------------
@@ -176,18 +170,27 @@ procedure chipMapper#init#0()
 {
   var data: Chan (bv8);
   var chip: Chan (bv32);
+  var Ch#Chip_map_table: Chan (Map (bv8) (bv32));
+  var Ch#lsn: Chan (bv8);
+  var Ch#msn: Chan (bv8);
   var Chip_map_table: Map (bv8) (bv32);
   var lsn: bv8;
   var msn: bv8;
   assume true;
   assume R[data] == 0;
   assume C[chip] == 0;
+  assume (R[Ch#Chip_map_table] == 0) && (C[Ch#Chip_map_table] == 0);
+  assume (R[Ch#lsn] == 0) && (C[Ch#lsn] == 0);
+  assume (R[Ch#msn] == 0) && (C[Ch#msn] == 0);
 }
 procedure chipMapper#anon$0#1()
   modifies C, R, M, I, H;
 {
   var data: Chan (bv8);
   var chip: Chan (bv32);
+  var Ch#Chip_map_table: Chan (Map (bv8) (bv32));
+  var Ch#lsn: Chan (bv8);
+  var Ch#msn: Chan (bv8);
   var Chip_map_table: Map (bv8) (bv32);
   var lsn: bv8;
   var msn: bv8;
@@ -195,6 +198,9 @@ procedure chipMapper#anon$0#1()
   assume true;
   assume 0 <= R[data];
   assume 0 <= C[chip];
+  assume (0 <= R[Ch#Chip_map_table]) && (C[Ch#Chip_map_table] == (R[Ch#Chip_map_table] + 1));
+  assume (0 <= R[Ch#lsn]) && (C[Ch#lsn] == (R[Ch#lsn] + 1));
+  assume (0 <= R[Ch#msn]) && (C[Ch#msn] == (R[Ch#msn] + 1));
   assume (2 * R[data]) == C[chip];
   data#0 := M[data][R[data]];
   R[data] := R[data] + 1;
@@ -217,6 +223,11 @@ procedure headerAdd#init#2()
   var St_out: Chan (int);
   var octet_count_out: Chan (bv8);
   var octet_index_out: Chan (bv8);
+  var Ch#octet_count: Chan (bv8);
+  var Ch#octet_index: Chan (bv8);
+  var Ch#HEADER_LEN: Chan (bv8);
+  var Ch#Header: Chan (Map (bv8) (bv8));
+  var Ch#data_out: Chan (bv8);
   var octet_count: bv8;
   var octet_index: bv8;
   var HEADER_LEN: bv8;
@@ -232,6 +243,11 @@ procedure headerAdd#init#2()
   assume C[St_out] == 0;
   assume C[octet_count_out] == 0;
   assume C[octet_index_out] == 0;
+  assume (R[Ch#octet_count] == 0) && (C[Ch#octet_count] == 0);
+  assume (R[Ch#octet_index] == 0) && (C[Ch#octet_index] == 0);
+  assume (R[Ch#HEADER_LEN] == 0) && (C[Ch#HEADER_LEN] == 0);
+  assume (R[Ch#Header] == 0) && (C[Ch#Header] == 0);
+  assume (R[Ch#data_out] == 0) && (C[Ch#data_out] == 0);
   M[octet_index_out][C[octet_index_out]] := 0bv8;
   C[octet_index_out] := C[octet_index_out] + 1;
   M[octet_count_out][C[octet_count_out]] := 0bv8;
@@ -251,6 +267,11 @@ procedure headerAdd#get_data_len#3()
   var St_out: Chan (int);
   var octet_count_out: Chan (bv8);
   var octet_index_out: Chan (bv8);
+  var Ch#octet_count: Chan (bv8);
+  var Ch#octet_index: Chan (bv8);
+  var Ch#HEADER_LEN: Chan (bv8);
+  var Ch#Header: Chan (Map (bv8) (bv8));
+  var Ch#data_out: Chan (bv8);
   var octet_count: bv8;
   var octet_index: bv8;
   var HEADER_LEN: bv8;
@@ -270,6 +291,11 @@ procedure headerAdd#get_data_len#3()
   assume 0 <= C[St_out];
   assume 0 <= C[octet_count_out];
   assume 0 <= C[octet_index_out];
+  assume (0 <= R[Ch#octet_count]) && (C[Ch#octet_count] == (R[Ch#octet_count] + 1));
+  assume (0 <= R[Ch#octet_index]) && (C[Ch#octet_index] == (R[Ch#octet_index] + 1));
+  assume (0 <= R[Ch#HEADER_LEN]) && (C[Ch#HEADER_LEN] == (R[Ch#HEADER_LEN] + 1));
+  assume (0 <= R[Ch#Header]) && (C[Ch#Header] == (R[Ch#Header] + 1));
+  assume (0 <= R[Ch#data_out]) && (C[Ch#data_out] == (R[Ch#data_out] + 1));
   pl_bits#0 := M[pl_bits][R[pl_bits]];
   R[pl_bits] := R[pl_bits] + 1;
   octet_index_in#0 := M[octet_index_in][R[octet_index_in]];
@@ -300,6 +326,11 @@ procedure headerAdd#send_header#4()
   var St_out: Chan (int);
   var octet_count_out: Chan (bv8);
   var octet_index_out: Chan (bv8);
+  var Ch#octet_count: Chan (bv8);
+  var Ch#octet_index: Chan (bv8);
+  var Ch#HEADER_LEN: Chan (bv8);
+  var Ch#Header: Chan (Map (bv8) (bv8));
+  var Ch#data_out: Chan (bv8);
   var octet_count: bv8;
   var octet_index: bv8;
   var HEADER_LEN: bv8;
@@ -319,6 +350,11 @@ procedure headerAdd#send_header#4()
   assume 0 <= C[St_out];
   assume 0 <= C[octet_count_out];
   assume 0 <= C[octet_index_out];
+  assume (0 <= R[Ch#octet_count]) && (C[Ch#octet_count] == (R[Ch#octet_count] + 1));
+  assume (0 <= R[Ch#octet_index]) && (C[Ch#octet_index] == (R[Ch#octet_index] + 1));
+  assume (0 <= R[Ch#HEADER_LEN]) && (C[Ch#HEADER_LEN] == (R[Ch#HEADER_LEN] + 1));
+  assume (0 <= R[Ch#Header]) && (C[Ch#Header] == (R[Ch#Header] + 1));
+  assume (0 <= R[Ch#data_out]) && (C[Ch#data_out] == (R[Ch#data_out] + 1));
   octet_index_in#0 := M[octet_index_in][R[octet_index_in]];
   R[octet_index_in] := R[octet_index_in] + 1;
   octet_count_in#0 := M[octet_count_in][R[octet_count_in]];
@@ -348,6 +384,11 @@ procedure headerAdd#send_length#5()
   var St_out: Chan (int);
   var octet_count_out: Chan (bv8);
   var octet_index_out: Chan (bv8);
+  var Ch#octet_count: Chan (bv8);
+  var Ch#octet_index: Chan (bv8);
+  var Ch#HEADER_LEN: Chan (bv8);
+  var Ch#Header: Chan (Map (bv8) (bv8));
+  var Ch#data_out: Chan (bv8);
   var octet_count: bv8;
   var octet_index: bv8;
   var HEADER_LEN: bv8;
@@ -367,6 +408,11 @@ procedure headerAdd#send_length#5()
   assume 0 <= C[St_out];
   assume 0 <= C[octet_count_out];
   assume 0 <= C[octet_index_out];
+  assume (0 <= R[Ch#octet_count]) && (C[Ch#octet_count] == (R[Ch#octet_count] + 1));
+  assume (0 <= R[Ch#octet_index]) && (C[Ch#octet_index] == (R[Ch#octet_index] + 1));
+  assume (0 <= R[Ch#HEADER_LEN]) && (C[Ch#HEADER_LEN] == (R[Ch#HEADER_LEN] + 1));
+  assume (0 <= R[Ch#Header]) && (C[Ch#Header] == (R[Ch#Header] + 1));
+  assume (0 <= R[Ch#data_out]) && (C[Ch#data_out] == (R[Ch#data_out] + 1));
   octet_index_in#0 := M[octet_index_in][R[octet_index_in]];
   R[octet_index_in] := R[octet_index_in] + 1;
   octet_count_in#0 := M[octet_count_in][R[octet_count_in]];
@@ -395,6 +441,11 @@ procedure headerAdd#send_payload_octet#6()
   var St_out: Chan (int);
   var octet_count_out: Chan (bv8);
   var octet_index_out: Chan (bv8);
+  var Ch#octet_count: Chan (bv8);
+  var Ch#octet_index: Chan (bv8);
+  var Ch#HEADER_LEN: Chan (bv8);
+  var Ch#Header: Chan (Map (bv8) (bv8));
+  var Ch#data_out: Chan (bv8);
   var octet_count: bv8;
   var octet_index: bv8;
   var HEADER_LEN: bv8;
@@ -414,6 +465,11 @@ procedure headerAdd#send_payload_octet#6()
   assume 0 <= C[St_out];
   assume 0 <= C[octet_count_out];
   assume 0 <= C[octet_index_out];
+  assume (0 <= R[Ch#octet_count]) && (C[Ch#octet_count] == (R[Ch#octet_count] + 1));
+  assume (0 <= R[Ch#octet_index]) && (C[Ch#octet_index] == (R[Ch#octet_index] + 1));
+  assume (0 <= R[Ch#HEADER_LEN]) && (C[Ch#HEADER_LEN] == (R[Ch#HEADER_LEN] + 1));
+  assume (0 <= R[Ch#Header]) && (C[Ch#Header] == (R[Ch#Header] + 1));
+  assume (0 <= R[Ch#data_out]) && (C[Ch#data_out] == (R[Ch#data_out] + 1));
   pl_bits#0 := M[pl_bits][R[pl_bits]];
   R[pl_bits] := R[pl_bits] + 1;
   octet_index_in#0 := M[octet_index_in][R[octet_index_in]];
@@ -444,6 +500,11 @@ procedure headerAdd##GuardWD#7()
   var St_out: Chan (int);
   var octet_count_out: Chan (bv8);
   var octet_index_out: Chan (bv8);
+  var Ch#octet_count: Chan (bv8);
+  var Ch#octet_index: Chan (bv8);
+  var Ch#HEADER_LEN: Chan (bv8);
+  var Ch#Header: Chan (Map (bv8) (bv8));
+  var Ch#data_out: Chan (bv8);
   var octet_count: bv8;
   var octet_index: bv8;
   var HEADER_LEN: bv8;
@@ -1125,6 +1186,15 @@ procedure pulseShape#init#15()
   var body_iterations_out: Chan (bv14);
   var body_index_out: Chan (bv14);
   var St_out: Chan (int);
+  var Ch#symb_mem: Chan (bv8);
+  var Ch#body_iterations: Chan (bv8);
+  var Ch#body_index: Chan (bv8);
+  var Ch#FILT_COEFF0: Chan (bv8);
+  var Ch#FILT_COEFF1: Chan (bv8);
+  var Ch#FILT_COEFF2: Chan (bv8);
+  var Ch#FILT_COEFF3: Chan (bv8);
+  var Ch#FILT_COEFF4: Chan (bv8);
+  var Ch#hsps: Chan (Map (int) (bv8));
   var symb_mem: bv8;
   var body_iterations: bv8;
   var body_index: bv8;
@@ -1145,6 +1215,15 @@ procedure pulseShape#init#15()
   assume C[body_iterations_out] == 0;
   assume C[body_index_out] == 0;
   assume C[St_out] == 0;
+  assume (R[Ch#symb_mem] == 0) && (C[Ch#symb_mem] == 0);
+  assume (R[Ch#body_iterations] == 0) && (C[Ch#body_iterations] == 0);
+  assume (R[Ch#body_index] == 0) && (C[Ch#body_index] == 0);
+  assume (R[Ch#FILT_COEFF0] == 0) && (C[Ch#FILT_COEFF0] == 0);
+  assume (R[Ch#FILT_COEFF1] == 0) && (C[Ch#FILT_COEFF1] == 0);
+  assume (R[Ch#FILT_COEFF2] == 0) && (C[Ch#FILT_COEFF2] == 0);
+  assume (R[Ch#FILT_COEFF3] == 0) && (C[Ch#FILT_COEFF3] == 0);
+  assume (R[Ch#FILT_COEFF4] == 0) && (C[Ch#FILT_COEFF4] == 0);
+  assume (R[Ch#hsps] == 0) && (C[Ch#hsps] == 0);
   M[body_iterations_out][C[body_iterations_out]] := 0bv14;
   C[body_iterations_out] := C[body_iterations_out] + 1;
   M[body_index_out][C[body_index_out]] := 0bv14;
@@ -1165,6 +1244,15 @@ procedure pulseShape#init#16()
   var body_iterations_out: Chan (bv14);
   var body_index_out: Chan (bv14);
   var St_out: Chan (int);
+  var Ch#symb_mem: Chan (bv8);
+  var Ch#body_iterations: Chan (bv8);
+  var Ch#body_index: Chan (bv8);
+  var Ch#FILT_COEFF0: Chan (bv8);
+  var Ch#FILT_COEFF1: Chan (bv8);
+  var Ch#FILT_COEFF2: Chan (bv8);
+  var Ch#FILT_COEFF3: Chan (bv8);
+  var Ch#FILT_COEFF4: Chan (bv8);
+  var Ch#hsps: Chan (Map (int) (bv8));
   var symb_mem: bv8;
   var body_iterations: bv8;
   var body_index: bv8;
@@ -1191,6 +1279,15 @@ procedure pulseShape#init#16()
   assume 0 <= C[body_iterations_out];
   assume 0 <= C[body_index_out];
   assume 0 <= C[St_out];
+  assume (0 <= R[Ch#symb_mem]) && (C[Ch#symb_mem] == (R[Ch#symb_mem] + 1));
+  assume (0 <= R[Ch#body_iterations]) && (C[Ch#body_iterations] == (R[Ch#body_iterations] + 1));
+  assume (0 <= R[Ch#body_index]) && (C[Ch#body_index] == (R[Ch#body_index] + 1));
+  assume (0 <= R[Ch#FILT_COEFF0]) && (C[Ch#FILT_COEFF0] == (R[Ch#FILT_COEFF0] + 1));
+  assume (0 <= R[Ch#FILT_COEFF1]) && (C[Ch#FILT_COEFF1] == (R[Ch#FILT_COEFF1] + 1));
+  assume (0 <= R[Ch#FILT_COEFF2]) && (C[Ch#FILT_COEFF2] == (R[Ch#FILT_COEFF2] + 1));
+  assume (0 <= R[Ch#FILT_COEFF3]) && (C[Ch#FILT_COEFF3] == (R[Ch#FILT_COEFF3] + 1));
+  assume (0 <= R[Ch#FILT_COEFF4]) && (C[Ch#FILT_COEFF4] == (R[Ch#FILT_COEFF4] + 1));
+  assume (0 <= R[Ch#hsps]) && (C[Ch#hsps] == (R[Ch#hsps] + 1));
   len#0 := M[len][R[len]];
   R[len] := R[len] + 1;
   body_iterations_in#0 := M[body_iterations_in][R[body_iterations_in]];
@@ -1221,6 +1318,15 @@ procedure pulseShape#tx_body#17()
   var body_iterations_out: Chan (bv14);
   var body_index_out: Chan (bv14);
   var St_out: Chan (int);
+  var Ch#symb_mem: Chan (bv8);
+  var Ch#body_iterations: Chan (bv8);
+  var Ch#body_index: Chan (bv8);
+  var Ch#FILT_COEFF0: Chan (bv8);
+  var Ch#FILT_COEFF1: Chan (bv8);
+  var Ch#FILT_COEFF2: Chan (bv8);
+  var Ch#FILT_COEFF3: Chan (bv8);
+  var Ch#FILT_COEFF4: Chan (bv8);
+  var Ch#hsps: Chan (Map (int) (bv8));
   var symb_mem: bv8;
   var body_iterations: bv8;
   var body_index: bv8;
@@ -1247,6 +1353,15 @@ procedure pulseShape#tx_body#17()
   assume 0 <= C[body_iterations_out];
   assume 0 <= C[body_index_out];
   assume 0 <= C[St_out];
+  assume (0 <= R[Ch#symb_mem]) && (C[Ch#symb_mem] == (R[Ch#symb_mem] + 1));
+  assume (0 <= R[Ch#body_iterations]) && (C[Ch#body_iterations] == (R[Ch#body_iterations] + 1));
+  assume (0 <= R[Ch#body_index]) && (C[Ch#body_index] == (R[Ch#body_index] + 1));
+  assume (0 <= R[Ch#FILT_COEFF0]) && (C[Ch#FILT_COEFF0] == (R[Ch#FILT_COEFF0] + 1));
+  assume (0 <= R[Ch#FILT_COEFF1]) && (C[Ch#FILT_COEFF1] == (R[Ch#FILT_COEFF1] + 1));
+  assume (0 <= R[Ch#FILT_COEFF2]) && (C[Ch#FILT_COEFF2] == (R[Ch#FILT_COEFF2] + 1));
+  assume (0 <= R[Ch#FILT_COEFF3]) && (C[Ch#FILT_COEFF3] == (R[Ch#FILT_COEFF3] + 1));
+  assume (0 <= R[Ch#FILT_COEFF4]) && (C[Ch#FILT_COEFF4] == (R[Ch#FILT_COEFF4] + 1));
+  assume (0 <= R[Ch#hsps]) && (C[Ch#hsps] == (R[Ch#hsps] + 1));
   symb#0 := M[symb][R[symb]];
   R[symb] := R[symb] + 1;
   symb#1 := M[symb][R[symb]];
@@ -1327,6 +1442,15 @@ procedure pulseShape#tx_tail#18()
   var body_iterations_out: Chan (bv14);
   var body_index_out: Chan (bv14);
   var St_out: Chan (int);
+  var Ch#symb_mem: Chan (bv8);
+  var Ch#body_iterations: Chan (bv8);
+  var Ch#body_index: Chan (bv8);
+  var Ch#FILT_COEFF0: Chan (bv8);
+  var Ch#FILT_COEFF1: Chan (bv8);
+  var Ch#FILT_COEFF2: Chan (bv8);
+  var Ch#FILT_COEFF3: Chan (bv8);
+  var Ch#FILT_COEFF4: Chan (bv8);
+  var Ch#hsps: Chan (Map (int) (bv8));
   var symb_mem: bv8;
   var body_iterations: bv8;
   var body_index: bv8;
@@ -1353,6 +1477,15 @@ procedure pulseShape#tx_tail#18()
   assume 0 <= C[body_iterations_out];
   assume 0 <= C[body_index_out];
   assume 0 <= C[St_out];
+  assume (0 <= R[Ch#symb_mem]) && (C[Ch#symb_mem] == (R[Ch#symb_mem] + 1));
+  assume (0 <= R[Ch#body_iterations]) && (C[Ch#body_iterations] == (R[Ch#body_iterations] + 1));
+  assume (0 <= R[Ch#body_index]) && (C[Ch#body_index] == (R[Ch#body_index] + 1));
+  assume (0 <= R[Ch#FILT_COEFF0]) && (C[Ch#FILT_COEFF0] == (R[Ch#FILT_COEFF0] + 1));
+  assume (0 <= R[Ch#FILT_COEFF1]) && (C[Ch#FILT_COEFF1] == (R[Ch#FILT_COEFF1] + 1));
+  assume (0 <= R[Ch#FILT_COEFF2]) && (C[Ch#FILT_COEFF2] == (R[Ch#FILT_COEFF2] + 1));
+  assume (0 <= R[Ch#FILT_COEFF3]) && (C[Ch#FILT_COEFF3] == (R[Ch#FILT_COEFF3] + 1));
+  assume (0 <= R[Ch#FILT_COEFF4]) && (C[Ch#FILT_COEFF4] == (R[Ch#FILT_COEFF4] + 1));
+  assume (0 <= R[Ch#hsps]) && (C[Ch#hsps] == (R[Ch#hsps] + 1));
   body_iterations_in#0 := M[body_iterations_in][R[body_iterations_in]];
   R[body_iterations_in] := R[body_iterations_in] + 1;
   body_index_in#0 := M[body_index_in][R[body_index_in]];
@@ -1406,6 +1539,15 @@ procedure pulseShape##GuardWD#19()
   var body_iterations_out: Chan (bv14);
   var body_index_out: Chan (bv14);
   var St_out: Chan (int);
+  var Ch#symb_mem: Chan (bv8);
+  var Ch#body_iterations: Chan (bv8);
+  var Ch#body_index: Chan (bv8);
+  var Ch#FILT_COEFF0: Chan (bv8);
+  var Ch#FILT_COEFF1: Chan (bv8);
+  var Ch#FILT_COEFF2: Chan (bv8);
+  var Ch#FILT_COEFF3: Chan (bv8);
+  var Ch#FILT_COEFF4: Chan (bv8);
+  var Ch#hsps: Chan (Map (int) (bv8));
   var symb_mem: bv8;
   var body_iterations: bv8;
   var body_index: bv8;
@@ -2073,21 +2215,25 @@ procedure qpskMod#init#27()
 {
   var chip: Chan (bv32);
   var symb: Chan (bv8);
+  var Ch#IQ: Chan (Map (int) (bv8));
   var IQ: Map (int) (bv8);
   assume true;
   assume R[chip] == 0;
   assume C[symb] == 0;
+  assume (R[Ch#IQ] == 0) && (C[Ch#IQ] == 0);
 }
 procedure qpskMod#anon$5#28()
   modifies C, R, M, I, H;
 {
   var chip: Chan (bv32);
   var symb: Chan (bv8);
+  var Ch#IQ: Chan (Map (int) (bv8));
   var IQ: Map (int) (bv8);
   var chip#0: bv32;
   assume true;
   assume 0 <= R[chip];
   assume 0 <= C[symb];
+  assume (0 <= R[Ch#IQ]) && (C[Ch#IQ] == (R[Ch#IQ] + 1));
   assume (32 * R[chip]) == C[symb];
   chip#0 := M[chip][R[chip]];
   R[chip] := R[chip] + 1;
