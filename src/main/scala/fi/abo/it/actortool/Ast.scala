@@ -61,9 +61,8 @@ sealed abstract class DFActor(
   
   def fullName: String = id
   
-  private var _invariants: List[ActorInvariant] = 
-    for (m <- members.filter{ x => x.isActorInvariant}) yield { m.asInstanceOf[ActorInvariant] }
-  
+  private var _invariants: List[ActorInvariant] = members.collect { case inv: ActorInvariant => inv }
+      
   def actorInvariants = _invariants
   
   def addInvariant(invs: Expr, free: Boolean) { addInvariants(List(invs), free) }
@@ -73,39 +72,19 @@ sealed abstract class DFActor(
     _invariants = _invariants:::newInvariants
   }
   
-  lazy val actions: List[AbstractAction] =
-    members.filter { x => x.isAction } map { x => x.asInstanceOf[AbstractAction] }
+  lazy val actions: List[AbstractAction] = members.collect { case a: AbstractAction => a }
+      
+  lazy val actorActions: List[ActorAction] = members.collect { case a: ActorAction => a }
     
-  lazy val actorActions: List[ActorAction] =
-    members.filter { x => x.isActorAction } map { x => x.asInstanceOf[ActorAction] }
-    
-  lazy val contractActions: List[ContractAction] =
-    members.filter { x => x.isContractAction } map { x => x.asInstanceOf[ContractAction] }
+  lazy val contractActions: List[ContractAction] = members.collect { case a: ContractAction => a }
   
-  lazy val variables: List[Declaration] = 
-    members.filter { x => x.isDeclaration } map { x => x.asInstanceOf[Declaration] }
-  
-//  lazy val actorInvariants: List[ActorInvariant] = {
-//    members.filter { x => x.isActorInvariant } map { x => x.asInstanceOf[ActorInvariant] }
-//  }
+  lazy val variables: List[Declaration] = members.collect { case d: Declaration => d }
   
   lazy val streamInvariants = actorInvariants.filter { x => x.stream }
   
-  lazy val schedule = {
-    val opt = members.find(m => m match {case sc: Schedule => true; case _ => false;})
-    opt match {
-      case Some(opt) => Some(opt.asInstanceOf[Schedule])
-      case None => None
-    }
-  }
+  lazy val schedule = members.collectFirst { case s: Schedule => s }
   
-  lazy val priority = {
-    val opt = members.find(m => m match {case pr: Priority => true; case _ => false;})
-    opt match {
-      case Some(opt) => Some(opt.asInstanceOf[Priority])
-      case None => None
-    }
-  }
+  lazy val priority = members.collectFirst { case p: Priority => p }
   
   def hasInport(id: String) = inports.exists(p => p.id == id)
   def hasOutport(id: String) = outports.exists(p => p.id == id)
@@ -120,7 +99,7 @@ sealed case class BasicActor(
     override val members: List[Member]) 
     extends DFActor(annotations,id,parameters,inports,outports,members) {
   
-  def getFunctionDecls = members.filter { x => x.isFunctionDecl } map { _.asInstanceOf[FunctionDecl] } 
+  def getFunctionDecls = members.collect { case fd: FunctionDecl => fd }
   
   override def isActor = true
 }
@@ -135,8 +114,7 @@ sealed case class Network(
   
   override def isNetwork = true
   
-  private var _channelInvariants: List[ChannelInvariant] = 
-    for (m <- members.filter{ x => x.isChannelInvariant}) yield { m.asInstanceOf[ChannelInvariant] }
+  private var _channelInvariants: List[ChannelInvariant] = members.collect { case chi: ChannelInvariant => chi }
   
   def channelInvariants = {
     _channelInvariants
@@ -149,19 +127,10 @@ sealed case class Network(
     _channelInvariants = _channelInvariants:::newInvariants
   }
   
-  lazy val entities: Option[Entities] = {
-    members.find { x => x.isEntities } match {
-      case None => None
-      case Some(insts) => Some(insts.asInstanceOf[Entities])
-    }
-  }
+  lazy val entities: Option[Entities] = members.collectFirst { case ent: Entities => ent }
+
   
-  lazy val structure: Option[Structure] = {
-    members.find { x => x.isStructure } match {
-      case None => None
-      case Some(struct) => Some(struct.asInstanceOf[Structure])
-    }
-  } 
+  lazy val structure: Option[Structure] = members.collectFirst { case str: Structure => str }
   
 }
 
@@ -201,7 +170,6 @@ sealed abstract class AbstractAction extends Member {
   override def isAction = true
   
   def init: Boolean = false
-  
   
   def portInputPattern(portId: String) = inputPattern.find(p => p.portId == portId)
   def portOutputPattern(portId: String) = outputPattern.find(p => p.portId == portId)
