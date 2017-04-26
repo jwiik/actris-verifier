@@ -7,18 +7,11 @@ import fi.abo.it.actortool.ActorTool.TranslationException
 import scala.util.parsing.input.Position
 import fi.abo.it.actortool.ActorTool.TranslationException
 
-class TranslatorContext(val renamings: Map[String,Expr]) {
+class TranslatorContext(val renamings: Map[String,Expr], val subBullet: Boolean) {
+  
   private val childContexts = new ListBuffer[TranslatorContext]
-//  private val wfChecks = new ListBuffer[(Position,String,Boogie.Expr)]
-//  def addAssertion(pos: Position, msg: String, e: Boogie.Expr) { wfChecks += ((pos,msg,e)) }
-//  def getAssertions: List[Boogie.Assert] = {
-//    val childAsserts = childContexts flatMap {ctx => ctx.getAssertions } toList
-//    val asserts = wfChecks.toList map { case (pos,msg,e) => B.Assert(e,pos,msg) }
-//    wfChecks.clear
-//    childAsserts:::asserts
-//  }
   def newChildContext = {
-    val ctx = new TranslatorContext(renamings)
+    val ctx = new TranslatorContext(renamings,subBullet)
     childContexts += ctx
     ctx
   }
@@ -29,13 +22,14 @@ class StmtExpTranslator() {
    * Translation of statements and expressions
    */
   
-  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): (List[Boogie.Stmt],TranslatorContext) = {
-    val ctx = new TranslatorContext(renamings)
+  
+  def transStmt(stmts: List[Stmt], renamings: Map[String,Expr], subBullet: Boolean): (List[Boogie.Stmt],TranslatorContext) = {
+    val ctx = new TranslatorContext(renamings,subBullet)
     (transStmtI(stmts)(ctx), ctx)
   }
   
-  def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): (Boogie.Expr,TranslatorContext) = {
-    val ctx = new TranslatorContext(renamings)
+  def transExpr(exp: Expr, renamings: Map[String,Expr], subBullet: Boolean): (Boogie.Expr,TranslatorContext) = {
+    val ctx = new TranslatorContext(renamings,subBullet)
     (transExprI(exp)(ctx),ctx)
   }
 
@@ -190,10 +184,10 @@ class StmtExpTranslator() {
           case "rd" => B.R(transExprI(params(0)))
           case "urd" => B.C(transExprI(params(0))) - B.R(transExprI(params(0)))
           case "tot" => B.C(transExprI(params(0)))
-          case "rd@" => B.R(transExprI(params(0))) - B.I(transExprI(params(0)))
-          case "tot@" => B.C(transExprI(params(0))) - B.I(transExprI(params(0)))
-          case "str" => B.I(transExprI(params(0)))
-          case "@" => B.I(transExprI(params(0)))
+          case "rd@" => B.R(transExprI(params(0))) - getBullet(transExprI(params(0)),context.subBullet)
+          case "tot@" => B.C(transExprI(params(0))) - getBullet(transExprI(params(0)),context.subBullet)
+          case "str" => getBullet(transExprI(params(0)),context.subBullet)
+          case "@" => getBullet(transExprI(params(0)),context.subBullet)
           case "rate" => B.B(transExprI(params(0)))
           case "next" => 
             val ch = transExprI(params(0))
@@ -209,10 +203,10 @@ class StmtExpTranslator() {
             else B.ChannelIdx(ch, B.C(ch) - B.Int(1))
           case "history" => 
             val ch = transExprI(params(0))
-            generateRangePredicate(params, B.Int(0), B.I(ch))
+            generateRangePredicate(params, B.Int(0), getBullet(ch,context.subBullet))
           case "current" => 
             val ch = transExprI(params(0))
-            generateRangePredicate(params, B.I(ch), B.C(ch))
+            generateRangePredicate(params, getBullet(ch,context.subBullet), B.C(ch))
           case "every" => 
             val ch = transExprI(params(0))
             generateRangePredicate(params, B.Int(0), B.C(ch)) 
@@ -307,7 +301,7 @@ class StmtExpTranslator() {
         val rename = context.renamings.getOrElse(name, {val i = Id(name); i.typ = sm.typ; i})
         val accessorName = transExprI(rename)
         mark match {
-          case "@" => B.I(accessorName)
+          case "@" => getBullet(accessorName,context.subBullet)
           case "next" => B.R(accessorName)
           case "prev" => B.R(accessorName) - B.Int(1)
           case "last" => B.C(accessorName) - B.Int(1)
@@ -322,6 +316,8 @@ class StmtExpTranslator() {
       } 
     }
   }
+  
+  def getBullet(ch: Boogie.Expr, subBullet: Boolean) = if (subBullet) B.Isub(ch) else B.I(ch)
   
   def generateRangePredicate(params: List[Expr], start: Boogie.Expr, end: Boogie.Expr)(implicit context: TranslatorContext) = {
     if (params.size == 2) {

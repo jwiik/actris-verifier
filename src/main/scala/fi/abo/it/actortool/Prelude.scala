@@ -73,6 +73,7 @@ var C: CType;
 var R: CType;
 var I: CType;
 var B: CType;
+var I#sub: CType;
 
 var H: HType;
 

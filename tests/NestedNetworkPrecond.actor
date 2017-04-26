@@ -1,0 +1,25 @@
+actor A int in ==> int out:
+  action in:[i] ==> out:[i] end
+end
+
+network B int in ==> int out:
+  contract in:1 ==> out:1
+    requires 0 <= in[@]
+    ensures 0 <= out[@]
+  end
+
+  //chinvariant (forall int i :: every(out,i) ==> 0 <= out[i])
+  stream invariant (forall int i :: every(out,i) ==> 0 <= out[i])
+
+  entities a = A(); end
+  structure in --> a.in; a.out --> out; end
+end
+
+network C int in ==> int out:
+  contract in:2 ==> out:2
+    requires 0 <= in[@] && 0 <= in[@+1]
+    ensures 0 <= out[@] && 0 <= out[@+1]
+  end
+  entities b = B(); end
+  structure in --> b.in; b.out --> out; end
+end

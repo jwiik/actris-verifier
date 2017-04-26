@@ -20,7 +20,7 @@ class Translator(
   //val Inhalator = new Inhalator(stmtTranslator)
   //val Exhalator = new Exhalator(stmtTranslator)
   
-  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I, BMap.H)//:::
+  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I, BMap.H, BMap.Isub)//:::
 //    (if (!ftMode) Nil else List(BMap.SqnCh, BMap.SqnActor)) 
   
   object Annot {
@@ -571,6 +571,18 @@ class Translator(
     
     asgn ++= nwvs.basicAssumes
     //nwvs.chInvariants foreach { chi => chi.expr.typ != null }
+    
+    
+    for (ip <- instance.actor.inports) {
+      val cId = nwvs.targetMap(PortRef(Some(instance.id),ip.id))
+      asgn += Boogie.Assign(B.Isub(cId), B.R(cId))
+    }
+    
+    for (op <- instance.actor.outports) {
+      val cId = nwvs.sourceMap(PortRef(Some(instance.id),op.id))
+      asgn += Boogie.Assign(B.Isub(cId), B.C(cId))
+    }
+    
     asgn ++= (for (chi <- nwvs.chInvariants) yield BAssume(chi,nwvs.nwRenamings))  // Assume channel invariants
     
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
@@ -603,7 +615,7 @@ class Translator(
     
     for (pre <- action.requires) {
       asgn += B.Assert(
-          transExpr(pre)(renamings),pre.pos,
+          transExprPrecondCheck(pre)(renamings),pre.pos,
           "Precondition might not hold for instance at " + instance.pos)
     }
     
@@ -659,20 +671,7 @@ class Translator(
     }
     
     for (post <- action.ensures) {
-      asgn += B.Assume(transExpr(post)(renamings))
-    }
-    
-//    if (ftMode && action.aClass != ActionClass.Recovery) {
-//      asgn += Boogie.Assign(B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)),B.SqnAct(transExpr(instance.id)(nwvs.nwRenamings)) plus B.Int(1))
-//    }
-    
-//    for (ActorInvariant(e,_,_) <- actor.actorInvariants) {
-//      val (_,stmt) = Inhalator.visit(e.expr, "", renamings)
-//      asgn ++= stmt
-//    }
-    
-    for ((pinv,renames) <- nwvs.publicSubInvariants) {
-      asgn += BAssume(pinv, renames)
+      asgn += B.Assume(transExprPrecondCheck(post)(renamings))
     }
     
     for (chi <- nwvs.chInvariants) {
@@ -720,7 +719,9 @@ class Translator(
     }
     
     for (chi <- nwvs.chInvariants) {
-      asgn += BAssert(chi, "Channel invariant might be falsified by network input", nwvs.nwRenamings)
+      if (!chi.assertion.free) {
+        asgn += BAssert(chi, "Channel invariant might be falsified by network input", nwvs.nwRenamings)
+      }
     }
 
     asgn.toList
@@ -748,13 +749,19 @@ class Translator(
     i.typ = t
     transExpr(i)
   }
+  
+  def transExprPrecondCheck(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
+    val (expr,ctx) = stmtTranslator.transExpr(exp,renamings,true)
+    expr
+  }
+  
   def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
-    val (expr,ctx) = stmtTranslator.transExpr(exp)
+    val (expr,ctx) = stmtTranslator.transExpr(exp,renamings,false)
     expr
   }
   
   def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = {
-    val (bStmt,ctx) = stmtTranslator.transStmt(stmts)
+    val (bStmt,ctx) = stmtTranslator.transStmt(stmts,renamings,false)
     bStmt
   }
 
