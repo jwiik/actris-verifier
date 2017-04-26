@@ -357,7 +357,7 @@ object Inferencer {
     def isRateStatic(actor: DFActor): Boolean = {
       var portRates = Map[String,Int]()
       val ports = (actor.inports:::actor.outports map { _.id }).toSet
-      for (action <- actor.actions.filter { !_.init }) {
+      for (action <- actor.actorActions.filter { !_.init }) {
         var seenPorts = ports
         for (pat <- action.allPatterns) {
           seenPorts = seenPorts - pat.portId
