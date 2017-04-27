@@ -65,6 +65,10 @@ class BasicActorTranslator(
       }
     }
     
+    for (a <- avs.contractActions) {
+      decls ++= translateContractAction(avs, a, allGuards.toList)
+    }
+    
     decls.toList
   }
   
@@ -241,5 +245,35 @@ class BasicActorTranslator(
       }
     }
   }
+  
+  def translateContractAction(avs: ActorVerificationStructure, action: ContractAction, guards: List[(AbstractAction, Boogie.Expr)]) = {
+    val asgn = new ListBuffer[Boogie.Stmt]
+    
+    asgn ++= avs.channelDecls map { _.decl }
+    asgn ++= avs.actorVarDecls map { _.decl }
+    asgn ++= avs.actorParamDecls map { _.decl }
+    asgn += B.Assume(avs.uniquenessCondition)
+    asgn ++= avs.basicAssumes
+    
+    asgn ++= { for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(avs.renamings)) }
+    
+    for (ip <- avs.entity.inports) {
+      val rate = action.inportRate(ip.id)
+      asgn += B.Assume(B.C(ip.id) - B.I(ip.id) ==@ B.Int(rate))
+    }
+    
+    for ((_,g) <- guards) {
+      asgn += B.Assume(Boogie.UnaryExpr("!",g))
+    }
+    
+    for (op <- avs.entity.outports) {
+      val rate = action.outportRate(op.id)
+      asgn += B.Assert(B.C(op.id) - B.I(op.id) ==@ B.Int(rate),action.pos,"The correct number of tokens might not be produced on output '" + op.id + "'")
+    }
+    
+    List(B.createProc(Uniquifier.get(avs.namePrefix+"contract"+B.Sep+action.fullName), asgn.toList, smokeTest))
+    
+  }
+  
   
 }

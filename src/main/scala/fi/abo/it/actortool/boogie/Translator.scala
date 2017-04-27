@@ -60,8 +60,8 @@ class Translator(
   def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Boogie.Decl] = {
     assert(typeCtx.getErrors.isEmpty)
     
-    val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
-    val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
+    lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
+    lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
     
     val bProgram = decls flatMap {
       case a: BasicActor => actorTranslator.translateEntity(a)

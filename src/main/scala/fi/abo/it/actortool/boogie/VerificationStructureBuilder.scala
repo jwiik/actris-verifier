@@ -71,16 +71,13 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
     val actorParamDecls = actor.parameters map {p => BDecl(p.id,p.typ)}
     
     val basicAssumes =
-      (actor.inports map { p => B.Assume(B.Int(0) <= B.R(p.id)) }) :::
-      (actor.outports map { p => B.Assume(B.Int(0) <= B.C(p.id)) }) :::
+      (actor.inports:::actor.outports map { p => B.Assume(B.Int(0) <= B.I(p.id) && B.I(p.id) <= B.R(p.id) && B.R(p.id) <= B.C(p.id)) }) :::
       (actor.variables map { p => B.Assume(B.Int(0) <= B.R(stateChanRenamings(p.id).id) && B.C(stateChanRenamings(p.id).id) ==@ B.R(stateChanRenamings(p.id).id) + B.Int(1)) })
-    
-    val initAssumes = 
-      (actor.inports map { p => B.Assume(B.R(p.id) ==@ B.Int(0)) }) :::
-      (actor.outports map { p => B.Assume(B.C(p.id) ==@ B.Int(0)) }) :::
-      (actor.variables map { p => B.Assume(B.R(stateChanRenamings(p.id).id) ==@ B.Int(0) && B.C(stateChanRenamings(p.id).id) ==@ B.Int(0))  })
 
-    
+      
+    val initAssumes = 
+      (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }) :::
+      (actor.variables map { p => B.Assume(B.R(stateChanRenamings(p.id).id) ==@ B.Int(0) && B.C(stateChanRenamings(p.id).id) ==@ B.Int(0))  })
 
     val priorityList = buildPriorityMap(actor)
     
