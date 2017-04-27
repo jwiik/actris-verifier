@@ -15,7 +15,7 @@ class BasicActorTranslator(
     translateActor(avs)
   }
   
-    def translateActor(avs: ActorVerificationStructure): List[Boogie.Decl] = {    
+  def translateActor(avs: ActorVerificationStructure): List[Boogie.Decl] = {    
     val decls = new ListBuffer[Boogie.Decl]()
     val actionFiringRules = collection.mutable.Map[AbstractAction,(Boogie.Expr,Boogie.Expr)]()
     val actionInpatDecls = collection.mutable.Map[AbstractAction,List[BDecl]]()
@@ -110,10 +110,6 @@ class BasicActorTranslator(
     asgn += B.Assume(avs.uniquenessCondition)
     asgn ++= avs.initAssumes
     
-//    if (ftMode) {
-//      asgn += Boogie.Assign(B.SqnAct(B.This),B.Int(0))
-//    }
-    
     val initAction = avs.actorActions.find { x => x.init } 
     initAction match {
       case Some(a) => {
@@ -200,7 +196,6 @@ class BasicActorTranslator(
        
        for (v <- ipat.vars) {
          asgn += Boogie.Assign(transExpr(v)(renamings), B.ChannelIdx(cId, v.typ, B.R(cId)))
-//         if (ftMode) asgn += Boogie.Assign(transExpr(v.id+"#sqn")(renamings), B.SqnCh(cId, B.R(cId)))
          asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
        }
      }
@@ -221,17 +216,10 @@ class BasicActorTranslator(
        val cId = opat.portId
        for (v <- opat.exps) {
          asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(renamings))
-//         if (ftMode) {
-//           asgn += Boogie.Assign(B.SqnCh(cId, B.C(cId)), B.SqnAct(B.This))
-//         }
          asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
          
        }
      }
-     
-//    if (ftMode) {
-//      asgn += Boogie.Assign(B.SqnAct(B.This), B.SqnAct(B.This) plus B.Int(1))
-//    }
      
      for (inv <- avs.invariants) {
        if (!inv.assertion.free) 

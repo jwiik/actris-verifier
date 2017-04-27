@@ -23,7 +23,6 @@ class NetworkTranslator(
     
     val (subActorProcs, subActorFiringRules) = translateSubActorExecutions(nwvs)
     decls ++= subActorProcs
-//    decls += translateNetworkEntry(nwvs, subActorFiringRules)
     for (a <- nwvs.actions) {
       decls ++= translateNetworkAction(a,nwvs,subActorFiringRules)
     }
@@ -76,12 +75,10 @@ class NetworkTranslator(
         asgn += BAssert(chi, "Initialization of network '" + nwvs.entity.id + "' might not establish the channel invariant", nwvs.nwRenamings)
     }
     
-    //val tokenChs = new scala.collection.mutable.HashSet[String]
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
     for (nwi <- nwvs.nwInvariants) {
       if (!nwi.assertion.free) 
         asgn += BAssert(nwi,"Initialization of network '" + nwvs.entity.id + "' might not establish the network invariant",nwvs.nwRenamings)
-      //tokenChs ++= chs
     }
     
     val stmt = asgn.toList
@@ -183,19 +180,11 @@ class NetworkTranslator(
         asgn += BAssert(chi,"The network might not preserve the channel invariant"  ,nwvs.nwRenamings)
     }
     
-    //val tokenChs = new scala.collection.mutable.HashSet[String]
     for (nwi <- nwvs.nwInvariants) {
       if (!nwi.assertion.free) {
         asgn += BAssert(nwi,"The network might not preserve the network invariant",nwvs.nwRenamings)
-        //tokenChs ++= chs
       }
     }
-//    for (c <- nwvs.connections.filter(c => !tokenChs.contains(c.id))) {
-//      val msg =
-//        if (c.isOutput) "The network might not produce the specified number of tokens on output " + c.to.name
-//        else "The network might leave unread tokens on channel " + c.id
-//      asgn += B.Assert(B.Urd(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(0),nwa.pos, msg)
-//    } 
     
     B.createProc(Uniquifier.get(nwvs.namePrefix+nwa.fullName+"#exit"),asgn.toList,smokeTest)
   }
@@ -241,8 +230,6 @@ class NetworkTranslator(
     asgn ++= nwvs.getEntityActionData(instance, action).declarations  map { _.decl }
     
     asgn ++= nwvs.basicAssumes
-    //nwvs.chInvariants foreach { chi => chi.expr.typ != null }
-    
     
     for (ip <- instance.actor.inports) {
       val cId = nwvs.targetMap(PortRef(Some(instance.id),ip.id))
@@ -380,7 +367,6 @@ class NetworkTranslator(
     for ((pinv,renames) <- nwvs.publicSubInvariants) {
       asgn += BAssume(pinv, renames)
     }
-    //asgn += B.Assume(B.Int(0) <= B.Int(1))
     asgn += Boogie.Assign(
         B.C(transExpr(pattern.portId,ChanType(portType))(nwvs.nwRenamings)),
         B.C(transExpr(pattern.portId,ChanType(portType))(nwvs.nwRenamings)) + B.Int(1))
