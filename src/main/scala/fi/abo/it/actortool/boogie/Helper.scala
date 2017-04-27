@@ -7,8 +7,10 @@ import fi.abo.it.actortool.boogie.Boogie.NamedType
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.boogie.Boogie.BVLiteral
 
-
-
+object Uniquifier {
+  private var i = -1
+  def get(id: String) = { i = i+1; id+B.Sep+(i.toString) }
+}
 
 object BMap extends Enumeration {
   type BMap = String
@@ -53,6 +55,15 @@ object BDecl {
 }
 
 object B {
+ 
+  final val Modifies = List(BMap.C, BMap.R, BMap.M, BMap.I, BMap.H, BMap.Isub)
+  
+  def createProc(name: String, stmt: List[Boogie.Stmt], smokeTest: Boolean) = {
+    val body =
+      if (smokeTest) stmt:::List(Assert(Boogie.BoolLiteral(false),"[smoke]"+ name))
+      else stmt
+    Boogie.Proc(name,Nil,Nil,Modifies,Nil,body)
+  }
   
   
   object AssertCount {
