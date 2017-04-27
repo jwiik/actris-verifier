@@ -262,6 +262,10 @@ class BasicActorTranslator(
       asgn += B.Assume(B.C(ip.id) - B.I(ip.id) ==@ B.Int(rate))
     }
     
+    for (p <- action.requires) {
+      asgn += B.Assume(transExpr(p)(avs.renamings))
+    }
+    
     for ((_,g) <- guards) {
       asgn += B.Assume(Boogie.UnaryExpr("!",g))
     }
@@ -269,6 +273,10 @@ class BasicActorTranslator(
     for (op <- avs.entity.outports) {
       val rate = action.outportRate(op.id)
       asgn += B.Assert(B.C(op.id) - B.I(op.id) ==@ B.Int(rate),action.pos,"The correct number of tokens might not be produced on output '" + op.id + "'")
+    }
+    
+    for (q <- action.ensures) {
+      asgn += B.Assert(transExpr(q)(avs.renamings),q.pos,"Contract action postcondition might not hold")
     }
     
     List(B.createProc(Uniquifier.get(avs.namePrefix+"contract"+B.Sep+action.fullName), asgn.toList, smokeTest))
