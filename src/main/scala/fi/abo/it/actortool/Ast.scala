@@ -72,7 +72,7 @@ sealed abstract class DFActor(
     _invariants = _invariants:::newInvariants
   }
   
-  lazy val actions: List[AbstractAction] = members.collect { case a: AbstractAction => a }
+  //lazy val actions: List[AbstractAction] = members.collect { case a: AbstractAction => a }
       
   lazy val actorActions: List[ActorAction] = members.collect { case a: ActorAction => a }
     

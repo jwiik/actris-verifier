@@ -330,12 +330,6 @@ class Translator(
       asgn += B.Assume(B.R(transExpr(c.id,c.typ)(nwvs.nwRenamings)) ==@ B.Int(0))
     }
     
-//    if (ftMode) {
-//      for (e <- nwvs.entities) {
-//        asgn += B.Assume(B.SqnAct(transExpr(e.id)(nwvs.nwRenamings)) ==@ B.Int(0))
-//      }
-//    }
-    
     for (inst <- nwvs.entities) {
       
       val actor = inst.actor
@@ -348,7 +342,9 @@ class Translator(
         asgn += B.Assume(transExpr(name)(renamings) ==@ transExpr(value)(renamings))
       }
       
-      for (ca <- actor.actions filter(_.init)) {
+      val actions = if (actor.contractActions.isEmpty) actor.actorActions else actor.contractActions
+      
+      for (ca <- actions.filter(_.init)) {
         for (opat <- ca.outputPattern) {
           val cId = nwvs.sourceMap(PortRef(Some(inst.id),opat.portId))
           for (e <- opat.asInstanceOf[OutputPattern].exps) {
@@ -357,12 +353,6 @@ class Translator(
           }
         }
       }
-      
-//      for (inv <- actor.publicActorInvariants) {
-//        //asgn += B.Assume(transExpr(inv.expr)(renamings))
-//        val (_,stmt) = Inhalator.visit(inv.expr, "", renamings)
-//        asgn ++= stmt
-//      }
 
     }
     
@@ -374,16 +364,10 @@ class Translator(
     //val tokenChs = new scala.collection.mutable.HashSet[String]
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
     for (nwi <- nwvs.nwInvariants) {
-      //val (chs,asserts) = Exhalator.visit(nwi, "Network initialization might not establish the network invariant", nwvs.nwRenamings)
       if (!nwi.assertion.free) 
         asgn += BAssert(nwi,"Initialization of network '" + nwvs.entity.id + "' might not establish the network invariant",nwvs.nwRenamings)
       //tokenChs ++= chs
     }
-    
-//    for (c <- nwvs.connections.filter(c => !tokenChs.contains(c.id))) {
-//      asgn += B.Assert(B.Urd(transExpr(c.id)(nwvs.nwRenamings)) ==@ B.Int(0), 
-//          c.pos, "The initialization might produce unspecified tokens on channel " + c.id)
-//    }
     
     val stmt = asgn.toList
     List(createBoogieProc(Uniquifier.get(nwvs.namePrefix+"init"),stmt))

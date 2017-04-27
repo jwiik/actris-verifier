@@ -59,7 +59,7 @@ object Inferencer {
     
     def generateInputTokenLimit(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
       val disjuncts: List[Expr] =
-        n.actions map {
+        n.contractActions map {
           action => {
             val preds = 
               for (ip <- n.inports) yield {
