@@ -128,11 +128,11 @@ class Parser extends StandardTokenParsers {
   //def schedType = "fsm" | "regexp" 
     
   def priorityBlock: Parser[Priority] = 
-    filePositioned(("priority" ~> repsep(prioOrder,";") <~ "end") ^^ {
+    filePositioned(("priority" ~> repsep(prioOrder,";") <~ (Semi?) <~ "end") ^^ {
       case actions => Priority(actions)
     })
   
-  def prioOrder = (ident ~ (">" ~> ident)) ^^ { case s1 ~ s2  => (Id(s1),Id(s2)) }
+  def prioOrder = (actionLabel ~ (">" ~> actionLabel)) ^^ { case s1 ~ s2  => (Id(s1),Id(s2)) }
     
   def entityDecl = filePositioned(opt(annotation) ~ ident ~ ("=" ~> (ident ~ paramList)) ^^ {
     case None ~ name ~ (actorId ~ params) => Instance(name,actorId,params,Nil)
@@ -144,7 +144,7 @@ class Parser extends StandardTokenParsers {
     case Some(annot) ~ id ~ (from ~ to) => Connection(id,from,to,List(annot))
   })
   
-  def transition = filePositioned(ident ~ ("(" ~> ident <~ ")") ~ ("-->" ~> ident) ^^ {
+  def transition = filePositioned(ident ~ ("(" ~> actionLabel <~ ")") ~ ("-->" ~> ident) ^^ {
     case (from ~ act ~ to)  => Transition(act,from,to)
   })
   
@@ -168,9 +168,12 @@ class Parser extends StandardTokenParsers {
     case (typ ~ id ~ Some("=" ~ value)) => Declaration(id,typ,true,Some(value))
     case (typ ~ id ~ Some(":=" ~ value)) => Declaration(id,typ,false,Some(value))
   })
+  
+  def actionLabel: Parser[String] = repsep(ident,".") ^^ { case list => list.mkString(".") }
+
    
   def actionDecl: Parser[ActorAction] = filePositioned(
-    (((ident <~ ":")?) ~ 
+    (((actionLabel <~ ":")?) ~ 
         ("action" | "initialize") ~ 
         repsep(inputPattern,",") ~ 
         ("==>" ~> repsep(outputPattern,",")) ~
@@ -191,7 +194,7 @@ class Parser extends StandardTokenParsers {
   )
   
   def contractActionDecl: Parser[ContractAction] = filePositioned(
-    (((ident <~ ":")?) ~ 
+    (((actionLabel <~ ":")?) ~ 
           "contract" ~
           repsep(inputPattern,",") ~ 
           ("==>" ~> repsep(outputPattern,",")) ~

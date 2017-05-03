@@ -102,8 +102,16 @@ class StmtExpTranslator() {
           getBitVectorFunction("AT#BvUlt", List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else transExprI(e1) < transExprI(e2)
-      case Greater(e1,e2) => transExprI(e1) > transExprI(e2)
-      case AtLeast(e1,e2) => transExprI(e1) >= transExprI(e2)
+      case Greater(e1,e2) => 
+        if (e1.typ.isBv) {
+          getBitVectorFunction("AT#BvUgt", List(transExprI(e1),transExprI(e2)), e1.typ)
+        }
+        else transExprI(e1) > transExprI(e2)
+      case AtLeast(e1,e2) => 
+        if (e1.typ.isBv) {
+          getBitVectorFunction("AT#BvUge", List(transExprI(e1),transExprI(e2)), e1.typ)
+        }
+        else transExprI(e1) >= transExprI(e2)
       case op@AtMost(e1,e2) => 
         if (e1.typ.isBv) {
           getBitVectorFunction("AT#BvUle", List(transExprI(e1),transExprI(e2)), e1.typ)
@@ -191,8 +199,8 @@ class StmtExpTranslator() {
           case "rate" => B.B(transExprI(params(0)))
           case "next" => 
             val ch = transExprI(params(0))
-            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) minus transExprI(params(1)))
-            else B.ChannelIdx(ch,B.R(ch))
+            if (fa.parameters.size > 1) B.R(ch) minus transExprI(params(1))
+            else B.R(ch)
           case "prev" => 
             val ch = transExprI(params(0))
             if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) - transExprI(params(1)))

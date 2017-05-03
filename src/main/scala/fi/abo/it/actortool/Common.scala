@@ -33,6 +33,17 @@ object Elements {
     fa
   }
   
+  def next(id: String, chType: ChanType, offset: Int = 0) = {
+    val fa = FunctionApp("next",List(makeId(id,chType): Expr))
+    fa.typ = IntType(-1)
+    if (offset != 0) {
+      val diff = Plus(fa,lit(offset))
+      diff.typ = fa.typ
+      diff
+    }
+    else fa
+  }
+  
   def ch(name: String, carriedType: Type) = {
     val i = Id(name)
     i.typ = ChanType(carriedType)

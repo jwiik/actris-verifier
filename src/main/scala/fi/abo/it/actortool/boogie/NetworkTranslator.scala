@@ -93,7 +93,9 @@ class NetworkTranslator(
     for (inst <- nwvs.entities) {
       val actor = inst.actor
       
+      /// This list includes contract actions if the entity has such, otherwise basic actions
       val priorityList = nwvs.entityData(inst).priorities
+      
       val firingRules = (priorityList.keys map { ca => (ca, transSubActionFiringRules(inst, ca, nwvs)) }).toMap
       
       for ((ca,higherPrioActions) <- priorityList) {
@@ -131,19 +133,21 @@ class NetworkTranslator(
   def transNetworkExit(nwa: ContractAction, nwvs: NetworkVerificationStructure, subactorFiringRules: List[Boogie.Expr]) = {
     // Network action exit
     
-    val inputBounds = for (c <- nwvs.connections.filter { _.isInput }) yield {
-      if (nwa.inportRate(c.from.name) > 0)
-        B.Assume(
-            B.C(transExpr(c.id,c.typ)(nwvs.nwRenamings)) - B.I(transExpr(c.id,c.typ)(nwvs.nwRenamings)) 
-            ==@ B.Int(nwa.inportRate(c.from.name)))
-      else B.Assume(B.Bool(true))
-    }
+    val inputBounds = 
+      nwvs.entity.inports.map { 
+        p =>
+          B.Assume(B.C(transExpr(p.id,p.portType)(nwvs.nwRenamings)) - B.I(transExpr(p.id,p.portType)(nwvs.nwRenamings)) ==@ B.Int(nwa.inportRate(p.id)))
+      }
     
-    val nwPre = for (r <- nwa.requires) yield 
-      (r.pos,transExpr(r)(nwvs.nwRenamings))
-    
-    val nwPost = for (q <- nwa.ensures) yield 
-      (q.pos,transExpr(q)(nwvs.nwRenamings))
+    val outputBounds = 
+      nwvs.entity.outports.map { 
+        p =>
+          B.Assert(
+              B.C(transExpr(p.id,p.portType)(nwvs.nwRenamings)) - B.I(transExpr(p.id,p.portType)(nwvs.nwRenamings)) ==@ B.Int(nwa.outportRate(p.id)),
+              nwa.pos,
+              "The correct number of tokens might not be produced on output '" + p.id +  "'"
+              )
+      }
     
     val firingNegAssumes = subactorFiringRules map { fr => B.Assume(Boogie.UnaryExpr("!",fr)) }
     
@@ -161,9 +165,10 @@ class NetworkTranslator(
       asgn += BAssume(pinv, renames)
     }
     asgn ++= inputBounds
-    asgn ++= (nwPre.map { case (_,r) => B.Assume(r) })
+    asgn ++= (nwa.requires.map { r => B.Assume(transExpr(r)(nwvs.nwRenamings)) })
     asgn ++= firingNegAssumes
-    asgn ++= (nwPost.map { case (pos,q) => B.Assert(q,pos,"Network action postcondition might not hold") })
+    asgn ++= outputBounds
+    asgn ++= (nwa.ensures.map { q => B.Assert(transExpr(q)(nwvs.nwRenamings),q.pos,"Network action postcondition might not hold") })
     for (c <- nwvs.connections) {
       c.to match {
         // Match network output channels
@@ -176,8 +181,9 @@ class NetworkTranslator(
     }
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
     for (chi <- nwvs.chInvariants) {
-      if (!chi.assertion.free)
-        asgn += BAssert(chi,"The network might not preserve the channel invariant"  ,nwvs.nwRenamings)
+      if (!chi.assertion.free) {
+        asgn += BAssert(chi,"The network might not preserve the channel invariant",nwvs.nwRenamings)
+      }
     }
     
     for (nwi <- nwvs.nwInvariants) {

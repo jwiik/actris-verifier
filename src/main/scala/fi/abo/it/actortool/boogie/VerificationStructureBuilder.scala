@@ -19,8 +19,8 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
     }
   }
   
-  protected def buildPriorityMap(actor: DFActor): Map[AbstractAction,List[AbstractAction]] = {
-    if (actor.isNetwork) {
+  protected def buildPriorityMap(actor: DFActor, subComponent: Boolean): Map[AbstractAction,List[AbstractAction]] = {
+    if (subComponent && !actor.contractActions.isEmpty) {
       return (actor.contractActions map { a => (a,Nil: List[AbstractAction]) }).toMap
     }
     
@@ -79,7 +79,7 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
       (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }) :::
       (actor.variables map { p => B.Assume(B.R(stateChanRenamings(p.id).id) ==@ B.Int(0) && B.C(stateChanRenamings(p.id).id) ==@ B.Int(0))  })
 
-    val priorityList = buildPriorityMap(actor)
+    val priorityList = buildPriorityMap(actor,false)
     
     val funDeclRenamings = (actor.getFunctionDecls map { fd => (fd.name,Id(prefix+fd.name)) }).toMap
     
@@ -208,7 +208,7 @@ class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context)
       }
       
       val actionData = (actor.actorActions map { a => (a,collectEntityData(e,a,targetMap)) }).toMap
-      val priorityMap = buildPriorityMap(actor)
+      val priorityMap = buildPriorityMap(actor,true)
 
       
       val entityData = new EntityData(Nil,renameBuffer.toMap,variables.toList, actionData, priorityMap)
