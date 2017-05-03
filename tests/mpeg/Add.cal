@@ -1,0 +1,151 @@
+actor Add()
+	bv(size=9) MOT, bv(size=9) TEX, bv(size=12) BTYPE
+		==>
+	bv(size=9) VID :
+	
+	bv(size=12) NEWVOP;
+	bv(size=12) INTRA;
+	bv(size=12) ACCODED;
+	
+	int(size=8) count := 0;
+	int St := 0;
+	
+	free invariant NEWVOP = int2bv(2048,12)
+	free invariant INTRA = int2bv(1024,12)
+	free invariant NEWVOP = int2bv(2048,12)
+	free invariant ACCODED = int2bv(2,12)
+	
+	invariant rd@(BTYPE) > 0 && (BTYPE[@] & INTRA) != 0x000 && rd@(TEX) < 64 ==> St = 1
+	
+	contract BTYPE:1, TEX:64 ==> VID:64 
+	  requires (BTYPE[@] & INTRA) != 0x000
+	end
+	
+	contract BTYPE:1, MOT:64 ==> VID:64 
+	  requires (BTYPE[@] & ACCODED) != 0x000
+	end
+	
+	contract BTYPE:1, MOT:64, TEX:64 ==> VID:64 
+	  requires !((BTYPE[@] & NEWVOP) != 0x000)
+	  requires !((BTYPE[@] & ACCODED) != 0x000)
+	  requires !((BTYPE[@] & INTRA) != 0x000)
+	end
+	
+	initialize ==>
+	do
+		count := 0;
+		St := 0;
+	end
+
+	// Ignore new VOP command
+	cmd.newVop: action BTYPE:[ cmd ] ==>
+	guard
+		St = 0 && 
+		(cmd & NEWVOP) != 0x000
+	do
+		St := 4;
+	end
+
+	// Pure texture
+	cmd.textureOnly: action BTYPE:[ cmd ] ==>
+	guard
+		St = 0 && 
+		(cmd & INTRA) != 0x000
+	do
+		St := 1;
+	end
+
+	// Pure motion
+	cmd.motionOnly: action BTYPE:[ cmd ] ==>
+	guard
+		St = 0 && 
+		(cmd & ACCODED) = 0x000
+	do
+		St := 2;
+	end
+
+	// Mixed texture and motion
+	// (Also used to skip vop w,h)
+	cmd.other: action BTYPE:[ cmd ] ==>
+	guard
+		St = 0 || St = 4 || St = 5
+	do
+		St := 
+			if St = 0 then 3
+			else 
+				if St = 4 then 5
+				else 0 end end
+	end
+
+	done: action ==>
+	guard
+		(St = 1 || St = 2 || St = 3) &&
+		count = 64
+	do
+		count := 0;
+	end
+
+	texture: action TEX:[ tex ] ==> VID:[ tex ]
+	guard
+		St = 1
+	do
+		count := count + 1;
+	end
+
+	motion: action MOT:[ mot ] ==> VID:[ mot ]
+	guard
+		St = 2
+	do
+		count := count + 1;
+	end
+
+	combine: action MOT:[ mot ], TEX:[ tex ] ==> VID:[ 
+	    if bvconcat(int2bv(0,1),tex)+bvconcat(int2bv(0,1),mot) < int2bv(0,10) then
+			int2bv(0,9)
+		else
+			if bvconcat(int2bv(0,1),tex)+bvconcat(int2bv(0,1),mot) > int2bv(255,10) then
+				int2bv(255,9)
+			else
+				tex+mot
+			end
+		end ]
+	guard
+		St = 3
+	do
+		count := count + 1;
+	end
+
+/*
+	schedule fsm cmd :
+		cmd (cmd.newVop) --> skipw;
+		cmd (cmd.textureOnly) --> texture;
+		cmd (cmd.motionOnly) --> motion;
+		cmd (cmd.other) --> combine;
+
+		texture (done) --> cmd;
+		texture (texture) --> texture;
+
+		motion (done) --> cmd;
+		motion (motion) --> motion;
+
+		combine (done) --> cmd;
+		combine (combine) --> combine;
+
+		skipw (cmd.other) --> skiph;
+		skiph (cmd.other) --> cmd;
+	end
+*/
+
+	priority
+		cmd.newVop > cmd.textureOnly;
+		cmd.newVop > cmd.motionOnly;
+		cmd.newVop > cmd.other;
+		cmd.textureOnly > cmd.motionOnly;
+		cmd.textureOnly > cmd.other;
+		cmd.motionOnly > cmd.other;
+		done > combine;
+		done > texture;
+		done > motion;
+	end
+
+end

@@ -1,0 +1,50 @@
+actor A int in ==> int out:
+  
+  action in:[i] ==> out:[i] end
+  
+end
+
+actor B int in ==> int out:
+  
+  contract in:2 ==> out:2 
+    ensures out[@] = in[@]
+    ensures out[@+1] = in[@+1]
+  end
+  
+  stream invariant (forall int i :: every(out,i) ==> out[i] = in[i])
+  stream invariant tot(out) = rd(in)
+  
+  invariant @(in) = @(out)
+
+  action in:[i] ==> out:[i] end
+  
+end
+
+network N int in ==> int out:
+  
+  contract in:2 ==> out:2 
+    ensures out[@] = in[@]
+    ensures out[@+1] = in[@+1]
+  end
+  
+  stream invariant (forall int i :: every(out,i) ==> out[i] = in[i])
+  stream invariant tot(out) = rd(in)
+  
+  entities a = A(); end
+  structure ch_in: in --> a.in; ch_out: a.out --> out; end
+  
+end
+
+
+network N2 int in ==> int out:
+  
+  contract in:4 ==> out:4 
+    ensures (forall int i :: 0 <= i && i < rate(out) ==> out[@+i] = in[@+i])
+  end
+  
+  chinvariant rd@(in) % 2 = 0
+  
+  entities a = N(); end
+  structure ch_in: in --> a.in; ch_out: a.out --> out; end
+  
+end
