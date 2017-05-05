@@ -45,7 +45,12 @@ object Inferencer {
       generateInputTokenLimit(n,typeCtx)
     }
     
-    def generatePreconditionDisjunction(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
+    override def actor(a: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
+      generatePreconditionDisjunction(a, typeCtx)
+      generateInputTokenLimit(a,typeCtx)
+    }
+    
+    def generatePreconditionDisjunction(n: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
       val disjuncts = n.contractActions flatMap { action => {
         if (action.requires.isEmpty) Nil
         else List(action.requires reduceLeft { (a,b) => And(a,b) })
@@ -53,11 +58,14 @@ object Inferencer {
       if (!disjuncts.isEmpty) {
         val invariant = disjuncts reduceLeft { (a,b) => Or(a,b) }
         Resolver.resolveExpr(invariant, typeCtx)
-        n.addChannelInvariant(invariant, assumeInvs)
+        n match {
+          case ba: BasicActor => ba.addInvariant(invariant, assumeInvs)
+          case nw: Network => nw.addChannelInvariant(invariant, assumeInvs)
+        }
       }
     }
     
-    def generateInputTokenLimit(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
+    def generateInputTokenLimit(n: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
       val disjuncts: List[Expr] =
         n.contractActions map {
           action => {
@@ -74,7 +82,10 @@ object Inferencer {
       if (!disjuncts.isEmpty) {
         val invariant =  disjuncts reduceLeft { (a,b) => Or(a,b) }
         Resolver.resolveExpr(invariant, typeCtx)
-        n.addChannelInvariant(invariant, assumeInvs)
+        n match {
+          case ba: BasicActor => ba.addInvariant(invariant, assumeInvs)
+          case nw: Network => nw.addChannelInvariant(invariant, assumeInvs)
+        }
       }
     }
     

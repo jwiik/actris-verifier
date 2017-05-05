@@ -148,10 +148,14 @@ object Resolver {
         }
       }
       
+      vars += ("this" -> Declaration("this",ActorType(decl),true,None))
+      for ((s,i) <- decl.contractActions.zipWithIndex) {
+        vars += (s.fullName -> Declaration(s.fullName,IntType,true,Some(IntLiteral(i))))
+      }
+      
       decl match {
         case a: BasicActor => {
-          
-          vars += ("this" -> Declaration("this",ActorType(a),true,None))
+
           for (m <- a.members) m match {
             case d: Declaration => vars += (d.id -> d)
             case fd: FunctionDecl => functions += (fd.name -> fd)
@@ -175,7 +179,11 @@ object Resolver {
               return Errors(List((e.pos, "Basic actors cannot have a entities block")))
             case s: Structure =>
               return Errors(List((s.pos, "Basic actors cannot have a structure block")))
-            case Declaration(_,_,_,_) => // Already handled
+            case d: Declaration => 
+              d.value match {
+                case Some(e) => resolveExpr(ctx,e)
+                case None =>
+              }
             case sc: Schedule => schedule = Some(sc)
             case pr: Priority => priority = Some(pr)
             case fd: FunctionDecl =>
@@ -646,6 +654,15 @@ object Resolver {
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType,IntType,IntType))
+      case fa@FunctionApp("mode",params) => {
+        val t = resolveExpr(ctx,params(0))
+        if (params.size != 1) ctx.error(fa.pos, "Function 'mode' takes one argument")
+        if (!t.isActor) {
+          ctx.error(fa.pos, "The argument to 'mode' should be an actor instance")
+        }
+        fa.typ = IntType
+        IntType
+      }
       case fa@FunctionApp("int2bv",params) => {
         if (params.size != 2) {
           ctx.error(fa.pos, "int2bv takes two integer literals as argument")
@@ -1042,7 +1059,7 @@ object Resolver {
     val ctx = new BasicContext(stmt,parentCtx)
     stmt match {
       case Assign(id,exp) =>
-        //if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
+        if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
         val it = resolveExpr(ctx,id)
         val et = resolveExpr(ctx, exp)
         if (!TypeUtil.isCompatible(it, et)) 

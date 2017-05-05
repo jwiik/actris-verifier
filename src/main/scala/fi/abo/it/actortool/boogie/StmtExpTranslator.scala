@@ -223,9 +223,6 @@ class StmtExpTranslator() {
           case "min" => {
             Boogie.FunctionApp("AT#Min", params.map(p => transExprI(p)))
           }
-          case "subvar" => {
-            Boogie.VarExpr("AV" + B.Sep + params(0).asInstanceOf[Id].id + B.Sep + params(1).asInstanceOf[Id].id)
-          }
           case "int2bv" => {
             val value = params(0).asInstanceOf[IntLiteral].value
             val size = params(1).asInstanceOf[IntLiteral].value
@@ -248,6 +245,10 @@ class StmtExpTranslator() {
             val mm = Boogie.VarExpr(BMap.M)
             BoogiePrelude.addComponent(ChAggregates)
             Boogie.FunctionApp("AT#ChSum",List(mm,param,limit))
+          }
+          case "mode" => {
+            val param = transExprI(params(0))
+            B.Mode(param)
           }
           case x => {
             // User-defined function
@@ -315,13 +316,18 @@ class StmtExpTranslator() {
           case "last" => B.C(accessorName) - B.Int(1)
         }
       }
-      case id@Id(name) => context.renamings.get(name) match {
-        case None => Boogie.VarExpr(name)
-        case Some(replacement) => {
-          //assert(replacement.typ == id.typ, replacement + ": " + replacement.typ + " -- " + id + ": " + id.typ)
-          transExprI(replacement)
+      case id@Id(name) => {
+        if (name == "this") B.This
+        else {
+          context.renamings.get(name) match {
+            case None => Boogie.VarExpr(name)
+            case Some(replacement) => {
+              //assert(replacement.typ == id.typ, replacement + ": " + replacement.typ + " -- " + id + ": " + id.typ)
+              transExprI(replacement)
+            }
+          }
         }
-      } 
+      }
     }
   }
   

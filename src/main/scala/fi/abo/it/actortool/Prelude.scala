@@ -67,12 +67,14 @@ type CType = <a>[Chan a]int;
 type MType = <a>[Chan a][int]a;
 type Obj = <a>[Field a]a;
 type HType = [Ref]Obj;
+type ModeType = [Actor]int;
 
 var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
 var B: CType;
+var Mode: ModeType;
 var I#sub: CType;
 
 var H: HType;

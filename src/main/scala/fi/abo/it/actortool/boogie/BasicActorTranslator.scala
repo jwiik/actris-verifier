@@ -8,7 +8,7 @@ class BasicActorTranslator(
     val skipMutualExclusivenessCheck: Boolean,
     val typeCtx: Resolver.Context) extends EntityTranslator[BasicActor] {
 
-  val actorVerStructBuilder = new ActorVerificationStructureBuilder(typeCtx)
+  val actorVerStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,typeCtx)
   
   def translateEntity(actor: BasicActor): List[Boogie.Decl] = {
     val avs = actorVerStructBuilder.buildStructure(actor)
@@ -68,7 +68,10 @@ class BasicActorTranslator(
     }
     
     for (a <- avs.contractActions) {
-      decls ++= translateContractAction(avs, a, allGuards.toList)
+      for (p <- a.inputPattern) {
+        decls += translateContractActionInput(avs, p, a)
+      }
+      decls ++= translateContractActionExit(avs, a, allGuards.toList)
     }
     
     decls.toList
@@ -81,7 +84,7 @@ class BasicActorTranslator(
     
     if (nonInitActions > 1) {      
       val decls = 
-        (avs.channelDecls map { _.decl }) ::: 
+        //(avs.channelDecls map { _.decl }) ::: 
         (avs.actorVarDecls map { _.decl }) ::: 
         (inpatDecls map { _.decl }).toList ::: 
         List(B.Assume(avs.uniquenessCondition)) :::
@@ -111,7 +114,7 @@ class BasicActorTranslator(
   
   def translateActorInit(avs: ActorVerificationStructure) = {
     val asgn = new ListBuffer[Boogie.Stmt]
-    asgn ++= avs.channelDecls map { _.decl }
+    //asgn ++= avs.channelDecls map { _.decl }
     asgn ++= avs.actorVarDecls map { _.decl }
     asgn ++= avs.actorParamDecls map { _.decl }
     asgn += B.Assume(avs.uniquenessCondition)
@@ -193,12 +196,12 @@ class BasicActorTranslator(
       avs: ActorVerificationStructure,
       inpatDecls: List[BDecl],
       renamings: Map[String,Id], 
-      guards: (Boogie.Expr,Boogie.Expr),
+      guard1: (Boogie.Expr,Boogie.Expr),
       higherPrioGuards: List[(Boogie.Expr,Boogie.Expr)]): List[Boogie.Decl] = {
      
     val asgn = new ListBuffer[Boogie.Stmt]
     
-    asgn ++= avs.channelDecls map { _.decl }
+    //asgn ++= avs.channelDecls map { _.decl }
     asgn ++= avs.actorVarDecls map { _.decl }
     asgn ++= avs.actorParamDecls map { _.decl }
     asgn ++= inpatDecls map { _.decl }
@@ -212,11 +215,14 @@ class BasicActorTranslator(
        asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(avs.renamings)))
      }
      
-     val guards =
-       (a.guard match {
-         case None => Nil
-         case Some(e) => List(transExpr(e)(renamings))
-       })
+//     val guards =
+//       (a.guard match {
+//         case None => Nil
+//         case Some(e) => List(transExpr(e)(renamings))
+//       })
+    
+    
+    asgn ++= ( guard1 match { case (pat,_) => List(B.Assume(pat)) } )
      
      for (ipat <- a.inputPattern) {
        val cId = ipat.portId
@@ -229,9 +235,10 @@ class BasicActorTranslator(
      
      asgn ++= (for (p <- a.requires) yield {B.Assume(transExpr(p)(renamings)) })
      
+     
      asgn ++= higherPrioGuards map { case (pat,guard) => B.Assume(Boogie.UnaryExpr("!", pat && guard)) }
      
-     asgn ++= guards map {g => B.Assume(g)}
+     asgn ++= ( guard1 match { case (_,guard) => List(B.Assume(guard)) } )
      
      asgn ++= transStmt( a.body )(renamings)
      
@@ -250,7 +257,7 @@ class BasicActorTranslator(
      
      for (inv <- avs.invariants) {
        if (!inv.assertion.free) 
-         asgn += B.Assert(transExpr(inv.expr)(avs.renamings),inv.expr.pos, "Action at " + a.pos + " might not preserve invariant")
+         asgn += B.Assert(transExpr(inv.expr)(avs.renamings),inv.expr.pos, "Action '" + a.fullName +  "' at " + a.pos + " might not preserve the invariant")
      }
      
      val proc = B.createProc(Uniquifier.get(avs.namePrefix+a.fullName),asgn.toList,smokeTest)
@@ -269,14 +276,15 @@ class BasicActorTranslator(
     }
   }
   
-  def translateContractAction(avs: ActorVerificationStructure, action: ContractAction, guards: List[(AbstractAction, Boogie.Expr)]) = {
+  def generateCommonContractProcedureHeader(avs: ActorVerificationStructure, action: ContractAction) = {
     val asgn = new ListBuffer[Boogie.Stmt]
     
-    asgn ++= avs.channelDecls map { _.decl }
+    //asgn ++= avs.channelDecls map { _.decl }
     asgn ++= avs.actorVarDecls map { _.decl }
     asgn ++= avs.actorParamDecls map { _.decl }
     asgn += B.Assume(avs.uniquenessCondition)
     asgn ++= avs.basicAssumes
+    asgn += B.Assume(B.Mode(B.This) ==@ Boogie.VarExpr(action.fullName))
     
     for (op <- avs.entity.outports) {
       asgn += B.Assume(B.R(op.id) ==@ B.I(op.id))
@@ -284,11 +292,40 @@ class BasicActorTranslator(
     
     asgn ++= { for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(avs.renamings)) }
     
+    asgn.toList
+  }
+  
+  def translateContractActionInput(avs: ActorVerificationStructure, pattern: NwPattern,  action: ContractAction) = {
+    val asgn = new ListBuffer[Boogie.Stmt]
+    asgn ++= generateCommonContractProcedureHeader(avs, action)
+    
+    val portType = avs.entity.getInport(pattern.portId).get.portType
+    val portVar = transExpr(pattern.portId,ChanType(portType))(avs.renamings)
+    asgn += B.Assume(B.C(portVar) - B.I(portVar) < B.Int(pattern.rate))
+    
+    asgn += Boogie.Assign(B.C(portVar), B.C(portVar) + B.Int(1))
+        
+    for (r <- action.requires) {
+      asgn += B.Assume(transExpr(r)(avs.renamings))
+    }
+    
+    for (chi <- avs.invariants) {
+      if (!chi.assertion.free) {
+        asgn += BAssert(chi, "Invariant might be falsified by actor input", avs.renamings)
+      }
+    }
+    B.createProc(Uniquifier.get(avs.namePrefix+"contract"+B.Sep+action.fullName+B.Sep+"input"), asgn.toList, smokeTest)
+  }
+  
+  def translateContractActionExit(avs: ActorVerificationStructure, action: ContractAction, guards: List[(AbstractAction, Boogie.Expr)]) = {
+    val asgn = new ListBuffer[Boogie.Stmt]
+    asgn ++= generateCommonContractProcedureHeader(avs, action)
+    
     for (ip <- avs.entity.inports) {
       val rate = action.inportRate(ip.id)
       asgn += B.Assume(B.C(ip.id) - B.I(ip.id) ==@ B.Int(rate))
     }
-    
+      
     for (p <- action.requires) {
       asgn += B.Assume(transExpr(p)(avs.renamings))
     }
@@ -299,7 +336,8 @@ class BasicActorTranslator(
     
     for (op <- avs.entity.outports) {
       val rate = action.outportRate(op.id)
-      asgn += B.Assert(B.C(op.id) - B.I(op.id) ==@ B.Int(rate),action.pos,"The correct number of tokens might not be produced on output '" + op.id + "'")
+      asgn += B.Assert(B.C(op.id) - B.I(op.id) ==@ B.Int(rate),action.pos,
+          "The correct number of tokens might not be produced on output '" + op.id + "' with contract '" + action.fullName + "'")
     }
     
     for (q <- action.ensures) {
@@ -313,11 +351,11 @@ class BasicActorTranslator(
     
     for (inv <- avs.invariants) {
       if (!inv.assertion.free) {
-        asgn += BAssert(inv,"The actor might not preserve the channel invariant",avs.renamings)
+        asgn += BAssert(inv,"The actor might not preserve the invariant with contract '" + action.fullName + "' at " + action.pos, avs.renamings)
       }
     }
     
-    List(B.createProc(Uniquifier.get(avs.namePrefix+"contract"+B.Sep+action.fullName), asgn.toList, smokeTest))
+    List(B.createProc(Uniquifier.get(avs.namePrefix+"contract"+B.Sep+action.fullName+B.Sep+"exit"), asgn.toList, smokeTest))
     
   }
   

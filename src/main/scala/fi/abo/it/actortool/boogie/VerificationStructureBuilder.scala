@@ -5,6 +5,8 @@ import scala.collection.mutable.ListBuffer
 import Elements._
 
 trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] {
+  
+  val translator: StmtExpTranslator
   def buildStructure(entity: T): V
   
   protected def createUniquenessCondition(names: List[BDecl]): List[Boogie.Expr] = {
@@ -19,12 +21,40 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
     }
   }
   
+  protected def createVariableDeclarations(entity: T): (List[BDecl],List[Boogie.Expr]) = {
+    val decls = new ListBuffer[BDecl]
+    val assumes = new ListBuffer[Boogie.Expr]
+    
+    for ((s,i) <- entity.contractActions.zipWithIndex) {
+      val decl = BDecl(s.fullName, IntType)
+      decls += decl
+      assumes += Boogie.VarExpr(s.fullName) ==@ B.Int(i)
+    }
+    
+    if (!entity.contractActions.isEmpty)
+      assumes += entity.contractActions map { s => B.Mode(B.This) ==@ Boogie.VarExpr(s.fullName) } reduceLeft((a,b) => a || b)
+
+    
+    
+    entity match {
+      case ba: BasicActor => 
+        for (c <- ba.variables) {
+          decls += BDecl(c.id,c.typ)
+          if (c.constant) assumes += Boogie.VarExpr(c.id) ==@ translator.transExpr(c.value.get, Map.empty, false)._1
+        }
+      case nw: Network =>
+    }
+    
+    (decls.toList,assumes.toList)
+  }
+  
   protected def buildPriorityMap(actor: DFActor, subComponent: Boolean): Map[AbstractAction,List[AbstractAction]] = {
     if (subComponent && !actor.contractActions.isEmpty) {
       return (actor.contractActions map { a => (a,Nil: List[AbstractAction]) }).toMap
     }
     
-    var orderedActions: Map[AbstractAction,List[AbstractAction]] = (actor.actorActions filter { a => !a.init } map {a => (a,Nil: List[AbstractAction])}).toMap
+    var orderedActions: Map[AbstractAction,List[AbstractAction]] = 
+      (actor.actorActions filter { a => !a.init } map {a => (a,Nil: List[AbstractAction])}).toMap
     
     actor.priority match {
       case Some(pr) => {
@@ -44,40 +74,44 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   
 }
 
-class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context) 
+class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
   
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
     val prefix = actor.id+B.Sep
+    val decls = new ListBuffer[BDecl]
+    val commonAssumes = new ListBuffer[Boogie.Assume]
     
-    val stateChanRenamings = (actor.variables map { p => (p.id, Id("Ch" + B.Sep + p.id)) } ).toMap
+    //val stateChanRenamings = (actor.variables map { p => (p.id, Id("Ch" + B.Sep + p.id)) } ).toMap
     
     val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
-    val stateChans = (actor.variables map { p => BDecl(stateChanRenamings(p.id).id, ChanType(p.typ)) } )
-    val chans = portChans ::: stateChans
-
+    //val stateChans = (actor.variables map { p => BDecl(stateChanRenamings(p.id).id, ChanType(p.typ)) } )
+    //val chans = portChans //::: stateChans
+    
+    decls ++= portChans
+    
     val uniquenessConiditions = createUniquenessCondition(portChans)
     val uniquenessCondition = 
       if (!uniquenessConiditions.isEmpty) uniquenessConiditions.reduceLeft((a,b) => (a && b))
       else B.Bool(true)
 
-    val actorVars = new ListBuffer[BDecl]()
-    
-    for (decl <- actor.variables) {
-      val newName = decl.id
-      actorVars  += BDecl(newName,decl.typ)
-    }
+    val (varDecls,varAssumes) = createVariableDeclarations(actor)
+    decls ++= varDecls
+    commonAssumes ++= varAssumes map { B.Assume(_) }
     
     val actorParamDecls = actor.parameters map {p => BDecl(p.id,p.typ)}
     
     val basicAssumes =
-      (actor.inports:::actor.outports map { p => B.Assume(B.Int(0) <= B.I(p.id) && B.I(p.id) <= B.R(p.id) && B.R(p.id) <= B.C(p.id)) }) :::
-      (actor.variables map { p => B.Assume(B.Int(0) <= B.R(stateChanRenamings(p.id).id) && B.C(stateChanRenamings(p.id).id) ==@ B.R(stateChanRenamings(p.id).id) + B.Int(1)) })
-
-      
+      (commonAssumes.toList) :::
+      (actor.inports:::actor.outports map { p => B.Assume(B.Int(0) <= B.I(p.id) && B.I(p.id) <= B.R(p.id) && B.R(p.id) <= B.C(p.id)) }) 
+      //:::
+      //(actor.variables map { p => B.Assume(B.Int(0) <= B.R(stateChanRenamings(p.id).id) && B.C(stateChanRenamings(p.id).id) ==@ B.R(stateChanRenamings(p.id).id) + B.Int(1)) })
+    
     val initAssumes = 
-      (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }) :::
-      (actor.variables map { p => B.Assume(B.R(stateChanRenamings(p.id).id) ==@ B.Int(0) && B.C(stateChanRenamings(p.id).id) ==@ B.Int(0))  })
+      (commonAssumes.toList) :::
+      (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }) 
+      //:::
+      //(actor.variables map { p => B.Assume(B.R(stateChanRenamings(p.id).id) ==@ B.Int(0) && B.C(stateChanRenamings(p.id).id) ==@ B.Int(0))  })
 
     val priorityList = buildPriorityMap(actor,false)
     
@@ -91,15 +125,14 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
         actor.outports,
         actor.actorInvariants,
         actor.getFunctionDecls,
-        portChans:::stateChans,
-        actorVars.toList,
+        decls.toList,
         actorParamDecls,
         uniquenessCondition,
         priorityList,
         basicAssumes,
         initAssumes,
         funDeclRenamings,
-        stateChanRenamings,
+        Map.empty, // state chan renamings
         prefix)
   }
   
@@ -107,7 +140,7 @@ class ActorVerificationStructureBuilder(val typeCtx: Resolver.Context)
   
 }
 
-class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context) 
+class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[Network, NetworkVerificationStructure] {
   
   val tokensFinder = new TokensFinder()
@@ -212,8 +245,6 @@ class NetworkVerificationStructureBuilder(val typeCtx: Resolver.Context)
 
       
       val entityData = new EntityData(Nil,renameBuffer.toMap,variables.toList, actionData, priorityMap)
-      //entitySpecificVariables += variables.toList
-      //entitySpecificRenames += renameBuffer.toMap
       entityDataBuffer += ((e,entityData))
       entityDecls += BDecl(namePrefix+e.id, ActorType(e.actor))
       

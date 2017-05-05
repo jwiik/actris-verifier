@@ -21,10 +21,8 @@ object BMap extends Enumeration {
   final val Isub = "I#sub"
   final val H = "H"
   final val B = "B"
-  final val St = "St"
-  final val SqnCh = "SqnCh"
-  final val SqnActor = "SqnAct"
   final val This = "this#"
+  final val Mode = "Mode"
 //  final val BaseL = "Base#L"
 }
 
@@ -138,12 +136,6 @@ object B {
   def Urd(channel: String): Boogie.Expr = C(channel) - R(channel)
   def Urd(channel: Boogie.Expr): Boogie.Expr = C(channel) - R(channel)
   
-//  def SqnCh(connName: String, ind: Boogie.Expr): Boogie.Expr = SqnCh(VarExpr(connName),ind)
-//  def SqnCh(channel: Boogie.Expr, ind: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnCh) apply channel) apply ind
-//  
-//  def SqnAct(actorName: String): Boogie.Expr = SqnAct(VarExpr(actorName))
-//  def SqnAct(actor: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.SqnActor) apply actor)
-  
   def Channel(connName: String): Boogie.Expr = (VarExpr(BMap.M) apply VarExpr(connName))
   def ChannelIdx(connName: String, t: Type, ind: Boogie.Expr): Boogie.Expr = ChannelIdx(VarExpr(connName), ind)
   def Channel(channel: Boogie.Expr): Boogie.Expr = (VarExpr(BMap.M) apply channel)
@@ -161,22 +153,15 @@ object B {
       case x => typeName+"."+x
     }
   }
-    
-  //def SqnField(ref: Boogie.Expr) = VarExpr(BMap.H).apply(ref).apply(VarExpr("sqn#"))
+
+  def Mode(expr: Boogie.Expr) = (VarExpr(BMap.Mode) apply expr)
   
   def Ref(ref: String) = VarExpr(BMap.H).apply(VarExpr(ref))
-  
-  def State(id: String) = VarExpr(BMap.St) apply VarExpr(id)
-  def State(actor: Boogie.Expr) = VarExpr(BMap.St) apply actor
   
   def Fun(id: String, arg: Boogie.Expr*) = Boogie.FunctionApp(id,arg.toList)
   
   def This = VarExpr("this#")
   
-  //val BaseL = VarExpr(BMap.BaseL)
   val intlst = VarExpr("AT#intlst");
-  
-  //def Lte(a0: Boogie.Expr, a1: Boogie.Expr)(implicit bvMode: Boolean) = if (bvMode) B.Fun("AT#BvUle", a0, a1) else a0 <= a1
-  //def Minus(a0: Boogie.Expr, a1: Boogie.Expr)(implicit bvMode: Boolean) = if (bvMode) B.Fun("AT#BvSub", a0, a1) else a0 - a1
   
 }

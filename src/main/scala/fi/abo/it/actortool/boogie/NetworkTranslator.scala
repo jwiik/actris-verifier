@@ -9,7 +9,7 @@ class NetworkTranslator(
     val skipMutualExclusivenessCheck: Boolean,
     val typeCtx: Resolver.Context) extends EntityTranslator[Network] {
   
-  val nwVerStructBuilder = new NetworkVerificationStructureBuilder(typeCtx)
+  val nwVerStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,typeCtx)
   
   def translateEntity(network: Network): List[Boogie.Decl] = {
     val nwvs = nwVerStructBuilder.buildStructure(network)
