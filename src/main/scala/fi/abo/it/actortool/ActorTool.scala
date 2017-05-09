@@ -50,7 +50,6 @@ object ActorTool {
     val NoBplFile: Boolean
     val BplFile: String
     val Timing: Int
-    val FixedBaseLength: Int
     val InferModules: List[String]
     val SmokeTest: Boolean
     val ReplaceMaps: Boolean
@@ -58,6 +57,7 @@ object ActorTool {
     val AssumeGenInvs: Boolean
     val ComponentsToVerify: List[String]
     val PrintInvariantStats: Boolean
+    val SizedIntsAsBitvectors: Boolean
     final lazy val help = "actortool [option] <filename>+\n"
   }
   
@@ -76,13 +76,13 @@ object ActorTool {
     var aTiming = if (DEBUG) 2 else 1
     var aInferModules = List("default")
     var aSoundnessChecks = false
-    var aFixedBaseLength = 0
     var aSmokeTest = false
     var aReplaceMaps = false
     var aBoogieTimeout = 300
     var aAssumeInvs = true
     var aPrintInvariantStats = false
     var aToVerify: List[String] = List.empty
+    var aSizedIntsAsBitVectors = true
     
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -143,20 +143,7 @@ object ActorTool {
             case None => reportCommandLineError("parameter " + param + " takes a comma-separated list as parameter")
           }
         }
-        case Param("fixedBaseLength") => {
-          value match {
-            case Some(v) =>
-              try aFixedBaseLength = v.toInt
-              catch {
-                case e: NumberFormatException =>
-                  reportCommandLineError("parameter fixedBaseLength takes an integer as argument.")
-                  return None
-              }
-            case None =>
-              reportCommandLineError("parameter fixedBaseLength takes an integer as argument.")
-              return None
-          }
-        }
+        case Param("onlyMathematicalInts") => aSizedIntsAsBitVectors = false 
         case Param("smokeTest") => aSmokeTest = true
         case Param("replaceMaps") => aReplaceMaps = true
         case Param("toVerify") => {
@@ -206,13 +193,13 @@ object ActorTool {
         val BplFile = aBplFile
         val Timing = aTiming
         val InferModules = aInferModules
-        val FixedBaseLength = aFixedBaseLength
         val AssumeGenInvs = aAssumeInvs
         val SmokeTest = aSmokeTest
         val ReplaceMaps = aReplaceMaps
         val BoogieTimeout = aBoogieTimeout
         val ComponentsToVerify = aToVerify
         val PrintInvariantStats = aPrintInvariantStats
+        val SizedIntsAsBitvectors = aSizedIntsAsBitVectors
     })
   }
   
@@ -221,7 +208,7 @@ object ActorTool {
     val printProgram = params.PrintProgram
     
     // parse programs
-    val parser = new Parser
+    val parser = new Parser(params.SizedIntsAsBitvectors)
     val parseResults = if (files.isEmpty) {
       //reportCommandLineError("No input file(s) provided.", params.help)
       Nil

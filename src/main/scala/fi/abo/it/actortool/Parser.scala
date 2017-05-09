@@ -13,7 +13,7 @@ import java.io.File
 
 import scala.language.postfixOps
 
-class Parser extends StandardTokenParsers {
+class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   
   var currFile: File = null
   
@@ -28,7 +28,7 @@ class Parser extends StandardTokenParsers {
     def hexDigit = elem("hex digit",  hexDigits.contains(_))
     
     override def token: Parser[Token] =
-      ('0' ~ 'x' ~ hexDigit ~ rep(hexDigit) ^^ { case '0' ~ 'x' ~ first ~ rest => HexaNumericLit(first :: rest mkString "") }
+      ('0' ~ 'x' ~ hexDigit ~ rep(hexDigit) ^^ { case '0' ~ 'x' ~ first ~ rest  => HexaNumericLit(first :: rest mkString "") }
       | super.token
     )
     
@@ -42,7 +42,7 @@ class Parser extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "Map", "if", "then", "else", "contract"
+                       "ubv","Map", "if", "then", "else", "contract"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -419,14 +419,17 @@ class Parser extends StandardTokenParsers {
   
   def primType: Parser[Type] = filePositioned(
     (("int" | "uint") ~ (opt("(" ~> "size" ~> "=" ~> numericLit <~ ")")) ^^ {
-      case "int" ~ Some(size) => IntType(size.toInt)
+      case "int" ~ Some(size) => if (sizedIntsAsBitvectors) BvType(size.toInt,true) else IntType(size.toInt)
       case "int" ~ None => IntType(-1) 
-      case "uint" ~ Some(size) => UintType(size.toInt) 
+      case "uint" ~ Some(size) => if (sizedIntsAsBitvectors) BvType(size.toInt,false) else UintType(size.toInt)
       case "uint" ~ None => UintType(-1) 
-    })
-    | (("bv" ~> "(" ~> "size" ~> "=" ~> numericLit <~ ")") ^^ {
-      case size => BvType(size.toInt)
-    })
+    }) | 
+    (("bv" ~> "(" ~> "size" ~> "=" ~> numericLit <~ ")") ^^ {
+      case size => BvType(size.toInt,false)
+    }) //| 
+//    (("ubv" ~> "(" ~> "size" ~> "=" ~> numericLit <~ ")") ^^ {
+//      case size => BvType(size.toInt,false)
+//    })
     | "bool" ^^^ BoolType
   )
   

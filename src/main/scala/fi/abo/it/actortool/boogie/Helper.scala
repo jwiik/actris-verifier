@@ -86,7 +86,7 @@ object B {
         BType.MapType(BType.Int,type2BType(contentType))
       }
       case RefType(_) => BType.Ref
-      case BvType(x) => BType.BV(x)
+      case BvType(x,_) => BType.BV(x)
       case MapType(d,r) => {
         BoogiePrelude.addComponent(MapPL)
         BType.MapType(type2BType(d),type2BType(r))

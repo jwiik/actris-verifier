@@ -46,5 +46,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val BoogieTimeout = 5
       val ComponentsToVerify = List.empty
       val PrintInvariantStats = false
+      val SizedIntsAsBitvectors = true
     } 
 }

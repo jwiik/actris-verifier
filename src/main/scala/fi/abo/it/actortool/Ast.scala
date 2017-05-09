@@ -585,6 +585,6 @@ case class ListType(contentType: Type, val size: Int) extends IndexedType(
 case class MapType(val domainType: Type, val rangeType: Type) extends IndexedType("Map[" + domainType.id + "-->" + rangeType.id + "]", rangeType, domainType) {
   override def isMap = true
 }
-case class BvType(val size: Int) extends PrimitiveType("bv"+size) {
+case class BvType(val size: Int, val signed: Boolean) extends PrimitiveType("bv"+size) {
   override def isBv = true
 }

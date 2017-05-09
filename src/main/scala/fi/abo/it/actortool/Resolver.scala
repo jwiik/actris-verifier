@@ -663,18 +663,8 @@ object Resolver {
         fa.typ = IntType
         IntType
       }
-      case fa@FunctionApp("int2bv",params) => {
-        if (params.size != 2) {
-          ctx.error(fa.pos, "int2bv takes two integer literals as argument")
-        }
-        if (!params(0).isInstanceOf[IntLiteral] || !params(1).isInstanceOf[IntLiteral]) {
-          ctx.error(fa.pos, "int2bv takes two integer literals as argument")
-        }
-        val value = params(0).asInstanceOf[IntLiteral].value
-        val size = params(1).asInstanceOf[IntLiteral].value
-        fa.typ = BvType(size)
-        BvType(size)
-      }
+      case fa@FunctionApp("int2bv",_) => resolveBvLiteral(ctx, fa)
+      case fa@FunctionApp("uint2bv",_) => resolveBvLiteral(ctx, fa)
       case fa@FunctionApp("bv2int",params) => {
         if (params.size != 1) {
           ctx.error(fa.pos, "bv2int takes one argument, a bitvector")
@@ -693,7 +683,12 @@ object Resolver {
         val arg1T = resolveExpr(ctx, params(0))
         val arg2T = resolveExpr(ctx, params(1))
         if (arg1T.isBv && arg2T.isBv) {
-          fa.typ = BvType(arg1T.asInstanceOf[BvType].size + arg2T.asInstanceOf[BvType].size)
+          val bv1 = arg1T.asInstanceOf[BvType]
+          val bv2 = arg2T.asInstanceOf[BvType]
+          if (bv1.signed != bv2.signed) {
+            ctx.error(fa.pos, "Cannot concatenate signed and unsigned bit vectors")
+          }
+          fa.typ = BvType(bv1.size+bv2.size,bv1.signed)
         }
         else if (!arg1T.isBv) {
           ctx.error(fa.pos, "The first argument to bvconcat, found: " + arg1T.id)
@@ -749,7 +744,7 @@ object Resolver {
       }
       case l@BoolLiteral(_) => l.typ = BoolType; BoolType
       case l@IntLiteral(n) => l.typ = TypeUtil.createIntOrUint(n); l.typ
-      case hx@HexLiteral(x) => hx.typ = BvType(x.length*4); hx.typ
+      case hx@HexLiteral(x) => hx.typ = BvType(x.length*4,false); hx.typ
       case l@FloatLiteral(_) => throw new IllegalArgumentException()
       case sm@SpecialMarker(m) => {
         val accessor = findParentAccessor(ctx)
@@ -794,12 +789,24 @@ object Resolver {
     }
   }
   
-  def getSmallestSize(n: Int, signed: Boolean): Int = {
-    var p = 1
-    while ((-(2^p) <= n) && n <= (2^p)-1) { p = p+1 }
-    return p
+  def resolveBvLiteral(ctx: Context, fa: FunctionApp) = {
+    val params = fa.parameters
+    if (params.size != 2) {
+      ctx.error(fa.pos, "int2bv takes two integer literals as argument")
+    }
+    if (!params(0).isInstanceOf[IntLiteral] || !params(1).isInstanceOf[IntLiteral]) {
+      ctx.error(fa.pos, "int2bv takes two integer literals as argument")
+    }
+    val value = params(0).asInstanceOf[IntLiteral].value
+    val size = params(1).asInstanceOf[IntLiteral].value
+    
+    fa.typ = fa.name match {
+      case "int2bv" => BvType(size,true)
+      case "uint2bv" => BvType(size,false)
+    }
+    
+    fa.typ
   }
-  
   
   def resolveNumericBinaryExpr(ctx: Context, exp: BinaryExpr): Type = {
     val t1 = resolveExpr(ctx, exp.left)

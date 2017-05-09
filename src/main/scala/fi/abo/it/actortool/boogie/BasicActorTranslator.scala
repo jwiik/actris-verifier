@@ -210,60 +210,52 @@ class BasicActorTranslator(
     if (a.init) asgn ++= avs.initAssumes
     else asgn ++= avs.basicAssumes
      
-     if (!a.init) {
-       // Assume invariants
-       asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(avs.renamings)))
-     }
-     
-//     val guards =
-//       (a.guard match {
-//         case None => Nil
-//         case Some(e) => List(transExpr(e)(renamings))
-//       })
-    
-    
+    if (!a.init) {
+      // Assume invariants
+      asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(avs.renamings)))
+    }
+
+    // Assume input pattern
     asgn ++= ( guard1 match { case (pat,_) => List(B.Assume(pat)) } )
      
-     for (ipat <- a.inputPattern) {
-       val cId = ipat.portId
+    for (ipat <- a.inputPattern) {
+      val cId = ipat.portId
        
-       for (v <- ipat.vars) {
-         asgn += Boogie.Assign(transExpr(v)(renamings), B.ChannelIdx(cId, v.typ, B.R(cId)))
-         asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
-       }
-     }
+      for (v <- ipat.vars) {
+        asgn += Boogie.Assign(transExpr(v)(renamings), B.ChannelIdx(cId, v.typ, B.R(cId)))
+        asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
+      }
+    }
      
-     asgn ++= (for (p <- a.requires) yield {B.Assume(transExpr(p)(renamings)) })
+    asgn ++= (for (p <- a.requires) yield {B.Assume(transExpr(p)(renamings)) })
+
+    asgn ++= higherPrioGuards map { case (pat,guard) => B.Assume(Boogie.UnaryExpr("!", /*pat &&*/ guard)) }
+    
+    asgn ++= ( guard1 match { case (_,guard) => List(B.Assume(guard)) } )
      
+    asgn ++= transStmt( a.body )(renamings)
      
-     asgn ++= higherPrioGuards map { case (pat,guard) => B.Assume(Boogie.UnaryExpr("!", pat && guard)) }
+    asgn ++= (for (q <- a.ensures) yield {
+      B.Assert(transExpr(q)(renamings), q.pos, "Action postcondition might not hold")
+    })
      
-     asgn ++= ( guard1 match { case (_,guard) => List(B.Assume(guard)) } )
+    for (opat <- a.outputPattern) {
+      val cId = opat.portId
+      for (v <- opat.exps) {
+        asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(renamings))
+        asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
+      }
+    }
      
-     asgn ++= transStmt( a.body )(renamings)
+    for (inv <- avs.invariants) {
+      if (!inv.assertion.free) 
+        asgn += B.Assert(transExpr(inv.expr)(avs.renamings),inv.expr.pos, "Action '" + a.fullName +  "' at " + a.pos + " might not preserve the invariant")
+    }
      
-     asgn ++= (for (q <- a.ensures) yield {
-       B.Assert(transExpr(q)(renamings), q.pos, "Action postcondition might not hold")
-     })
+    val proc = B.createProc(Uniquifier.get(avs.namePrefix+a.fullName),asgn.toList,smokeTest)
      
-     for (opat <- a.outputPattern) {
-       val cId = opat.portId
-       for (v <- opat.exps) {
-         asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(renamings))
-         asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
-         
-       }
-     }
-     
-     for (inv <- avs.invariants) {
-       if (!inv.assertion.free) 
-         asgn += B.Assert(transExpr(inv.expr)(avs.renamings),inv.expr.pos, "Action '" + a.fullName +  "' at " + a.pos + " might not preserve the invariant")
-     }
-     
-     val proc = B.createProc(Uniquifier.get(avs.namePrefix+a.fullName),asgn.toList,smokeTest)
-     
-     List(proc)
-   }
+    List(proc)
+  }
   
   def translateFunctionDecl(funDecls: List[FunctionDecl], prefix: String): List[Boogie.Function] = {
     funDecls map {

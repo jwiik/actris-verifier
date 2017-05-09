@@ -119,6 +119,10 @@ function {:bvbuiltin "bvule"} AT#BvUle@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bo
 function {:bvbuiltin "bvult"} AT#BvUlt@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
 function {:bvbuiltin "bvuge"} AT#BvUge@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
 function {:bvbuiltin "bvugt"} AT#BvUgt@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
+function {:bvbuiltin "bvsle"} AT#BvSle@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
+function {:bvbuiltin "bvslt"} AT#BvSlt@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
+function {:bvbuiltin "bvsge"} AT#BvSge@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
+function {:bvbuiltin "bvsgt"} AT#BvSgt@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
 function AT#BvXor@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 
 axiom (forall a,b: bv@bvsize@ :: AT#BvXor@bvsize@(a,b) == AT#BvAnd@bvsize@(AT#BvOr@bvsize@(a,b), AT#BvNot@bvsize@(AT#BvAnd@bvsize@(a,b))) );
