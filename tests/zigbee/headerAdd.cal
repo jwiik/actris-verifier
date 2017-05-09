@@ -1,16 +1,16 @@
 actor headerAdd()
 // Inputs: 
-bv(size=8) pl_bits    // payload bits from upper layer 
+uint(size=8) pl_bits    // payload bits from upper layer 
 // Outputs:
 ==> 
-bv(size=8) data,      // header + payload data
-bv(size=8) len        // header + payload length
+uint(size=8) data,      // header + payload data
+uint(size=8) len        // header + payload length
 :
     // variable to hold payload length
-	bv(size=8) octet_count;
+	uint(size=8) octet_count;
 	
 	// variable to count processed payload octets
-	bv(size=8) octet_index;
+	uint(size=8) octet_index;
 
 	// static variable
 	int HEADER_LEN = 5;
@@ -18,7 +18,7 @@ bv(size=8) len        // header + payload length
 	// the standard-defined header content
 	Map(bv(size=8) -> bv(size=8)) Header; //= [0, 0, 0, 0, 167];
 	
-	bv(size=8) data_out;
+	uint(size=8) data_out;
 	
 	int St;
 	
@@ -44,8 +44,8 @@ bv(size=8) len        // header + payload length
 	// wait for packet to be available
 	// send payload length information to pulse shaper
 	get_data_len: action pl_bits:[ bits_in ] ==> len: [ octet_count ]
-	guard St = 0
 	requires bits_in = 0x08
+	guard St = 0
 	do
 		octet_index := 0x00;
 		octet_count := bits_in + int2bv(5,8) + 0x01;

@@ -9,12 +9,14 @@ type CType = <a>[Chan a]int;
 type MType = <a>[Chan a][int]a;
 type Obj = <a>[Field a]a;
 type HType = [Ref]Obj;
+type ModeType = [Actor]int;
 
 var M: MType;
 var C: CType;
 var R: CType;
 var I: CType;
 var B: CType;
+var Mode: ModeType;
 var I#sub: CType;
 
 var H: HType;
@@ -55,10 +57,12 @@ procedure Add#anon$0#1()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == (M[in1][idx$] + M[in2][idx$]))
   );
+  assume (1 <= (C[in1] - R[in1])) && (1 <= (C[in2] - R[in2]));
   in1#0 := M[in1][R[in1]];
   R[in1] := R[in1] + 1;
   in2#0 := M[in2][R[in2]];
   R[in2] := R[in2] + 1;
+  assume true;
   M[out][C[out]] := in1#0 + in2#0;
   C[out] := C[out] + 1;
 }
@@ -92,8 +96,10 @@ procedure Split#anon$1#3()
   assume (forall idx$: int :: 
     (0 <= idx$) && (idx$ < C[out2]) ==> (M[out2][idx$] == M[in][idx$])
   );
+  assume 1 <= (C[in] - R[in]);
   in#0 := M[in][R[in]];
   R[in] := R[in] + 1;
+  assume true;
   M[out1][C[out1]] := in#0;
   C[out1] := C[out1] + 1;
   M[out2][C[out2]] := in#0;
@@ -125,8 +131,10 @@ procedure Delay#anon$3#5()
   assume (forall idx$: int :: 
     (1 <= idx$) && (idx$ < C[out]) ==> (M[out][idx$] == M[in][idx$ - 1])
   );
+  assume 1 <= (C[in] - R[in]);
   in#0 := M[in][R[in]];
   R[in] := R[in] + 1;
+  assume true;
   M[out][C[out]] := in#0;
   C[out] := C[out] + 1;
 }
