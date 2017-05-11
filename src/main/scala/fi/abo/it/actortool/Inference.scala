@@ -257,10 +257,12 @@ object Inferencer {
             val acc = IndexAccessor(cId,quantVar); acc.typ = exp.typ
             val eqExp = Eq(acc,eRenamed)
             guard match {
-              case Some(g) => {
-                Implies(IdReplacer.visitExpr(g)(replacements),eqExp)
+              case _::_ => {
+                val andedGuard = guard.reduceLeft((a,b) => And(a,b))
+                Resolver.resolveExpr(typeCtx, andedGuard, BoolType)
+                Implies(IdReplacer.visitExpr(andedGuard)(replacements),eqExp)
               }
-              case None => eqExp
+              case Nil => eqExp
             }
             
           }

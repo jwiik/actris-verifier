@@ -209,12 +209,10 @@ class NetworkTranslator(
       firingCondsBuffer += B.Int(ipat.rate) <= B.Urd(cId)
     }
     
-    val renamedGuard = action.guard match {
-      case None =>
-      case Some(g) =>
-        val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
-        val transGuard = transExpr(renamedGuard)(renamings)
-        firingCondsBuffer += transGuard
+    for (g <- action.guard) {
+      val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
+      val transGuard = transExpr(renamedGuard)(renamings)
+      firingCondsBuffer += transGuard
     }
     
     firingCondsBuffer.reduceLeft((a,b) => a && b)

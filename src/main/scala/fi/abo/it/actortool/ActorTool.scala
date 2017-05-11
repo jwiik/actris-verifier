@@ -245,10 +245,13 @@ object ActorTool {
     var startTime = System.nanoTime
     var tmpTime = startTime
     
-    val program = parsePrograms(params) match {
+    var program = parsePrograms(params) match {
       case Some(p) => p
       case None => return //illegal program, errors have already been displayed
     }
+    
+    val preprocessor = new ActionScheduleProcessor
+    program = preprocessor.process(program)
     
     timings += (Step.Parse -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime

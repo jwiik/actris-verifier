@@ -308,15 +308,21 @@ object Resolver {
         vars = vars + (d.id -> d)
       }
     }
+    
     for (v <- action.variables) {
-      if (vars contains v.id) actorCtx.error(v.pos, "Variable name already used: " + v.id)
+      val varCtx = new ActionContext(action, actorCtx, vars)
+      if (vars contains v.id) varCtx.error(v.pos, "Variable name already used: " + v.id)
+      v.value match {
+        case Some(e) => resolveExpr(varCtx, e, v.typ)
+        case None =>
+      }
       vars = vars + (v.id -> v)
     } 
     
     val ctx = new ActionContext(action, actorCtx,vars)
-    action.guard match {
-      case Some(g) => resolveExpr(ctx, g, BoolType)
-      case None =>
+    
+    for (g <- action.guard) {
+      resolveExpr(ctx, g, BoolType)
     }
     
     for (pre <- action.requires) resolveExpr(ctx, pre, BoolType)
@@ -528,10 +534,11 @@ object Resolver {
   }
   
   def resolveExpr(ctx: Context, exp: Expr, t: Type): ResolverOutcome = {
-    if (t != resolveExpr(ctx,exp)) {
-      ctx.error(exp.pos, "Expected type " + t.id)
+    val rType = resolveExpr(ctx,exp)
+    if (t != rType) {
+      ctx.error(exp.pos, "Expected type '" + t.id + "', found '" + rType.id  + "'")
     }
-    assert(exp.typ != null)
+    assert(exp.typ != null, exp)
     if (ctx.getErrors.isEmpty && exp.typ != null) Success(ctx) else Errors(ctx.getErrors.toList)
   }
   
@@ -556,7 +563,7 @@ object Resolver {
       }
       case m@UnMinus(e) =>
         val t = resolveExpr(ctx,e)
-        if (!t.isNumeric) ctx.error(m.pos, "Expected numeric type, found: " + t.id)
+        if (!t.isNumeric && !t.isBv) ctx.error(m.pos, "Expected numeric type, found: " + t.id)
         m.typ = t
         m.typ
       case op: And => resolvePredicate(ctx,op)
@@ -653,7 +660,8 @@ object Resolver {
       case fa@FunctionApp("history",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("current",params) => resolveBoundPredicate(ctx,fa)
       case fa@FunctionApp("every",params) => resolveBoundPredicate(ctx,fa)
-      case fa@FunctionApp("min",params) => resolveSimpleFunction(ctx,fa,List(IntType,IntType,IntType))
+      case fa@FunctionApp("min",params) => resolveSimpleMathFunction(ctx,fa,2)
+      case fa@FunctionApp("abs",params) => resolveSimpleMathFunction(ctx,fa,1)
       case fa@FunctionApp("mode",params) => {
         val t = resolveExpr(ctx,params(0))
         if (params.size != 1) ctx.error(fa.pos, "Function 'mode' takes one argument")
@@ -697,6 +705,69 @@ object Resolver {
         else if (!arg2T.isBv) {
           ctx.error(fa.pos, "The second argument to bvconcat, found: " + arg2T.id)
           fa.typ = UnknownType
+        }
+        fa.typ
+      }
+      case fa@FunctionApp("bvextract",params) => {
+        if (params.size != 3) {
+          ctx.error(fa.pos, "bvextract takes 3 arguments")
+          fa.typ = UnknownType
+        }
+        val arg1T = resolveExpr(ctx, params(0))
+        val arg2T = resolveExpr(ctx, params(1))
+        val arg3T = resolveExpr(ctx, params(2))
+        if (!arg1T.isBv) {
+          ctx.error(fa.pos, "bvextract excepts a bitvector as first argument")
+          fa.typ = UnknownType
+        }
+        if (!arg2T.isInt) {
+          ctx.error(fa.pos, "bvextract excepts a bitvector as first argument")
+          fa.typ = UnknownType
+        }
+        if (!arg3T.isInt) {
+          ctx.error(fa.pos, "bvextract excepts a bitvector as first argument")
+          fa.typ = UnknownType
+        }
+        (params) match {
+          case List(_,IntLiteral(n1),IntLiteral(n2)) => {
+            if (n1 <= n2) {
+              ctx.error(fa.pos,"bvextract expects the 2nd argument to be larger then the 3rd argument")
+              fa.typ = UnknownType
+            }
+            else fa.typ = BvType(n1-n2,arg1T.asInstanceOf[BvType].signed)
+          }
+          case x => {
+            fa.typ = UnknownType
+            ctx.error(fa.pos, "bvextract expects the 2nd and 3rd arguments to be positive integer literals")
+          }
+        }
+        fa.typ
+      }
+      case fa@FunctionApp("bvresize",params) => {
+        if (params.size != 2) {
+          ctx.error(fa.pos, "bvresize takes 2 arguments")
+          fa.typ = UnknownType
+        }
+        val arg1T = resolveExpr(ctx, params(0))
+        val arg2T = resolveExpr(ctx, params(1))
+        if (!arg1T.isBv) {
+          ctx.error(fa.pos, "The first argument to bvresize should be a bitvector")
+          fa.typ = UnknownType
+        }
+        if (!arg2T.isInt) {
+          ctx.error(fa.pos, "The second argument to bvresize should be int")
+          fa.typ = UnknownType
+        }
+        params(1) match {
+          case IntLiteral(n) => {
+            val argSize = arg1T.asInstanceOf[BvType].size
+            val signed = arg1T.asInstanceOf[BvType].signed
+            fa.typ = BvType(n,signed)
+          }
+          case x => {
+            ctx.error(x.pos,"The second argument to bvresize should an integer literal")
+            fa.typ = UnknownType
+          }
         }
         fa.typ
       }
@@ -789,15 +860,17 @@ object Resolver {
     }
   }
   
-  def resolveBvLiteral(ctx: Context, fa: FunctionApp) = {
+  def resolveBvLiteral(ctx: Context, fa: FunctionApp): Type = {
     val params = fa.parameters
     if (params.size != 2) {
       ctx.error(fa.pos, "int2bv takes two integer literals as argument")
+      return UnknownType
     }
-    if (!params(0).isInstanceOf[IntLiteral] || !params(1).isInstanceOf[IntLiteral]) {
-      ctx.error(fa.pos, "int2bv takes two integer literals as argument")
+    val value = params(0) match {
+      case IntLiteral(n) => n
+      case UnMinus(IntLiteral(n)) => -n
+      case _ => ctx.error(params(0).pos, "The 1st argument to '" + fa.name +  "' has to be an integer literal")
     }
-    val value = params(0).asInstanceOf[IntLiteral].value
     val size = params(1).asInstanceOf[IntLiteral].value
     
     fa.typ = fa.name match {
@@ -813,7 +886,7 @@ object Resolver {
     val t2 = resolveExpr(ctx, exp.right)
     if (!t1.isNumeric && !t1.isBv) ctx.error(exp.left.pos, "Expected numeric type, found: " + t1.id)
     if (!t2.isNumeric && !t2.isBv) ctx.error(exp.right.pos, "Expected numeric type, found: " + t2.id)
-    if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
+    if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types to operator '" + exp.operator + "': " + t1.id + " and " + t2.id)
     
     exp.typ = TypeUtil.getLub(t1, t2) match {
       case None => 
@@ -1035,6 +1108,25 @@ object Resolver {
     fa.typ = BoolType
     BoolType
   }
+  
+   def resolveSimpleMathFunction(ctx: Context, fa: FunctionApp, numArgs: Int): Type = {
+     if (fa.parameters.size != numArgs) {
+       ctx.error(fa.pos, "Function '" + fa.name + "' expects " + numArgs + " arguments, found " + fa.parameters.size)
+       fa.typ = UnknownType
+       return fa.typ
+     }
+     val paramTypes = fa.parameters map { p => resolveExpr(ctx, p) }
+     val p1T = paramTypes(0)
+     for (pT <- paramTypes.tail) {
+       if (p1T != pT) {
+         ctx.error(fa.pos, "Arguments to '" + fa.name + "' should be of same type, found " + ( (paramTypes.map(_.id)).mkString(", ") ))
+         fa.typ = UnknownType
+         return fa.typ
+       }
+     }
+     fa.typ = p1T
+     fa.typ
+   }
   
   def resolveSimpleFunction(ctx: Context, fa: FunctionApp, signature: List[Type]): Type = {
     if (signature.size-1 != fa.parameters.size) {

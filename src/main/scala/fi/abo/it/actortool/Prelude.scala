@@ -69,15 +69,15 @@ type Obj = <a>[Field a]a;
 type HType = [Ref]Obj;
 type ModeType = [Actor]int;
 
-var M: MType;
-var C: CType;
-var R: CType;
-var I: CType;
-var B: CType;
-var Mode: ModeType;
+var M#: MType;
+var C#: CType;
+var R#: CType;
+var I#: CType;
+var B#: CType;
+var Mode#: ModeType;
 var I#sub: CType;
 
-var H: HType;
+var H#: HType;
 
 const unique this#: Actor;
 
@@ -109,9 +109,12 @@ class BitvectorSubPL(val size: Int) extends PreludeComponent {
 function {:bvbuiltin "bvand"} AT#BvAnd@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvor"} AT#BvOr@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvnot"} AT#BvNot@bvsize@(a: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvneg"} AT#BvNeg@bvsize@(a: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvadd"} AT#BvAdd@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvsub"} AT#BvSub@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvmul"} AT#BvMul@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvsdiv"} AT#BvSdiv@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvudiv"} AT#BvUdiv@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvshl"} AT#BvShl@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvlshr"} AT#BvLshr@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvashr"} AT#BvAshr@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;
@@ -124,8 +127,10 @@ function {:bvbuiltin "bvslt"} AT#BvSlt@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bo
 function {:bvbuiltin "bvsge"} AT#BvSge@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
 function {:bvbuiltin "bvsgt"} AT#BvSgt@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bool;
 function AT#BvXor@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function AT#BvAbs@bvsize@(a: bv@bvsize@): bv@bvsize@;
 
 axiom (forall a,b: bv@bvsize@ :: AT#BvXor@bvsize@(a,b) == AT#BvAnd@bvsize@(AT#BvOr@bvsize@(a,b), AT#BvNot@bvsize@(AT#BvAnd@bvsize@(a,b))) );
+axiom (forall a,b: bv@bvsize@ :: AT#BvAbs@bvsize@(a) == (if AT#BvSle@bvsize@(0bv@bvsize@,a) then a else AT#BvNeg@bvsize@(a)) );
 """
    
   val text = template.replace("@bvsize@", size.toString)

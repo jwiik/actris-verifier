@@ -163,7 +163,7 @@ sealed abstract class AbstractAction extends Member {
   val requires: List[Expr]
   val ensures: List[Expr]
   val allPatterns = inputPattern ::: outputPattern
-  val guard: Option[Expr] = None
+  val guard: List[Expr] = Nil
   val variables: List[Declaration] = List.empty
   val body: List[Stmt] = List.empty
   
@@ -205,7 +205,7 @@ sealed case class ActorAction(
     override val init: Boolean, 
     override val inputPattern: List[InputPattern], 
     override val outputPattern: List[OutputPattern],
-    override val guard: Option[Expr], 
+    override val guard: List[Expr], 
     override val requires: List[Expr], 
     override val ensures: List[Expr],
     override val variables: List[Declaration],
@@ -585,6 +585,6 @@ case class ListType(contentType: Type, val size: Int) extends IndexedType(
 case class MapType(val domainType: Type, val rangeType: Type) extends IndexedType("Map[" + domainType.id + "-->" + rangeType.id + "]", rangeType, domainType) {
   override def isMap = true
 }
-case class BvType(val size: Int, val signed: Boolean) extends PrimitiveType("bv"+size) {
+case class BvType(val size: Int, val signed: Boolean) extends PrimitiveType((if (signed) "bv" else "ubv")+size) {
   override def isBv = true
 }

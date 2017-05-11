@@ -7,6 +7,8 @@ import fi.abo.it.actortool.ActorTool.TranslationException
 import scala.util.parsing.input.Position
 import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool.ActorTool.TranslationException
+import fi.abo.it.actortool.ActorTool.TranslationException
+import fi.abo.it.actortool.ActorTool.TranslationException
 
 class TranslatorContext(val renamings: Map[String,Expr], val subBullet: Boolean) {
   
@@ -74,10 +76,7 @@ class StmtExpTranslator() {
           s
         }
         case IfElse(ifCond,ifStmt,elseIfs,elseStmt) => {
-          if (!elseIfs.isEmpty) {
-            throw new RuntimeException("If-statements with else-if branches not supported yet")
-          }
-          val stmt = List(Boogie.If(transExprI(ifCond)(ctx),transStmtI(ifStmt)(ctx),transStmtI(elseStmt)(ctx)))
+          val stmt = List(Boogie.If(transExprI(ifCond)(ctx),transStmtI(ifStmt)(ctx), buildElseIfStmt(elseIfs, elseStmt) ))
           stmt
         }
         case While(_,_,_) =>
@@ -86,6 +85,13 @@ class StmtExpTranslator() {
       })
     }
     bStmts.toList
+  }
+  
+  def buildElseIfStmt(elseIf: List[ElseIf], els: List[Stmt])(implicit context: TranslatorContext): List[Boogie.Stmt] = {
+    elseIf match {
+      case x::tail => List(Boogie.If(transExprI(x.cond)(context), transStmtI(x.stmt)(context), buildElseIfStmt(tail, els)))
+      case Nil => transStmtI(els)(context)
+    }
   }
   
   
@@ -100,25 +106,21 @@ class StmtExpTranslator() {
       case Not(e) => UnaryExpr("!",transExprI(e)) 
       case op@Less(e1,e2) =>
         if (e1.typ.isBv) {
-          //getBitVectorFunction("AT#BvUlt", List(transExprI(e1),transExprI(e2)), e1.typ)
           getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else transExprI(e1) < transExprI(e2)
       case op@Greater(e1,e2) => 
         if (e1.typ.isBv) {
-//          getBitVectorFunction("AT#BvUgt", List(transExprI(e1),transExprI(e2)), e1.typ)
           getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else transExprI(e1) > transExprI(e2)
       case op@AtLeast(e1,e2) => 
         if (e1.typ.isBv) {
-//          getBitVectorFunction("AT#BvUge", List(transExprI(e1),transExprI(e2)), e1.typ)
           getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else transExprI(e1) >= transExprI(e2)
       case op@AtMost(e1,e2) => 
         if (e1.typ.isBv) {
-//          getBitVectorFunction("AT#BvUle", List(transExprI(e1),transExprI(e2)), e1.typ)
           getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else transExprI(e1) <= transExprI(e2)
@@ -126,33 +128,39 @@ class StmtExpTranslator() {
       case NotEq(e1,e2) => transExprI(e1) !=@ transExprI(e2)
       case op@Plus(e1,e2) => 
         if (e1.typ.isBv) {
-//          getBitVectorFunction("AT#BvAdd", List(transExprI(e1),transExprI(e2)), op.typ)
           getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else transExprI(e1) + transExprI(e2)
       case op@Minus(e1,e2) =>
         if (e1.typ.isBv) {
-//          getBitVectorFunction("AT#BvSub", List(transExprI(e1),transExprI(e2)), op.typ)
           getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else transExprI(e1) - transExprI(e2)
       case op@Times(e1,e2) => 
         if (e1.typ.isBv) {
-//          getBitVectorFunction("AT#BvMul", List(transExprI(e1),transExprI(e2)), op.typ)
           getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else transExprI(e1) * transExprI(e2)
-      case Div(e1,e2) => 
-        BoogiePrelude.addComponent(DivModAbsPL)
-        Boogie.FunctionApp("AT#Div",List(transExprI(e1),transExprI(e2)))
+      case op@Div(e1,e2) => 
+        if (op.typ.isBv) {
+          getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
+        }
+        else {
+          BoogiePrelude.addComponent(DivModAbsPL)
+          Boogie.FunctionApp("AT#Div",List(transExprI(e1),transExprI(e2)))
+        }
         //transExpr(e1) / transExpr(e2)
-      case Mod(e1,e2) =>
-        BoogiePrelude.addComponent(DivModAbsPL)
-        Boogie.FunctionApp("AT#Mod",List(transExprI(e1),transExprI(e2)))
+      case op@Mod(e1,e2) =>
+        if (op.typ.isBv) {
+          getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
+        }
+        else {
+          BoogiePrelude.addComponent(DivModAbsPL)
+          Boogie.FunctionApp("AT#Mod",List(transExprI(e1),transExprI(e2)))
+        }
         //transExpr(e1) % transExpr(e2)
       case rsh@RShift(e1,e2) =>
         if (rsh.typ.isBv) {
-//          getBitVectorFunction("AT#BvLshr", List(transExprI(e1),transExprI(e2)), rsh.typ)
           getBitVectorFunction(rsh.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else {
@@ -161,7 +169,6 @@ class StmtExpTranslator() {
         }
       case lsh@LShift(e1,e2) =>
         if (lsh.typ.isBv) {
-//          getBitVectorFunction("AT#BvShl", List(transExprI(e1),transExprI(e2)), lsh.typ)
           getBitVectorFunction(lsh.operator, List(transExprI(e1),transExprI(e2)), e1.typ)
         }
         else {
@@ -177,7 +184,10 @@ class StmtExpTranslator() {
         getBitVectorFunction(op.operator, List(transExprI(e1),transExprI(e2)), op.typ)
       case op@BwNot(e) =>
         getBitVectorFunction(op.operator, List(transExprI(e)), op.typ)
-      case UnMinus(e) => UnaryExpr("-",transExprI(e))
+      case op@UnMinus(e) => {
+        if (op.typ.isBv) getBitVectorFunction("--", List(transExprI(e)), op.typ)
+        else UnaryExpr("-",transExprI(e))
+      }
       case IfThenElse(c,e1,e2) => Boogie.Ite(transExprI(c),transExprI(e1),transExprI(e2))
       case Forall(vars,e,pat) => 
         Boogie.Forall(Nil,
@@ -234,9 +244,15 @@ class StmtExpTranslator() {
             Boogie.FunctionApp("AT#Min", params.map(p => transExprI(p)))
           }
           case "int2bv" => {
-            val value = params(0).asInstanceOf[IntLiteral].value
             val size = params(1).asInstanceOf[IntLiteral].value
-            Boogie.BVLiteral(value.toString,size)
+            params(0) match {
+              case IntLiteral(n) => 
+                Boogie.BVLiteral(n.toString,size)
+              case UnMinus(IntLiteral(n)) => 
+                getBitVectorFunction("--", List(Boogie.BVLiteral(n.toString,size)), fa.typ) 
+              case x => 
+                throw new TranslationException(params(0).pos,"The first argument to int2bv should an integer literal")
+            }
           }
           case "uint2bv" => {
             val value = params(0).asInstanceOf[IntLiteral].value
@@ -253,6 +269,41 @@ class StmtExpTranslator() {
             val param1 = transExprI(params(0))
             val param2 = transExprI(params(1))
             Boogie.BinaryExpr("++", param1, param2)
+          }
+          case "bvextract" => {
+            val param1 = transExprI(params(0))
+            val param2 = transExprI(params(1))
+            val param3 = transExprI(params(2))
+            Boogie.BvExtract(param1, param2, param3)
+          }
+          case "bvresize" => {
+            val param1 = transExprI(params(0))
+            params(1) match {
+              case IntLiteral(newSize) => {
+                val argSize = params(0).typ.asInstanceOf[BvType].size
+                if (newSize < argSize) {
+                  Boogie.BvExtract(param1,B.Int(newSize),B.Int(0))
+                }
+                else if (newSize > argSize) {
+                  Boogie.BinaryExpr("++",Boogie.BVLiteral("0",newSize-argSize),param1)
+                }
+                else {
+                  param1
+                }
+              }
+              case x => {
+                throw new TranslationException(params(1).pos,"The second argument should an int literal")
+              }
+            }
+            //val param2 = transExprI(params(1))
+          }
+          case "abs" => {
+            val bParams = params map { transExprI(_) }
+            if (fa.typ.isBv) {
+              if (fa.typ.asInstanceOf[BvType].signed) getBitVectorFunction("abs", bParams, fa.typ)
+              else bParams(0)
+            }
+            else Boogie.FunctionApp("abs", bParams)
           }
           case "chsum" => {
             val param = transExprI(params(0))
@@ -272,7 +323,8 @@ class StmtExpTranslator() {
               case Some(name) =>
                 Boogie.FunctionApp(name.asInstanceOf[Id].id, args)
               case None =>
-                throw new TranslationException(fa.pos, "Error, unknown function")
+                assert(false)
+                throw new TranslationException(fa.pos, "Error, unknown function '" + x + "'")
             }
           }
         }
@@ -372,9 +424,12 @@ class StmtExpTranslator() {
     val signed = typ.asInstanceOf[BvType].signed
     
     val function = (operator,signed) match {
+      case ("--",_) => "AT#BvNeg"
       case ("+",_) => "AT#BvAdd"
       case ("-",_) => "AT#BvSub"
       case ("*",_) => "AT#BvMul"
+      case ("/",true) => "AT#BvSdiv"
+      case ("/",false) => "AT#BvUdiv"
       case ("<",true) => "AT#BvSlt"
       case ("<",false) => "AT#BvUlt"
       case ("<=",true) => "AT#BvSle"
@@ -390,6 +445,7 @@ class StmtExpTranslator() {
       case ("|",_) => "AT#BvOr"
       case ("~",_) => "AT#BvNot"
       case ("^",_) => "AT#BvXor"
+      case ("abs",true) => "AT#BvAbs"
       case (_,_) => throw new TranslationException(typ.pos, "Unhandled operator: " + operator)
     }
     

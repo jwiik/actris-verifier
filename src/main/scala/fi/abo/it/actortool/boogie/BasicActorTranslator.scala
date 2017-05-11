@@ -23,7 +23,7 @@ class BasicActorTranslator(
     val actionRenamings = collection.mutable.Map[AbstractAction,Map[String,Id]]()
     var allInpatDecls = Set.empty[BDecl]
     
-    val bFunDecls = translateFunctionDecl(avs.functionDecls,avs.namePrefix)
+    val bFunDecls = translateFunctionDecl(avs)
     decls ++= bFunDecls
     
     decls += translateActorInit(avs)
@@ -88,6 +88,7 @@ class BasicActorTranslator(
         (avs.actorVarDecls map { _.decl }) ::: 
         (inpatDecls map { _.decl }).toList ::: 
         List(B.Assume(avs.uniquenessCondition)) :::
+        avs.basicAssumes :::
         avs.invariants.map { inv => B.Assume(transExpr(inv.expr)(avs.renamings)) } 
       
       val stmt = decls ::: createMEAssertionsRec(avs.entity,guards)
@@ -174,17 +175,12 @@ class BasicActorTranslator(
     val renamings = avs.renamings ++ renamingsBuffer.toMap
 
     val guards =
-       (a.guard match {
-         case None => Nil
-         case Some(e) => List(transExpr(e)(avs.renamings ++ renamingsBuffer.toMap))
-       })
+       a.guard map { e => transExpr(e)(avs.renamings ++ renamingsBuffer.toMap) }
     // This version does not use variables local to the actions (input pattern variables)
     // It is used (at least) as assumptions in contract action checking
     val nonLocalGuards =
-      (a.guard match {
-         case None => Nil
-         case Some(e) => List(transExpr(e)(avs.renamings ++ replacementBuffer.toMap))
-       })
+       a.guard map { e => transExpr(e)(avs.renamings ++ replacementBuffer.toMap) }
+    
     val pattern = if (patterns.isEmpty) B.Bool(true) else patterns.reduceLeft((a,b) => a && b)
     val guard = if (guards.isEmpty) B.Bool(true) else guards.reduceLeft((a,b) => a && b)
     val nonLocalGuard = if (nonLocalGuards.isEmpty) B.Bool(true) else nonLocalGuards.reduceLeft((a,b) => a && b)
@@ -200,11 +196,13 @@ class BasicActorTranslator(
       higherPrioGuards: List[(Boogie.Expr,Boogie.Expr)]): List[Boogie.Decl] = {
      
     val asgn = new ListBuffer[Boogie.Stmt]
+    val (actionVars,actionVarAssumes) = avs.actionData(a)
     
     //asgn ++= avs.channelDecls map { _.decl }
     asgn ++= avs.actorVarDecls map { _.decl }
     asgn ++= avs.actorParamDecls map { _.decl }
     asgn ++= inpatDecls map { _.decl }
+    asgn ++= actionVars map { _.decl }
     asgn += B.Assume(avs.uniquenessCondition)
     
     if (a.init) asgn ++= avs.initAssumes
@@ -232,7 +230,7 @@ class BasicActorTranslator(
     asgn ++= higherPrioGuards map { case (pat,guard) => B.Assume(Boogie.UnaryExpr("!", /*pat &&*/ guard)) }
     
     asgn ++= ( guard1 match { case (_,guard) => List(B.Assume(guard)) } )
-     
+    asgn ++= actionVarAssumes map { a => B.Assume(transExpr(a)(renamings) ) }
     asgn ++= transStmt( a.body )(renamings)
      
     asgn ++= (for (q <- a.ensures) yield {
@@ -257,11 +255,11 @@ class BasicActorTranslator(
     List(proc)
   }
   
-  def translateFunctionDecl(funDecls: List[FunctionDecl], prefix: String): List[Boogie.Function] = {
-    funDecls map {
+  def translateFunctionDecl(avs: ActorVerificationStructure): List[Boogie.Function] = {
+    avs.functionDecls map {
       fd => {
         Boogie.Function(
-            prefix+fd.name,
+            avs.renamings(fd.name).id,
             fd.inputs map { i => Boogie.BVar(i.id, B.type2BType(i.typ)) },
             Boogie.BVar("out", B.type2BType(fd.output)))
       }

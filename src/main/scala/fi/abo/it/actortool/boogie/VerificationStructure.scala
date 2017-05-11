@@ -22,6 +22,7 @@ class ActorVerificationStructure(
     val initAssumes: List[Boogie.Assume],
     val renamings: Map[String,Id],
     val stateChanRenamings: Map[String,Id],
+    val actionData: Map[ActorAction,(List[BDecl],List[Expr])],
     val namePrefix: String) extends VerificationStructure[BasicActor]
 
 

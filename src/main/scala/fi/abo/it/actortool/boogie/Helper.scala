@@ -14,15 +14,15 @@ object Uniquifier {
 
 object BMap extends Enumeration {
   type BMap = String
-  final val C = "C"
-  final val R = "R"
-  final val M = "M"
-  final val I = "I"
+  final val C = "C#"
+  final val R = "R#"
+  final val M = "M#"
+  final val I = "I#"
   final val Isub = "I#sub"
-  final val H = "H"
-  final val B = "B"
+  final val H = "H#"
+  final val B = "B#"
   final val This = "this#"
-  final val Mode = "Mode"
+  final val Mode = "Mode#"
 //  final val BaseL = "Base#L"
 }
 

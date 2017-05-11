@@ -42,7 +42,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "ubv","Map", "if", "then", "else", "contract"
+                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -179,7 +179,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
         ("==>" ~> repsep(outputPattern,",")) ~
         ("requires" ~> expression *) ~
         ("ensures" ~> expression *) ~
-        ("guard" ~> expression ?) ~
+        ("guard" ~> repsep(expression,",") ?) ~
         opt("var" ~> repsep(varDecl,",")) ~
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
@@ -189,7 +189,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
               case Some(s) => s
               case None => Nil
             }
-            ActorAction(id,init,inputs,outputs,guard,requires,ensures,vars.getOrElse(Nil),stmt)
+            ActorAction(id,init,inputs,outputs,guard.getOrElse(Nil),requires,ensures,vars.getOrElse(Nil),stmt)
     }
   )
   
@@ -252,11 +252,13 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     case (e1 ~ Some(e2)) => Implies(e1,e2)
   })
   
-  def logicalExpr: Parser[Expr] = filePositioned(cmpExpr ~ (( ("&&" ~ cmpExpr +) | ("||" ~ cmpExpr +) )?) ^^ {
+  def logicalExpr: Parser[Expr] = filePositioned(cmpExpr ~ (( (("&&" | "and") ~ cmpExpr +) | (("||" | "or") ~ cmpExpr +) )?) ^^ {
     case e ~ None => e
     case e0 ~ Some(rest) => 
       (rest foldLeft e0) {
+        case (a, "and" ~ b) => And(a,b)
         case (a, "&&" ~ b) => And(a,b)
+        case (a, "or" ~ b) => Or(a,b) 
         case (a, "||" ~ b) => Or(a,b) 
       }
   })
@@ -302,7 +304,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   
   def unaryExpr: Parser[Expr] = filePositioned(
     "-" ~> unaryExpr ^^ UnMinus | 
-    "!" ~> unaryExpr ^^ Not |
+    ("!" | "not") ~> unaryExpr ^^ Not |
     "~" ~> unaryExpr ^^ BwNot |
     quantifier |
     ifthenelse |
@@ -403,6 +405,9 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   def statement: Parser[Stmt] = filePositioned(
     "assert" ~> expression <~ Semi ^^ Assert |
     "assume" ~> expression <~ Semi ^^ Assume |
+    ((("if" ~> expression) ~ ("then" ~> statementBody) ~ opt("else" ~> statementBody) <~ "end") ^^ {
+      case (e ~ thn ~ els) => IfElse(e,thn,Nil,els.getOrElse(Nil))
+    }) |
     "havoc" ~> repsep(ident,",") <~ Semi ^^ {case ids => Havoc(ids map { Id(_) })} |
     (identifier ~ (":=" ~> expression) <~ Semi ^^ {
       case (id ~ exp) => Assign(id,exp)

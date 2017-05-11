@@ -31,20 +31,44 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
       assumes += Boogie.VarExpr(s.fullName) ==@ B.Int(i)
     }
     
-    if (!entity.contractActions.isEmpty)
+    if (!entity.contractActions.isEmpty) {
       assumes += entity.contractActions map { s => B.Mode(B.This) ==@ Boogie.VarExpr(s.fullName) } reduceLeft((a,b) => a || b)
-
+    }
     
     
     entity match {
       case ba: BasicActor => 
-        for (c <- ba.variables) {
-          decls += BDecl(c.id,c.typ)
-          if (c.constant) assumes += Boogie.VarExpr(c.id) ==@ translator.transExpr(c.value.get, Map.empty, false)._1
-        }
+        val (vDecls,vAssumes) = createVariableDeclarations(ba.variables,Map.empty)
+        decls ++= vDecls
+        assumes ++= vAssumes
       case nw: Network =>
     }
     
+    (decls.toList,assumes.toList)
+  }
+  
+  protected def createVariableDeclarations(varDecls: List[Declaration], renamings: Map[String,Id]): (List[BDecl],List[Boogie.Expr]) = {
+    val decls = new ListBuffer[BDecl]
+    val assumes = new ListBuffer[Boogie.Expr]
+    for (d <- varDecls) {
+      decls += BDecl(d.id,d.typ)
+      if (d.constant) assumes += Boogie.VarExpr(d.id) ==@ translator.transExpr(d.value.get, renamings, false)._1
+    }
+    (decls.toList,assumes.toList)
+  }
+  
+  protected def createVariableDeclarationsNoTranslate(varDecls: List[Declaration], typeCtx: Resolver.Context): (List[BDecl],List[Expr]) = {
+    val decls = new ListBuffer[BDecl]
+    val assumes = new ListBuffer[Expr]
+    for (d <- varDecls) {
+      decls += BDecl(d.id,d.typ)
+      
+      if (d.constant){
+        val exp = Eq(Id(d.id), d.value.get)
+        Resolver.resolveExpr(typeCtx, exp , BoolType)
+        assumes += exp
+      }
+    }
     (decls.toList,assumes.toList)
   }
   
@@ -117,6 +141,12 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
     
     val funDeclRenamings = (actor.getFunctionDecls map { fd => (fd.name,Id(prefix+fd.name)) }).toMap
     
+    val actionData =
+      (for (a <- actor.actorActions) yield {
+        (a, createVariableDeclarationsNoTranslate(a.variables,typeCtx))
+      }).toMap
+    
+    
     return new ActorVerificationStructure(
         actor,
         actor.actorActions,
@@ -133,6 +163,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
         initAssumes,
         funDeclRenamings,
         Map.empty, // state chan renamings
+        actionData,
         prefix)
   }
   

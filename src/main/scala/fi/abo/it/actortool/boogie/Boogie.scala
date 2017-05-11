@@ -137,6 +137,8 @@ object Boogie {
  case class Lambda(ta: List[TVar], xs: List[BVar], body: Expr) extends Expr
  
  case class Ite(con: Expr, thn: Expr, els: Expr) extends Expr
+ 
+ case class BvExtract(e1: Expr, e2: Expr, e3: Expr) extends Expr
 
  case class BVar(id: String, t: BType) {
    def this(id: String, t: BType, uniquifyName: Boolean) =
@@ -358,5 +360,8 @@ object Boogie {
      " :: " +
      PrintExpr(body) +
      ")"
+   case BvExtract(e1,e2,e3) => {
+     PrintExpr(e1) + "[" + PrintExpr(e2) + ":" + PrintExpr(e3) + "]"
+   }
  }
 }
