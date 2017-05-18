@@ -1,0 +1,8 @@
+unit Constants:
+  int(size=12) NEWVOP = int2bv(2048,12);
+  int(size=12) INTRA = int2bv(1024,12);
+  int(size=12) INTER = int2bv(512,12);
+  int(size=12) MOTION = int2bv(8,12);
+  int(size=12) ACCODED = int2bv(2,12);
+  int(size=12) ACPRED = int2bv(1,12);
+end

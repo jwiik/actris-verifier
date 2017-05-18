@@ -20,13 +20,34 @@
 // Note:
 // Differs from original IS actor by lacking the read_write action
 // that complicates the actor unnecessarily 
-package fi.oulu.ee.mpeg4.part2.sp;
 
-import org.sc29.wg11.mpeg4.part2.Constants.*;
-
-actor Algo_IS_simple () int(size=3) AC_PRED_DIR, int(size = SAMPLE_SZ) QFS_AC ==> int(size=SAMPLE_SZ) PQF_AC :
-	 
-  List( type:int(size=7), size=192 ) Scanmode = 
+actor Algo_IS_simple () int(size=3) AC_PRED_DIR, int(size = 13) QFS_AC ==> int(size=13) PQF_AC :
+  
+  Skip:
+  contract AC_PRED_DIR:1 ==>
+    guard AC_PRED_DIR[@] < int2bv(0,3)
+  end
+  
+  Main:
+  contract AC_PRED_DIR:1, QFS_AC:63 ==> PQF_AC: 63
+    guard AC_PRED_DIR[@] >= int2bv(0,3)
+  end
+  
+  invariant int2bv(1,8) <= count && count <= int2bv(64,8)
+  invariant state(rest) ==> count = int2bv(1,8)
+  
+  invariant mode(Skip) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] < int2bv(0,3)
+  invariant mode(Skip) ==> state(rest)
+  invariant mode(Skip) ==> tot@(PQF_AC) = 0
+  
+  invariant mode(Main) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] >= int2bv(0,3)
+  invariant mode(Main) && rd@(AC_PRED_DIR) = 0 ==> state(rest)
+  invariant mode(Main) && state(rest) && rd@(AC_PRED_DIR) = 0 ==> rd@(QFS_AC) = 0 && tot@(PQF_AC) = 0
+  invariant mode(Main) && state(read) ==> rd@(AC_PRED_DIR) = 1 && rd@(QFS_AC) = bv2int(count)-1 && tot@(PQF_AC) = 0
+  invariant mode(Main) && state(write) ==> rd@(AC_PRED_DIR) = 1 && rd@(QFS_AC) = 63 && tot@(PQF_AC) = bv2int(count)-1
+  invariant mode(Main) && state(rest) && rd@(AC_PRED_DIR) = 1 ==> rd@(QFS_AC) = 63 && tot@(PQF_AC) = 63
+   
+  Map(int(size=9) -> int(size=7)) Scanmode; /*= 
   [    0,  1,  5,  6, 14, 15, 27, 28,  2,  4,  7, 13, 16, 26, 29, 42,	//0:63 zigzag
        3,  8, 12, 17, 25, 30, 41, 43,  9, 11, 18, 24, 31, 40, 44, 53,
       10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60,
@@ -41,80 +62,79 @@ actor Algo_IS_simple () int(size=3) AC_PRED_DIR, int(size = SAMPLE_SZ) QFS_AC ==
        6,  7, 19, 18, 26, 27, 28, 29, 20, 21, 24, 25, 30, 31, 32, 33,
       22, 23, 34, 35, 42, 43, 44, 45, 36, 37, 40, 41, 46, 47, 48, 49,
       38, 39, 50, 51, 56, 57, 58, 59, 52, 53, 54, 55, 60, 61, 62, 63
-  ];
+  ];*/
 
 
   int BUF_SIZE = 128;
   
   //Holds number of Ac coeffs read in or written out
-  int(size=8) count := 1;
+  int(size=8) count := int2bv(1,8);
   //Inverse Scan base address from list Scanmode for current block of 64 Ac coeffs --> 0;64;128 // JWJ: increased size of addr
   int(size=9) addr;
   //Inverse Scan for next block of 64 Ac coeffs 0;1;2			
   int(size=3) add_buf;
 
   // Stores incoming Ac coeffs 128 divided to 64::64
-  List( type:int(size=SAMPLE_SZ), size=BUF_SIZE ) buf;
+  Map(int(size=7) -> int(size=13)) buf;
   // Flag to change buffer	
   bool half_ := false;		
 
   //if half_=0 writes to 0-63 else to 64-128
-  function wa() --> int :
+  function wa() --> int(size=7) :
 	(count & 63) | if half_ then 64 else 0 end 
   end
 
   // if half_=1 reads from 0-63 else from 64-128
-  function ra(int address ) --> int :
+  function ra(int(size=7) address ) --> int(size=7)  :
 	(address & 63) | if half_ then 0 else 64 end 
   end
 
   // Wait for a valid Inverse Scan
   skip: action AC_PRED_DIR:[ i ] ==>					
-  guard i < 0				//0 --> ZZ; 1-->Alternate Vertical; 2 --> Alternate Horiz
+  guard i < int2bv(0,3)				//0 --> ZZ; 1-->Alternate Vertical; 2 --> Alternate Horiz
   end							
 
   start: action AC_PRED_DIR:[ i ] ==>
-  guard i >=0
+  guard i >= int2bv(0,3)	
   do
     add_buf := i;			// Inverse Scan for next block
   end
 
   // Done reading or writing 64 ac coeffs
   done: action ==>
-  guard count = 64
+  guard count = int2bv(64,8)	
   do
-    count := 1;				// Reset count
+    count := int2bv(1,8);				// Reset count
     half_ := not half_;		// Point to other hapl of the buffer
-    addr := if add_buf = 0 then 0 else if add_buf = 1 then 64 else 128 end end; //List Scanmode pointer for current inv scan for current block
+    addr := if add_buf = int2bv(0,3) then int2bv(0,9) else if add_buf = int2bv(1,3) then int2bv(64,9) else int2bv(128,9) end end; //List Scanmode pointer for current inv scan for current block
   end
 
   // If there is not a block in the buffer already, just read in the block
   read_only: action QFS_AC:[ ac ] ==>		
-  guard count < 64
+  guard count < int2bv(64,8)
   do
     buf[ wa() ] := ac;		//ac coeff in buffer --buf
-    count := count + 1;		//inc count
+    count := count + int2bv(1,8);		//inc count
   end
 
   // If there is a block in the buffer already but no new arrival, just write it out
-  write_only: action ==> PQF_AC:[ buf[ ra(Scanmode[ addr] ) ] ]
-  guard count < 64
+  write_only: action ==> PQF_AC:[ buf[ ra( Scanmode[ addr ] ) ] ]
+  guard count < int2bv(64,8)
   do
-    addr := addr +1;		//points to next ceffs address
-    count := count + 1;
+    addr := addr + int2bv(1,9);		//points to next ceffs address
+    count := count + int2bv(1,8);
   end
 
-schedule fsm rest:
-  rest  (skip)       --> rest; //no fired actors
-  rest  (start)      --> read;			
-
-  read  (read_only)  --> read;			
-  read  (done)       --> write;
+  schedule fsm rest:
+    rest  (skip)       --> rest; //no fired actors
+    rest  (start)      --> read;			
+  
+    read  (read_only)  --> read;			
+    read  (done)       --> write;
  
-  write (write_only) --> write;
-  write (done)       --> rest;
-
-end
+    write (write_only) --> write;
+    write (done)       --> rest;
+  end
  
 priority 
   skip > start;

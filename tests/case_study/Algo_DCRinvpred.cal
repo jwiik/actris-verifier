@@ -14,13 +14,127 @@ actor Algo_DCRinvpred ()
 	bool SIGNED, 
 	int(size=6) QUANT :
 	
-	int(size=12) NEWVOP = int2bv(2048,12);
-	int(size=12) INTRA = int2bv(1024,12);
-	int(size=12) INTER = int2bv(512,12);
-	int(size=12) MOTION = int2bv(8,12);
-	int(size=12) ACCODED = int2bv(2,12);
-	int(size=12) ACPRED = int2bv(1,12);
-
+	StartMode:
+	contract
+		BTYPE:3
+		==>
+		AC_PRED_DIR:1
+		
+		requires (BTYPE[@] & NEWVOP) != 0x000
+		
+	end
+	
+	InterMode:
+	contract
+		BTYPE:1,
+		QP:1,
+		QFS_DC:1
+		==>
+		QF_DC:1,
+		PTR:1,
+		AC_PRED_DIR:1,
+		MODE:1,
+		SIGNED:1,
+		QUANT:1
+		
+		guard (BTYPE[@] & NEWVOP) = 0x000
+		guard (BTYPE[@] & INTER) != 0x000 && (BTYPE[@] & ACCODED) != 0x000
+	end
+	
+	OtherMode:
+	contract
+		BTYPE:1,
+		QP:1
+		==>
+		AC_PRED_DIR:1
+		
+		guard (BTYPE[@] & NEWVOP) = 0x000
+		guard (BTYPE[@] & INTER) = 0x000
+		guard (BTYPE[@] & INTRA) = 0x000
+		guard (BTYPE[@] & ACCODED) = 0x000
+	end
+	
+	IntraMode:
+	contract
+		BTYPE:1,
+		A:1,
+		B:1,
+		C:1,
+		QFS_DC:1,
+		QP:1
+		==>
+		QF_DC:1,
+		PTR:1,
+		AC_PRED_DIR:1,
+		MODE:1,
+		SIGNED:1,
+		QUANT:1
+		
+		guard (BTYPE[@] & NEWVOP) = 0x000
+		guard (BTYPE[@] & INTER) = 0x000
+		guard (BTYPE[@] & INTRA) != 0x000
+		
+	end
+	
+	invariant rd@(BTYPE) = 0 ==> state(read)
+	
+	invariant mode(StartMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) != 0x000
+	invariant mode(InterMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTER) != 0x000 && (BTYPE[@] & ACCODED) != 0x000
+	invariant mode(OtherMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTER) = 0x000 && (BTYPE[@] & INTRA) = 0x000 && (BTYPE[@] & ACCODED) = 0x000
+	invariant mode(IntraMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTER) = 0x000 && (BTYPE[@] & INTRA) != 0x000
+	
+	// Start Mode
+	invariant mode(StartMode) ==> state(read) || state(getw) || state(geth)
+	invariant mode(StartMode) && rd@(BTYPE) = 1 ==> state(getw)
+	invariant mode(StartMode) && rd@(BTYPE) = 2 ==> state(geth)
+	invariant mode(StartMode) && rd@(BTYPE) = 3 ==> state(read)
+	invariant mode(StartMode) ==>
+		rd@(QP) = 0 && rd@(QFS_DC) = 0 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot(QF_DC) = 0
+	invariant mode(StartMode) && rd@(BTYPE) = 0 ==> tot@(AC_PRED_DIR) = 0
+	invariant mode(StartMode) && rd@(BTYPE) > 0 ==> tot@(AC_PRED_DIR) = 1
+	
+	
+	// Inter Mode
+	invariant mode(InterMode) ==> state(read) || state(inter) || state(sat) || state(advance)
+	invariant mode(InterMode) ==> rd@(A) = 0 && rd@(B) = 0 && rd@(C) = 0
+	
+	invariant mode(InterMode) && state(read) ==>
+		(rd@(BTYPE) = 0 && rd@(QP) = 0 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 0 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot@(QF_DC) = 0) ||
+		(rd@(BTYPE) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 1)
+		
+	invariant mode(InterMode) && state(inter) ==> 
+		rd@(BTYPE) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 0
+	invariant mode(InterMode) && state(sat) ==> 
+		rd@(BTYPE) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 0
+	invariant mode(InterMode) && state(advance)  ==> 
+		rd@(BTYPE) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 1
+	
+	
+	// Intra Mode
+	invariant mode(IntraMode) ==> state(read) || state(intra) || state(sat) || state(advance)
+	
+	invariant mode(IntraMode) && state(read) ==>
+		(rd@(BTYPE) = 0 && rd@(A) = 0 && rd@(B) = 0 && rd@(C) = 0 && rd@(QP) = 0 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 0 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot@(QF_DC) = 0) ||
+		(rd@(BTYPE) = 1 && rd@(A) = 1 && rd@(B) = 1 && rd@(C) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 1)
+		
+	invariant mode(IntraMode) && state(intra) ==> 
+		rd@(BTYPE) = 1 && rd@(A) = 1 && rd@(B) = 1 && rd@(C) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 0
+	invariant mode(IntraMode) && state(sat) ==> 
+		rd@(BTYPE) = 1 && rd@(A) = 1 && rd@(B) = 1 && rd@(C) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 0
+	invariant mode(IntraMode) && state(advance)  ==> 
+		rd@(BTYPE) = 1 && rd@(A) = 1 && rd@(B) = 1 && rd@(C) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 1
+	
+	// Other Mode
+	invariant mode(OtherMode) ==> state(read) || state(advance)
+	
+	invariant mode(OtherMode) && state(read) ==>
+		(rd@(BTYPE) = 0 && rd@(A) = 0 && rd@(B) = 0 && rd@(C) = 0 && rd@(QP) = 0 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 0 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot@(QF_DC) = 0) ||
+		(rd@(BTYPE) = 1 && rd@(A) = 0 && rd@(B) = 0 && rd@(C) = 0 && rd@(QP) = 1 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot@(QF_DC) = 0)
+		
+	invariant mode(OtherMode) && state(advance) ==>
+		(rd@(BTYPE) = 1 && rd@(A) = 0 && rd@(B) = 0 && rd@(C) = 0 && rd@(QP) = 1 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot@(QF_DC) = 0)
+	
+	
 	// Decoded 'quantiser_scale' - see ISO/IEC 14496-2
 	int(size=6) s_QP;
 
