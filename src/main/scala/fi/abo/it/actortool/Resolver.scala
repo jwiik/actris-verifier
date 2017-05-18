@@ -27,15 +27,16 @@ object Resolver {
     def variables: List[Declaration]
   }
   
-  sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor], val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
+  sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor], val constants: Map[String,Declaration], val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
     override def getErrors = errors.toList
     private val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
     override def lookupRefTypeDecl(id: String): Option[TypeDecl] = userTypes.get(id)
     override def variables = List.empty
+    override def lookUp(id: String) = constants.get(id)
   }
   
-  sealed class EmptyContext extends RootContext(null,Map.empty,Map.empty)
+  sealed class EmptyContext extends RootContext(null,Map.empty,Map.empty,Map.empty)
   
   sealed abstract class ChildContext(override val parentNode: ASTNode, override val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
@@ -120,8 +121,26 @@ object Resolver {
         case td: TypeDecl => userTypes += (td.id -> td)
       }
     }
+    val constCtx = new EmptyContext
+    val constants: scala.collection.mutable.Map[String,Declaration] = new scala.collection.mutable.HashMap()
+    for ((_,u) <- units) {
+      for (d <- u.constants) {
+        if (constants contains d.id) {
+          return Errors( List((d.pos,"Duplicate declaration of constant with name " + d.id)) )
+        }
+        d.value match {
+          case None => return Errors( List((d.pos,"Constants must be declared with a value")) )
+          case Some(e) => 
+            resolveExpr(constCtx, e, d.typ) match {
+              case e: Errors => return e
+              case Success(_) =>
+            }
+        }
+        constants(d.id) = d
+      }
+    }
     
-    val rootCtx = new RootContext(null,actors.toMap,userTypes)
+    val rootCtx = new RootContext(null,actors.toMap,constants.toMap,userTypes)
     
     for (decl <- actors.values) {
       val inports = scala.collection.mutable.HashMap[String,InPort]()
@@ -150,14 +169,23 @@ object Resolver {
       
       vars += ("this" -> Declaration("this",ActorType(decl),true,None))
       for ((s,i) <- decl.contractActions.zipWithIndex) {
-        vars += (s.fullName -> Declaration(s.fullName,IntType,true,Some(IntLiteral(i))))
+        vars += (s.fullName -> Declaration(s.fullName,ModeType,true,Some(IntLiteral(i))))
       }
       
       decl match {
         case a: BasicActor => {
 
           for (m <- a.members) m match {
-            case d: Declaration => vars += (d.id -> d)
+            case d: Declaration => {
+              if (vars contains d.id) {
+                rootCtx.error(d.pos, "Constant or variable with name '" + d.id + "' already declared")
+              }
+              rootCtx.lookUp(d.id) match {
+                case Some(v) => rootCtx.error(d.pos, "Constant or variable with name '" + d.id + "' already declared")
+                case None =>
+              }
+              vars += (d.id -> d)
+            }
             case fd: FunctionDecl => functions += (fd.name -> fd)
             case _ =>
           }
@@ -179,7 +207,7 @@ object Resolver {
               return Errors(List((e.pos, "Basic actors cannot have a entities block")))
             case s: Structure =>
               return Errors(List((s.pos, "Basic actors cannot have a structure block")))
-            case d: Declaration => 
+            case d: Declaration =>
               d.value match {
                 case Some(e) => resolveExpr(ctx,e)
                 case None =>
@@ -214,7 +242,7 @@ object Resolver {
             outports = outports + (p.id -> p)
           }
           
-          val ctx = new ActorContext(n, rootCtx, Map.empty, inports, outports, Map.empty) 
+          val ctx = new ActorContext(n, rootCtx, vars.toMap, inports, outports, Map.empty) 
 
           var hasEntities, hasStructure = false
           var channels = Map.empty[String,Connection]
@@ -284,8 +312,8 @@ object Resolver {
     
     val ctx = new ActionContext(action, actorCtx, Map.empty)
     
+    for (grd <- action.guards) resolveExpr(ctx, grd, BoolType)
     for (pre <- action.requires) resolveExpr(ctx, pre, BoolType)
-    
     for (post <- action.ensures) resolveExpr(ctx, post, BoolType)
     
   }
@@ -321,7 +349,7 @@ object Resolver {
     
     val ctx = new ActionContext(action, actorCtx,vars)
     
-    for (g <- action.guard) {
+    for (g <- action.guards) {
       resolveExpr(ctx, g, BoolType)
     }
     
@@ -665,11 +693,20 @@ object Resolver {
       case fa@FunctionApp("mode",params) => {
         val t = resolveExpr(ctx,params(0))
         if (params.size != 1) ctx.error(fa.pos, "Function 'mode' takes one argument")
-        if (!t.isActor) {
-          ctx.error(fa.pos, "The argument to 'mode' should be an actor instance")
+        if (!t.isMode) {
+          ctx.error(fa.pos, "The argument to 'mode' should be a contract mode")
+        }
+        fa.typ = BoolType
+        BoolType
+      }
+      case fa@FunctionApp("state",params) => {
+        val t = resolveExpr(ctx,params(0))
+        if (params.size != 1) ctx.error(fa.pos, "Function 'mode' takes one argument")
+        if (!t.isState) {
+          ctx.error(fa.pos, "The argument to 'state' should be an action schedule state")
         }
         fa.typ = IntType
-        IntType
+        BoolType
       }
       case fa@FunctionApp("int2bv",_) => resolveBvLiteral(ctx, fa)
       case fa@FunctionApp("uint2bv",_) => resolveBvLiteral(ctx, fa)
@@ -1162,7 +1199,7 @@ object Resolver {
         val it = resolveExpr(ctx,id)
         val et = resolveExpr(ctx, exp)
         if (!TypeUtil.isCompatible(it, et)) 
-          ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable of type " + it.id)
+          ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable '" + id.id + "' of type " + it.id)
       case MapAssign(e1,e2) =>
         val it = resolveExpr(ctx,e1)
         val et = resolveExpr(ctx,e2)

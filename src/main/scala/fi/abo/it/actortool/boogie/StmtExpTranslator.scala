@@ -313,8 +313,10 @@ class StmtExpTranslator() {
             Boogie.FunctionApp("AT#ChSum",List(mm,param,limit))
           }
           case "mode" => {
-            val param = transExprI(params(0))
-            B.Mode(param)
+            B.Mode(B.This) ==@ transExprI(params(0))
+          }
+          case "state" => {
+            Boogie.VarExpr("St#") ==@ transExprI(params(0))
           }
           case x => {
             // User-defined function

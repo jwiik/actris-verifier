@@ -91,6 +91,8 @@ object B {
         BoogiePrelude.addComponent(MapPL)
         BType.MapType(type2BType(d),type2BType(r))
       }
+      case StateType(_,_) => BType.Int
+      case ModeType => BType.Int
       case UnknownType =>
         assert(false, "Unknown types should not occur during the translation")
         null

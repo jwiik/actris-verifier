@@ -177,9 +177,9 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
         ("action" | "initialize") ~ 
         repsep(inputPattern,",") ~ 
         ("==>" ~> repsep(outputPattern,",")) ~
-        ("requires" ~> expression *) ~
-        ("ensures" ~> expression *) ~
-        ("guard" ~> repsep(expression,",") ?) ~
+        ("requires" ~> repsep(expression,",") *) ~
+        ("ensures" ~> repsep(expression,",") *) ~
+        ("guard" ~> repsep(expression,",") *) ~
         opt("var" ~> repsep(varDecl,",")) ~
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
@@ -189,7 +189,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
               case Some(s) => s
               case None => Nil
             }
-            ActorAction(id,init,inputs,outputs,guard.getOrElse(Nil),requires,ensures,vars.getOrElse(Nil),stmt)
+            ActorAction(id,init,inputs,outputs,guard.flatten,requires.flatten,ensures.flatten,vars.getOrElse(Nil),stmt)
     }
   )
   
@@ -198,11 +198,12 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
           "contract" ~
           repsep(inputPattern,",") ~ 
           ("==>" ~> repsep(outputPattern,",")) ~
-          ("requires" ~> expression *) ~
-          ("ensures" ~> expression *)
+          ("requires" ~> repsep(expression,",") *) ~
+          ("ensures" ~> repsep(expression,",") *) ~
+          ("guard" ~> repsep(expression,",") *)
           <~ "end") ^^ {
-            case (id ~ _ ~ inputs ~ outputs ~ requires ~ ensures) => 
-              ContractAction(id, inputs map { ip => toNwPattern(ip) } , outputs map { op => toNwPattern(op) } ,requires,ensures)
+            case (id ~ _ ~ inputs ~ outputs  ~ requires ~ ensures ~ guard ) => 
+              ContractAction(id, inputs map { ip => toNwPattern(ip) } , outputs map { op => toNwPattern(op) }, guard.flatten,requires.flatten,ensures.flatten)
     }
   )
    

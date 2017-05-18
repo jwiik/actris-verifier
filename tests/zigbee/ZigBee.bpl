@@ -206,6 +206,7 @@ procedure chipMapper#init#0()
   assume true;
   assume (I#[data] == 0) && (R#[data] == 0) && (C#[data] == 0);
   assume (I#[chip] == 0) && (R#[chip] == 0) && (C#[chip] == 0);
+  assert {:msg "Initialization might not establish the invariant (#0)"} (2 * R#[data]) == C#[chip];
 }
 procedure chipMapper#anon$0#1()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -230,6 +231,7 @@ procedure chipMapper#anon$0#1()
   C#[chip] := C#[chip] + 1;
   M#[chip][C#[chip]] := Map#Select(Chip_map_table, msn);
   C#[chip] := C#[chip] + 1;
+  assert {:msg "Action 'anon$0' at ZigBee.actor(23.2) might not preserve the invariant (#1)"} (2 * R#[data]) == C#[chip];
 }
 procedure headerAdd#init#2()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -484,14 +486,51 @@ procedure headerAdd##GuardWD#7()
   var octet_count_in#0: bv8;
   var St_in#0: int;
   assume (pl_bits != octet_count_in) && (pl_bits != octet_index_in) && (pl_bits != data) && (pl_bits != len) && (pl_bits != octet_count_out) && (pl_bits != octet_index_out) && (St_in != St_out) && (octet_count_in != octet_index_in) && (octet_count_in != data) && (octet_count_in != len) && (octet_count_in != octet_count_out) && (octet_count_in != octet_index_out) && (octet_index_in != data) && (octet_index_in != len) && (octet_index_in != octet_count_out) && (octet_index_in != octet_index_out) && (data != len) && (data != octet_count_out) && (data != octet_index_out) && (len != octet_count_out) && (len != octet_index_out) && (octet_count_out != octet_index_out);
-  assert {:msg "ZigBee.actor(31.1): The actions 'get_data_len' and 'send_header' of actor 'headerAdd' might not have mutually exclusive guards (#0)"} !(true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], 5bv8) && (M#[St_in][R#[St_in]] == 1));
-  assert {:msg "ZigBee.actor(31.1): The actions 'get_data_len' and 'send_length' of actor 'headerAdd' might not have mutually exclusive guards (#1)"} !(true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[octet_index_in][R#[octet_index_in]] == 5bv8) && (M#[St_in][R#[St_in]] == 1));
-  assert {:msg "ZigBee.actor(31.1): The actions 'get_data_len' and 'send_payload_octet' of actor 'headerAdd' might not have mutually exclusive guards (#2)"} !(true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], M#[octet_count_in][R#[octet_count_in]]) && (M#[St_in][R#[St_in]] == 2));
-  assert {:msg "ZigBee.actor(31.1): The actions 'send_header' and 'send_length' of actor 'headerAdd' might not have mutually exclusive guards (#3)"} !(true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], 5bv8) && (M#[St_in][R#[St_in]] == 1) && true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[octet_index_in][R#[octet_index_in]] == 5bv8) && (M#[St_in][R#[St_in]] == 1));
-  assert {:msg "ZigBee.actor(31.1): The actions 'send_header' and 'send_payload_octet' of actor 'headerAdd' might not have mutually exclusive guards (#4)"} !(true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], 5bv8) && (M#[St_in][R#[St_in]] == 1) && true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], M#[octet_count_in][R#[octet_count_in]]) && (M#[St_in][R#[St_in]] == 2));
-  assert {:msg "ZigBee.actor(31.1): The actions 'send_length' and 'send_payload_octet' of actor 'headerAdd' might not have mutually exclusive guards (#5)"} !(true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[octet_index_in][R#[octet_index_in]] == 5bv8) && (M#[St_in][R#[St_in]] == 1) && true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], M#[octet_count_in][R#[octet_count_in]]) && (M#[St_in][R#[St_in]] == 2));
+  assume (0 <= I#[pl_bits]) && (I#[pl_bits] <= R#[pl_bits]) && (R#[pl_bits] <= C#[pl_bits]);
+  assume (0 <= I#[St_in]) && (I#[St_in] <= R#[St_in]) && (R#[St_in] <= C#[St_in]);
+  assume (0 <= I#[octet_count_in]) && (I#[octet_count_in] <= R#[octet_count_in]) && (R#[octet_count_in] <= C#[octet_count_in]);
+  assume (0 <= I#[octet_index_in]) && (I#[octet_index_in] <= R#[octet_index_in]) && (R#[octet_index_in] <= C#[octet_index_in]);
+  assume (0 <= I#[data]) && (I#[data] <= R#[data]) && (R#[data] <= C#[data]);
+  assume (0 <= I#[len]) && (I#[len] <= R#[len]) && (R#[len] <= C#[len]);
+  assume (0 <= I#[St_out]) && (I#[St_out] <= R#[St_out]) && (R#[St_out] <= C#[St_out]);
+  assume (0 <= I#[octet_count_out]) && (I#[octet_count_out] <= R#[octet_count_out]) && (R#[octet_count_out] <= C#[octet_count_out]);
+  assume (0 <= I#[octet_index_out]) && (I#[octet_index_out] <= R#[octet_index_out]) && (R#[octet_index_out] <= C#[octet_index_out]);
+  assert {:msg "ZigBee.actor(31.1): The actions 'get_data_len' and 'send_header' of actor 'headerAdd' might not have mutually exclusive guards (#2)"} !(true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], 5bv8) && (M#[St_in][R#[St_in]] == 1));
+  assert {:msg "ZigBee.actor(31.1): The actions 'get_data_len' and 'send_length' of actor 'headerAdd' might not have mutually exclusive guards (#3)"} !(true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[octet_index_in][R#[octet_index_in]] == 5bv8) && (M#[St_in][R#[St_in]] == 1));
+  assert {:msg "ZigBee.actor(31.1): The actions 'get_data_len' and 'send_payload_octet' of actor 'headerAdd' might not have mutually exclusive guards (#4)"} !(true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], M#[octet_count_in][R#[octet_count_in]]) && (M#[St_in][R#[St_in]] == 2));
+  assert {:msg "ZigBee.actor(31.1): The actions 'send_header' and 'send_length' of actor 'headerAdd' might not have mutually exclusive guards (#5)"} !(true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], 5bv8) && (M#[St_in][R#[St_in]] == 1) && true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[octet_index_in][R#[octet_index_in]] == 5bv8) && (M#[St_in][R#[St_in]] == 1));
+  assert {:msg "ZigBee.actor(31.1): The actions 'send_header' and 'send_payload_octet' of actor 'headerAdd' might not have mutually exclusive guards (#6)"} !(true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], 5bv8) && (M#[St_in][R#[St_in]] == 1) && true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], M#[octet_count_in][R#[octet_count_in]]) && (M#[St_in][R#[St_in]] == 2));
+  assert {:msg "ZigBee.actor(31.1): The actions 'send_length' and 'send_payload_octet' of actor 'headerAdd' might not have mutually exclusive guards (#7)"} !(true && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[octet_index_in][R#[octet_index_in]] == 5bv8) && (M#[St_in][R#[St_in]] == 1) && true && (1 <= (C#[pl_bits] - R#[pl_bits])) && (1 <= (C#[octet_index_in] - R#[octet_index_in])) && (1 <= (C#[octet_count_in] - R#[octet_count_in])) && (1 <= (C#[St_in] - R#[St_in])) && AT#BvUlt8(M#[octet_index_in][R#[octet_index_in]], M#[octet_count_in][R#[octet_count_in]]) && (M#[St_in][R#[St_in]] == 2));
 }
-procedure headerAddNw#init#8()
+procedure headerAdd##GuardWD#8()
+  modifies C#, R#, M#, I#, H#, I#sub;
+{
+  var pl_bits: Chan (bv8);
+  var St_in: Chan (int);
+  var octet_count_in: Chan (bv8);
+  var octet_index_in: Chan (bv8);
+  var data: Chan (bv8);
+  var len: Chan (bv8);
+  var St_out: Chan (int);
+  var octet_count_out: Chan (bv8);
+  var octet_index_out: Chan (bv8);
+  var octet_count: bv8;
+  var octet_index: bv8;
+  var HEADER_LEN: bv8;
+  var Header: Map (bv8) (bv8);
+  var data_out: bv8;
+  assume (pl_bits != octet_count_in) && (pl_bits != octet_index_in) && (pl_bits != data) && (pl_bits != len) && (pl_bits != octet_count_out) && (pl_bits != octet_index_out) && (St_in != St_out) && (octet_count_in != octet_index_in) && (octet_count_in != data) && (octet_count_in != len) && (octet_count_in != octet_count_out) && (octet_count_in != octet_index_out) && (octet_index_in != data) && (octet_index_in != len) && (octet_index_in != octet_count_out) && (octet_index_in != octet_index_out) && (data != len) && (data != octet_count_out) && (data != octet_index_out) && (len != octet_count_out) && (len != octet_index_out) && (octet_count_out != octet_index_out);
+  assume (0 <= I#[pl_bits]) && (I#[pl_bits] <= R#[pl_bits]) && (R#[pl_bits] <= C#[pl_bits]);
+  assume (0 <= I#[St_in]) && (I#[St_in] <= R#[St_in]) && (R#[St_in] <= C#[St_in]);
+  assume (0 <= I#[octet_count_in]) && (I#[octet_count_in] <= R#[octet_count_in]) && (R#[octet_count_in] <= C#[octet_count_in]);
+  assume (0 <= I#[octet_index_in]) && (I#[octet_index_in] <= R#[octet_index_in]) && (R#[octet_index_in] <= C#[octet_index_in]);
+  assume (0 <= I#[data]) && (I#[data] <= R#[data]) && (R#[data] <= C#[data]);
+  assume (0 <= I#[len]) && (I#[len] <= R#[len]) && (R#[len] <= C#[len]);
+  assume (0 <= I#[St_out]) && (I#[St_out] <= R#[St_out]) && (R#[St_out] <= C#[St_out]);
+  assume (0 <= I#[octet_count_out]) && (I#[octet_count_out] <= R#[octet_count_out]) && (R#[octet_count_out] <= C#[octet_count_out]);
+  assume (0 <= I#[octet_index_out]) && (I#[octet_index_out] <= R#[octet_index_out]) && (R#[octet_index_out] <= C#[octet_index_out]);
+}
+procedure headerAddNw#init#9()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var headerAddNw#a: Actor;
@@ -501,6 +540,7 @@ procedure headerAddNw#init#8()
   var headerAddNw#St: Chan (int);
   var headerAddNw#data: Chan (bv8);
   var headerAddNw#len: Chan (bv8);
+  var anon$2: int;
   var AV#a#octet_count: bv8;
   var AV#a#octet_index: bv8;
   var AV#a#HEADER_LEN: bv8;
@@ -528,6 +568,8 @@ procedure headerAddNw#init#8()
   assume R#[headerAddNw#len] <= C#[headerAddNw#len];
   assume I#[headerAddNw#len] == R#[headerAddNw#len];
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
+  assume anon$2 == 0;
+  assume Mode#[this#] == anon$2;
   assume C#[headerAddNw#input] == 0;
   assume R#[headerAddNw#input] == 0;
   assume C#[headerAddNw#octet_count] == 0;
@@ -546,33 +588,37 @@ procedure headerAddNw#init#8()
   C#[headerAddNw#octet_count] := C#[headerAddNw#octet_count] + 1;
   M#[headerAddNw#St][C#[headerAddNw#St]] := 0;
   C#[headerAddNw#St] := C#[headerAddNw#St] + 1;
-  assert {:msg "ZigBee.actor(146.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#6)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
-  assert {:msg "ZigBee.actor(147.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#7)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
-  assert {:msg "ZigBee.actor(150.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#8)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(153.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#9)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(156.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#10)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
-  assert {:msg "ZigBee.actor(158.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#11)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
-  assert {:msg "ZigBee.actor(160.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#12)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(161.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#13)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
-  assert {:msg "ZigBee.actor(162.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#14)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(164.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#15)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
-  assert {:msg "ZigBee.actor(165.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#16)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
-  assert {:msg "ZigBee.actor(167.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#17)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
-  assert {:msg "ZigBee.actor(168.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#18)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
-  assert {:msg "ZigBee.actor(169.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#19)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
-  assert {:msg "ZigBee.actor(171.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#20)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
-  assert {:msg "ZigBee.actor(173.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#21)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
-  assert {:msg "ZigBee.actor(174.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#22)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assert {:msg "ZigBee.actor(176.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#23)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
-  assert {:msg "ZigBee.actor(177.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#24)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(146.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#8)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
+  assert {:msg "ZigBee.actor(147.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#9)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
+  assert {:msg "ZigBee.actor(150.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#10)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(153.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#11)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(156.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#12)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
+  assert {:msg "ZigBee.actor(158.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#13)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
+  assert {:msg "ZigBee.actor(160.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#14)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(161.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#15)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
+  assert {:msg "ZigBee.actor(162.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#16)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(164.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#17)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
+  assert {:msg "ZigBee.actor(165.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#18)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
+  assert {:msg "ZigBee.actor(167.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#19)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
+  assert {:msg "ZigBee.actor(168.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#20)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
+  assert {:msg "ZigBee.actor(169.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#21)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
+  assert {:msg "ZigBee.actor(171.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#22)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
+  assert {:msg "ZigBee.actor(173.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#23)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
+  assert {:msg "ZigBee.actor(174.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#24)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(176.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#25)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
+  assert {:msg "ZigBee.actor(177.15): Initialization of network 'headerAddNw' might not establish the channel invariant (#26)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "Initialization of network 'headerAddNw' might not establish the channel invariant (#27)"} (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assert {:msg "Initialization of network 'headerAddNw' might not establish the channel invariant (#28)"} (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
   I# := R#;
-  assert {:msg "ZigBee.actor(143.13): Initialization of network 'headerAddNw' might not establish the network invariant (#25)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(144.13): Initialization of network 'headerAddNw' might not establish the network invariant (#26)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "Initialization of network 'headerAddNw' might not establish the network invariant: Unread tokens might be left on channel input (#27)"} (C#[headerAddNw#input] - R#[headerAddNw#input]) == 0;
-  assert {:msg "Initialization of network 'headerAddNw' might not establish the network invariant: Unread tokens might be left on channel data (#28)"} (C#[headerAddNw#data] - R#[headerAddNw#data]) == 0;
-  assert {:msg "Initialization of network 'headerAddNw' might not establish the network invariant: Unread tokens might be left on channel len (#29)"} (C#[headerAddNw#len] - R#[headerAddNw#len]) == 0;
+  assert {:msg "ZigBee.actor(143.13): Initialization of network 'headerAddNw' might not establish the network invariant (#29)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(144.13): Initialization of network 'headerAddNw' might not establish the network invariant (#30)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "Initialization of network 'headerAddNw' might not establish the network invariant (#31)"} (9 * R#[headerAddNw#input]) == (4 * C#[headerAddNw#data]);
+  assert {:msg "Initialization of network 'headerAddNw' might not establish the network invariant (#32)"} R#[headerAddNw#input] == (4 * C#[headerAddNw#len]);
+  assert {:msg "Initialization of network 'headerAddNw' might not establish the network invariant: Unread tokens might be left on channel input (#33)"} (C#[headerAddNw#input] - R#[headerAddNw#input]) == 0;
+  assert {:msg "Initialization of network 'headerAddNw' might not establish the network invariant: Unread tokens might be left on channel data (#34)"} (C#[headerAddNw#data] - R#[headerAddNw#data]) == 0;
+  assert {:msg "Initialization of network 'headerAddNw' might not establish the network invariant: Unread tokens might be left on channel len (#35)"} (C#[headerAddNw#len] - R#[headerAddNw#len]) == 0;
 }
-procedure headerAddNw##headerAdd#get_data_len#9()
+procedure headerAddNw##headerAdd#get_data_len#10()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var headerAddNw#a: Actor;
@@ -582,6 +628,7 @@ procedure headerAddNw##headerAdd#get_data_len#9()
   var headerAddNw#St: Chan (int);
   var headerAddNw#data: Chan (bv8);
   var headerAddNw#len: Chan (bv8);
+  var anon$2: int;
   var AV#a#octet_count: bv8;
   var AV#a#octet_index: bv8;
   var AV#a#HEADER_LEN: bv8;
@@ -613,6 +660,8 @@ procedure headerAddNw##headerAdd#get_data_len#9()
   assume R#[headerAddNw#len] <= C#[headerAddNw#len];
   assume I#[headerAddNw#len] == R#[headerAddNw#len];
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
+  assume anon$2 == 0;
+  assume Mode#[this#] == anon$2;
   I#sub[headerAddNw#input] := R#[headerAddNw#input];
   I#sub[headerAddNw#St] := R#[headerAddNw#St];
   I#sub[headerAddNw#octet_count] := R#[headerAddNw#octet_count];
@@ -641,8 +690,8 @@ procedure headerAddNw##headerAdd#get_data_len#9()
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assume AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1);
-  assume (C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4;
+  assume (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assume (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
   assume (1 <= (C#[headerAddNw#input] - R#[headerAddNw#input])) && (1 <= (C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index])) && (1 <= (C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count])) && (1 <= (C#[headerAddNw#St] - R#[headerAddNw#St])) && (M#[headerAddNw#St][R#[headerAddNw#St]] == 0);
   pl_bits#bits_in := M#[headerAddNw#input][R#[headerAddNw#input]];
   R#[headerAddNw#input] := R#[headerAddNw#input] + 1;
@@ -660,27 +709,29 @@ procedure headerAddNw##headerAdd#get_data_len#9()
   C#[headerAddNw#St] := C#[headerAddNw#St] + 1;
   M#[headerAddNw#len][C#[headerAddNw#len]] := AT#BvAdd8(AT#BvAdd8(pl_bits#bits_in, 5bv8), 1bv8);
   C#[headerAddNw#len] := C#[headerAddNw#len] + 1;
-  assert {:msg "ZigBee.actor(146.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#30)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
-  assert {:msg "ZigBee.actor(147.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#31)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
-  assert {:msg "ZigBee.actor(150.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#32)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(153.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#33)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(156.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#34)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
-  assert {:msg "ZigBee.actor(158.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#35)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
-  assert {:msg "ZigBee.actor(160.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#36)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(161.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#37)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
-  assert {:msg "ZigBee.actor(162.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#38)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(164.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#39)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
-  assert {:msg "ZigBee.actor(165.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#40)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
-  assert {:msg "ZigBee.actor(167.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#41)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
-  assert {:msg "ZigBee.actor(168.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#42)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
-  assert {:msg "ZigBee.actor(169.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#43)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
-  assert {:msg "ZigBee.actor(171.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#44)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
-  assert {:msg "ZigBee.actor(173.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#45)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
-  assert {:msg "ZigBee.actor(174.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#46)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assert {:msg "ZigBee.actor(176.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#47)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
-  assert {:msg "ZigBee.actor(177.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#48)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(146.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#36)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
+  assert {:msg "ZigBee.actor(147.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#37)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
+  assert {:msg "ZigBee.actor(150.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#38)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(153.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#39)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(156.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#40)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
+  assert {:msg "ZigBee.actor(158.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#41)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
+  assert {:msg "ZigBee.actor(160.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#42)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(161.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#43)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
+  assert {:msg "ZigBee.actor(162.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#44)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(164.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#45)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
+  assert {:msg "ZigBee.actor(165.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#46)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
+  assert {:msg "ZigBee.actor(167.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#47)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
+  assert {:msg "ZigBee.actor(168.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#48)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
+  assert {:msg "ZigBee.actor(169.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#49)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
+  assert {:msg "ZigBee.actor(171.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#50)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
+  assert {:msg "ZigBee.actor(173.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#51)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
+  assert {:msg "ZigBee.actor(174.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#52)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(176.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#53)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
+  assert {:msg "ZigBee.actor(177.15): Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#54)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#55)"} (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assert {:msg "Action at ZigBee.actor(67.2) ('get_data_len') for actor instance 'a' might not preserve the channel invariant (#56)"} (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
 }
-procedure headerAddNw##headerAdd#send_header#10()
+procedure headerAddNw##headerAdd#send_header#11()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var headerAddNw#a: Actor;
@@ -690,6 +741,7 @@ procedure headerAddNw##headerAdd#send_header#10()
   var headerAddNw#St: Chan (int);
   var headerAddNw#data: Chan (bv8);
   var headerAddNw#len: Chan (bv8);
+  var anon$2: int;
   var AV#a#octet_count: bv8;
   var AV#a#octet_index: bv8;
   var AV#a#HEADER_LEN: bv8;
@@ -720,6 +772,8 @@ procedure headerAddNw##headerAdd#send_header#10()
   assume R#[headerAddNw#len] <= C#[headerAddNw#len];
   assume I#[headerAddNw#len] == R#[headerAddNw#len];
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
+  assume anon$2 == 0;
+  assume Mode#[this#] == anon$2;
   I#sub[headerAddNw#input] := R#[headerAddNw#input];
   I#sub[headerAddNw#St] := R#[headerAddNw#St];
   I#sub[headerAddNw#octet_count] := R#[headerAddNw#octet_count];
@@ -748,8 +802,8 @@ procedure headerAddNw##headerAdd#send_header#10()
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assume AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1);
-  assume (C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4;
+  assume (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assume (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
   assume (1 <= (C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index])) && (1 <= (C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count])) && (1 <= (C#[headerAddNw#St] - R#[headerAddNw#St])) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8) && (M#[headerAddNw#St][R#[headerAddNw#St]] == 1);
   octet_index_in#octet_index := M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]];
   R#[headerAddNw#octet_index] := R#[headerAddNw#octet_index] + 1;
@@ -766,27 +820,29 @@ procedure headerAddNw##headerAdd#send_header#10()
   C#[headerAddNw#octet_count] := C#[headerAddNw#octet_count] + 1;
   M#[headerAddNw#data][C#[headerAddNw#data]] := AV#a#data_out;
   C#[headerAddNw#data] := C#[headerAddNw#data] + 1;
-  assert {:msg "ZigBee.actor(146.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#49)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
-  assert {:msg "ZigBee.actor(147.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#50)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
-  assert {:msg "ZigBee.actor(150.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#51)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(153.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#52)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(156.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#53)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
-  assert {:msg "ZigBee.actor(158.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#54)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
-  assert {:msg "ZigBee.actor(160.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#55)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(161.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#56)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
-  assert {:msg "ZigBee.actor(162.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#57)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(164.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#58)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
-  assert {:msg "ZigBee.actor(165.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#59)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
-  assert {:msg "ZigBee.actor(167.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#60)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
-  assert {:msg "ZigBee.actor(168.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#61)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
-  assert {:msg "ZigBee.actor(169.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#62)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
-  assert {:msg "ZigBee.actor(171.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#63)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
-  assert {:msg "ZigBee.actor(173.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#64)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
-  assert {:msg "ZigBee.actor(174.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#65)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assert {:msg "ZigBee.actor(176.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#66)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
-  assert {:msg "ZigBee.actor(177.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#67)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(146.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#57)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
+  assert {:msg "ZigBee.actor(147.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#58)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
+  assert {:msg "ZigBee.actor(150.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#59)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(153.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#60)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(156.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#61)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
+  assert {:msg "ZigBee.actor(158.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#62)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
+  assert {:msg "ZigBee.actor(160.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#63)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(161.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#64)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
+  assert {:msg "ZigBee.actor(162.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#65)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(164.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#66)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
+  assert {:msg "ZigBee.actor(165.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#67)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
+  assert {:msg "ZigBee.actor(167.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#68)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
+  assert {:msg "ZigBee.actor(168.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#69)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
+  assert {:msg "ZigBee.actor(169.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#70)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
+  assert {:msg "ZigBee.actor(171.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#71)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
+  assert {:msg "ZigBee.actor(173.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#72)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
+  assert {:msg "ZigBee.actor(174.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#73)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(176.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#74)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
+  assert {:msg "ZigBee.actor(177.15): Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#75)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#76)"} (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assert {:msg "Action at ZigBee.actor(83.2) ('send_header') for actor instance 'a' might not preserve the channel invariant (#77)"} (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
 }
-procedure headerAddNw##headerAdd#send_length#11()
+procedure headerAddNw##headerAdd#send_length#12()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var headerAddNw#a: Actor;
@@ -796,6 +852,7 @@ procedure headerAddNw##headerAdd#send_length#11()
   var headerAddNw#St: Chan (int);
   var headerAddNw#data: Chan (bv8);
   var headerAddNw#len: Chan (bv8);
+  var anon$2: int;
   var AV#a#octet_count: bv8;
   var AV#a#octet_index: bv8;
   var AV#a#HEADER_LEN: bv8;
@@ -826,6 +883,8 @@ procedure headerAddNw##headerAdd#send_length#11()
   assume R#[headerAddNw#len] <= C#[headerAddNw#len];
   assume I#[headerAddNw#len] == R#[headerAddNw#len];
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
+  assume anon$2 == 0;
+  assume Mode#[this#] == anon$2;
   I#sub[headerAddNw#input] := R#[headerAddNw#input];
   I#sub[headerAddNw#St] := R#[headerAddNw#St];
   I#sub[headerAddNw#octet_count] := R#[headerAddNw#octet_count];
@@ -854,8 +913,8 @@ procedure headerAddNw##headerAdd#send_length#11()
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assume AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1);
-  assume (C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4;
+  assume (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assume (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
   assume (1 <= (C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index])) && (1 <= (C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count])) && (1 <= (C#[headerAddNw#St] - R#[headerAddNw#St])) && (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == 5bv8) && (M#[headerAddNw#St][R#[headerAddNw#St]] == 1);
   octet_index_in#octet_index := M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]];
   R#[headerAddNw#octet_index] := R#[headerAddNw#octet_index] + 1;
@@ -871,27 +930,29 @@ procedure headerAddNw##headerAdd#send_length#11()
   C#[headerAddNw#octet_count] := C#[headerAddNw#octet_count] + 1;
   M#[headerAddNw#data][C#[headerAddNw#data]] := AT#BvSub8(AT#BvSub8(octet_count_in#octet_count, 5bv8), 1bv8);
   C#[headerAddNw#data] := C#[headerAddNw#data] + 1;
-  assert {:msg "ZigBee.actor(146.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#68)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
-  assert {:msg "ZigBee.actor(147.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#69)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
-  assert {:msg "ZigBee.actor(150.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#70)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(153.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#71)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(156.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#72)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
-  assert {:msg "ZigBee.actor(158.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#73)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
-  assert {:msg "ZigBee.actor(160.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#74)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(161.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#75)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
-  assert {:msg "ZigBee.actor(162.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#76)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(164.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#77)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
-  assert {:msg "ZigBee.actor(165.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#78)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
-  assert {:msg "ZigBee.actor(167.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#79)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
-  assert {:msg "ZigBee.actor(168.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#80)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
-  assert {:msg "ZigBee.actor(169.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#81)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
-  assert {:msg "ZigBee.actor(171.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#82)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
-  assert {:msg "ZigBee.actor(173.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#83)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
-  assert {:msg "ZigBee.actor(174.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#84)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assert {:msg "ZigBee.actor(176.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#85)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
-  assert {:msg "ZigBee.actor(177.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#86)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(146.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#78)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
+  assert {:msg "ZigBee.actor(147.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#79)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
+  assert {:msg "ZigBee.actor(150.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#80)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(153.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#81)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(156.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#82)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
+  assert {:msg "ZigBee.actor(158.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#83)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
+  assert {:msg "ZigBee.actor(160.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#84)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(161.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#85)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
+  assert {:msg "ZigBee.actor(162.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#86)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(164.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#87)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
+  assert {:msg "ZigBee.actor(165.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#88)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
+  assert {:msg "ZigBee.actor(167.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#89)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
+  assert {:msg "ZigBee.actor(168.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#90)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
+  assert {:msg "ZigBee.actor(169.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#91)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
+  assert {:msg "ZigBee.actor(171.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#92)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
+  assert {:msg "ZigBee.actor(173.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#93)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
+  assert {:msg "ZigBee.actor(174.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#94)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(176.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#95)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
+  assert {:msg "ZigBee.actor(177.15): Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#96)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#97)"} (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assert {:msg "Action at ZigBee.actor(101.2) ('send_length') for actor instance 'a' might not preserve the channel invariant (#98)"} (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
 }
-procedure headerAddNw##headerAdd#send_payload_octet#12()
+procedure headerAddNw##headerAdd#send_payload_octet#13()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var headerAddNw#a: Actor;
@@ -901,6 +962,7 @@ procedure headerAddNw##headerAdd#send_payload_octet#12()
   var headerAddNw#St: Chan (int);
   var headerAddNw#data: Chan (bv8);
   var headerAddNw#len: Chan (bv8);
+  var anon$2: int;
   var AV#a#octet_count: bv8;
   var AV#a#octet_index: bv8;
   var AV#a#HEADER_LEN: bv8;
@@ -932,6 +994,8 @@ procedure headerAddNw##headerAdd#send_payload_octet#12()
   assume R#[headerAddNw#len] <= C#[headerAddNw#len];
   assume I#[headerAddNw#len] == R#[headerAddNw#len];
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
+  assume anon$2 == 0;
+  assume Mode#[this#] == anon$2;
   I#sub[headerAddNw#input] := R#[headerAddNw#input];
   I#sub[headerAddNw#St] := R#[headerAddNw#St];
   I#sub[headerAddNw#octet_count] := R#[headerAddNw#octet_count];
@@ -960,8 +1024,8 @@ procedure headerAddNw##headerAdd#send_payload_octet#12()
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assume AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1);
-  assume (C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4;
+  assume (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assume (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
   assume (1 <= (C#[headerAddNw#input] - R#[headerAddNw#input])) && (1 <= (C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index])) && (1 <= (C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count])) && (1 <= (C#[headerAddNw#St] - R#[headerAddNw#St])) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] == 2);
   pl_bits#bits_in := M#[headerAddNw#input][R#[headerAddNw#input]];
   R#[headerAddNw#input] := R#[headerAddNw#input] + 1;
@@ -979,27 +1043,29 @@ procedure headerAddNw##headerAdd#send_payload_octet#12()
   C#[headerAddNw#octet_count] := C#[headerAddNw#octet_count] + 1;
   M#[headerAddNw#data][C#[headerAddNw#data]] := pl_bits#bits_in;
   C#[headerAddNw#data] := C#[headerAddNw#data] + 1;
-  assert {:msg "ZigBee.actor(146.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#87)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
-  assert {:msg "ZigBee.actor(147.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#88)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
-  assert {:msg "ZigBee.actor(150.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#89)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(153.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#90)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(156.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#91)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
-  assert {:msg "ZigBee.actor(158.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#92)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
-  assert {:msg "ZigBee.actor(160.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#93)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(161.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#94)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
-  assert {:msg "ZigBee.actor(162.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#95)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(164.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#96)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
-  assert {:msg "ZigBee.actor(165.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#97)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
-  assert {:msg "ZigBee.actor(167.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#98)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
-  assert {:msg "ZigBee.actor(168.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#99)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
-  assert {:msg "ZigBee.actor(169.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#100)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
-  assert {:msg "ZigBee.actor(171.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#101)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
-  assert {:msg "ZigBee.actor(173.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#102)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
-  assert {:msg "ZigBee.actor(174.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#103)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assert {:msg "ZigBee.actor(176.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#104)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
-  assert {:msg "ZigBee.actor(177.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#105)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(146.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#99)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
+  assert {:msg "ZigBee.actor(147.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#100)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
+  assert {:msg "ZigBee.actor(150.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#101)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(153.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#102)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(156.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#103)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
+  assert {:msg "ZigBee.actor(158.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#104)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
+  assert {:msg "ZigBee.actor(160.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#105)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(161.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#106)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
+  assert {:msg "ZigBee.actor(162.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#107)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(164.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#108)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
+  assert {:msg "ZigBee.actor(165.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#109)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
+  assert {:msg "ZigBee.actor(167.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#110)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
+  assert {:msg "ZigBee.actor(168.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#111)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
+  assert {:msg "ZigBee.actor(169.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#112)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
+  assert {:msg "ZigBee.actor(171.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#113)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
+  assert {:msg "ZigBee.actor(173.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#114)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
+  assert {:msg "ZigBee.actor(174.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#115)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(176.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#116)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
+  assert {:msg "ZigBee.actor(177.15): Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#117)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#118)"} (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assert {:msg "Action at ZigBee.actor(117.2) ('send_payload_octet') for actor instance 'a' might not preserve the channel invariant (#119)"} (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
 }
-procedure headerAddNw#anon$2#input#pl_bits#13()
+procedure headerAddNw#anon$2#input#pl_bits#14()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var headerAddNw#a: Actor;
@@ -1009,6 +1075,7 @@ procedure headerAddNw#anon$2#input#pl_bits#13()
   var headerAddNw#St: Chan (int);
   var headerAddNw#data: Chan (bv8);
   var headerAddNw#len: Chan (bv8);
+  var anon$2: int;
   var AV#a#octet_count: bv8;
   var AV#a#octet_index: bv8;
   var AV#a#HEADER_LEN: bv8;
@@ -1036,6 +1103,8 @@ procedure headerAddNw#anon$2#input#pl_bits#13()
   assume R#[headerAddNw#len] <= C#[headerAddNw#len];
   assume I#[headerAddNw#len] == R#[headerAddNw#len];
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
+  assume anon$2 == 0;
+  assume Mode#[this#] == anon$2;
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
   assume (C#[headerAddNw#input] - I#[headerAddNw#input]) < 4;
   assume (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
@@ -1057,31 +1126,33 @@ procedure headerAddNw#anon$2#input#pl_bits#13()
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assume AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1);
-  assume (C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4;
+  assume (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assume (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
   C#[headerAddNw#input] := C#[headerAddNw#input] + 1;
   assume AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1);
-  assert {:msg "ZigBee.actor(146.15): Channel invariant might be falsified by network input (#106)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
-  assert {:msg "ZigBee.actor(147.15): Channel invariant might be falsified by network input (#107)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
-  assert {:msg "ZigBee.actor(150.15): Channel invariant might be falsified by network input (#108)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(153.15): Channel invariant might be falsified by network input (#109)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(156.15): Channel invariant might be falsified by network input (#110)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
-  assert {:msg "ZigBee.actor(158.15): Channel invariant might be falsified by network input (#111)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
-  assert {:msg "ZigBee.actor(160.15): Channel invariant might be falsified by network input (#112)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(161.15): Channel invariant might be falsified by network input (#113)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
-  assert {:msg "ZigBee.actor(162.15): Channel invariant might be falsified by network input (#114)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(164.15): Channel invariant might be falsified by network input (#115)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
-  assert {:msg "ZigBee.actor(165.15): Channel invariant might be falsified by network input (#116)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
-  assert {:msg "ZigBee.actor(167.15): Channel invariant might be falsified by network input (#117)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
-  assert {:msg "ZigBee.actor(168.15): Channel invariant might be falsified by network input (#118)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
-  assert {:msg "ZigBee.actor(169.15): Channel invariant might be falsified by network input (#119)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
-  assert {:msg "ZigBee.actor(171.15): Channel invariant might be falsified by network input (#120)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
-  assert {:msg "ZigBee.actor(173.15): Channel invariant might be falsified by network input (#121)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
-  assert {:msg "ZigBee.actor(174.15): Channel invariant might be falsified by network input (#122)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assert {:msg "ZigBee.actor(176.15): Channel invariant might be falsified by network input (#123)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
-  assert {:msg "ZigBee.actor(177.15): Channel invariant might be falsified by network input (#124)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(146.15): Channel invariant might be falsified by network input (#120)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
+  assert {:msg "ZigBee.actor(147.15): Channel invariant might be falsified by network input (#121)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
+  assert {:msg "ZigBee.actor(150.15): Channel invariant might be falsified by network input (#122)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(153.15): Channel invariant might be falsified by network input (#123)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(156.15): Channel invariant might be falsified by network input (#124)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
+  assert {:msg "ZigBee.actor(158.15): Channel invariant might be falsified by network input (#125)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
+  assert {:msg "ZigBee.actor(160.15): Channel invariant might be falsified by network input (#126)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(161.15): Channel invariant might be falsified by network input (#127)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
+  assert {:msg "ZigBee.actor(162.15): Channel invariant might be falsified by network input (#128)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(164.15): Channel invariant might be falsified by network input (#129)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
+  assert {:msg "ZigBee.actor(165.15): Channel invariant might be falsified by network input (#130)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
+  assert {:msg "ZigBee.actor(167.15): Channel invariant might be falsified by network input (#131)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
+  assert {:msg "ZigBee.actor(168.15): Channel invariant might be falsified by network input (#132)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
+  assert {:msg "ZigBee.actor(169.15): Channel invariant might be falsified by network input (#133)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
+  assert {:msg "ZigBee.actor(171.15): Channel invariant might be falsified by network input (#134)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
+  assert {:msg "ZigBee.actor(173.15): Channel invariant might be falsified by network input (#135)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
+  assert {:msg "ZigBee.actor(174.15): Channel invariant might be falsified by network input (#136)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(176.15): Channel invariant might be falsified by network input (#137)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
+  assert {:msg "ZigBee.actor(177.15): Channel invariant might be falsified by network input (#138)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "Channel invariant might be falsified by network input (#139)"} (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assert {:msg "Channel invariant might be falsified by network input (#140)"} (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
 }
-procedure headerAddNw#anon$2#exit#14()
+procedure headerAddNw#anon$2#exit#15()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var headerAddNw#a: Actor;
@@ -1091,6 +1162,7 @@ procedure headerAddNw#anon$2#exit#14()
   var headerAddNw#St: Chan (int);
   var headerAddNw#data: Chan (bv8);
   var headerAddNw#len: Chan (bv8);
+  var anon$2: int;
   var AV#a#octet_count: bv8;
   var AV#a#octet_index: bv8;
   var AV#a#HEADER_LEN: bv8;
@@ -1118,6 +1190,8 @@ procedure headerAddNw#anon$2#exit#14()
   assume R#[headerAddNw#len] <= C#[headerAddNw#len];
   assume I#[headerAddNw#len] == R#[headerAddNw#len];
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
+  assume anon$2 == 0;
+  assume Mode#[this#] == anon$2;
   assume (B#[headerAddNw#input] == 4) && (B#[headerAddNw#data] == 9) && (B#[headerAddNw#len] == 1);
   assume (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
   assume I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
@@ -1138,47 +1212,51 @@ procedure headerAddNw#anon$2#exit#14()
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
   assume ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assume AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1);
-  assume (C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4;
+  assume (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assume (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
   assume (C#[headerAddNw#input] - I#[headerAddNw#input]) == 4;
   assume AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1);
   assume !((1 <= (C#[headerAddNw#input] - R#[headerAddNw#input])) && (1 <= (C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index])) && (1 <= (C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count])) && (1 <= (C#[headerAddNw#St] - R#[headerAddNw#St])) && (M#[headerAddNw#St][R#[headerAddNw#St]] == 0));
   assume !((1 <= (C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index])) && (1 <= (C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count])) && (1 <= (C#[headerAddNw#St] - R#[headerAddNw#St])) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8) && (M#[headerAddNw#St][R#[headerAddNw#St]] == 1));
   assume !((1 <= (C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index])) && (1 <= (C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count])) && (1 <= (C#[headerAddNw#St] - R#[headerAddNw#St])) && (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == 5bv8) && (M#[headerAddNw#St][R#[headerAddNw#St]] == 1));
   assume !((1 <= (C#[headerAddNw#input] - R#[headerAddNw#input])) && (1 <= (C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index])) && (1 <= (C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count])) && (1 <= (C#[headerAddNw#St] - R#[headerAddNw#St])) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] == 2));
-  assert {:msg "ZigBee.actor(137.3): The correct number of tokens might not be produced on output 'data' (#125)"} (C#[headerAddNw#data] - I#[headerAddNw#data]) == 9;
-  assert {:msg "ZigBee.actor(137.3): The correct number of tokens might not be produced on output 'len' (#126)"} (C#[headerAddNw#len] - I#[headerAddNw#len]) == 1;
-  assert {:msg "ZigBee.actor(139.13): Network action postcondition might not hold (#127)"} M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8);
+  assert {:msg "ZigBee.actor(137.3): The correct number of tokens might not be produced on output 'data' (#141)"} (C#[headerAddNw#data] - I#[headerAddNw#data]) == 9;
+  assert {:msg "ZigBee.actor(137.3): The correct number of tokens might not be produced on output 'len' (#142)"} (C#[headerAddNw#len] - I#[headerAddNw#len]) == 1;
+  assert {:msg "ZigBee.actor(139.13): Network action postcondition might not hold (#143)"} M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8);
   R#[headerAddNw#data] := R#[headerAddNw#data] + 9;
   R#[headerAddNw#len] := R#[headerAddNw#len] + 1;
   I# := R#;
-  assert {:msg "ZigBee.actor(146.15): The network might not preserve the channel invariant (#128)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
-  assert {:msg "ZigBee.actor(147.15): The network might not preserve the channel invariant (#129)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
-  assert {:msg "ZigBee.actor(150.15): The network might not preserve the channel invariant (#130)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(153.15): The network might not preserve the channel invariant (#131)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(156.15): The network might not preserve the channel invariant (#132)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
-  assert {:msg "ZigBee.actor(158.15): The network might not preserve the channel invariant (#133)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
-  assert {:msg "ZigBee.actor(160.15): The network might not preserve the channel invariant (#134)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(161.15): The network might not preserve the channel invariant (#135)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
-  assert {:msg "ZigBee.actor(162.15): The network might not preserve the channel invariant (#136)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "ZigBee.actor(164.15): The network might not preserve the channel invariant (#137)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
-  assert {:msg "ZigBee.actor(165.15): The network might not preserve the channel invariant (#138)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
-  assert {:msg "ZigBee.actor(167.15): The network might not preserve the channel invariant (#139)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
-  assert {:msg "ZigBee.actor(168.15): The network might not preserve the channel invariant (#140)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
-  assert {:msg "ZigBee.actor(169.15): The network might not preserve the channel invariant (#141)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
-  assert {:msg "ZigBee.actor(171.15): The network might not preserve the channel invariant (#142)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
-  assert {:msg "ZigBee.actor(173.15): The network might not preserve the channel invariant (#143)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
-  assert {:msg "ZigBee.actor(174.15): The network might not preserve the channel invariant (#144)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assert {:msg "ZigBee.actor(176.15): The network might not preserve the channel invariant (#145)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
-  assert {:msg "ZigBee.actor(177.15): The network might not preserve the channel invariant (#146)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
-  assert {:msg "ZigBee.actor(143.13): The network might not preserve the network invariant (#147)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
-  assert {:msg "ZigBee.actor(144.13): The network might not preserve the network invariant (#148)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel input (#149)"} (C#[headerAddNw#input] - R#[headerAddNw#input]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel data (#150)"} (C#[headerAddNw#data] - R#[headerAddNw#data]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel len (#151)"} (C#[headerAddNw#len] - R#[headerAddNw#len]) == 0;
+  assert {:msg "ZigBee.actor(146.15): The network might not preserve the channel invariant (#144)"} (9 * I#[headerAddNw#input]) == (4 * I#[headerAddNw#data]);
+  assert {:msg "ZigBee.actor(147.15): The network might not preserve the channel invariant (#145)"} I#[headerAddNw#input] == (4 * I#[headerAddNw#len]);
+  assert {:msg "ZigBee.actor(150.15): The network might not preserve the channel invariant (#146)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(153.15): The network might not preserve the channel invariant (#147)"} AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(156.15): The network might not preserve the channel invariant (#148)"} (0 <= M#[headerAddNw#St][R#[headerAddNw#St]]) && (M#[headerAddNw#St][R#[headerAddNw#St]] <= 2);
+  assert {:msg "ZigBee.actor(158.15): The network might not preserve the channel invariant (#149)"} ((C#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1));
+  assert {:msg "ZigBee.actor(160.15): The network might not preserve the channel invariant (#150)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) ==> (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(161.15): The network might not preserve the channel invariant (#151)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> AT#BvUle8(0bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUle8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], 5bv8);
+  assert {:msg "ZigBee.actor(162.15): The network might not preserve the channel invariant (#152)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> AT#BvUle8(6bv8, M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]) && AT#BvUlt8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]], M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "ZigBee.actor(164.15): The network might not preserve the channel invariant (#153)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == 0);
+  assert {:msg "ZigBee.actor(165.15): The network might not preserve the channel invariant (#154)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]));
+  assert {:msg "ZigBee.actor(167.15): The network might not preserve the channel invariant (#155)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 1) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 1);
+  assert {:msg "ZigBee.actor(168.15): The network might not preserve the channel invariant (#156)"} ((M#[headerAddNw#St][R#[headerAddNw#St]] == 1) || (M#[headerAddNw#St][R#[headerAddNw#St]] == 2)) ==> ((C#[headerAddNw#data] - I#[headerAddNw#data]) == AT#Bv2Int8(M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]]));
+  assert {:msg "ZigBee.actor(169.15): The network might not preserve the channel invariant (#157)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 2) ==> ((R#[headerAddNw#input] - I#[headerAddNw#input]) == ((C#[headerAddNw#data] - I#[headerAddNw#data]) - 5));
+  assert {:msg "ZigBee.actor(171.15): The network might not preserve the channel invariant (#158)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) <==> (((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) || ((R#[headerAddNw#input] - I#[headerAddNw#input]) == B#[headerAddNw#input]));
+  assert {:msg "ZigBee.actor(173.15): The network might not preserve the channel invariant (#159)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) == 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 0);
+  assert {:msg "ZigBee.actor(174.15): The network might not preserve the channel invariant (#160)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "ZigBee.actor(176.15): The network might not preserve the channel invariant (#161)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> ((C#[headerAddNw#len] - I#[headerAddNw#len]) == 1);
+  assert {:msg "ZigBee.actor(177.15): The network might not preserve the channel invariant (#162)"} ((R#[headerAddNw#input] - I#[headerAddNw#input]) > 0) ==> (M#[headerAddNw#len][I#[headerAddNw#len]] == AT#BvAdd8(M#[headerAddNw#input][I#[headerAddNw#input]], 6bv8));
+  assert {:msg "The network might not preserve the channel invariant (#163)"} (Mode#[this#] == anon$2) ==> (((C#[headerAddNw#input] - I#[headerAddNw#input]) >= 1) ==> (AT#Bv2Int8(M#[headerAddNw#input][I#[headerAddNw#input]]) == (B#[headerAddNw#input] - 1)));
+  assert {:msg "The network might not preserve the channel invariant (#164)"} (Mode#[this#] == anon$2) ==> ((C#[headerAddNw#input] - I#[headerAddNw#input]) <= 4);
+  assert {:msg "ZigBee.actor(143.13): The network might not preserve the network invariant (#165)"} ((C#[headerAddNw#octet_count] - R#[headerAddNw#octet_count]) == 1) && ((C#[headerAddNw#octet_index] - R#[headerAddNw#octet_index]) == 1) && ((C#[headerAddNw#St] - R#[headerAddNw#St]) == 1);
+  assert {:msg "ZigBee.actor(144.13): The network might not preserve the network invariant (#166)"} (M#[headerAddNw#St][R#[headerAddNw#St]] == 0) && (M#[headerAddNw#octet_index][R#[headerAddNw#octet_index]] == M#[headerAddNw#octet_count][R#[headerAddNw#octet_count]]);
+  assert {:msg "The network might not preserve the network invariant (#167)"} (9 * R#[headerAddNw#input]) == (4 * C#[headerAddNw#data]);
+  assert {:msg "The network might not preserve the network invariant (#168)"} R#[headerAddNw#input] == (4 * C#[headerAddNw#len]);
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel input (#169)"} (C#[headerAddNw#input] - R#[headerAddNw#input]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel data (#170)"} (C#[headerAddNw#data] - R#[headerAddNw#data]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel len (#171)"} (C#[headerAddNw#len] - R#[headerAddNw#len]) == 0;
 }
 function pulseShape#mul8(x: bv8, y: bv8) returns (out: bv8);
-procedure pulseShape#init#15()
+procedure pulseShape#init#16()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var symb: Chan (bv8);
@@ -1223,7 +1301,7 @@ procedure pulseShape#init#15()
   M#[St_out][C#[St_out]] := 0;
   C#[St_out] := C#[St_out] + 1;
 }
-procedure pulseShape#init#16()
+procedure pulseShape#init#17()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var symb: Chan (bv8);
@@ -1285,7 +1363,7 @@ procedure pulseShape#init#16()
   M#[St_out][C#[St_out]] := 1;
   C#[St_out] := C#[St_out] + 1;
 }
-procedure pulseShape#tx_body#17()
+procedure pulseShape#tx_body#18()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var symb: Chan (bv8);
@@ -1397,7 +1475,7 @@ procedure pulseShape#tx_body#17()
   M#[St_out][C#[St_out]] := 1;
   C#[St_out] := C#[St_out] + 1;
 }
-procedure pulseShape#tx_tail#18()
+procedure pulseShape#tx_tail#19()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var symb: Chan (bv8);
@@ -1482,7 +1560,7 @@ procedure pulseShape#tx_tail#18()
   M#[St_out][C#[St_out]] := 0;
   C#[St_out] := C#[St_out] + 1;
 }
-procedure pulseShape##GuardWD#19()
+procedure pulseShape##GuardWD#20()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var symb: Chan (bv8);
@@ -1511,11 +1589,65 @@ procedure pulseShape##GuardWD#19()
   var symb#0: bv8;
   var body_iterations_in#0: bv14;
   assume (symb != len) && (symb != hsp) && (len != hsp) && (body_iterations_in != body_index_in) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (body_iterations_out != body_index_out);
-  assert {:msg "ZigBee.actor(195.1): The actions 'init' and 'tx_body' of actor 'pulseShape' might not have mutually exclusive guards (#152)"} !(true && (1 <= (C#[len] - R#[len])) && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (2 <= (C#[symb] - R#[symb])) && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 1) && AT#BvUlt14(M#[body_index_in][R#[body_index_in]], M#[body_iterations_in][R#[body_iterations_in]]));
-  assert {:msg "ZigBee.actor(195.1): The actions 'init' and 'tx_tail' of actor 'pulseShape' might not have mutually exclusive guards (#153)"} !(true && (1 <= (C#[len] - R#[len])) && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 1) && (M#[body_index_in][R#[body_index_in]] == M#[body_iterations_in][R#[body_iterations_in]]));
-  assert {:msg "ZigBee.actor(195.1): The actions 'tx_body' and 'tx_tail' of actor 'pulseShape' might not have mutually exclusive guards (#154)"} !(true && (2 <= (C#[symb] - R#[symb])) && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 1) && AT#BvUlt14(M#[body_index_in][R#[body_index_in]], M#[body_iterations_in][R#[body_iterations_in]]) && true && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 1) && (M#[body_index_in][R#[body_index_in]] == M#[body_iterations_in][R#[body_iterations_in]]));
+  assume FILT_COEFF0 == 0bv8;
+  assume FILT_COEFF1 == 49bv8;
+  assume FILT_COEFF2 == 90bv8;
+  assume FILT_COEFF3 == 118bv8;
+  assume FILT_COEFF4 == 127bv8;
+  assume (0 <= I#[symb]) && (I#[symb] <= R#[symb]) && (R#[symb] <= C#[symb]);
+  assume (0 <= I#[len]) && (I#[len] <= R#[len]) && (R#[len] <= C#[len]);
+  assume (0 <= I#[body_iterations_in]) && (I#[body_iterations_in] <= R#[body_iterations_in]) && (R#[body_iterations_in] <= C#[body_iterations_in]);
+  assume (0 <= I#[body_index_in]) && (I#[body_index_in] <= R#[body_index_in]) && (R#[body_index_in] <= C#[body_index_in]);
+  assume (0 <= I#[St_in]) && (I#[St_in] <= R#[St_in]) && (R#[St_in] <= C#[St_in]);
+  assume (0 <= I#[done]) && (I#[done] <= R#[done]) && (R#[done] <= C#[done]);
+  assume (0 <= I#[hsp]) && (I#[hsp] <= R#[hsp]) && (R#[hsp] <= C#[hsp]);
+  assume (0 <= I#[body_iterations_out]) && (I#[body_iterations_out] <= R#[body_iterations_out]) && (R#[body_iterations_out] <= C#[body_iterations_out]);
+  assume (0 <= I#[body_index_out]) && (I#[body_index_out] <= R#[body_index_out]) && (R#[body_index_out] <= C#[body_index_out]);
+  assume (0 <= I#[St_out]) && (I#[St_out] <= R#[St_out]) && (R#[St_out] <= C#[St_out]);
+  assert {:msg "ZigBee.actor(195.1): The actions 'init' and 'tx_body' of actor 'pulseShape' might not have mutually exclusive guards (#172)"} !(true && (1 <= (C#[len] - R#[len])) && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (2 <= (C#[symb] - R#[symb])) && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 1) && AT#BvUlt14(M#[body_index_in][R#[body_index_in]], M#[body_iterations_in][R#[body_iterations_in]]));
+  assert {:msg "ZigBee.actor(195.1): The actions 'init' and 'tx_tail' of actor 'pulseShape' might not have mutually exclusive guards (#173)"} !(true && (1 <= (C#[len] - R#[len])) && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 0) && true && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 1) && (M#[body_index_in][R#[body_index_in]] == M#[body_iterations_in][R#[body_iterations_in]]));
+  assert {:msg "ZigBee.actor(195.1): The actions 'tx_body' and 'tx_tail' of actor 'pulseShape' might not have mutually exclusive guards (#174)"} !(true && (2 <= (C#[symb] - R#[symb])) && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 1) && AT#BvUlt14(M#[body_index_in][R#[body_index_in]], M#[body_iterations_in][R#[body_iterations_in]]) && true && (1 <= (C#[body_iterations_in] - R#[body_iterations_in])) && (1 <= (C#[body_index_in] - R#[body_index_in])) && (1 <= (C#[St_in] - R#[St_in])) && (M#[St_in][R#[St_in]] == 1) && (M#[body_index_in][R#[body_index_in]] == M#[body_iterations_in][R#[body_iterations_in]]));
 }
-procedure pulseShapeNw#init#20()
+procedure pulseShape##GuardWD#21()
+  modifies C#, R#, M#, I#, H#, I#sub;
+{
+  var symb: Chan (bv8);
+  var len: Chan (bv8);
+  var body_iterations_in: Chan (bv14);
+  var body_index_in: Chan (bv14);
+  var St_in: Chan (int);
+  var done: Chan (bool);
+  var hsp: Chan (bv8);
+  var body_iterations_out: Chan (bv14);
+  var body_index_out: Chan (bv14);
+  var St_out: Chan (int);
+  var symb_mem: bv8;
+  var body_iterations: bv8;
+  var body_index: bv8;
+  var FILT_COEFF0: bv8;
+  var FILT_COEFF1: bv8;
+  var FILT_COEFF2: bv8;
+  var FILT_COEFF3: bv8;
+  var FILT_COEFF4: bv8;
+  var hsps: Map (int) (bv8);
+  assume (symb != len) && (symb != hsp) && (len != hsp) && (body_iterations_in != body_index_in) && (body_iterations_in != body_iterations_out) && (body_iterations_in != body_index_out) && (body_index_in != body_iterations_out) && (body_index_in != body_index_out) && (St_in != St_out) && (body_iterations_out != body_index_out);
+  assume FILT_COEFF0 == 0bv8;
+  assume FILT_COEFF1 == 49bv8;
+  assume FILT_COEFF2 == 90bv8;
+  assume FILT_COEFF3 == 118bv8;
+  assume FILT_COEFF4 == 127bv8;
+  assume (0 <= I#[symb]) && (I#[symb] <= R#[symb]) && (R#[symb] <= C#[symb]);
+  assume (0 <= I#[len]) && (I#[len] <= R#[len]) && (R#[len] <= C#[len]);
+  assume (0 <= I#[body_iterations_in]) && (I#[body_iterations_in] <= R#[body_iterations_in]) && (R#[body_iterations_in] <= C#[body_iterations_in]);
+  assume (0 <= I#[body_index_in]) && (I#[body_index_in] <= R#[body_index_in]) && (R#[body_index_in] <= C#[body_index_in]);
+  assume (0 <= I#[St_in]) && (I#[St_in] <= R#[St_in]) && (R#[St_in] <= C#[St_in]);
+  assume (0 <= I#[done]) && (I#[done] <= R#[done]) && (R#[done] <= C#[done]);
+  assume (0 <= I#[hsp]) && (I#[hsp] <= R#[hsp]) && (R#[hsp] <= C#[hsp]);
+  assume (0 <= I#[body_iterations_out]) && (I#[body_iterations_out] <= R#[body_iterations_out]) && (R#[body_iterations_out] <= C#[body_iterations_out]);
+  assume (0 <= I#[body_index_out]) && (I#[body_index_out] <= R#[body_index_out]) && (R#[body_index_out] <= C#[body_index_out]);
+  assume (0 <= I#[St_out]) && (I#[St_out] <= R#[St_out]) && (R#[St_out] <= C#[St_out]);
+}
+procedure pulseShapeNw#init#22()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var pulseShapeNw#a: Actor;
@@ -1526,6 +1658,7 @@ procedure pulseShapeNw#init#20()
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
+  var anon$4: int;
   var AV#a#symb_mem: bv8;
   var AV#a#body_iterations: bv8;
   var AV#a#body_index: bv8;
@@ -1560,6 +1693,8 @@ procedure pulseShapeNw#init#20()
   assume R#[pulseShapeNw#out_done] <= C#[pulseShapeNw#out_done];
   assume I#[pulseShapeNw#out_done] == R#[pulseShapeNw#out_done];
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
+  assume anon$4 == 0;
+  assume Mode#[this#] == anon$4;
   assume C#[pulseShapeNw#in_symb] == 0;
   assume R#[pulseShapeNw#in_symb] == 0;
   assume C#[pulseShapeNw#in_len] == 0;
@@ -1580,26 +1715,32 @@ procedure pulseShapeNw#init#20()
   C#[pulseShapeNw#body_index] := C#[pulseShapeNw#body_index] + 1;
   M#[pulseShapeNw#St][C#[pulseShapeNw#St]] := 0;
   C#[pulseShapeNw#St] := C#[pulseShapeNw#St] + 1;
-  assert {:msg "ZigBee.actor(334.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#155)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
-  assert {:msg "ZigBee.actor(335.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#156)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
-  assert {:msg "ZigBee.actor(336.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#157)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
-  assert {:msg "ZigBee.actor(341.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#158)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(344.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#159)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
-  assert {:msg "ZigBee.actor(345.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#160)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
-  assert {:msg "ZigBee.actor(347.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#161)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
-  assert {:msg "ZigBee.actor(348.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#162)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
-  assert {:msg "ZigBee.actor(354.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#163)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
-  assert {:msg "ZigBee.actor(362.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#164)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
-  assert {:msg "ZigBee.actor(369.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#165)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "ZigBee.actor(334.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#175)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
+  assert {:msg "ZigBee.actor(335.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#176)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
+  assert {:msg "ZigBee.actor(336.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#177)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
+  assert {:msg "ZigBee.actor(341.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#178)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(344.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#179)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
+  assert {:msg "ZigBee.actor(345.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#180)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
+  assert {:msg "ZigBee.actor(347.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#181)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
+  assert {:msg "ZigBee.actor(348.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#182)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
+  assert {:msg "ZigBee.actor(354.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#183)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
+  assert {:msg "ZigBee.actor(362.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#184)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
+  assert {:msg "ZigBee.actor(369.15): Initialization of network 'pulseShapeNw' might not establish the channel invariant (#185)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the channel invariant (#186)"} (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the channel invariant (#187)"} (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
   I# := R#;
-  assert {:msg "ZigBee.actor(339.13): Initialization of network 'pulseShapeNw' might not establish the network invariant (#166)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(340.13): Initialization of network 'pulseShapeNw' might not establish the network invariant (#167)"} M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0;
-  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel in_symb (#168)"} (C#[pulseShapeNw#in_symb] - R#[pulseShapeNw#in_symb]) == 0;
-  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel in_len (#169)"} (C#[pulseShapeNw#in_len] - R#[pulseShapeNw#in_len]) == 0;
-  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel out_hsp (#170)"} (C#[pulseShapeNw#out_hsp] - R#[pulseShapeNw#out_hsp]) == 0;
-  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel out_done (#171)"} (C#[pulseShapeNw#out_done] - R#[pulseShapeNw#out_done]) == 0;
+  assert {:msg "ZigBee.actor(339.13): Initialization of network 'pulseShapeNw' might not establish the network invariant (#188)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(340.13): Initialization of network 'pulseShapeNw' might not establish the network invariant (#189)"} M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0;
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant (#190)"} R#[pulseShapeNw#in_symb] == (576 * C#[pulseShapeNw#out_done]);
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant (#191)"} R#[pulseShapeNw#in_len] == C#[pulseShapeNw#out_done];
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant (#192)"} (4616 * R#[pulseShapeNw#in_symb]) == (576 * C#[pulseShapeNw#out_hsp]);
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant (#193)"} (4616 * R#[pulseShapeNw#in_len]) == C#[pulseShapeNw#out_hsp];
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel in_symb (#194)"} (C#[pulseShapeNw#in_symb] - R#[pulseShapeNw#in_symb]) == 0;
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel in_len (#195)"} (C#[pulseShapeNw#in_len] - R#[pulseShapeNw#in_len]) == 0;
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel out_hsp (#196)"} (C#[pulseShapeNw#out_hsp] - R#[pulseShapeNw#out_hsp]) == 0;
+  assert {:msg "Initialization of network 'pulseShapeNw' might not establish the network invariant: Unread tokens might be left on channel out_done (#197)"} (C#[pulseShapeNw#out_done] - R#[pulseShapeNw#out_done]) == 0;
 }
-procedure pulseShapeNw##pulseShape#init#21()
+procedure pulseShapeNw##pulseShape#init#23()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var pulseShapeNw#a: Actor;
@@ -1610,6 +1751,7 @@ procedure pulseShapeNw##pulseShape#init#21()
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
+  var anon$4: int;
   var AV#a#symb_mem: bv8;
   var AV#a#body_iterations: bv8;
   var AV#a#body_index: bv8;
@@ -1648,6 +1790,8 @@ procedure pulseShapeNw##pulseShape#init#21()
   assume R#[pulseShapeNw#out_done] <= C#[pulseShapeNw#out_done];
   assume I#[pulseShapeNw#out_done] == R#[pulseShapeNw#out_done];
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
+  assume anon$4 == 0;
+  assume Mode#[this#] == anon$4;
   I#sub[pulseShapeNw#in_symb] := R#[pulseShapeNw#in_symb];
   I#sub[pulseShapeNw#in_len] := R#[pulseShapeNw#in_len];
   I#sub[pulseShapeNw#body_iterations] := R#[pulseShapeNw#body_iterations];
@@ -1669,8 +1813,8 @@ procedure pulseShapeNw##pulseShape#init#21()
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
-  assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
-  assume ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
+  assume (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assume (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
   assume (1 <= (C#[pulseShapeNw#in_len] - R#[pulseShapeNw#in_len])) && (1 <= (C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations])) && (1 <= (C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index])) && (1 <= (C#[pulseShapeNw#St] - R#[pulseShapeNw#St])) && (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0);
   len#len_in := M#[pulseShapeNw#in_len][R#[pulseShapeNw#in_len]];
   R#[pulseShapeNw#in_len] := R#[pulseShapeNw#in_len] + 1;
@@ -1687,19 +1831,21 @@ procedure pulseShapeNw##pulseShape#init#21()
   C#[pulseShapeNw#body_index] := C#[pulseShapeNw#body_index] + 1;
   M#[pulseShapeNw#St][C#[pulseShapeNw#St]] := 1;
   C#[pulseShapeNw#St] := C#[pulseShapeNw#St] + 1;
-  assert {:msg "ZigBee.actor(334.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#172)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
-  assert {:msg "ZigBee.actor(335.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#173)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
-  assert {:msg "ZigBee.actor(336.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#174)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
-  assert {:msg "ZigBee.actor(341.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#175)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(344.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#176)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
-  assert {:msg "ZigBee.actor(345.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#177)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
-  assert {:msg "ZigBee.actor(347.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#178)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
-  assert {:msg "ZigBee.actor(348.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#179)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
-  assert {:msg "ZigBee.actor(354.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#180)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
-  assert {:msg "ZigBee.actor(362.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#181)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
-  assert {:msg "ZigBee.actor(369.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#182)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "ZigBee.actor(334.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#198)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
+  assert {:msg "ZigBee.actor(335.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#199)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
+  assert {:msg "ZigBee.actor(336.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#200)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
+  assert {:msg "ZigBee.actor(341.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#201)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(344.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#202)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
+  assert {:msg "ZigBee.actor(345.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#203)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
+  assert {:msg "ZigBee.actor(347.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#204)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
+  assert {:msg "ZigBee.actor(348.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#205)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
+  assert {:msg "ZigBee.actor(354.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#206)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
+  assert {:msg "ZigBee.actor(362.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#207)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
+  assert {:msg "ZigBee.actor(369.15): Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#208)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#209)"} (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assert {:msg "Action at ZigBee.actor(238.2) ('init') for actor instance 'a' might not preserve the channel invariant (#210)"} (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
 }
-procedure pulseShapeNw##pulseShape#tx_body#22()
+procedure pulseShapeNw##pulseShape#tx_body#24()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var pulseShapeNw#a: Actor;
@@ -1710,6 +1856,7 @@ procedure pulseShapeNw##pulseShape#tx_body#22()
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
+  var anon$4: int;
   var AV#a#symb_mem: bv8;
   var AV#a#body_iterations: bv8;
   var AV#a#body_index: bv8;
@@ -1749,6 +1896,8 @@ procedure pulseShapeNw##pulseShape#tx_body#22()
   assume R#[pulseShapeNw#out_done] <= C#[pulseShapeNw#out_done];
   assume I#[pulseShapeNw#out_done] == R#[pulseShapeNw#out_done];
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
+  assume anon$4 == 0;
+  assume Mode#[this#] == anon$4;
   I#sub[pulseShapeNw#in_symb] := R#[pulseShapeNw#in_symb];
   I#sub[pulseShapeNw#in_len] := R#[pulseShapeNw#in_len];
   I#sub[pulseShapeNw#body_iterations] := R#[pulseShapeNw#body_iterations];
@@ -1770,8 +1919,8 @@ procedure pulseShapeNw##pulseShape#tx_body#22()
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
-  assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
-  assume ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
+  assume (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assume (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
   assume (2 <= (C#[pulseShapeNw#in_symb] - R#[pulseShapeNw#in_symb])) && (1 <= (C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations])) && (1 <= (C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index])) && (1 <= (C#[pulseShapeNw#St] - R#[pulseShapeNw#St])) && (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) && AT#BvUlt14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
   symb#symb_1 := M#[pulseShapeNw#in_symb][R#[pulseShapeNw#in_symb]];
   R#[pulseShapeNw#in_symb] := R#[pulseShapeNw#in_symb] + 1;
@@ -1822,19 +1971,21 @@ procedure pulseShapeNw##pulseShape#tx_body#22()
   C#[pulseShapeNw#body_index] := C#[pulseShapeNw#body_index] + 1;
   M#[pulseShapeNw#St][C#[pulseShapeNw#St]] := 1;
   C#[pulseShapeNw#St] := C#[pulseShapeNw#St] + 1;
-  assert {:msg "ZigBee.actor(334.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#183)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
-  assert {:msg "ZigBee.actor(335.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#184)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
-  assert {:msg "ZigBee.actor(336.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#185)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
-  assert {:msg "ZigBee.actor(341.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#186)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(344.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#187)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
-  assert {:msg "ZigBee.actor(345.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#188)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
-  assert {:msg "ZigBee.actor(347.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#189)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
-  assert {:msg "ZigBee.actor(348.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#190)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
-  assert {:msg "ZigBee.actor(354.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#191)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
-  assert {:msg "ZigBee.actor(362.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#192)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
-  assert {:msg "ZigBee.actor(369.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#193)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "ZigBee.actor(334.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#211)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
+  assert {:msg "ZigBee.actor(335.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#212)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
+  assert {:msg "ZigBee.actor(336.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#213)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
+  assert {:msg "ZigBee.actor(341.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#214)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(344.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#215)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
+  assert {:msg "ZigBee.actor(345.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#216)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
+  assert {:msg "ZigBee.actor(347.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#217)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
+  assert {:msg "ZigBee.actor(348.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#218)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
+  assert {:msg "ZigBee.actor(354.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#219)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
+  assert {:msg "ZigBee.actor(362.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#220)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
+  assert {:msg "ZigBee.actor(369.15): Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#221)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#222)"} (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assert {:msg "Action at ZigBee.actor(254.2) ('tx_body') for actor instance 'a' might not preserve the channel invariant (#223)"} (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
 }
-procedure pulseShapeNw##pulseShape#tx_tail#23()
+procedure pulseShapeNw##pulseShape#tx_tail#25()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var pulseShapeNw#a: Actor;
@@ -1845,6 +1996,7 @@ procedure pulseShapeNw##pulseShape#tx_tail#23()
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
+  var anon$4: int;
   var AV#a#symb_mem: bv8;
   var AV#a#body_iterations: bv8;
   var AV#a#body_index: bv8;
@@ -1882,6 +2034,8 @@ procedure pulseShapeNw##pulseShape#tx_tail#23()
   assume R#[pulseShapeNw#out_done] <= C#[pulseShapeNw#out_done];
   assume I#[pulseShapeNw#out_done] == R#[pulseShapeNw#out_done];
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
+  assume anon$4 == 0;
+  assume Mode#[this#] == anon$4;
   I#sub[pulseShapeNw#in_symb] := R#[pulseShapeNw#in_symb];
   I#sub[pulseShapeNw#in_len] := R#[pulseShapeNw#in_len];
   I#sub[pulseShapeNw#body_iterations] := R#[pulseShapeNw#body_iterations];
@@ -1903,8 +2057,8 @@ procedure pulseShapeNw##pulseShape#tx_tail#23()
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
-  assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
-  assume ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
+  assume (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assume (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
   assume (1 <= (C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations])) && (1 <= (C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index])) && (1 <= (C#[pulseShapeNw#St] - R#[pulseShapeNw#St])) && (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) && (M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]] == M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
   body_iterations_in#body_iterations := M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]];
   R#[pulseShapeNw#body_iterations] := R#[pulseShapeNw#body_iterations] + 1;
@@ -1936,19 +2090,21 @@ procedure pulseShapeNw##pulseShape#tx_tail#23()
   C#[pulseShapeNw#body_index] := C#[pulseShapeNw#body_index] + 1;
   M#[pulseShapeNw#St][C#[pulseShapeNw#St]] := 0;
   C#[pulseShapeNw#St] := C#[pulseShapeNw#St] + 1;
-  assert {:msg "ZigBee.actor(334.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#194)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
-  assert {:msg "ZigBee.actor(335.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#195)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
-  assert {:msg "ZigBee.actor(336.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#196)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
-  assert {:msg "ZigBee.actor(341.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#197)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(344.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#198)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
-  assert {:msg "ZigBee.actor(345.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#199)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
-  assert {:msg "ZigBee.actor(347.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#200)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
-  assert {:msg "ZigBee.actor(348.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#201)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
-  assert {:msg "ZigBee.actor(354.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#202)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
-  assert {:msg "ZigBee.actor(362.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#203)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
-  assert {:msg "ZigBee.actor(369.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#204)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "ZigBee.actor(334.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#224)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
+  assert {:msg "ZigBee.actor(335.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#225)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
+  assert {:msg "ZigBee.actor(336.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#226)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
+  assert {:msg "ZigBee.actor(341.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#227)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(344.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#228)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
+  assert {:msg "ZigBee.actor(345.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#229)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
+  assert {:msg "ZigBee.actor(347.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#230)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
+  assert {:msg "ZigBee.actor(348.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#231)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
+  assert {:msg "ZigBee.actor(354.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#232)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
+  assert {:msg "ZigBee.actor(362.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#233)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
+  assert {:msg "ZigBee.actor(369.15): Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#234)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#235)"} (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assert {:msg "Action at ZigBee.actor(298.2) ('tx_tail') for actor instance 'a' might not preserve the channel invariant (#236)"} (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
 }
-procedure pulseShapeNw#anon$4#input#symb#24()
+procedure pulseShapeNw#anon$4#input#symb#26()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var pulseShapeNw#a: Actor;
@@ -1959,6 +2115,7 @@ procedure pulseShapeNw#anon$4#input#symb#24()
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
+  var anon$4: int;
   var AV#a#symb_mem: bv8;
   var AV#a#body_iterations: bv8;
   var AV#a#body_index: bv8;
@@ -1993,6 +2150,8 @@ procedure pulseShapeNw#anon$4#input#symb#24()
   assume R#[pulseShapeNw#out_done] <= C#[pulseShapeNw#out_done];
   assume I#[pulseShapeNw#out_done] == R#[pulseShapeNw#out_done];
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
+  assume anon$4 == 0;
+  assume Mode#[this#] == anon$4;
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
   assume (C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) < 576;
   assume I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
@@ -2006,23 +2165,25 @@ procedure pulseShapeNw#anon$4#input#symb#24()
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
-  assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
-  assume ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
+  assume (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assume (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
   C#[pulseShapeNw#in_symb] := C#[pulseShapeNw#in_symb] + 1;
   assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
-  assert {:msg "ZigBee.actor(334.15): Channel invariant might be falsified by network input (#205)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
-  assert {:msg "ZigBee.actor(335.15): Channel invariant might be falsified by network input (#206)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
-  assert {:msg "ZigBee.actor(336.15): Channel invariant might be falsified by network input (#207)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
-  assert {:msg "ZigBee.actor(341.15): Channel invariant might be falsified by network input (#208)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(344.15): Channel invariant might be falsified by network input (#209)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
-  assert {:msg "ZigBee.actor(345.15): Channel invariant might be falsified by network input (#210)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
-  assert {:msg "ZigBee.actor(347.15): Channel invariant might be falsified by network input (#211)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
-  assert {:msg "ZigBee.actor(348.15): Channel invariant might be falsified by network input (#212)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
-  assert {:msg "ZigBee.actor(354.15): Channel invariant might be falsified by network input (#213)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
-  assert {:msg "ZigBee.actor(362.15): Channel invariant might be falsified by network input (#214)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
-  assert {:msg "ZigBee.actor(369.15): Channel invariant might be falsified by network input (#215)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "ZigBee.actor(334.15): Channel invariant might be falsified by network input (#237)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
+  assert {:msg "ZigBee.actor(335.15): Channel invariant might be falsified by network input (#238)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
+  assert {:msg "ZigBee.actor(336.15): Channel invariant might be falsified by network input (#239)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
+  assert {:msg "ZigBee.actor(341.15): Channel invariant might be falsified by network input (#240)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(344.15): Channel invariant might be falsified by network input (#241)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
+  assert {:msg "ZigBee.actor(345.15): Channel invariant might be falsified by network input (#242)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
+  assert {:msg "ZigBee.actor(347.15): Channel invariant might be falsified by network input (#243)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
+  assert {:msg "ZigBee.actor(348.15): Channel invariant might be falsified by network input (#244)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
+  assert {:msg "ZigBee.actor(354.15): Channel invariant might be falsified by network input (#245)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
+  assert {:msg "ZigBee.actor(362.15): Channel invariant might be falsified by network input (#246)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
+  assert {:msg "ZigBee.actor(369.15): Channel invariant might be falsified by network input (#247)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "Channel invariant might be falsified by network input (#248)"} (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assert {:msg "Channel invariant might be falsified by network input (#249)"} (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
 }
-procedure pulseShapeNw#anon$4#input#len#25()
+procedure pulseShapeNw#anon$4#input#len#27()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var pulseShapeNw#a: Actor;
@@ -2033,6 +2194,7 @@ procedure pulseShapeNw#anon$4#input#len#25()
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
+  var anon$4: int;
   var AV#a#symb_mem: bv8;
   var AV#a#body_iterations: bv8;
   var AV#a#body_index: bv8;
@@ -2067,6 +2229,8 @@ procedure pulseShapeNw#anon$4#input#len#25()
   assume R#[pulseShapeNw#out_done] <= C#[pulseShapeNw#out_done];
   assume I#[pulseShapeNw#out_done] == R#[pulseShapeNw#out_done];
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
+  assume anon$4 == 0;
+  assume Mode#[this#] == anon$4;
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
   assume (C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) < 1;
   assume I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
@@ -2080,23 +2244,25 @@ procedure pulseShapeNw#anon$4#input#len#25()
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
-  assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
-  assume ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
+  assume (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assume (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
   C#[pulseShapeNw#in_len] := C#[pulseShapeNw#in_len] + 1;
   assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
-  assert {:msg "ZigBee.actor(334.15): Channel invariant might be falsified by network input (#216)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
-  assert {:msg "ZigBee.actor(335.15): Channel invariant might be falsified by network input (#217)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
-  assert {:msg "ZigBee.actor(336.15): Channel invariant might be falsified by network input (#218)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
-  assert {:msg "ZigBee.actor(341.15): Channel invariant might be falsified by network input (#219)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(344.15): Channel invariant might be falsified by network input (#220)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
-  assert {:msg "ZigBee.actor(345.15): Channel invariant might be falsified by network input (#221)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
-  assert {:msg "ZigBee.actor(347.15): Channel invariant might be falsified by network input (#222)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
-  assert {:msg "ZigBee.actor(348.15): Channel invariant might be falsified by network input (#223)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
-  assert {:msg "ZigBee.actor(354.15): Channel invariant might be falsified by network input (#224)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
-  assert {:msg "ZigBee.actor(362.15): Channel invariant might be falsified by network input (#225)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
-  assert {:msg "ZigBee.actor(369.15): Channel invariant might be falsified by network input (#226)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "ZigBee.actor(334.15): Channel invariant might be falsified by network input (#250)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
+  assert {:msg "ZigBee.actor(335.15): Channel invariant might be falsified by network input (#251)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
+  assert {:msg "ZigBee.actor(336.15): Channel invariant might be falsified by network input (#252)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
+  assert {:msg "ZigBee.actor(341.15): Channel invariant might be falsified by network input (#253)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(344.15): Channel invariant might be falsified by network input (#254)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
+  assert {:msg "ZigBee.actor(345.15): Channel invariant might be falsified by network input (#255)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
+  assert {:msg "ZigBee.actor(347.15): Channel invariant might be falsified by network input (#256)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
+  assert {:msg "ZigBee.actor(348.15): Channel invariant might be falsified by network input (#257)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
+  assert {:msg "ZigBee.actor(354.15): Channel invariant might be falsified by network input (#258)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
+  assert {:msg "ZigBee.actor(362.15): Channel invariant might be falsified by network input (#259)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
+  assert {:msg "ZigBee.actor(369.15): Channel invariant might be falsified by network input (#260)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "Channel invariant might be falsified by network input (#261)"} (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assert {:msg "Channel invariant might be falsified by network input (#262)"} (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
 }
-procedure pulseShapeNw#anon$4#exit#26()
+procedure pulseShapeNw#anon$4#exit#28()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var pulseShapeNw#a: Actor;
@@ -2107,6 +2273,7 @@ procedure pulseShapeNw#anon$4#exit#26()
   var pulseShapeNw#St: Chan (int);
   var pulseShapeNw#out_hsp: Chan (bv8);
   var pulseShapeNw#out_done: Chan (bool);
+  var anon$4: int;
   var AV#a#symb_mem: bv8;
   var AV#a#body_iterations: bv8;
   var AV#a#body_index: bv8;
@@ -2141,6 +2308,8 @@ procedure pulseShapeNw#anon$4#exit#26()
   assume R#[pulseShapeNw#out_done] <= C#[pulseShapeNw#out_done];
   assume I#[pulseShapeNw#out_done] == R#[pulseShapeNw#out_done];
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
+  assume anon$4 == 0;
+  assume Mode#[this#] == anon$4;
   assume (B#[pulseShapeNw#in_symb] == 576) && (B#[pulseShapeNw#in_len] == 1) && (B#[pulseShapeNw#out_done] == 1) && (B#[pulseShapeNw#out_hsp] == 4616);
   assume I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
   assume I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
@@ -2153,39 +2322,45 @@ procedure pulseShapeNw#anon$4#exit#26()
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
   assume (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
-  assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
-  assume ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
+  assume (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assume (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
   assume (C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 576;
   assume (C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1;
   assume M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8;
   assume !((1 <= (C#[pulseShapeNw#in_len] - R#[pulseShapeNw#in_len])) && (1 <= (C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations])) && (1 <= (C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index])) && (1 <= (C#[pulseShapeNw#St] - R#[pulseShapeNw#St])) && (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0));
   assume !((2 <= (C#[pulseShapeNw#in_symb] - R#[pulseShapeNw#in_symb])) && (1 <= (C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations])) && (1 <= (C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index])) && (1 <= (C#[pulseShapeNw#St] - R#[pulseShapeNw#St])) && (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) && AT#BvUlt14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]));
   assume !((1 <= (C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations])) && (1 <= (C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index])) && (1 <= (C#[pulseShapeNw#St] - R#[pulseShapeNw#St])) && (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) && (M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]] == M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]));
-  assert {:msg "ZigBee.actor(330.3): The correct number of tokens might not be produced on output 'done' (#227)"} (C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1;
-  assert {:msg "ZigBee.actor(330.3): The correct number of tokens might not be produced on output 'hsp' (#228)"} (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 4616;
+  assert {:msg "ZigBee.actor(330.3): The correct number of tokens might not be produced on output 'done' (#263)"} (C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1;
+  assert {:msg "ZigBee.actor(330.3): The correct number of tokens might not be produced on output 'hsp' (#264)"} (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 4616;
   R#[pulseShapeNw#out_hsp] := R#[pulseShapeNw#out_hsp] + 4616;
   R#[pulseShapeNw#out_done] := R#[pulseShapeNw#out_done] + 1;
   I# := R#;
-  assert {:msg "ZigBee.actor(334.15): The network might not preserve the channel invariant (#229)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
-  assert {:msg "ZigBee.actor(335.15): The network might not preserve the channel invariant (#230)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
-  assert {:msg "ZigBee.actor(336.15): The network might not preserve the channel invariant (#231)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
-  assert {:msg "ZigBee.actor(341.15): The network might not preserve the channel invariant (#232)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(344.15): The network might not preserve the channel invariant (#233)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
-  assert {:msg "ZigBee.actor(345.15): The network might not preserve the channel invariant (#234)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
-  assert {:msg "ZigBee.actor(347.15): The network might not preserve the channel invariant (#235)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
-  assert {:msg "ZigBee.actor(348.15): The network might not preserve the channel invariant (#236)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
-  assert {:msg "ZigBee.actor(354.15): The network might not preserve the channel invariant (#237)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
-  assert {:msg "ZigBee.actor(362.15): The network might not preserve the channel invariant (#238)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
-  assert {:msg "ZigBee.actor(369.15): The network might not preserve the channel invariant (#239)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
-  assert {:msg "ZigBee.actor(339.13): The network might not preserve the network invariant (#240)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
-  assert {:msg "ZigBee.actor(340.13): The network might not preserve the network invariant (#241)"} M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel in_symb (#242)"} (C#[pulseShapeNw#in_symb] - R#[pulseShapeNw#in_symb]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel in_len (#243)"} (C#[pulseShapeNw#in_len] - R#[pulseShapeNw#in_len]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel out_hsp (#244)"} (C#[pulseShapeNw#out_hsp] - R#[pulseShapeNw#out_hsp]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel out_done (#245)"} (C#[pulseShapeNw#out_done] - R#[pulseShapeNw#out_done]) == 0;
+  assert {:msg "ZigBee.actor(334.15): The network might not preserve the channel invariant (#265)"} I#[pulseShapeNw#in_symb] == (576 * I#[pulseShapeNw#out_done]);
+  assert {:msg "ZigBee.actor(335.15): The network might not preserve the channel invariant (#266)"} I#[pulseShapeNw#in_len] == I#[pulseShapeNw#out_done];
+  assert {:msg "ZigBee.actor(336.15): The network might not preserve the channel invariant (#267)"} I#[pulseShapeNw#out_hsp] == (4616 * I#[pulseShapeNw#in_len]);
+  assert {:msg "ZigBee.actor(341.15): The network might not preserve the channel invariant (#268)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(344.15): The network might not preserve the channel invariant (#269)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) || (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1);
+  assert {:msg "ZigBee.actor(345.15): The network might not preserve the channel invariant (#270)"} AT#BvSle14(0bv14, M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]) && AT#BvUle14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]], M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]);
+  assert {:msg "ZigBee.actor(347.15): The network might not preserve the channel invariant (#271)"} ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (B#[pulseShapeNw#in_symb] == (64 * AT#Bv2Int8(M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]])));
+  assert {:msg "ZigBee.actor(348.15): The network might not preserve the channel invariant (#272)"} ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> (M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]] == AT#BvMul14(0bv6 ++ M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]], 32bv14)) && ((2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) == B#[pulseShapeNw#in_symb]) && ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]])));
+  assert {:msg "ZigBee.actor(354.15): The network might not preserve the channel invariant (#273)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == (16 * AT#Bv2Int14(M#[pulseShapeNw#body_index][R#[pulseShapeNw#body_index]]))) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * (C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1);
+  assert {:msg "ZigBee.actor(362.15): The network might not preserve the channel invariant (#274)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 1) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == (2 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]]))) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == ((16 * AT#Bv2Int14(M#[pulseShapeNw#body_iterations][R#[pulseShapeNw#body_iterations]])) + 8)) && ((16 * (R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb])) == (2 * ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) - 8))) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 1);
+  assert {:msg "ZigBee.actor(369.15): The network might not preserve the channel invariant (#275)"} (M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0) && ((R#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) == 0) ==> ((R#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) == 0) && ((C#[pulseShapeNw#out_hsp] - I#[pulseShapeNw#out_hsp]) == 0) && ((C#[pulseShapeNw#out_done] - I#[pulseShapeNw#out_done]) == 0);
+  assert {:msg "The network might not preserve the channel invariant (#276)"} (Mode#[this#] == anon$4) ==> (((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) >= 1) && ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) >= 0) ==> (M#[pulseShapeNw#in_len][I#[pulseShapeNw#in_len]] == 9bv8));
+  assert {:msg "The network might not preserve the channel invariant (#277)"} (Mode#[this#] == anon$4) ==> ((C#[pulseShapeNw#in_symb] - I#[pulseShapeNw#in_symb]) <= 576) && ((C#[pulseShapeNw#in_len] - I#[pulseShapeNw#in_len]) <= 1);
+  assert {:msg "ZigBee.actor(339.13): The network might not preserve the network invariant (#278)"} ((C#[pulseShapeNw#body_iterations] - R#[pulseShapeNw#body_iterations]) == 1) && ((C#[pulseShapeNw#body_index] - R#[pulseShapeNw#body_index]) == 1) && ((C#[pulseShapeNw#St] - R#[pulseShapeNw#St]) == 1);
+  assert {:msg "ZigBee.actor(340.13): The network might not preserve the network invariant (#279)"} M#[pulseShapeNw#St][R#[pulseShapeNw#St]] == 0;
+  assert {:msg "The network might not preserve the network invariant (#280)"} R#[pulseShapeNw#in_symb] == (576 * C#[pulseShapeNw#out_done]);
+  assert {:msg "The network might not preserve the network invariant (#281)"} R#[pulseShapeNw#in_len] == C#[pulseShapeNw#out_done];
+  assert {:msg "The network might not preserve the network invariant (#282)"} (4616 * R#[pulseShapeNw#in_symb]) == (576 * C#[pulseShapeNw#out_hsp]);
+  assert {:msg "The network might not preserve the network invariant (#283)"} (4616 * R#[pulseShapeNw#in_len]) == C#[pulseShapeNw#out_hsp];
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel in_symb (#284)"} (C#[pulseShapeNw#in_symb] - R#[pulseShapeNw#in_symb]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel in_len (#285)"} (C#[pulseShapeNw#in_len] - R#[pulseShapeNw#in_len]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel out_hsp (#286)"} (C#[pulseShapeNw#out_hsp] - R#[pulseShapeNw#out_hsp]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel out_done (#287)"} (C#[pulseShapeNw#out_done] - R#[pulseShapeNw#out_done]) == 0;
 }
 function qpskMod#q7_map(bit: bv32) returns (out: bv8);
-procedure qpskMod#init#27()
+procedure qpskMod#init#29()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var chip: Chan (bv32);
@@ -2194,8 +2369,9 @@ procedure qpskMod#init#27()
   assume true;
   assume (I#[chip] == 0) && (R#[chip] == 0) && (C#[chip] == 0);
   assume (I#[symb] == 0) && (R#[symb] == 0) && (C#[symb] == 0);
+  assert {:msg "Initialization might not establish the invariant (#288)"} (32 * R#[chip]) == C#[symb];
 }
-procedure qpskMod#anon$5#28()
+procedure qpskMod#anon$5#30()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var chip: Chan (bv32);
@@ -2306,8 +2482,9 @@ procedure qpskMod#anon$5#28()
   C#[symb] := C#[symb] + 1;
   M#[symb][C#[symb]] := Map#Select(IQ, 31);
   C#[symb] := C#[symb] + 1;
+  assert {:msg "Action 'anon$5' at ZigBee.actor(408.2) might not preserve the invariant (#289)"} (32 * R#[chip]) == C#[symb];
 }
-procedure ZigBee#init#29()
+procedure ZigBee#init#31()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var ZigBee#ha: Actor;
@@ -2321,6 +2498,7 @@ procedure ZigBee#init#29()
   var ZigBee#ch_len: Chan (bv8);
   var ZigBee#ch_done: Chan (bool);
   var ZigBee#ch_hsp: Chan (bv8);
+  var anon$6: int;
   var AV#cm#Chip_map_table: Map (bv8) (bv32);
   var AV#cm#lsn: bv8;
   var AV#cm#msn: bv8;
@@ -2351,6 +2529,8 @@ procedure ZigBee#init#29()
   assume R#[ZigBee#ch_hsp] <= C#[ZigBee#ch_hsp];
   assume I#[ZigBee#ch_hsp] == R#[ZigBee#ch_hsp];
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
+  assume anon$6 == 0;
+  assume Mode#[this#] == anon$6;
   assume C#[ZigBee#ch_pl_bits] == 0;
   assume R#[ZigBee#ch_pl_bits] == 0;
   assume C#[ZigBee#ch_data] == 0;
@@ -2365,18 +2545,30 @@ procedure ZigBee#init#29()
   assume R#[ZigBee#ch_done] == 0;
   assume C#[ZigBee#ch_hsp] == 0;
   assume R#[ZigBee#ch_hsp] == 0;
-  assert {:msg "ZigBee.actor(457.15): Initialization of network 'ZigBee' might not establish the channel invariant (#246)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
-  assert {:msg "ZigBee.actor(458.15): Initialization of network 'ZigBee' might not establish the channel invariant (#247)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "ZigBee.actor(457.15): Initialization of network 'ZigBee' might not establish the channel invariant (#290)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
+  assert {:msg "ZigBee.actor(458.15): Initialization of network 'ZigBee' might not establish the channel invariant (#291)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#292)"} (4 * I#[ZigBee#ch_data]) == (9 * I#[ZigBee#ch_pl_bits]);
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#293)"} (4 * I#[ZigBee#ch_len]) == I#[ZigBee#ch_pl_bits];
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#294)"} I#[ZigBee#ch_chip] == (2 * I#[ZigBee#ch_data]);
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#295)"} I#[ZigBee#ch_symb] == (32 * I#[ZigBee#ch_chip]);
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#296)"} (576 * I#[ZigBee#ch_done]) == I#[ZigBee#ch_symb];
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#297)"} I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#298)"} (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#299)"} I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#300)"} (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assert {:msg "Initialization of network 'ZigBee' might not establish the channel invariant (#301)"} (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
   I# := R#;
-  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_pl_bits (#248)"} (C#[ZigBee#ch_pl_bits] - R#[ZigBee#ch_pl_bits]) == 0;
-  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_data (#249)"} (C#[ZigBee#ch_data] - R#[ZigBee#ch_data]) == 0;
-  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_chip (#250)"} (C#[ZigBee#ch_chip] - R#[ZigBee#ch_chip]) == 0;
-  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_symb (#251)"} (C#[ZigBee#ch_symb] - R#[ZigBee#ch_symb]) == 0;
-  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_len (#252)"} (C#[ZigBee#ch_len] - R#[ZigBee#ch_len]) == 0;
-  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_done (#253)"} (C#[ZigBee#ch_done] - R#[ZigBee#ch_done]) == 0;
-  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_hsp (#254)"} (C#[ZigBee#ch_hsp] - R#[ZigBee#ch_hsp]) == 0;
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant (#302)"} R#[ZigBee#ch_pl_bits] == (4 * C#[ZigBee#ch_done]);
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant (#303)"} (4616 * R#[ZigBee#ch_pl_bits]) == (4 * C#[ZigBee#ch_hsp]);
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_pl_bits (#304)"} (C#[ZigBee#ch_pl_bits] - R#[ZigBee#ch_pl_bits]) == 0;
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_data (#305)"} (C#[ZigBee#ch_data] - R#[ZigBee#ch_data]) == 0;
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_chip (#306)"} (C#[ZigBee#ch_chip] - R#[ZigBee#ch_chip]) == 0;
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_symb (#307)"} (C#[ZigBee#ch_symb] - R#[ZigBee#ch_symb]) == 0;
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_len (#308)"} (C#[ZigBee#ch_len] - R#[ZigBee#ch_len]) == 0;
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_done (#309)"} (C#[ZigBee#ch_done] - R#[ZigBee#ch_done]) == 0;
+  assert {:msg "Initialization of network 'ZigBee' might not establish the network invariant: Unread tokens might be left on channel ch_hsp (#310)"} (C#[ZigBee#ch_hsp] - R#[ZigBee#ch_hsp]) == 0;
 }
-procedure ZigBee##headerAddNw#anon$2#30()
+procedure ZigBee##headerAddNw#anon$2#32()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var ZigBee#ha: Actor;
@@ -2390,6 +2582,7 @@ procedure ZigBee##headerAddNw#anon$2#30()
   var ZigBee#ch_len: Chan (bv8);
   var ZigBee#ch_done: Chan (bool);
   var ZigBee#ch_hsp: Chan (bv8);
+  var anon$6: int;
   var AV#cm#Chip_map_table: Map (bv8) (bv32);
   var AV#cm#lsn: bv8;
   var AV#cm#msn: bv8;
@@ -2420,6 +2613,8 @@ procedure ZigBee##headerAddNw#anon$2#30()
   assume R#[ZigBee#ch_hsp] <= C#[ZigBee#ch_hsp];
   assume I#[ZigBee#ch_hsp] == R#[ZigBee#ch_hsp];
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
+  assume anon$6 == 0;
+  assume Mode#[this#] == anon$6;
   I#sub[ZigBee#ch_pl_bits] := R#[ZigBee#ch_pl_bits];
   I#sub[ZigBee#ch_data] := C#[ZigBee#ch_data];
   I#sub[ZigBee#ch_len] := C#[ZigBee#ch_len];
@@ -2433,8 +2628,8 @@ procedure ZigBee##headerAddNw#anon$2#30()
   assume I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
   assume (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
   assume I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
-  assume M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8;
-  assume (C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4;
+  assume (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assume (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
   assume (9 * R#[ZigBee#ch_pl_bits]) == (4 * C#[ZigBee#ch_data]);
   assume R#[ZigBee#ch_pl_bits] == (4 * C#[ZigBee#ch_len]);
   assume (2 * R#[ZigBee#ch_data]) == C#[ZigBee#ch_chip];
@@ -2445,14 +2640,24 @@ procedure ZigBee##headerAddNw#anon$2#30()
   assume (4616 * R#[ZigBee#ch_len]) == C#[ZigBee#ch_hsp];
   assume 4 <= (C#[ZigBee#ch_pl_bits] - R#[ZigBee#ch_pl_bits]);
   R#[ZigBee#ch_pl_bits] := R#[ZigBee#ch_pl_bits] + 4;
-  assert {:msg "ZigBee.actor(138.14): Precondition might not hold for instance at ZigBee.actor(461.5) (#255)"} AT#Bv2Int8(M#[ZigBee#ch_pl_bits][I#sub[ZigBee#ch_pl_bits]]) == (B#[ZigBee#ch_pl_bits] - 1);
+  assert {:msg "ZigBee.actor(138.14): Precondition might not hold for instance at ZigBee.actor(461.5) (#311)"} AT#Bv2Int8(M#[ZigBee#ch_pl_bits][I#sub[ZigBee#ch_pl_bits]]) == (B#[ZigBee#ch_pl_bits] - 1);
   C#[ZigBee#ch_data] := C#[ZigBee#ch_data] + 9;
   C#[ZigBee#ch_len] := C#[ZigBee#ch_len] + 1;
   assume M#[ZigBee#ch_len][I#sub[ZigBee#ch_len]] == AT#BvAdd8(M#[ZigBee#ch_pl_bits][I#sub[ZigBee#ch_pl_bits]], 6bv8);
-  assert {:msg "ZigBee.actor(457.15): Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#256)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
-  assert {:msg "ZigBee.actor(458.15): Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#257)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "ZigBee.actor(457.15): Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#312)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
+  assert {:msg "ZigBee.actor(458.15): Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#313)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#314)"} (4 * I#[ZigBee#ch_data]) == (9 * I#[ZigBee#ch_pl_bits]);
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#315)"} (4 * I#[ZigBee#ch_len]) == I#[ZigBee#ch_pl_bits];
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#316)"} I#[ZigBee#ch_chip] == (2 * I#[ZigBee#ch_data]);
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#317)"} I#[ZigBee#ch_symb] == (32 * I#[ZigBee#ch_chip]);
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#318)"} (576 * I#[ZigBee#ch_done]) == I#[ZigBee#ch_symb];
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#319)"} I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#320)"} (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#321)"} I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#322)"} (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assert {:msg "Action at ZigBee.actor(137.3) ('anon$2') for actor instance 'ha' might not preserve the channel invariant (#323)"} (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
 }
-procedure ZigBee##chipMapper#anon$0#31()
+procedure ZigBee##chipMapper#anon$0#33()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var ZigBee#ha: Actor;
@@ -2466,6 +2671,7 @@ procedure ZigBee##chipMapper#anon$0#31()
   var ZigBee#ch_len: Chan (bv8);
   var ZigBee#ch_done: Chan (bool);
   var ZigBee#ch_hsp: Chan (bv8);
+  var anon$6: int;
   var AV#cm#Chip_map_table: Map (bv8) (bv32);
   var AV#cm#lsn: bv8;
   var AV#cm#msn: bv8;
@@ -2497,6 +2703,8 @@ procedure ZigBee##chipMapper#anon$0#31()
   assume R#[ZigBee#ch_hsp] <= C#[ZigBee#ch_hsp];
   assume I#[ZigBee#ch_hsp] == R#[ZigBee#ch_hsp];
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
+  assume anon$6 == 0;
+  assume Mode#[this#] == anon$6;
   I#sub[ZigBee#ch_data] := R#[ZigBee#ch_data];
   I#sub[ZigBee#ch_chip] := C#[ZigBee#ch_chip];
   assume ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
@@ -2509,8 +2717,8 @@ procedure ZigBee##chipMapper#anon$0#31()
   assume I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
   assume (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
   assume I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
-  assume M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8;
-  assume (C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4;
+  assume (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assume (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
   assume (9 * R#[ZigBee#ch_pl_bits]) == (4 * C#[ZigBee#ch_data]);
   assume R#[ZigBee#ch_pl_bits] == (4 * C#[ZigBee#ch_len]);
   assume (2 * R#[ZigBee#ch_data]) == C#[ZigBee#ch_chip];
@@ -2528,10 +2736,20 @@ procedure ZigBee##chipMapper#anon$0#31()
   C#[ZigBee#ch_chip] := C#[ZigBee#ch_chip] + 1;
   M#[ZigBee#ch_chip][C#[ZigBee#ch_chip]] := Map#Select(AV#cm#Chip_map_table, AV#cm#msn);
   C#[ZigBee#ch_chip] := C#[ZigBee#ch_chip] + 1;
-  assert {:msg "ZigBee.actor(457.15): Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#258)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
-  assert {:msg "ZigBee.actor(458.15): Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#259)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "ZigBee.actor(457.15): Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#324)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
+  assert {:msg "ZigBee.actor(458.15): Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#325)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#326)"} (4 * I#[ZigBee#ch_data]) == (9 * I#[ZigBee#ch_pl_bits]);
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#327)"} (4 * I#[ZigBee#ch_len]) == I#[ZigBee#ch_pl_bits];
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#328)"} I#[ZigBee#ch_chip] == (2 * I#[ZigBee#ch_data]);
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#329)"} I#[ZigBee#ch_symb] == (32 * I#[ZigBee#ch_chip]);
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#330)"} (576 * I#[ZigBee#ch_done]) == I#[ZigBee#ch_symb];
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#331)"} I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#332)"} (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#333)"} I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#334)"} (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assert {:msg "Action at ZigBee.actor(23.2) ('anon$0') for actor instance 'cm' might not preserve the channel invariant (#335)"} (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
 }
-procedure ZigBee##qpskMod#anon$5#32()
+procedure ZigBee##qpskMod#anon$5#34()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var ZigBee#ha: Actor;
@@ -2545,6 +2763,7 @@ procedure ZigBee##qpskMod#anon$5#32()
   var ZigBee#ch_len: Chan (bv8);
   var ZigBee#ch_done: Chan (bool);
   var ZigBee#ch_hsp: Chan (bv8);
+  var anon$6: int;
   var AV#cm#Chip_map_table: Map (bv8) (bv32);
   var AV#cm#lsn: bv8;
   var AV#cm#msn: bv8;
@@ -2576,6 +2795,8 @@ procedure ZigBee##qpskMod#anon$5#32()
   assume R#[ZigBee#ch_hsp] <= C#[ZigBee#ch_hsp];
   assume I#[ZigBee#ch_hsp] == R#[ZigBee#ch_hsp];
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
+  assume anon$6 == 0;
+  assume Mode#[this#] == anon$6;
   I#sub[ZigBee#ch_chip] := R#[ZigBee#ch_chip];
   I#sub[ZigBee#ch_symb] := C#[ZigBee#ch_symb];
   assume ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
@@ -2588,8 +2809,8 @@ procedure ZigBee##qpskMod#anon$5#32()
   assume I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
   assume (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
   assume I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
-  assume M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8;
-  assume (C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4;
+  assume (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assume (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
   assume (9 * R#[ZigBee#ch_pl_bits]) == (4 * C#[ZigBee#ch_data]);
   assume R#[ZigBee#ch_pl_bits] == (4 * C#[ZigBee#ch_len]);
   assume (2 * R#[ZigBee#ch_data]) == C#[ZigBee#ch_chip];
@@ -2665,10 +2886,20 @@ procedure ZigBee##qpskMod#anon$5#32()
   C#[ZigBee#ch_symb] := C#[ZigBee#ch_symb] + 1;
   M#[ZigBee#ch_symb][C#[ZigBee#ch_symb]] := Map#Select(AV#qm#IQ, 31);
   C#[ZigBee#ch_symb] := C#[ZigBee#ch_symb] + 1;
-  assert {:msg "ZigBee.actor(457.15): Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#260)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
-  assert {:msg "ZigBee.actor(458.15): Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#261)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "ZigBee.actor(457.15): Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#336)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
+  assert {:msg "ZigBee.actor(458.15): Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#337)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#338)"} (4 * I#[ZigBee#ch_data]) == (9 * I#[ZigBee#ch_pl_bits]);
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#339)"} (4 * I#[ZigBee#ch_len]) == I#[ZigBee#ch_pl_bits];
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#340)"} I#[ZigBee#ch_chip] == (2 * I#[ZigBee#ch_data]);
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#341)"} I#[ZigBee#ch_symb] == (32 * I#[ZigBee#ch_chip]);
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#342)"} (576 * I#[ZigBee#ch_done]) == I#[ZigBee#ch_symb];
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#343)"} I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#344)"} (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#345)"} I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#346)"} (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assert {:msg "Action at ZigBee.actor(408.2) ('anon$5') for actor instance 'qm' might not preserve the channel invariant (#347)"} (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
 }
-procedure ZigBee##pulseShapeNw#anon$4#33()
+procedure ZigBee##pulseShapeNw#anon$4#35()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var ZigBee#ha: Actor;
@@ -2682,6 +2913,7 @@ procedure ZigBee##pulseShapeNw#anon$4#33()
   var ZigBee#ch_len: Chan (bv8);
   var ZigBee#ch_done: Chan (bool);
   var ZigBee#ch_hsp: Chan (bv8);
+  var anon$6: int;
   var AV#cm#Chip_map_table: Map (bv8) (bv32);
   var AV#cm#lsn: bv8;
   var AV#cm#msn: bv8;
@@ -2712,6 +2944,8 @@ procedure ZigBee##pulseShapeNw#anon$4#33()
   assume R#[ZigBee#ch_hsp] <= C#[ZigBee#ch_hsp];
   assume I#[ZigBee#ch_hsp] == R#[ZigBee#ch_hsp];
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
+  assume anon$6 == 0;
+  assume Mode#[this#] == anon$6;
   I#sub[ZigBee#ch_symb] := R#[ZigBee#ch_symb];
   I#sub[ZigBee#ch_len] := R#[ZigBee#ch_len];
   I#sub[ZigBee#ch_done] := C#[ZigBee#ch_done];
@@ -2726,8 +2960,8 @@ procedure ZigBee##pulseShapeNw#anon$4#33()
   assume I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
   assume (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
   assume I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
-  assume M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8;
-  assume (C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4;
+  assume (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assume (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
   assume (9 * R#[ZigBee#ch_pl_bits]) == (4 * C#[ZigBee#ch_data]);
   assume R#[ZigBee#ch_pl_bits] == (4 * C#[ZigBee#ch_len]);
   assume (2 * R#[ZigBee#ch_data]) == C#[ZigBee#ch_chip];
@@ -2739,13 +2973,23 @@ procedure ZigBee##pulseShapeNw#anon$4#33()
   assume (576 <= (C#[ZigBee#ch_symb] - R#[ZigBee#ch_symb])) && (1 <= (C#[ZigBee#ch_len] - R#[ZigBee#ch_len]));
   R#[ZigBee#ch_symb] := R#[ZigBee#ch_symb] + 576;
   R#[ZigBee#ch_len] := R#[ZigBee#ch_len] + 1;
-  assert {:msg "ZigBee.actor(331.14): Precondition might not hold for instance at ZigBee.actor(464.5) (#262)"} M#[ZigBee#ch_len][I#sub[ZigBee#ch_len]] == 9bv8;
+  assert {:msg "ZigBee.actor(331.14): Precondition might not hold for instance at ZigBee.actor(464.5) (#348)"} M#[ZigBee#ch_len][I#sub[ZigBee#ch_len]] == 9bv8;
   C#[ZigBee#ch_done] := C#[ZigBee#ch_done] + 1;
   C#[ZigBee#ch_hsp] := C#[ZigBee#ch_hsp] + 4616;
-  assert {:msg "ZigBee.actor(457.15): Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#263)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
-  assert {:msg "ZigBee.actor(458.15): Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#264)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "ZigBee.actor(457.15): Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#349)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
+  assert {:msg "ZigBee.actor(458.15): Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#350)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#351)"} (4 * I#[ZigBee#ch_data]) == (9 * I#[ZigBee#ch_pl_bits]);
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#352)"} (4 * I#[ZigBee#ch_len]) == I#[ZigBee#ch_pl_bits];
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#353)"} I#[ZigBee#ch_chip] == (2 * I#[ZigBee#ch_data]);
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#354)"} I#[ZigBee#ch_symb] == (32 * I#[ZigBee#ch_chip]);
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#355)"} (576 * I#[ZigBee#ch_done]) == I#[ZigBee#ch_symb];
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#356)"} I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#357)"} (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#358)"} I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#359)"} (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assert {:msg "Action at ZigBee.actor(330.3) ('anon$4') for actor instance 'ps' might not preserve the channel invariant (#360)"} (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
 }
-procedure ZigBee#anon$6#input#pl_bits#34()
+procedure ZigBee#anon$6#input#pl_bits#36()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var ZigBee#ha: Actor;
@@ -2759,6 +3003,7 @@ procedure ZigBee#anon$6#input#pl_bits#34()
   var ZigBee#ch_len: Chan (bv8);
   var ZigBee#ch_done: Chan (bool);
   var ZigBee#ch_hsp: Chan (bv8);
+  var anon$6: int;
   var AV#cm#Chip_map_table: Map (bv8) (bv32);
   var AV#cm#lsn: bv8;
   var AV#cm#msn: bv8;
@@ -2789,6 +3034,8 @@ procedure ZigBee#anon$6#input#pl_bits#34()
   assume R#[ZigBee#ch_hsp] <= C#[ZigBee#ch_hsp];
   assume I#[ZigBee#ch_hsp] == R#[ZigBee#ch_hsp];
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
+  assume anon$6 == 0;
+  assume Mode#[this#] == anon$6;
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
   assume (C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) < 4;
   assume ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
@@ -2801,8 +3048,8 @@ procedure ZigBee#anon$6#input#pl_bits#34()
   assume I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
   assume (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
   assume I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
-  assume M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8;
-  assume (C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4;
+  assume (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assume (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
   assume (9 * R#[ZigBee#ch_pl_bits]) == (4 * C#[ZigBee#ch_data]);
   assume R#[ZigBee#ch_pl_bits] == (4 * C#[ZigBee#ch_len]);
   assume (2 * R#[ZigBee#ch_data]) == C#[ZigBee#ch_chip];
@@ -2813,10 +3060,20 @@ procedure ZigBee#anon$6#input#pl_bits#34()
   assume (4616 * R#[ZigBee#ch_len]) == C#[ZigBee#ch_hsp];
   C#[ZigBee#ch_pl_bits] := C#[ZigBee#ch_pl_bits] + 1;
   assume M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8;
-  assert {:msg "ZigBee.actor(457.15): Channel invariant might be falsified by network input (#265)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
-  assert {:msg "ZigBee.actor(458.15): Channel invariant might be falsified by network input (#266)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "ZigBee.actor(457.15): Channel invariant might be falsified by network input (#361)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
+  assert {:msg "ZigBee.actor(458.15): Channel invariant might be falsified by network input (#362)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "Channel invariant might be falsified by network input (#363)"} (4 * I#[ZigBee#ch_data]) == (9 * I#[ZigBee#ch_pl_bits]);
+  assert {:msg "Channel invariant might be falsified by network input (#364)"} (4 * I#[ZigBee#ch_len]) == I#[ZigBee#ch_pl_bits];
+  assert {:msg "Channel invariant might be falsified by network input (#365)"} I#[ZigBee#ch_chip] == (2 * I#[ZigBee#ch_data]);
+  assert {:msg "Channel invariant might be falsified by network input (#366)"} I#[ZigBee#ch_symb] == (32 * I#[ZigBee#ch_chip]);
+  assert {:msg "Channel invariant might be falsified by network input (#367)"} (576 * I#[ZigBee#ch_done]) == I#[ZigBee#ch_symb];
+  assert {:msg "Channel invariant might be falsified by network input (#368)"} I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
+  assert {:msg "Channel invariant might be falsified by network input (#369)"} (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
+  assert {:msg "Channel invariant might be falsified by network input (#370)"} I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
+  assert {:msg "Channel invariant might be falsified by network input (#371)"} (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assert {:msg "Channel invariant might be falsified by network input (#372)"} (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
 }
-procedure ZigBee#anon$6#exit#35()
+procedure ZigBee#anon$6#exit#37()
   modifies C#, R#, M#, I#, H#, I#sub;
 {
   var ZigBee#ha: Actor;
@@ -2830,6 +3087,7 @@ procedure ZigBee#anon$6#exit#35()
   var ZigBee#ch_len: Chan (bv8);
   var ZigBee#ch_done: Chan (bool);
   var ZigBee#ch_hsp: Chan (bv8);
+  var anon$6: int;
   var AV#cm#Chip_map_table: Map (bv8) (bv32);
   var AV#cm#lsn: bv8;
   var AV#cm#msn: bv8;
@@ -2860,6 +3118,8 @@ procedure ZigBee#anon$6#exit#35()
   assume R#[ZigBee#ch_hsp] <= C#[ZigBee#ch_hsp];
   assume I#[ZigBee#ch_hsp] == R#[ZigBee#ch_hsp];
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
+  assume anon$6 == 0;
+  assume Mode#[this#] == anon$6;
   assume (B#[ZigBee#ch_pl_bits] == 4) && (B#[ZigBee#ch_done] == 1) && (B#[ZigBee#ch_hsp] == 4616);
   assume ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
   assume ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
@@ -2871,8 +3131,8 @@ procedure ZigBee#anon$6#exit#35()
   assume I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
   assume (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
   assume I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
-  assume M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8;
-  assume (C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4;
+  assume (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assume (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
   assume (9 * R#[ZigBee#ch_pl_bits]) == (4 * C#[ZigBee#ch_data]);
   assume R#[ZigBee#ch_pl_bits] == (4 * C#[ZigBee#ch_len]);
   assume (2 * R#[ZigBee#ch_data]) == C#[ZigBee#ch_chip];
@@ -2887,18 +3147,30 @@ procedure ZigBee#anon$6#exit#35()
   assume !(1 <= (C#[ZigBee#ch_data] - R#[ZigBee#ch_data]));
   assume !(1 <= (C#[ZigBee#ch_chip] - R#[ZigBee#ch_chip]));
   assume !((576 <= (C#[ZigBee#ch_symb] - R#[ZigBee#ch_symb])) && (1 <= (C#[ZigBee#ch_len] - R#[ZigBee#ch_len])));
-  assert {:msg "ZigBee.actor(453.3): The correct number of tokens might not be produced on output 'done' (#267)"} (C#[ZigBee#ch_done] - I#[ZigBee#ch_done]) == 1;
-  assert {:msg "ZigBee.actor(453.3): The correct number of tokens might not be produced on output 'hsp' (#268)"} (C#[ZigBee#ch_hsp] - I#[ZigBee#ch_hsp]) == 4616;
+  assert {:msg "ZigBee.actor(453.3): The correct number of tokens might not be produced on output 'done' (#373)"} (C#[ZigBee#ch_done] - I#[ZigBee#ch_done]) == 1;
+  assert {:msg "ZigBee.actor(453.3): The correct number of tokens might not be produced on output 'hsp' (#374)"} (C#[ZigBee#ch_hsp] - I#[ZigBee#ch_hsp]) == 4616;
   R#[ZigBee#ch_done] := R#[ZigBee#ch_done] + 1;
   R#[ZigBee#ch_hsp] := R#[ZigBee#ch_hsp] + 4616;
   I# := R#;
-  assert {:msg "ZigBee.actor(457.15): The network might not preserve the channel invariant (#269)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
-  assert {:msg "ZigBee.actor(458.15): The network might not preserve the channel invariant (#270)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_pl_bits (#271)"} (C#[ZigBee#ch_pl_bits] - R#[ZigBee#ch_pl_bits]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_data (#272)"} (C#[ZigBee#ch_data] - R#[ZigBee#ch_data]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_chip (#273)"} (C#[ZigBee#ch_chip] - R#[ZigBee#ch_chip]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_symb (#274)"} (C#[ZigBee#ch_symb] - R#[ZigBee#ch_symb]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_len (#275)"} (C#[ZigBee#ch_len] - R#[ZigBee#ch_len]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_done (#276)"} (C#[ZigBee#ch_done] - R#[ZigBee#ch_done]) == 0;
-  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_hsp (#277)"} (C#[ZigBee#ch_hsp] - R#[ZigBee#ch_hsp]) == 0;
+  assert {:msg "ZigBee.actor(457.15): The network might not preserve the channel invariant (#375)"} ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8);
+  assert {:msg "ZigBee.actor(458.15): The network might not preserve the channel invariant (#376)"} ((R#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) > 0) ==> (M#[ZigBee#ch_len][I#[ZigBee#ch_len]] == AT#BvAdd8(3bv8, 6bv8));
+  assert {:msg "The network might not preserve the channel invariant (#377)"} (4 * I#[ZigBee#ch_data]) == (9 * I#[ZigBee#ch_pl_bits]);
+  assert {:msg "The network might not preserve the channel invariant (#378)"} (4 * I#[ZigBee#ch_len]) == I#[ZigBee#ch_pl_bits];
+  assert {:msg "The network might not preserve the channel invariant (#379)"} I#[ZigBee#ch_chip] == (2 * I#[ZigBee#ch_data]);
+  assert {:msg "The network might not preserve the channel invariant (#380)"} I#[ZigBee#ch_symb] == (32 * I#[ZigBee#ch_chip]);
+  assert {:msg "The network might not preserve the channel invariant (#381)"} (576 * I#[ZigBee#ch_done]) == I#[ZigBee#ch_symb];
+  assert {:msg "The network might not preserve the channel invariant (#382)"} I#[ZigBee#ch_done] == I#[ZigBee#ch_len];
+  assert {:msg "The network might not preserve the channel invariant (#383)"} (576 * I#[ZigBee#ch_hsp]) == (4616 * I#[ZigBee#ch_symb]);
+  assert {:msg "The network might not preserve the channel invariant (#384)"} I#[ZigBee#ch_hsp] == (4616 * I#[ZigBee#ch_len]);
+  assert {:msg "The network might not preserve the channel invariant (#385)"} (Mode#[this#] == anon$6) ==> (((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) >= 1) ==> (M#[ZigBee#ch_pl_bits][I#[ZigBee#ch_pl_bits]] == 3bv8));
+  assert {:msg "The network might not preserve the channel invariant (#386)"} (Mode#[this#] == anon$6) ==> ((C#[ZigBee#ch_pl_bits] - I#[ZigBee#ch_pl_bits]) <= 4);
+  assert {:msg "The network might not preserve the network invariant (#387)"} R#[ZigBee#ch_pl_bits] == (4 * C#[ZigBee#ch_done]);
+  assert {:msg "The network might not preserve the network invariant (#388)"} (4616 * R#[ZigBee#ch_pl_bits]) == (4 * C#[ZigBee#ch_hsp]);
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_pl_bits (#389)"} (C#[ZigBee#ch_pl_bits] - R#[ZigBee#ch_pl_bits]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_data (#390)"} (C#[ZigBee#ch_data] - R#[ZigBee#ch_data]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_chip (#391)"} (C#[ZigBee#ch_chip] - R#[ZigBee#ch_chip]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_symb (#392)"} (C#[ZigBee#ch_symb] - R#[ZigBee#ch_symb]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_len (#393)"} (C#[ZigBee#ch_len] - R#[ZigBee#ch_len]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_done (#394)"} (C#[ZigBee#ch_done] - R#[ZigBee#ch_done]) == 0;
+  assert {:msg "The network might not preserve the network invariant: Unread tokens might be left on channel ch_hsp (#395)"} (C#[ZigBee#ch_hsp] - R#[ZigBee#ch_hsp]) == 0;
 }

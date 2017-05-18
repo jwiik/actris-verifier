@@ -64,8 +64,10 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
       decls += BDecl(d.id,d.typ)
       
       if (d.constant){
-        val exp = Eq(Id(d.id), d.value.get)
-        Resolver.resolveExpr(typeCtx, exp , BoolType)
+        val id = Id(d.id)
+        id.typ = d.typ
+        val exp = Eq(id, d.value.get)
+        exp.typ = BoolType
         assumes += exp
       }
     }
@@ -183,6 +185,9 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
     val connections = network.structure.get.connections
     val entities = network.entities.get.entities
     
+    val contractModeDecls = new ListBuffer[BDecl]
+    val contractModeAssumes = new ListBuffer[Boogie.Assume]
+    
     val namePrefix = network.id+B.Sep
     
     val buffer = new ListBuffer[(String,Id)]
@@ -192,6 +197,10 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
       buffer += ((c.id,makeId(namePrefix+c.id,c.typ)))
       chanDecls += BDecl(namePrefix+c.id,c.typ)
     }
+    
+    val (varDecls,varAssumes) = createVariableDeclarations(network)
+    contractModeDecls ++= varDecls
+    contractModeAssumes ++= varAssumes map { B.Assume(_) }
     
     val explicitTokensAsserts = (tokensFinder.visit(userNwInvariants) ::: tokensFinder.visit(chInvariants)).toSet
     val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
@@ -343,11 +352,11 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         targetMap, 
         networkRenamings, 
         entityData,
-        entityDeclList:::chanDeclList,
+        entityDeclList:::chanDeclList:::contractModeDecls.toList,
         subactorVarDecls.toList,
         uniquenessConditions,
         actionRatePreds,
-        basicAssumes,
+        basicAssumes:::contractModeAssumes.toList,
         namePrefix)
   }
   

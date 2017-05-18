@@ -51,23 +51,45 @@ object Inferencer {
     }
     
     def generatePreconditionDisjunction(n: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
-      val disjuncts = n.contractActions flatMap { action => {
-        if (action.requires.isEmpty) Nil
-        else List(action.requires reduceLeft { (a,b) => And(a,b) })
+      val disjuncts: List[Expr] = n.contractActions flatMap { action => {
+        val preconds: List[Expr] =
+          action.requires.flatMap { r =>
+            getRequiredTokens(n.inports, r) match {
+              case Some(tokens) => {
+                val antecedents: Iterable[Expr] = 
+                  tokens map { case (p,r) => AtLeast(totb(p,ChanType(n.getInport(p).get.portType)), IntLiteral(r)) }
+                val a = antecedents.reduceLeft((a,b) => And(a,b))
+                List(Implies(a,r))
+              }
+              // Means that this precondition cannot be used as an invariant
+              case None => Nil
+            }
+          }
+        if (preconds.isEmpty) Nil
+        else {
+          val modeName = Id(action.fullName)
+          modeName.typ = ModeType
+          val modeFunCall = FunctionApp("mode",List(modeName))
+          
+          List(Implies(
+              modeFunCall,  
+              preconds reduceLeft { (a,b) => And(a,b) }))
+        }
       }}
       if (!disjuncts.isEmpty) {
-        val invariant = disjuncts reduceLeft { (a,b) => Or(a,b) }
-        Resolver.resolveExpr(invariant, typeCtx)
+        //val invariant = disjuncts reduceLeft { (a,b) => And(a,b) }
+        for (d <- disjuncts) Resolver.resolveExpr(d, typeCtx)
+        //Resolver.resolveExpr(invariant, typeCtx)
         n match {
-          case ba: BasicActor => ba.addInvariant(invariant, assumeInvs)
-          case nw: Network => nw.addChannelInvariant(invariant, assumeInvs)
+          case ba: BasicActor => ba.addInvariants(disjuncts, assumeInvs,false)
+          case nw: Network => nw.addChannelInvariant(disjuncts, assumeInvs)
         }
       }
     }
     
     def generateInputTokenLimit(n: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
       val disjuncts: List[Expr] =
-        n.contractActions map {
+        n.contractActions flatMap {
           action => {
             val preds = 
               for (ip <- n.inports) yield {
@@ -76,15 +98,53 @@ object Inferencer {
                   case None => Eq(totb(ip.id,ChanType(ip.portType)), IntLiteral(0))
                 }
               }
-            preds.reduceLeft { (a,b) => And(a,b) }
+            
+            val modeName = Id(action.fullName)
+            modeName.typ = ModeType
+            val modeFunCall = FunctionApp("mode",List(modeName))
+            List(Implies(
+              modeFunCall,  
+              preds reduceLeft { (a,b) => And(a,b) }))
           }
         }
       if (!disjuncts.isEmpty) {
-        val invariant =  disjuncts reduceLeft { (a,b) => Or(a,b) }
-        Resolver.resolveExpr(invariant, typeCtx)
+        //val invariant =  disjuncts reduceLeft { (a,b) => And(a,b) }
+        for (d <- disjuncts) Resolver.resolveExpr(d, typeCtx)
         n match {
-          case ba: BasicActor => ba.addInvariant(invariant, assumeInvs)
-          case nw: Network => nw.addChannelInvariant(invariant, assumeInvs)
+          case ba: BasicActor => ba.addInvariants(disjuncts, assumeInvs,false)
+          case nw: Network => nw.addChannelInvariant(disjuncts, assumeInvs)
+        }
+      }
+    }
+    
+    /**
+     * Gets the number of tokens that should have been read for the precondition to be valid
+     */
+    def getRequiredTokens(a: List[InPort], e: Expr) = {
+      val ports = a.map { _.id }
+      val inits = (ports.map { p => (p,0) })
+      val mutableMap = collection.mutable.Map(inits: _*)
+      new AccessorFinder(ports).visitExpr(e)(mutableMap)
+      mutableMap.find { case (p,r) => r < 0 } match {
+        case Some(_) => None
+        case None => Some(mutableMap.toMap)
+      }
+    }
+    
+    class AccessorFinder(inports: List[String]) extends ASTVisitor[scala.collection.mutable.Map[String,Int]] {
+      override def visitExpr(expr: Expr)(implicit info: scala.collection.mutable.Map[String,Int]) {
+        expr match {
+          case IndexAccessor(Id(id),idx) => {
+            if (inports contains id) {
+              idx match {
+                case SpecialMarker("@") => if (info(id) < 1) info(id) = 1
+                case Plus(SpecialMarker("@"),IntLiteral(n)) => if (info(id) < n+1) info(id) = n+1
+                case _ => info(id) = -1
+              }
+            }
+            else super.visitExpr(expr)
+          }
+          case _ => super.visitExpr(expr)
         }
       }
     }
@@ -94,33 +154,22 @@ object Inferencer {
   object StaticClass extends StaticPropertyInferenceModule {
     override val name = "sdf-annot"
     
-    val StaticAnnot = "static"
-    val NoInferAnnot = "noinfer"
     val quantVar = Id("idx$"); quantVar.typ = IntType(-1)
     
     override def actor(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
-      if (checkIfAmendable(actor, typeCtx)) {
+      if (checkIfAmendable(actor)) {
         generateCountInvariants(actor, typeCtx)
         generateValueInvariants(actor, typeCtx)
       }
     }
     
     override def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
-      if (checkIfAmendable(n, typeCtx)) {
+      if (checkIfAmendable(n)) {
         generateCountInvariants(n, typeCtx)
       }
     }
     
-    def checkIfAmendable(actor: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context): Boolean = {
-      val static = isRateStatic(actor)
-      if (actor.hasAnnotation(StaticAnnot) && !static) {
-        ctx.error(actor.pos, "Actor '" + actor.id + "' is marked as static but cannot be verified to conform to the restrictions")
-      }
-      
-      if (!static || actor.hasAnnotation(NoInferAnnot)) false
-      else true
-      
-    }
+    
     
     def collectData(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context): (ActorAction,Map[String,Int]) = {
       val firstAction = actor.actorActions.filter{ a => !a.init }(0)
@@ -140,7 +189,8 @@ object Inferencer {
 
       val (firstAction,delayedChannels) = 
         if (actor.isActor) collectData(actor.asInstanceOf[BasicActor], typeCtx)
-        else (actor.contractActions(0),Map.empty[String,Int])
+        else if (!actor.contractActions.isEmpty) (actor.contractActions(0),Map.empty[String,Int])
+        else return
       
       for (op <- actor.outports) {
         
@@ -191,7 +241,7 @@ object Inferencer {
         }
       }
       countInvariants.foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
-      actor.addInvariants(countInvariants.toList, assumeInvs)
+      actor.addInvariants(countInvariants.toList, assumeInvs,true)
     }
     
     def generateValueInvariants(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
@@ -232,7 +282,7 @@ object Inferencer {
         
         val exps = (for (i <- 0 to firstAction.portOutputPattern(op.id).get.rate-1) yield {
           (for (a <- actor.actorActions.filter{ !_.init  }) yield {
-            (a.guard,a.portOutputPattern(op.id).get.asInstanceOf[OutputPattern].exps(i))
+            (a.guards,a.portOutputPattern(op.id).get.asInstanceOf[OutputPattern].exps(i))
           })
         }).toList
         
@@ -275,7 +325,7 @@ object Inferencer {
       } // for
       
       valueInvariants.foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
-      actor.addInvariants(valueInvariants.toList, assumeInvs)
+      actor.addInvariants(valueInvariants.toList, assumeInvs,true)
     }
     
     
@@ -284,9 +334,6 @@ object Inferencer {
   
   object BulletInvariants extends StaticPropertyInferenceModule {
     override val name = "bullet-invariants"
-    
-    val StaticAnnot = "static"
-    val NoInferAnnot = "noinfer"
   
     override def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) = {
       
@@ -297,11 +344,7 @@ object Inferencer {
         (for (m <- n.members) yield m match {
           case e: Entities => e.entities.filter { 
             i => {
-              val static = isRateStatic(i.actor)
-              if (i.actor.hasAnnotation(StaticAnnot) && !static) {
-                ctx.error(i.actor.pos, "Actor '" + i.actor.id + "' is marked as static but cannot be verified to conform to the restrictions")
-              }
-              static && !i.actor.hasAnnotation(NoInferAnnot)
+              checkIfAmendable(i.actor)
             }
           }
           case _ => Nil
@@ -340,7 +383,7 @@ object Inferencer {
         } // for
       } // for
       countInvariants foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
-      n.addChannelInvariants(countInvariants.toList, assumeInvs)
+      n.addChannelInvariant(countInvariants.toList, assumeInvs)
     } // def network
   }
   
@@ -363,6 +406,20 @@ object Inferencer {
   
   abstract class StaticPropertyInferenceModule extends InferenceModule {
     
+    val StaticAnnot = "static"
+    val NoInferAnnot = "noinfer"
+    
+    def checkIfAmendable(actor: DFActor)(implicit ctx: Context): Boolean = {
+      val static = isRateStatic(actor)
+      if (actor.hasAnnotation(StaticAnnot) && !static) {
+        ctx.error(actor.pos, "Actor '" + actor.id + "' is marked as static but cannot be verified to conform to the restrictions")
+      }
+      
+      if (!static || actor.hasAnnotation(NoInferAnnot)) false
+      else true
+      
+    }
+    
     def isStateless(actor: DFActor): Boolean = {
       actor.isInstanceOf[BasicActor] && actor.variables.isEmpty
     }
@@ -370,7 +427,10 @@ object Inferencer {
     def isRateStatic(actor: DFActor): Boolean = {
       var portRates = Map[String,Int]()
       val ports = (actor.inports:::actor.outports map { _.id }).toSet
-      for (action <- actor.actorActions.filter { !_.init }) {
+      val actions =
+        if (actor.isActor) actor.actorActions.filter { !_.init }
+        else actor.contractActions
+      for (action <- actions) {
         var seenPorts = ports
         for (pat <- action.allPatterns) {
           seenPorts = seenPorts - pat.portId

@@ -50,6 +50,7 @@ abstract class EntityTranslator[T <: DFActor] {
     B.Assert(transExpr(chi.expr)(renamings), chi.expr.pos, completeMsg)
   }
   
+  
 }
 
 class Translator( 
@@ -60,13 +61,20 @@ class Translator(
   def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Boogie.Decl] = {
     assert(typeCtx.getErrors.isEmpty)
     
+    val stmtTranslator = new StmtExpTranslator();
+    
     lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
     lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
     
     val bProgram = decls flatMap {
       case a: BasicActor => actorTranslator.translateEntity(a)
       case n: Network => networkTranslator.translateEntity(n)
-      case u: DataUnit => Nil
+      case u: DataUnit => {
+        u.constants flatMap { d =>
+          val (axiom,_) = stmtTranslator.transExpr(d.value.get,Map.empty,false)
+          List(Boogie.Const(d.id,false,B.type2BType(d.typ)),Boogie.Axiom(Boogie.VarExpr(d.id) ==@ axiom))
+        }
+      }
       case td: TypeDecl => {
         //userTypes += (td.tp.id -> NamedType(td.tp.id))
         for (f <- td.fields) yield {

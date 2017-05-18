@@ -67,11 +67,24 @@ class BasicActorTranslator(
       }
     }
     
+    val contractActionFiringRules = new ListBuffer[(AbstractAction,Boogie.Expr)]
     for (a <- avs.contractActions) {
+      val firingRule = new ListBuffer[Boogie.Expr]
       for (p <- a.inputPattern) {
+        firingRule += B.Int(p.rate) <= B.Urd(p.portId)
         decls += translateContractActionInput(avs, p, a)
       }
+      firingRule ++= a.guards map { p => transExpr(p)(avs.renamings) }
       decls ++= translateContractActionExit(avs, a, allGuards.toList)
+      
+      contractActionFiringRules += (( a, firingRule.foldLeft(B.Bool(true): Boogie.Expr)((a,b) => a && b) ))
+    }
+    
+    if (!skipMutualExclusivenessCheck) {
+      createMutualExclusivenessCheck(avs,contractActionFiringRules.toList,Set.empty) match {
+        case Some(proc) => decls += proc
+        case None =>
+      }
     }
     
     decls.toList
@@ -175,11 +188,11 @@ class BasicActorTranslator(
     val renamings = avs.renamings ++ renamingsBuffer.toMap
 
     val guards =
-       a.guard map { e => transExpr(e)(avs.renamings ++ renamingsBuffer.toMap) }
+       a.guards map { e => transExpr(e)(avs.renamings ++ renamingsBuffer.toMap) }
     // This version does not use variables local to the actions (input pattern variables)
     // It is used (at least) as assumptions in contract action checking
     val nonLocalGuards =
-       a.guard map { e => transExpr(e)(avs.renamings ++ replacementBuffer.toMap) }
+       a.guards map { e => transExpr(e)(avs.renamings ++ replacementBuffer.toMap) }
     
     val pattern = if (patterns.isEmpty) B.Bool(true) else patterns.reduceLeft((a,b) => a && b)
     val guard = if (guards.isEmpty) B.Bool(true) else guards.reduceLeft((a,b) => a && b)
@@ -285,6 +298,7 @@ class BasicActorTranslator(
     asgn.toList
   }
   
+  
   def translateContractActionInput(avs: ActorVerificationStructure, pattern: NwPattern,  action: ContractAction) = {
     val asgn = new ListBuffer[Boogie.Stmt]
     asgn ++= generateCommonContractProcedureHeader(avs, action)
@@ -298,6 +312,9 @@ class BasicActorTranslator(
     for (r <- action.requires) {
       asgn += B.Assume(transExpr(r)(avs.renamings))
     }
+    for (r <- action.guards) {
+      asgn += B.Assume(transExpr(r)(avs.renamings))
+    }
     
     for (chi <- avs.invariants) {
       if (!chi.assertion.free) {
@@ -306,6 +323,7 @@ class BasicActorTranslator(
     }
     B.createProc(Uniquifier.get(avs.namePrefix+"contract"+B.Sep+action.fullName+B.Sep+"input"), asgn.toList, smokeTest)
   }
+  
   
   def translateContractActionExit(avs: ActorVerificationStructure, action: ContractAction, guards: List[(AbstractAction, Boogie.Expr)]) = {
     val asgn = new ListBuffer[Boogie.Stmt]

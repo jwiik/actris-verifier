@@ -145,7 +145,7 @@ class NetworkTranslator(
           B.Assert(
               B.C(transExpr(p.id,p.portType)(nwvs.nwRenamings)) - B.I(transExpr(p.id,p.portType)(nwvs.nwRenamings)) ==@ B.Int(nwa.outportRate(p.id)),
               nwa.pos,
-              "The correct number of tokens might not be produced on output '" + p.id +  "'"
+              "The correct number of tokens might not be produced on output '" + p.id +  "' for contract '" + nwa.fullName + "'" 
               )
       }
     
@@ -157,7 +157,9 @@ class NetworkTranslator(
     asgn ++= (nwvs.subactorVarDecls  map { _.decl })
     asgn ++= (nwvs.uniquenessConditions map {B.Assume(_)})
     asgn ++= nwvs.basicAssumes
+    asgn += B.Assume(B.Mode(B.This) ==@ Boogie.VarExpr(nwa.fullName))
     asgn += B.Assume(nwvs.actionRatePredicates(nwa))
+    
     for (chi <- nwvs.chInvariants) {
       asgn += BAssume(chi,nwvs.nwRenamings)
     }
@@ -182,13 +184,13 @@ class NetworkTranslator(
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
     for (chi <- nwvs.chInvariants) {
       if (!chi.assertion.free) {
-        asgn += BAssert(chi,"The network might not preserve the channel invariant",nwvs.nwRenamings)
+        asgn += BAssert(chi,"The network might not preserve the channel invariant for contract '" + nwa.fullName + "'" ,nwvs.nwRenamings)
       }
     }
     
     for (nwi <- nwvs.nwInvariants) {
       if (!nwi.assertion.free) {
-        asgn += BAssert(nwi,"The network might not preserve the network invariant",nwvs.nwRenamings)
+        asgn += BAssert(nwi,"The network might not preserve the network invariant for contract '" + nwa.fullName + "'",nwvs.nwRenamings)
       }
     }
     
@@ -209,7 +211,7 @@ class NetworkTranslator(
       firingCondsBuffer += B.Int(ipat.rate) <= B.Urd(cId)
     }
     
-    for (g <- action.guard) {
+    for (g <- action.guards) {
       val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
       val transGuard = transExpr(renamedGuard)(renamings)
       firingCondsBuffer += transGuard
@@ -358,6 +360,7 @@ class NetworkTranslator(
     asgn ++= nwvs.basicAssumes
     asgn += B.Assume(nwvs.actionRatePredicates(action))
     //asgn += B.Local("x", B.type2BType(IntType(-1)))
+    asgn += B.Assume(B.Mode(B.This) ==@ Boogie.VarExpr(action.fullName))
     
     val portType = nwvs.entity.getInport(pattern.portId).get.portType
     
@@ -374,14 +377,18 @@ class NetworkTranslator(
     asgn += Boogie.Assign(
         B.C(transExpr(pattern.portId,ChanType(portType))(nwvs.nwRenamings)),
         B.C(transExpr(pattern.portId,ChanType(portType))(nwvs.nwRenamings)) + B.Int(1))
-        
+    
+    for (g <- action.guards) {
+      asgn += B.Assume(transExpr(g)(nwvs.nwRenamings))
+    }
     for (r <- action.requires) {
       asgn += B.Assume(transExpr(r)(nwvs.nwRenamings))
     }
     
+    
     for (chi <- nwvs.chInvariants) {
       if (!chi.assertion.free) {
-        asgn += BAssert(chi, "Channel invariant might be falsified by network input", nwvs.nwRenamings)
+        asgn += BAssert(chi, "Channel invariant might be falsified by network input on port '" + pattern.portId + "' for contract '" + action.fullName + "'"  , nwvs.nwRenamings)
       }
     }
 

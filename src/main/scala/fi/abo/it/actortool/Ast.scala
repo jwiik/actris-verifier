@@ -47,9 +47,7 @@ sealed case class Annotation(name: String) extends ASTNode
 
 sealed case class TypeDecl(tp: RefType, fields: List[Declaration]) extends TopDecl(tp.id)
 
-sealed case class DataUnit(
-    override val id: String, 
-    val constants: List[Declaration]) extends TopDecl(id) {
+sealed case class DataUnit(override val id: String, val constants: List[Declaration]) extends TopDecl(id) {
   override def isUnit = true
 }
 
@@ -65,10 +63,10 @@ sealed abstract class DFActor(
       
   def actorInvariants = _invariants
   
-  def addInvariant(invs: Expr, free: Boolean) { addInvariants(List(invs), free) }
+  def addInvariant(invs: Expr, free: Boolean, stream: Boolean) { addInvariants(List(invs), free, stream) }
   
-  def addInvariants(invs: List[Expr], free: Boolean) {
-    val newInvariants = invs map { x => ActorInvariant(Assertion(x,free),true,true) }
+  def addInvariants(invs: List[Expr], free: Boolean, stream: Boolean) {
+    val newInvariants = invs map { x => ActorInvariant(Assertion(x,free),true,stream) }
     _invariants = _invariants:::newInvariants
   }
   
@@ -120,9 +118,9 @@ sealed case class Network(
     _channelInvariants
   }
   
-  def addChannelInvariant(chi: Expr, free: Boolean) { addChannelInvariants(List(chi), free) }
+  def addChannelInvariant(chi: Expr, free: Boolean) { addChannelInvariant(List(chi), free) }
   
-  def addChannelInvariants(chis: List[Expr], free: Boolean) {
+  def addChannelInvariant(chis: List[Expr], free: Boolean) {
     val newInvariants = chis map { x => ChannelInvariant(Assertion(x,free),true) }
     _channelInvariants = _channelInvariants:::newInvariants
   }
@@ -163,7 +161,7 @@ sealed abstract class AbstractAction extends Member {
   val requires: List[Expr]
   val ensures: List[Expr]
   val allPatterns = inputPattern ::: outputPattern
-  val guard: List[Expr] = Nil
+  val guards: List[Expr] = Nil
   val variables: List[Declaration] = List.empty
   val body: List[Stmt] = List.empty
   
@@ -192,6 +190,7 @@ sealed case class ContractAction(
     override val label: Option[String], 
     override val inputPattern: List[NwPattern],
     override val outputPattern: List[NwPattern],
+    override val guards: List[Expr], 
     override val requires: List[Expr], 
     override val ensures: List[Expr]) extends AbstractAction {
   
@@ -205,7 +204,7 @@ sealed case class ActorAction(
     override val init: Boolean, 
     override val inputPattern: List[InputPattern], 
     override val outputPattern: List[OutputPattern],
-    override val guard: List[Expr], 
+    override val guards: List[Expr], 
     override val requires: List[Expr], 
     override val ensures: List[Expr],
     override val variables: List[Declaration],
@@ -522,6 +521,8 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isRef = false
   def isBv = false
   def isMap = false
+  def isState = false
+  def isMode = false
 }
 
 sealed case class RefType(val name: String) extends Type(name) {
@@ -587,4 +588,10 @@ case class MapType(val domainType: Type, val rangeType: Type) extends IndexedTyp
 }
 case class BvType(val size: Int, val signed: Boolean) extends PrimitiveType((if (signed) "bv" else "ubv")+size) {
   override def isBv = true
+}
+case class StateType(a: BasicActor, states: List[String]) extends PrimitiveType("state") {
+  override def isState = true
+}
+case object ModeType extends PrimitiveType("mode") {
+  override def isMode = true
 }
