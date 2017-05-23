@@ -64,8 +64,6 @@ actor Algo_IS_simple () int(size=3) AC_PRED_DIR, int(size = 13) QFS_AC ==> int(s
       38, 39, 50, 51, 56, 57, 58, 59, 52, 53, 54, 55, 60, 61, 62, 63
   ];*/
 
-
-  int BUF_SIZE = 128;
   
   //Holds number of Ac coeffs read in or written out
   int(size=8) count := int2bv(1,8);

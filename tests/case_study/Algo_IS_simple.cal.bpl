@@ -174,7 +174,6 @@ procedure Algo_IS_simple#init#0()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -187,14 +186,13 @@ procedure Algo_IS_simple#init#0()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (I#[AC_PRED_DIR] == 0) && (R#[AC_PRED_DIR] == 0) && (C#[AC_PRED_DIR] == 0);
   assume (I#[QFS_AC] == 0) && (R#[QFS_AC] == 0) && (C#[QFS_AC] == 0);
   assume (I#[PQF_AC] == 0) && (R#[PQF_AC] == 0) && (C#[PQF_AC] == 0);
   count := 1bv8;
   half_ := false;
   St# := rest;
-  assert {:msg "Algo_IS_simple.cal(128.3): Initialization might not establish the invariant (#0)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(126.3): Initialization might not establish the invariant (#0)"} ((St# == rest) || (St# == read)) || (St# == write);
   assert {:msg "Algo_IS_simple.cal(36.13): Initialization might not establish the invariant (#1)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
   assert {:msg "Algo_IS_simple.cal(37.13): Initialization might not establish the invariant (#2)"} (St# == rest) ==> (count == 1bv8);
   assert {:msg "Algo_IS_simple.cal(39.13): Initialization might not establish the invariant (#3)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
@@ -222,7 +220,6 @@ procedure Algo_IS_simple#skip#1()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -237,7 +234,6 @@ procedure Algo_IS_simple#skip#1()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -262,20 +258,20 @@ procedure Algo_IS_simple#skip#1()
   if (St# == rest) {
     St# := rest;
   }
-  assert {:msg "Algo_IS_simple.cal(128.3): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#14)"} ((St# == rest) || (St# == read)) || (St# == write);
-  assert {:msg "Algo_IS_simple.cal(36.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#15)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
-  assert {:msg "Algo_IS_simple.cal(37.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#16)"} (St# == rest) ==> (count == 1bv8);
-  assert {:msg "Algo_IS_simple.cal(39.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#17)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(40.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#18)"} (Mode#[this#] == Skip) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(41.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#19)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(43.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#20)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(44.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#21)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(45.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#22)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(46.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#23)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(47.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#24)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
-  assert {:msg "Algo_IS_simple.cal(48.13): Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#25)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
-  assert {:msg "Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#26)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
-  assert {:msg "Action 'skip' at Algo_IS_simple.cal(93.3) might not preserve the invariant (#27)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
+  assert {:msg "Algo_IS_simple.cal(126.3): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#14)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(36.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#15)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
+  assert {:msg "Algo_IS_simple.cal(37.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#16)"} (St# == rest) ==> (count == 1bv8);
+  assert {:msg "Algo_IS_simple.cal(39.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#17)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(40.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#18)"} (Mode#[this#] == Skip) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(41.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#19)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(43.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#20)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(44.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#21)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(45.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#22)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(46.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#23)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(47.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#24)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
+  assert {:msg "Algo_IS_simple.cal(48.13): Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#25)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
+  assert {:msg "Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#26)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
+  assert {:msg "Action 'skip' at Algo_IS_simple.cal(91.3) might not preserve the invariant (#27)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
 }
 procedure Algo_IS_simple#start#2()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -290,7 +286,6 @@ procedure Algo_IS_simple#start#2()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -305,7 +300,6 @@ procedure Algo_IS_simple#start#2()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -332,20 +326,20 @@ procedure Algo_IS_simple#start#2()
   if (St# == rest) {
     St# := read;
   }
-  assert {:msg "Algo_IS_simple.cal(128.3): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#28)"} ((St# == rest) || (St# == read)) || (St# == write);
-  assert {:msg "Algo_IS_simple.cal(36.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#29)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
-  assert {:msg "Algo_IS_simple.cal(37.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#30)"} (St# == rest) ==> (count == 1bv8);
-  assert {:msg "Algo_IS_simple.cal(39.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#31)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(40.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#32)"} (Mode#[this#] == Skip) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(41.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#33)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(43.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#34)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(44.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#35)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(45.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#36)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(46.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#37)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(47.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#38)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
-  assert {:msg "Algo_IS_simple.cal(48.13): Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#39)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
-  assert {:msg "Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#40)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
-  assert {:msg "Action 'start' at Algo_IS_simple.cal(97.3) might not preserve the invariant (#41)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
+  assert {:msg "Algo_IS_simple.cal(126.3): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#28)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(36.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#29)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
+  assert {:msg "Algo_IS_simple.cal(37.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#30)"} (St# == rest) ==> (count == 1bv8);
+  assert {:msg "Algo_IS_simple.cal(39.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#31)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(40.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#32)"} (Mode#[this#] == Skip) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(41.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#33)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(43.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#34)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(44.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#35)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(45.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#36)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(46.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#37)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(47.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#38)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
+  assert {:msg "Algo_IS_simple.cal(48.13): Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#39)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
+  assert {:msg "Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#40)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
+  assert {:msg "Action 'start' at Algo_IS_simple.cal(95.3) might not preserve the invariant (#41)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
 }
 procedure Algo_IS_simple#done#3()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -360,7 +354,6 @@ procedure Algo_IS_simple#done#3()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -375,7 +368,6 @@ procedure Algo_IS_simple#done#3()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -405,20 +397,20 @@ procedure Algo_IS_simple#done#3()
       St# := rest;
     }
   }
-  assert {:msg "Algo_IS_simple.cal(128.3): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#42)"} ((St# == rest) || (St# == read)) || (St# == write);
-  assert {:msg "Algo_IS_simple.cal(36.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#43)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
-  assert {:msg "Algo_IS_simple.cal(37.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#44)"} (St# == rest) ==> (count == 1bv8);
-  assert {:msg "Algo_IS_simple.cal(39.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#45)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(40.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#46)"} (Mode#[this#] == Skip) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(41.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#47)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(43.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#48)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(44.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#49)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(45.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#50)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(46.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#51)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(47.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#52)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
-  assert {:msg "Algo_IS_simple.cal(48.13): Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#53)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
-  assert {:msg "Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#54)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
-  assert {:msg "Action 'done' at Algo_IS_simple.cal(104.3) might not preserve the invariant (#55)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
+  assert {:msg "Algo_IS_simple.cal(126.3): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#42)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(36.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#43)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
+  assert {:msg "Algo_IS_simple.cal(37.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#44)"} (St# == rest) ==> (count == 1bv8);
+  assert {:msg "Algo_IS_simple.cal(39.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#45)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(40.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#46)"} (Mode#[this#] == Skip) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(41.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#47)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(43.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#48)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(44.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#49)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(45.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#50)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(46.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#51)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(47.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#52)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
+  assert {:msg "Algo_IS_simple.cal(48.13): Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#53)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
+  assert {:msg "Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#54)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
+  assert {:msg "Action 'done' at Algo_IS_simple.cal(102.3) might not preserve the invariant (#55)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
 }
 procedure Algo_IS_simple#read_only#4()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -433,7 +425,6 @@ procedure Algo_IS_simple#read_only#4()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -448,7 +439,6 @@ procedure Algo_IS_simple#read_only#4()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -476,20 +466,20 @@ procedure Algo_IS_simple#read_only#4()
   if (St# == read) {
     St# := read;
   }
-  assert {:msg "Algo_IS_simple.cal(128.3): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#56)"} ((St# == rest) || (St# == read)) || (St# == write);
-  assert {:msg "Algo_IS_simple.cal(36.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#57)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
-  assert {:msg "Algo_IS_simple.cal(37.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#58)"} (St# == rest) ==> (count == 1bv8);
-  assert {:msg "Algo_IS_simple.cal(39.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#59)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(40.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#60)"} (Mode#[this#] == Skip) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(41.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#61)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(43.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#62)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(44.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#63)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(45.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#64)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(46.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#65)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(47.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#66)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
-  assert {:msg "Algo_IS_simple.cal(48.13): Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#67)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
-  assert {:msg "Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#68)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
-  assert {:msg "Action 'read_only' at Algo_IS_simple.cal(113.3) might not preserve the invariant (#69)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
+  assert {:msg "Algo_IS_simple.cal(126.3): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#56)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(36.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#57)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
+  assert {:msg "Algo_IS_simple.cal(37.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#58)"} (St# == rest) ==> (count == 1bv8);
+  assert {:msg "Algo_IS_simple.cal(39.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#59)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(40.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#60)"} (Mode#[this#] == Skip) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(41.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#61)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(43.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#62)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(44.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#63)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(45.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#64)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(46.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#65)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(47.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#66)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
+  assert {:msg "Algo_IS_simple.cal(48.13): Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#67)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
+  assert {:msg "Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#68)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
+  assert {:msg "Action 'read_only' at Algo_IS_simple.cal(111.3) might not preserve the invariant (#69)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
 }
 procedure Algo_IS_simple#write_only#5()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -504,7 +494,6 @@ procedure Algo_IS_simple#write_only#5()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -519,7 +508,6 @@ procedure Algo_IS_simple#write_only#5()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -547,20 +535,20 @@ procedure Algo_IS_simple#write_only#5()
   }
   M#[PQF_AC][C#[PQF_AC]] := Map#Select(buf, Algo_IS_simple#ra(Map#Select(Scanmode, addr)));
   C#[PQF_AC] := C#[PQF_AC] + 1;
-  assert {:msg "Algo_IS_simple.cal(128.3): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#70)"} ((St# == rest) || (St# == read)) || (St# == write);
-  assert {:msg "Algo_IS_simple.cal(36.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#71)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
-  assert {:msg "Algo_IS_simple.cal(37.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#72)"} (St# == rest) ==> (count == 1bv8);
-  assert {:msg "Algo_IS_simple.cal(39.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#73)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(40.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#74)"} (Mode#[this#] == Skip) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(41.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#75)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(43.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#76)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(44.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#77)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
-  assert {:msg "Algo_IS_simple.cal(45.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#78)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(46.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#79)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
-  assert {:msg "Algo_IS_simple.cal(47.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#80)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
-  assert {:msg "Algo_IS_simple.cal(48.13): Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#81)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
-  assert {:msg "Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#82)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
-  assert {:msg "Action 'write_only' at Algo_IS_simple.cal(121.3) might not preserve the invariant (#83)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
+  assert {:msg "Algo_IS_simple.cal(126.3): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#70)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(36.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#71)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
+  assert {:msg "Algo_IS_simple.cal(37.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#72)"} (St# == rest) ==> (count == 1bv8);
+  assert {:msg "Algo_IS_simple.cal(39.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#73)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(40.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#74)"} (Mode#[this#] == Skip) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(41.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#75)"} (Mode#[this#] == Skip) ==> ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(43.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#76)"} (Mode#[this#] == Main) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
+  assert {:msg "Algo_IS_simple.cal(44.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#77)"} (Mode#[this#] == Main) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> (St# == rest);
+  assert {:msg "Algo_IS_simple.cal(45.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#78)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 0) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 0) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(46.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#79)"} (Mode#[this#] == Main) && (St# == read) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == (AT#Bv2Int8(count) - 1)) && ((C#[PQF_AC] - I#[PQF_AC]) == 0);
+  assert {:msg "Algo_IS_simple.cal(47.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#80)"} (Mode#[this#] == Main) && (St# == write) ==> ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) && ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == (AT#Bv2Int8(count) - 1));
+  assert {:msg "Algo_IS_simple.cal(48.13): Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#81)"} (Mode#[this#] == Main) && (St# == rest) && ((R#[AC_PRED_DIR] - I#[AC_PRED_DIR]) == 1) ==> ((R#[QFS_AC] - I#[QFS_AC]) == 63) && ((C#[PQF_AC] - I#[PQF_AC]) == 63);
+  assert {:msg "Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#82)"} (Mode#[this#] == Skip) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) == 0);
+  assert {:msg "Action 'write_only' at Algo_IS_simple.cal(119.3) might not preserve the invariant (#83)"} (Mode#[this#] == Main) ==> ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) <= 1) && ((C#[QFS_AC] - I#[QFS_AC]) <= 63);
 }
 procedure Algo_IS_simple##GuardWD#6()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -575,7 +563,6 @@ procedure Algo_IS_simple##GuardWD#6()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -590,7 +577,6 @@ procedure Algo_IS_simple##GuardWD#6()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -632,7 +618,6 @@ procedure Algo_IS_simple#contract#Skip#input#7()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -645,7 +630,6 @@ procedure Algo_IS_simple#contract#Skip#input#7()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -668,7 +652,7 @@ procedure Algo_IS_simple#contract#Skip#input#7()
   assume (C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) < 1;
   C#[AC_PRED_DIR] := C#[AC_PRED_DIR] + 1;
   assume AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(128.3): Invariant might be falsified by actor input (#94)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(126.3): Invariant might be falsified by actor input (#94)"} ((St# == rest) || (St# == read)) || (St# == write);
   assert {:msg "Algo_IS_simple.cal(36.13): Invariant might be falsified by actor input (#95)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
   assert {:msg "Algo_IS_simple.cal(37.13): Invariant might be falsified by actor input (#96)"} (St# == rest) ==> (count == 1bv8);
   assert {:msg "Algo_IS_simple.cal(39.13): Invariant might be falsified by actor input (#97)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
@@ -696,7 +680,6 @@ procedure Algo_IS_simple#contract#Skip#exit#8()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -709,7 +692,6 @@ procedure Algo_IS_simple#contract#Skip#exit#8()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -739,7 +721,7 @@ procedure Algo_IS_simple#contract#Skip#exit#8()
   assert {:msg "Algo_IS_simple.cal(26.3): The correct number of tokens might not be produced on output 'PQF_AC' with contract 'Skip' (#108)"} (C#[PQF_AC] - I#[PQF_AC]) == 0;
   R#[PQF_AC] := R#[PQF_AC] + 0;
   I# := R#;
-  assert {:msg "Algo_IS_simple.cal(128.3): The actor might not preserve the invariant with contract 'Skip' at Algo_IS_simple.cal(26.3) (#109)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(126.3): The actor might not preserve the invariant with contract 'Skip' at Algo_IS_simple.cal(26.3) (#109)"} ((St# == rest) || (St# == read)) || (St# == write);
   assert {:msg "Algo_IS_simple.cal(36.13): The actor might not preserve the invariant with contract 'Skip' at Algo_IS_simple.cal(26.3) (#110)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
   assert {:msg "Algo_IS_simple.cal(37.13): The actor might not preserve the invariant with contract 'Skip' at Algo_IS_simple.cal(26.3) (#111)"} (St# == rest) ==> (count == 1bv8);
   assert {:msg "Algo_IS_simple.cal(39.13): The actor might not preserve the invariant with contract 'Skip' at Algo_IS_simple.cal(26.3) (#112)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
@@ -767,7 +749,6 @@ procedure Algo_IS_simple#contract#Main#input#9()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -780,7 +761,6 @@ procedure Algo_IS_simple#contract#Main#input#9()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -803,7 +783,7 @@ procedure Algo_IS_simple#contract#Main#input#9()
   assume (C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) < 1;
   C#[AC_PRED_DIR] := C#[AC_PRED_DIR] + 1;
   assume AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(128.3): Invariant might be falsified by actor input (#123)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(126.3): Invariant might be falsified by actor input (#123)"} ((St# == rest) || (St# == read)) || (St# == write);
   assert {:msg "Algo_IS_simple.cal(36.13): Invariant might be falsified by actor input (#124)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
   assert {:msg "Algo_IS_simple.cal(37.13): Invariant might be falsified by actor input (#125)"} (St# == rest) ==> (count == 1bv8);
   assert {:msg "Algo_IS_simple.cal(39.13): Invariant might be falsified by actor input (#126)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
@@ -831,7 +811,6 @@ procedure Algo_IS_simple#contract#Main#input#10()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -844,7 +823,6 @@ procedure Algo_IS_simple#contract#Main#input#10()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -867,7 +845,7 @@ procedure Algo_IS_simple#contract#Main#input#10()
   assume (C#[QFS_AC] - I#[QFS_AC]) < 63;
   C#[QFS_AC] := C#[QFS_AC] + 1;
   assume AT#BvSge3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
-  assert {:msg "Algo_IS_simple.cal(128.3): Invariant might be falsified by actor input (#137)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(126.3): Invariant might be falsified by actor input (#137)"} ((St# == rest) || (St# == read)) || (St# == write);
   assert {:msg "Algo_IS_simple.cal(36.13): Invariant might be falsified by actor input (#138)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
   assert {:msg "Algo_IS_simple.cal(37.13): Invariant might be falsified by actor input (#139)"} (St# == rest) ==> (count == 1bv8);
   assert {:msg "Algo_IS_simple.cal(39.13): Invariant might be falsified by actor input (#140)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
@@ -895,7 +873,6 @@ procedure Algo_IS_simple#contract#Main#exit#11()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -908,7 +885,6 @@ procedure Algo_IS_simple#contract#Main#exit#11()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);
@@ -938,7 +914,7 @@ procedure Algo_IS_simple#contract#Main#exit#11()
   assert {:msg "Algo_IS_simple.cal(31.3): The correct number of tokens might not be produced on output 'PQF_AC' with contract 'Main' (#151)"} (C#[PQF_AC] - I#[PQF_AC]) == 63;
   R#[PQF_AC] := R#[PQF_AC] + 63;
   I# := R#;
-  assert {:msg "Algo_IS_simple.cal(128.3): The actor might not preserve the invariant with contract 'Main' at Algo_IS_simple.cal(31.3) (#152)"} ((St# == rest) || (St# == read)) || (St# == write);
+  assert {:msg "Algo_IS_simple.cal(126.3): The actor might not preserve the invariant with contract 'Main' at Algo_IS_simple.cal(31.3) (#152)"} ((St# == rest) || (St# == read)) || (St# == write);
   assert {:msg "Algo_IS_simple.cal(36.13): The actor might not preserve the invariant with contract 'Main' at Algo_IS_simple.cal(31.3) (#153)"} AT#BvSle8(1bv8, count) && AT#BvSle8(count, 64bv8);
   assert {:msg "Algo_IS_simple.cal(37.13): The actor might not preserve the invariant with contract 'Main' at Algo_IS_simple.cal(31.3) (#154)"} (St# == rest) ==> (count == 1bv8);
   assert {:msg "Algo_IS_simple.cal(39.13): The actor might not preserve the invariant with contract 'Main' at Algo_IS_simple.cal(31.3) (#155)"} (Mode#[this#] == Skip) && ((C#[AC_PRED_DIR] - I#[AC_PRED_DIR]) > 0) ==> AT#BvSlt3(M#[AC_PRED_DIR][I#[AC_PRED_DIR]], 0bv3);
@@ -966,7 +942,6 @@ procedure Algo_IS_simple##GuardWD#12()
   var read: int;
   var rest: int;
   var Scanmode: Map (bv9) (bv7);
-  var BUF_SIZE: int;
   var count: bv8;
   var addr: bv9;
   var add_buf: bv3;
@@ -979,7 +954,6 @@ procedure Algo_IS_simple##GuardWD#12()
   assume write == 2;
   assume read == 1;
   assume rest == 0;
-  assume BUF_SIZE == 128;
   assume (0 <= I#[AC_PRED_DIR]) && (I#[AC_PRED_DIR] <= R#[AC_PRED_DIR]) && (R#[AC_PRED_DIR] <= C#[AC_PRED_DIR]);
   assume (0 <= I#[QFS_AC]) && (I#[QFS_AC] <= R#[QFS_AC]) && (R#[QFS_AC] <= C#[QFS_AC]);
   assume (0 <= I#[PQF_AC]) && (I#[PQF_AC] <= R#[PQF_AC]) && (R#[PQF_AC] <= C#[PQF_AC]);

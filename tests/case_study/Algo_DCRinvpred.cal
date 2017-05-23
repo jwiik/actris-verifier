@@ -20,7 +20,8 @@ actor Algo_DCRinvpred ()
 		==>
 		AC_PRED_DIR:1
 		
-		requires (BTYPE[@] & NEWVOP) != 0x000
+		guard (BTYPE[@] & NEWVOP) != 0x000
+		ensures AC_PRED_DIR[@] = -int2bv(2,3)
 		
 	end
 	
@@ -39,6 +40,8 @@ actor Algo_DCRinvpred ()
 		
 		guard (BTYPE[@] & NEWVOP) = 0x000
 		guard (BTYPE[@] & INTER) != 0x000 && (BTYPE[@] & ACCODED) != 0x000
+		ensures AC_PRED_DIR[@] = int2bv(0,3)
+		ensures MODE[@] = int2bv(0,3)
 	end
 	
 	OtherMode:
@@ -52,6 +55,7 @@ actor Algo_DCRinvpred ()
 		guard (BTYPE[@] & INTER) = 0x000
 		guard (BTYPE[@] & INTRA) = 0x000
 		guard (BTYPE[@] & ACCODED) = 0x000
+		ensures AC_PRED_DIR[@] = -int2bv(1,3)
 	end
 	
 	IntraMode:
@@ -73,7 +77,8 @@ actor Algo_DCRinvpred ()
 		guard (BTYPE[@] & NEWVOP) = 0x000
 		guard (BTYPE[@] & INTER) = 0x000
 		guard (BTYPE[@] & INTRA) != 0x000
-		
+		ensures int2bv(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int2bv(2,3)
+		ensures int2bv(0,3) <= MODE[@] && MODE[@] <= int2bv(2,3)
 	end
 	
 	invariant rd@(BTYPE) = 0 ==> state(read)
@@ -92,6 +97,7 @@ actor Algo_DCRinvpred ()
 		rd@(QP) = 0 && rd@(QFS_DC) = 0 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot(QF_DC) = 0
 	invariant mode(StartMode) && rd@(BTYPE) = 0 ==> tot@(AC_PRED_DIR) = 0
 	invariant mode(StartMode) && rd@(BTYPE) > 0 ==> tot@(AC_PRED_DIR) = 1
+	invariant mode(StartMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int2bv(2,3)
 	
 	
 	// Inter Mode
@@ -108,7 +114,7 @@ actor Algo_DCRinvpred ()
 		rd@(BTYPE) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 0
 	invariant mode(InterMode) && state(advance)  ==> 
 		rd@(BTYPE) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 1
-	
+	invariant mode(InterMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = int2bv(0,3) && MODE[@] = int2bv(0,3)
 	
 	// Intra Mode
 	invariant mode(IntraMode) ==> state(read) || state(intra) || state(sat) || state(advance)
@@ -123,6 +129,8 @@ actor Algo_DCRinvpred ()
 		rd@(BTYPE) = 1 && rd@(A) = 1 && rd@(B) = 1 && rd@(C) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 0
 	invariant mode(IntraMode) && state(advance)  ==> 
 		rd@(BTYPE) = 1 && rd@(A) = 1 && rd@(B) = 1 && rd@(C) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 1
+	invariant mode(IntraMode) && tot@(AC_PRED_DIR) > 0 ==> int2bv(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int2bv(2,3) && AC_PRED_DIR[@] = MODE[@]
+	
 	
 	// Other Mode
 	invariant mode(OtherMode) ==> state(read) || state(advance)
@@ -133,7 +141,7 @@ actor Algo_DCRinvpred ()
 		
 	invariant mode(OtherMode) && state(advance) ==>
 		(rd@(BTYPE) = 1 && rd@(A) = 0 && rd@(B) = 0 && rd@(C) = 0 && rd@(QP) = 1 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot@(QF_DC) = 0)
-	
+	invariant mode(OtherMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int2bv(1,3)
 	
 	// Decoded 'quantiser_scale' - see ISO/IEC 14496-2
 	int(size=6) s_QP;

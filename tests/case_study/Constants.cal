@@ -5,4 +5,7 @@ unit Constants:
   int(size=12) MOTION = int2bv(8,12);
   int(size=12) ACCODED = int2bv(2,12);
   int(size=12) ACPRED = int2bv(1,12);
+  
+  int(size=11) MAXW_IN_MB = int2bv(121,11);
+  int(size=11) MAXH_IN_MB = int2bv(69,11);
 end

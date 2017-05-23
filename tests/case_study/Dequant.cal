@@ -41,24 +41,25 @@ ENDCOPYRIGHT
 //
 // MPEG-4 inverse quantization function
 
-package com.xilinx.mpeg4.part2.sp;
-
-import org.sc29.wg11.mpeg4.part2.Constants.QUANT_SZ;
-import org.sc29.wg11.mpeg4.part2.Constants.SAMPLE_SZ;
 
 actor Dequant()
-	int(size=SAMPLE_SZ) DC, int(size=SAMPLE_SZ) AC, int(size=QUANT_SZ) QP
+	int(size=13) DC, int(size=13) AC, int(size=6) QP
 		==>
-	int(size=SAMPLE_SZ) OUT :
+	int(size=13) OUT :
+	
+	contract QP:1, DC:1, AC:63 ==> OUT:64 end
+	
+	invariant tot@(OUT) = rd@(DC) + rd@(AC)
+	invariant state(start) ==> ( 
+		(rd@(QP) = 0 && rd@(DC) = 0 && rd@(AC) = 0 && tot@(OUT) = 0) || 
+		(rd@(QP) = 1 && rd@(DC) = 1 && rd@(AC) = 63 && tot@(OUT) = 64) )
+	invariant state(ac) ==> rd@(DC) = 1 && rd@(QP) = 1 && rd@(AC) = bv2int(count)
 
-	function saturate(int x) --> int
-	var
-		bool minus = x < -2048,
-		bool plus = x > 2047 :
-		if minus then
+	function saturate(int(size=13) x) --> int(size=13):
+		if x < -2048 then
 			-2048
 		else
-			if plus then
+			if x > 2047 then
 				2047
 			else
 				x
@@ -68,20 +69,20 @@ actor Dequant()
 
 	int(size=7) count;
 
-	int(size=QUANT_SZ) quant;
+	int(size=6) quant;
 
 	int(size=2) round;
 
 	get_qp: action QP:[ q ], DC:[ i ] ==> OUT:[ i ]
 	do
 		quant := q;
-		round := (q & 1) ^ 1;
-		count := 0;
+		round := bvresize((q & int2bv(1,6)) ^ int2bv(1,6), 2);
+		count := int2bv(0,7);
 	end
 
 	done: action ==>
 	guard
-		count = 63
+		count = int2bv(63,7)
 	end
 
 	function abs(int x) --> int :
@@ -94,19 +95,19 @@ actor Dequant()
 
 	ac: action AC:[ i ] ==> OUT:[ saturate(o) ]
 	var
-		int(size=SAMPLE_SZ) v = quant * ((abs(i) << 1) + 1) - round,
-		int(size=SAMPLE_SZ) o =
-		if i = 0 then
-			0
+		int(size=13) v = bvresize(quant,13) * ((abs(i) << int2bv(1,13)) + int2bv(1,13)) - bvresize(round,13),
+		int(size=13) o =
+		if i = int2bv(0,13) then
+			int2bv(0,13)
 		else
-			if i < 0 then
+			if i < int2bv(0,13) then
 				-v
 			else
 				v
 			end
 		end
 	do
-		count := count + 1;
+		count := count + int2bv(1,7);
 	end
 
 	schedule fsm start :

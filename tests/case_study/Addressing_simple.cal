@@ -117,7 +117,7 @@ actor Addressing_simple ()
 	// Also, location 0 is reserved for all uncoded blocks. This protocol must
 	// be identical to the buffer addressing in Reconstruct.cal, since pointer
 	// values are passed on ports A, B, C.
-	int BUF_SIZE = (121 + 2);
+	//int BUF_SIZE = (121 + 2);
 
 	Map(int(size=11) -> bool) coded //:= [ false : for int i in 1 .. BUF_SIZE * 8 ];
 

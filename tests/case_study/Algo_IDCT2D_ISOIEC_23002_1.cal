@@ -1,5 +1,3 @@
-package org.sc29.wg11.mpeg4.part2.sp.texture;
-
 actor Algo_IDCT2D_ISOIEC_23002_1()
 	int(size=13) IN, bool SIGNED ==> int(size=9) OUT :
 
