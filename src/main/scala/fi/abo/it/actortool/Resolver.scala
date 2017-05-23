@@ -208,9 +208,12 @@ object Resolver {
             case s: Structure =>
               return Errors(List((s.pos, "Basic actors cannot have a structure block")))
             case d: Declaration =>
-              d.value match {
-                case Some(e) => resolveExpr(ctx,e)
-                case None =>
+              if (!d.typ.isState) {
+                // FIXME ugly hack
+                d.value match {
+                  case Some(e) => resolveExpr(ctx,e,d.typ)
+                  case None =>
+                }
               }
             case sc: Schedule => schedule = Some(sc)
             case pr: Priority => priority = Some(pr)
@@ -345,7 +348,7 @@ object Resolver {
         case None =>
       }
       vars = vars + (v.id -> v)
-    } 
+    }
     
     val ctx = new ActionContext(action, actorCtx,vars)
     
@@ -566,7 +569,7 @@ object Resolver {
     if (t != rType) {
       ctx.error(exp.pos, "Expected type '" + t.id + "', found '" + rType.id  + "'")
     }
-    assert(exp.typ != null, exp)
+    //assert(exp.typ != null, exp)
     if (ctx.getErrors.isEmpty && exp.typ != null) Success(ctx) else Errors(ctx.getErrors.toList)
   }
   

@@ -157,6 +157,7 @@ object Inferencer {
     val quantVar = Id("idx$"); quantVar.typ = IntType(-1)
     
     override def actor(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
+      if (actor.isActor && actor.actorActions.filter(!_.init).isEmpty) return
       if (checkIfAmendable(actor)) {
         generateCountInvariants(actor, typeCtx)
         generateValueInvariants(actor, typeCtx)
@@ -168,7 +169,6 @@ object Inferencer {
         generateCountInvariants(n, typeCtx)
       }
     }
-    
     
     
     def collectData(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context): (ActorAction,Map[String,Int]) = {
@@ -186,7 +186,7 @@ object Inferencer {
     
     def generateCountInvariants(actor: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
       val countInvariants = new ListBuffer[Expr]
-
+      
       val (firstAction,delayedChannels) = 
         if (actor.isActor) collectData(actor.asInstanceOf[BasicActor], typeCtx)
         else if (!actor.contractActions.isEmpty) (actor.contractActions(0),Map.empty[String,Int])
@@ -357,30 +357,32 @@ object Inferencer {
       }
 
       for (e <- entities) {
-        val action = 
-          if (e.actor.isActor) e.actor.actorActions.filter{ a => !a.init }(0)
-          else e.actor.contractActions(0)
-        
-        for (op <- e.actor.outports) {
+        if (!(e.actor.isActor && e.actor.actorActions.filter(!_.init).isEmpty)) {
+          val action = 
+            if (e.actor.isActor) e.actor.actorActions.filter{ a => !a.init }(0)
+            else e.actor.contractActions(0)
           
-          val outRate = action.outportRate(op.id)
-          val outChan = n.structure.get.outgoingConnections(e.id, op.id).get
+          for (op <- e.actor.outports) {
             
-          for (ip <- e.actor.inports) {
-            val inRate = action.inportRate(ip.id)
-            val inChan = n.structure.get.incomingConnection(e.id, ip.id).get
-            
-            val ratedAt1 = 
-              if (inRate == 1) bullet(outChan.id,ChanType(op.portType))
-              else Times(lit(inRate),bullet(outChan.id,ChanType(op.portType)))
+            val outRate = action.outportRate(op.id)
+            val outChan = n.structure.get.outgoingConnections(e.id, op.id).get
               
-            val ratedAt2 = 
-              if (outRate == 1) bullet(inChan.id,ChanType(ip.portType))
-              else Times(lit(outRate),bullet(inChan.id,ChanType(ip.portType)))
+            for (ip <- e.actor.inports) {
+              val inRate = action.inportRate(ip.id)
+              val inChan = n.structure.get.incomingConnection(e.id, ip.id).get
               
-            countInvariants += Eq(ratedAt1,ratedAt2)
-          }
-        } // for
+              val ratedAt1 = 
+                if (inRate == 1) bullet(outChan.id,ChanType(op.portType))
+                else Times(lit(inRate),bullet(outChan.id,ChanType(op.portType)))
+                
+              val ratedAt2 = 
+                if (outRate == 1) bullet(inChan.id,ChanType(ip.portType))
+                else Times(lit(outRate),bullet(inChan.id,ChanType(ip.portType)))
+                
+              countInvariants += Eq(ratedAt1,ratedAt2)
+            }
+          } // for
+        } // if
       } // for
       countInvariants foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
       n.addChannelInvariant(countInvariants.toList, assumeInvs)

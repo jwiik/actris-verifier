@@ -42,11 +42,11 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not"
+                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for", "in"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
-                       "-->", "::", "{", "}", "<<" , ">>", "@", "&", "~", "^", "->")
+                       "-->", "::", "{", "}", "<<" , ">>", "@", "&", "~", "^", "->", "..")
                        
   def programUnit = (actorDecl | networkDecl | unitDecl | typeDecl)*
   
@@ -198,12 +198,12 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
           "contract" ~
           repsep(inputPattern,",") ~ 
           ("==>" ~> repsep(outputPattern,",")) ~
+          ("guard" ~> repsep(expression,",") *) ~
           ("requires" ~> repsep(expression,",") *) ~
-          ("ensures" ~> repsep(expression,",") *) ~
-          ("guard" ~> repsep(expression,",") *)
+          ("ensures" ~> repsep(expression,",") *)
           <~ "end") ^^ {
-            case (id ~ _ ~ inputs ~ outputs  ~ requires ~ ensures ~ guard ) => 
-              ContractAction(id, inputs map { ip => toNwPattern(ip) } , outputs map { op => toNwPattern(op) }, guard.flatten,requires.flatten,ensures.flatten)
+            case (id ~ _ ~ inputs ~ outputs  ~ guards ~ requires ~ ensures) => 
+              ContractAction(id, inputs map { ip => toNwPattern(ip) } , outputs map { op => toNwPattern(op) }, guards.flatten,requires.flatten,ensures.flatten)
     }
   )
    
@@ -240,8 +240,9 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   
   def varList(prefix: String, length: Int) = for (i <- List.range(0,length)) yield Id(prefix+"$"+i)
 
-  
+
   def expression: Parser[Expr] = filePositioned(iffExpr) 
+  
   
   def iffExpr: Parser[Expr] = filePositioned((implExpr ~ ("<==>" ~> iffExpr ?)) ^^ {
     case (e ~ None) => e
@@ -360,12 +361,22 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   def listLiteral: Parser[Expr] = filePositioned(
       (("[" ~> repsep(expression,",") <~ "]") ^^{
         case lst => ListLiteral(lst)
+      }) |
+      (("[" ~> comprehension <~ "]") ^^{
+        case lst => lst
       })
     ) 
-//  def range: Parser[Expr] = filePositioned(
-//      (numericLit ~ ".." ~ numericLit) ^^{
-//        case start ~ ".." ~ end => Range(start.toInt,end.toInt)
-//      })
+    
+  def comprehension = filePositioned( 
+    (iffExpr ~ (":" ~> ( ("for" ~> (typeName ~ ident)) ~ ("in" ~> range) ))) ^^ {
+      case (e1 ~ ((typ ~ id) ~ range)) => BoolLiteral(true)
+    }
+  )
+  
+  def range: Parser[Expr] = filePositioned(
+      (numericLit ~ ".." ~ numericLit) ^^{
+        case start ~ ".." ~ end => BoolLiteral(true)
+      })
   
   
   def suffixExpr: Parser[Expr] = filePositioned(

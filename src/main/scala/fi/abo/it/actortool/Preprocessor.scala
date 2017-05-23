@@ -17,32 +17,30 @@ case object InitActionNormaliser extends Preprocessor {
         case ba: BasicActor => {
           val oldMembers = ba.members
           val inits = ba.variables.filter { d => d.value.isDefined && !d.constant }
-          if (inits.isEmpty) {
-            ba
-          }
-          else {
-            val initAction = 
-              ba.actorActions.find { a => a.init } match {
-                case Some(initAction) => {
-                  addVarInitialisations(initAction, inits)
-                }
-                case None => {
-                  var initAction = ActorAction(Some(ba.id + "#gen$init"),true,Nil,Nil,Nil,Nil,Nil,Nil,Nil)
-                  addVarInitialisations(initAction, inits)
+
+          val initAction = 
+            ba.actorActions.find { a => a.init } match {
+              case Some(initAction) => {
+                addVarInitialisations(initAction, inits)
+              }
+              case None => {
+                var initAction = ActorAction(Some(ba.id + "#gen$init"),true,Nil,Nil,Nil,Nil,Nil,Nil,Nil)
+                addVarInitialisations(initAction, inits)
+              }
+            }
+          val newMembers = 
+            initAction ::
+            ba.members.filterNot { 
+              m => {
+                m match { 
+                  case ActorAction(_,true,_,_,_,_,_,_,_) => true
+                  case _ => false
                 }
               }
-            val newMembers = 
-              initAction ::
-              ba.members.filterNot { 
-                m => {
-                  m match { 
-                    case ActorAction(_,true,_,_,_,_,_,_,_) => true
-                    case _ => false
-                  }
-                }
-              }
-            BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
-          }
+            }
+          
+          BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+          
         }
         case _ => unit
       }
@@ -79,7 +77,7 @@ case object ActionScheduleProcessor extends Preprocessor {
   def mapScheduleToGuards(a: BasicActor, s: Schedule): BasicActor = {
     var hasInitAction = false
     val members = a.members.filterNot { m => m.isSchedule }
-    var newMembers =
+    var newMembers = {
       for (m <- members) yield {
         m match {
           case ActorAction(labelOpt,init,inputPattern,outputPattern,guard,requires,ensures,variables,body) => {
@@ -105,6 +103,7 @@ case object ActionScheduleProcessor extends Preprocessor {
               }
             }
             else if (init) {
+              hasInitAction = true
               newBody = body ::: List(Assign(Id("St#"),Id(s.initState)))
             }
             
@@ -114,8 +113,14 @@ case object ActionScheduleProcessor extends Preprocessor {
           case _ => m
         }
       }
+    }
+    
+    if (!hasInitAction) throw new IllegalArgumentException("ActionSchedule preprocessor requires that each actor has an init action")
+    
+    
     for ((state,i) <- s.states.zipWithIndex) {
-      newMembers = Declaration(state,StateType(a,s.states),true,Some(IntLiteral(i))) :: newMembers
+      val lit = IntLiteral(i); lit.typ = StateType(a,s.states)
+      newMembers = Declaration(state,StateType(a,s.states),true,Some(lit)) :: newMembers
     }
     newMembers = Declaration("St#",StateType(a,s.states),false,None) :: newMembers
     val statePreds: List[Expr] = s.states map {st => Eq(Id("St#"),Id(st)).setPos(s.pos) }
@@ -130,6 +135,35 @@ case object ActionScheduleProcessor extends Preprocessor {
         a.outports,
         newMembers)
     actor.setPos(a.pos)
+  }
+  
+}
+
+class RepeatUnroller extends Preprocessor {
+  
+  def process(program: List[TopDecl]): List[TopDecl] = {
+    for (unit <- program) yield {
+      unit match {
+        case ba: BasicActor => unrollRepeats(ba)
+        case _ => unit
+      }
+    }
+  }
+  
+  def unrollRepeats(ba: BasicActor): BasicActor = {
+    val newMembers = {
+      for (m <- ba.members) yield {
+        m match {
+          case a: ActorAction => {
+            for (ip <- a.inputPattern) yield {
+              
+            }
+          }
+          case x => x
+        }
+      }
+    }
+    ba
   }
   
 }
