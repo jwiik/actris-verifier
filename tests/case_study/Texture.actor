@@ -11,7 +11,7 @@ network Texture
   OtherMode:
   contract BTYPE:1, QP:1 ==> 
     guard (BTYPE[@] & NEWVOP) = 0x000
-    guard (BTYPE[@] & INTER) = 0x000
+    //guard (BTYPE[@] & INTER) = 0x000
     guard (BTYPE[@] & INTRA) = 0x000
     guard (BTYPE[@] & ACCODED) = 0x000
   end
@@ -45,7 +45,7 @@ network Texture
   
   chinvariant mode(OtherMode) ==> tot@(BTYPE) <= 1
   chinvariant mode(OtherMode) && tot@(BTYPE) > 0 ==> 
-    (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTER) = 0x000 && (BTYPE[@] & INTRA) = 0x000 && (BTYPE[@] & ACCODED) = 0x000
+    (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTRA) = 0x000 && (BTYPE[@] & ACCODED) = 0x000
   chinvariant mode(OtherMode) ==> tot@(cAC_PRED_DIR) > 0 ==> cAC_PRED_DIR[@] = -int2bv(1,3)
   chinvariant mode(OtherMode) ==> 
     tot@(cQFS) = 0 && tot@(cQFS_DC) = 0 && tot@(cQFS_AC) = 0 && tot@(cMODE) = 0 &&
