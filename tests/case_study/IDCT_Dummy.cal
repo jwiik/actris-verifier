@@ -1,5 +1,4 @@
-actor IDCT_Dummy() 
-	int(size=13) IN, bool SIGNED ==> int(size=9) OUT :
+actor IDCT_Dummy() int(size=13) IN, bool SIGNED ==> int(size=9) OUT :
 
 	contract IN:64, SIGNED:1 ==> OUT:64 end
 
