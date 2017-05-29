@@ -353,7 +353,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         networkRenamings, 
         entityData,
         entityDeclList:::chanDeclList:::contractModeDecls.toList,
-        subactorVarDecls.toList,
+        Nil, /*subactorVarDecls.toList,*/
         uniquenessConditions,
         actionRatePreds,
         basicAssumes:::contractModeAssumes.toList,

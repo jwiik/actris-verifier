@@ -42,7 +42,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for", "in"
+                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for" //, "in"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -408,7 +408,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     "false" ^^^ BoolLiteral(false)
   )
   
-  def marker = filePositioned( ("@" | "next" | "last" | "prev") ^^ { case n => SpecialMarker(n) } )
+  def marker = filePositioned( ("@" | "next" | "last" | "prev" | "int" | "uint") ^^ { case n => SpecialMarker(n) } )
     
   def identifier = filePositioned(ident ^^ Id)
   

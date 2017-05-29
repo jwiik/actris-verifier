@@ -30,7 +30,7 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
     
     val destroyTimer = new Timer
     
-    val boogie = Runtime.getRuntime.exec(boogiePath + " /nologo /noinfer /errorTrace:0 " + boogieArgs + " stdin.bpl")
+    val boogie = Runtime.getRuntime.exec(boogiePath + " /nologo /noinfer /errorTrace:0 /mv:test.bvd " + boogieArgs + " stdin.bpl")
     val output = boogie.getOutputStream()
     output.write(bplText.getBytes)
     output.close

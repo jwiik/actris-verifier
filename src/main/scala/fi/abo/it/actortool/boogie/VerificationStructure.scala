@@ -4,12 +4,15 @@ import fi.abo.it.actortool._
 
 trait VerificationStructure[T <: DFActor] {
   val entity: T
+  val namePrefix: String
+  val renamings: Map[String,Expr]
+  val contractActions: List[ContractAction]
 }
 
 class ActorVerificationStructure(
-    val entity: BasicActor,
+    override val entity: BasicActor,
     val actorActions: List[ActorAction],
-    val contractActions: List[ContractAction],
+    override val contractActions: List[ContractAction],
     val inports: List[InPort],
     val outports: List[OutPort],
     val invariants: List[ActorInvariant],
@@ -20,16 +23,16 @@ class ActorVerificationStructure(
     val priorityMap: Map[AbstractAction,List[AbstractAction]],
     val basicAssumes: List[Boogie.Assume],
     val initAssumes: List[Boogie.Assume],
-    val renamings: Map[String,Id],
+    override val renamings: Map[String,Id],
     val stateChanRenamings: Map[String,Id],
     val actionData: Map[ActorAction,(List[BDecl],List[Expr])],
-    val namePrefix: String) extends VerificationStructure[BasicActor]
+    override val namePrefix: String) extends VerificationStructure[BasicActor]
 
 
 
 class NetworkVerificationStructure(
-    val entity: Network,
-    val actions: List[ContractAction],
+    override val entity: Network,
+    override val contractActions: List[ContractAction],
     val nwInvariants: List[ActorInvariant],
     val chInvariants: List[ChannelInvariant],
     val publicSubInvariants: List[(ActorInvariant,Map[String,Expr])],
@@ -37,18 +40,16 @@ class NetworkVerificationStructure(
     val entities: List[Instance],
     val sourceMap: Map[PortRef,String],
     val targetMap: Map[PortRef,String],
-    val nwRenamings: Map[String,Expr],
+    override val renamings: Map[String,Expr],
     val entityData: Map[Instance,EntityData],
-    //val entityRenamings1: Map[Instance, Map[String, String]],
-    //val entityVariables1: Map[Instance, List[String]],
     val entityDecls: List[BDecl],
     val subactorVarDecls: List[BDecl],
     val uniquenessConditions: List[Boogie.Expr],
     val actionRatePredicates: Map[ContractAction,Boogie.Expr],
     val basicAssumes: List[Boogie.Assume],
-    val namePrefix: String) extends VerificationStructure[Network] {
+    override val namePrefix: String) extends VerificationStructure[Network] {
   
-  def instanceRenamings(instance: Instance) = nwRenamings ++ entityData(instance).renamings
+  def instanceRenamings(instance: Instance) = renamings ++ entityData(instance).renamings
   
   def subActionRenamings(instance: Instance, action: AbstractAction) = {
     val actionRenamings = if (action.isActorAction) entityData(instance).actionData(action.asInstanceOf[ActorAction]).renamings else Map.empty

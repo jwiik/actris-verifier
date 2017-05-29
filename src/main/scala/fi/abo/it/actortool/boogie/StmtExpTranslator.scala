@@ -254,6 +254,17 @@ class StmtExpTranslator() {
                 throw new TranslationException(params(0).pos,"The first argument to int2bv should an integer literal")
             }
           }
+          case "int" => {
+            val size = params(1).asInstanceOf[IntLiteral].value
+            params(0) match {
+              case IntLiteral(n) => 
+                Boogie.BVLiteral(n.toString,size)
+              case UnMinus(IntLiteral(n)) => 
+                getBitVectorFunction("--", List(Boogie.BVLiteral(n.toString,size)), fa.typ) 
+              case x => 
+                throw new TranslationException(params(0).pos,"The first argument to int should an integer literal")
+            }
+          }
           case "uint2bv" => {
             val value = params(0).asInstanceOf[IntLiteral].value
             val size = params(1).asInstanceOf[IntLiteral].value

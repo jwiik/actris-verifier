@@ -713,6 +713,8 @@ object Resolver {
       }
       case fa@FunctionApp("int2bv",_) => resolveBvLiteral(ctx, fa)
       case fa@FunctionApp("uint2bv",_) => resolveBvLiteral(ctx, fa)
+      case fa@FunctionApp("int",_) => resolveBvLiteral(ctx, fa)
+      case fa@FunctionApp("uint",_) => resolveBvLiteral(ctx, fa)
       case fa@FunctionApp("bv2int",params) => {
         if (params.size != 1) {
           ctx.error(fa.pos, "bv2int takes one argument, a bitvector")
@@ -915,7 +917,9 @@ object Resolver {
     
     fa.typ = fa.name match {
       case "int2bv" => BvType(size,true)
+      case "int" => BvType(size,true)
       case "uint2bv" => BvType(size,false)
+      case "uint" => BvType(size,false)
     }
     
     fa.typ

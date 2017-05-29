@@ -97,7 +97,6 @@ class BasicActorTranslator(
     
     if (nonInitActions > 1) {      
       val decls = 
-        //(avs.channelDecls map { _.decl }) ::: 
         (avs.actorVarDecls map { _.decl }) ::: 
         (inpatDecls map { _.decl }).toList ::: 
         List(B.Assume(avs.uniquenessCondition)) :::
@@ -109,20 +108,6 @@ class BasicActorTranslator(
     }
     else {
       None
-    }
-  }
-  
-  def createMEAssertionsRec(a: DFActor, guards: List[(AbstractAction,Boogie.Expr)]): List[Boogie.Assert] = {
-    guards match {
-      case (action1,first)::rest => {
-        val asserts = for ((action2,guard) <- rest) yield {
-          B.Assert(
-              Boogie.UnaryExpr("!", first && guard) , a.pos, 
-              "The actions '" + action1.fullName + "' and '" + action2.fullName + "' of actor '" + a.id + "' might not have mutually exclusive guards")
-        }
-        asserts:::createMEAssertionsRec(a,rest)
-      }
-      case Nil => Nil
     }
   }
   
