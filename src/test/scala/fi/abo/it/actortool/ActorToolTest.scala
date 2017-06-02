@@ -47,5 +47,7 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val ComponentsToVerify = List.empty
       val PrintInvariantStats = false
       val SizedIntsAsBitvectors = true
+      val ScheduleFile = None
+      val Promela = None
     } 
 }

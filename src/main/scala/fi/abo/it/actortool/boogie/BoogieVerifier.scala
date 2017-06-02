@@ -8,7 +8,6 @@ import java.io.File
 import java.io.FileWriter
 import java.util.Timer
 import java.util.TimerTask
-import fi.abo.it.actortool.ActorTool.Verifier
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
@@ -30,7 +29,7 @@ class BoogieVerifier(val params: CommandLineParameters) extends Verifier[List[Bo
     
     val destroyTimer = new Timer
     
-    val boogie = Runtime.getRuntime.exec(boogiePath + " /nologo /noinfer /errorTrace:0 /mv:test.bvd " + boogieArgs + " stdin.bpl")
+    val boogie = Runtime.getRuntime.exec(boogiePath + " /nologo /noinfer /errorTrace:0 " + boogieArgs + " stdin.bpl")
     val output = boogie.getOutputStream()
     output.write(bplText.getBytes)
     output.close

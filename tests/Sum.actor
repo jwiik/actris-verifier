@@ -22,7 +22,7 @@ end
 
 network Net int in ==> int out :
   
-  action in:1 ==> out:1
+  contract in:1 ==> out:1
     requires 0 <= in[@]
     ensures out[0] = in[0]
     ensures out[@] >= in[@]

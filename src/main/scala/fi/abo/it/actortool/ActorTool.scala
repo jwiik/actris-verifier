@@ -9,17 +9,23 @@ import java.io.FileWriter
 import scala.util.parsing.input.Position
 import fi.abo.it.actortool.boogie.Boogie
 import fi.abo.it.actortool.boogie.BoogieVerifier
+import fi.abo.it.actortool.orcc.OrccGuardTranslator
+import fi.abo.it.actortool.promela.PromelaRunner
+
+
+trait Translator[U] {
+  def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): U
+}
+
+abstract class Verifier[U, T] extends Translator[U] {
+  def verify(input: U): T
+  def translateAndVerify(decls: List[TopDecl], typeCtx: Resolver.Context): T = verify(translateProgram(decls, typeCtx))
+}
 
 object ActorTool {
 
   val DEBUG = true
-
-  abstract class Verifier[U, T] {
-    def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): U
-    def verify(input: U): T
-    def translateAndVerify(decls: List[TopDecl], typeCtx: Resolver.Context): T = verify(translateProgram(decls, typeCtx))
-  }
-
+  
   class TranslationException(val pos: Position, val msg: String) extends Exception(msg) {
     //def this(pos: Position, msg: String) = this(pos, msg)
   }
@@ -58,6 +64,8 @@ object ActorTool {
     val ComponentsToVerify: List[String]
     val PrintInvariantStats: Boolean
     val SizedIntsAsBitvectors: Boolean
+    val ScheduleFile: Option[File]
+    val Promela: Option[String]
     final lazy val help = "actortool [option] <filename>+\n"
   }
 
@@ -83,6 +91,8 @@ object ActorTool {
     var aPrintInvariantStats = false
     var aToVerify: List[String] = List.empty
     var aSizedIntsAsBitVectors = true
+    var aScheduleFile: Option[File] = None
+    var aPromela: Option[String] = None
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -159,6 +169,28 @@ object ActorTool {
           }
         }
         case Param("printInvariantStats") => aPrintInvariantStats = true
+        case Param("promela") => {
+          value match {
+            case s@Some(nwId) => aPromela = s
+            case None => reportCommandLineError("parameter 'promela' takes a string as argument")
+          }
+        }
+        case Param("scheduleFile") => {
+          value match {
+            case Some(path) => {
+              val file = new File(path)
+              if (!file.exists) {
+                reportCommandLineError("schedule file " + file.getName + " could not be found", help);
+                return None
+              }
+              aScheduleFile = Some(file)
+            }
+            case None => {
+              reportCommandLineError("parameter scheduleFile takes a file path as argument")
+              return None
+            }
+          }
+        }
         case Param(x) =>
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -172,7 +204,7 @@ object ActorTool {
         aBplFile = inputs(0) + ".bpl"
       }
       else {
-        aBplFile = "actric_output.bpl"
+        aBplFile = "output.bpl"
       }
     }
 
@@ -206,6 +238,8 @@ object ActorTool {
       val ComponentsToVerify = aToVerify
       val PrintInvariantStats = aPrintInvariantStats
       val SizedIntsAsBitvectors = aSizedIntsAsBitVectors
+      val ScheduleFile = aScheduleFile
+      val Promela = aPromela
     })
   }
 
@@ -243,7 +277,7 @@ object ActorTool {
     }
     verify(params)
   }
-
+  
   def verify(params: CommandLineParameters) {
     var timings = scala.collection.immutable.ListMap[Step.Value, Long]()
     for (step <- Step.values) timings += (step -> 0)
@@ -273,6 +307,12 @@ object ActorTool {
 
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
+    
+    if (params.Promela.isDefined) {
+      val promelaTranslator = new PromelaRunner(params)
+      promelaTranslator.translateAndVerify(program, typeCtx.get)
+      return
+    }
 
     if (params.DoInfer) {
       Inferencer.infer(program, typeCtx.get, params.InferModules, params.AssumeGenInvs) match {
@@ -313,6 +353,11 @@ object ActorTool {
 
     timings += (Step.Verification -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
+    
+    if (params.ScheduleFile.isDefined) {
+      val orccTranslator = new OrccGuardTranslator()
+      orccTranslator.translateGuards(program,params.ScheduleFile.get)
+    }
 
     val totalTime = System.nanoTime - startTime
 
