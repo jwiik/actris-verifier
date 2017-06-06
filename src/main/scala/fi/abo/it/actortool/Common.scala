@@ -6,6 +6,17 @@ import scala.collection.mutable.ListBuffer
  * @author Jonatan Wiik
  */
 
+object Util {
+  def buildConnectionMap(connections: List[Connection]): Map[PortRef,Connection] = {
+    val channelMapping = collection.mutable.Map[PortRef,Connection]()
+    for (c <- connections) {
+      channelMapping(c.from) = c
+      channelMapping(c.to) = c
+    }
+    channelMapping.toMap
+  }
+}
+
 object Elements {
   def rd(id: String, chType: ChanType) = {
     val fa = FunctionApp("rd",List(makeId(id,chType): Expr))
@@ -280,7 +291,7 @@ abstract class ASTVisitor[T] {
   def visitId(id: Id)(implicit info: T) {}
 }
 
-abstract class ASTReplacingVisitor[A <: ASTNode, B <: ASTNode] {
+abstract class ASTReplacingVisitor[A, B <: ASTNode] {
   def visitStmt(stmt: List[Stmt])(implicit map: Map[A, B]): List[Stmt] = {
     for (s <- stmt) yield visitStmt(s)
   }

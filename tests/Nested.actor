@@ -16,7 +16,7 @@ end
 
 network SumNet int in ==> int out :
   
-  action in:1 ==> out:1
+  contract in:1 ==> out:1
     requires 0 <= in[@]
     ensures out[0] = in[0]
     ensures out[@] >= in[@]
@@ -74,7 +74,7 @@ end
 
 network Nested int in ==> int out1, int out2 :
   
-  action in:1 ==> out1:1, out2:1
+  contract in:1 ==> out1:1, out2:1
     requires 0 <= in[@]
     ensures out1[0] = in[0]
     ensures out2[0] = in[0]

@@ -454,8 +454,8 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     ("List" ~> ("(" ~> "type" ~> ":" ~> typeName ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")") ^^ {
       case (contType ~ size) => ListType(contType,size.toInt)
     }) |
-    ("Map" ~> ("(" ~>  typeName ~ "->" ~ typeName) <~ ")" ^^ {
-      case (domainType ~ "->" ~ rangeType) => MapType(domainType,rangeType)
+    ("Map" ~> ("(" ~>  typeName ~ "->" ~ typeName) ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")" ^^ {
+      case ((domainType ~ "->" ~ rangeType) ~ size) => MapType(domainType,rangeType,size.toInt)
     }) |
     (ident ^^ {case id => RefType(id)})
   )

@@ -54,13 +54,13 @@ actor Dequant()
 		(rd@(QP) = 0 && rd@(DC) = 0 && rd@(AC) = 0 && tot@(OUT) = 0) || 
 		(rd@(QP) = 1 && rd@(DC) = 1 && rd@(AC) = 63 && tot@(OUT) = 64) )
 	invariant state(ac) ==> rd@(DC) = 1 && rd@(QP) = 1 && rd@(AC) = bv2int(count)
-
+	
 	function saturate(int(size=13) x) --> int(size=13):
-		if x < -2048 then
-			-2048
+		if x < -int(2048,13) then
+			-int(2048,13)
 		else
-			if x > 2047 then
-				2047
+			if x > int(2047,13) then
+				int(2047,13)
 			else
 				x
 			end

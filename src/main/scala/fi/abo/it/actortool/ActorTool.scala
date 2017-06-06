@@ -11,6 +11,7 @@ import fi.abo.it.actortool.boogie.Boogie
 import fi.abo.it.actortool.boogie.BoogieVerifier
 import fi.abo.it.actortool.orcc.OrccGuardTranslator
 import fi.abo.it.actortool.promela.PromelaRunner
+import fi.abo.it.actortool.util.ASTPrinter
 
 
 trait Translator[U] {
@@ -290,9 +291,10 @@ object ActorTool {
     }
 
     // Create a pipeline of preprocessors
-    val preprocessor = InitActionNormaliser | ActionScheduleProcessor
+    val preprocessor = InitActionNormaliser | ActionScheduleProcessor /*| NetworkFlattener*/
     program = preprocessor.process(program)
-
+    //println(new ASTPrinter().print(program))
+    
     timings += (Step.Parse -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     if (program.isEmpty) return // Error message has already been displayed

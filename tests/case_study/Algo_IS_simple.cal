@@ -47,7 +47,7 @@ actor Algo_IS_simple () int(size=3) AC_PRED_DIR, int(size = 13) QFS_AC ==> int(s
   invariant mode(Main) && state(write) ==> rd@(AC_PRED_DIR) = 1 && rd@(QFS_AC) = 63 && tot@(PQF_AC) = bv2int(count)-1
   invariant mode(Main) && state(rest) && rd@(AC_PRED_DIR) = 1 ==> rd@(QFS_AC) = 63 && tot@(PQF_AC) = 63
    
-  Map(int(size=9) -> int(size=7)) Scanmode; /*= 
+  Map(int(size=9) -> int(size=7), size=192) Scanmode; /*= 
   [    0,  1,  5,  6, 14, 15, 27, 28,  2,  4,  7, 13, 16, 26, 29, 42,	//0:63 zigzag
        3,  8, 12, 17, 25, 30, 41, 43,  9, 11, 18, 24, 31, 40, 44, 53,
       10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60,
@@ -73,18 +73,18 @@ actor Algo_IS_simple () int(size=3) AC_PRED_DIR, int(size = 13) QFS_AC ==> int(s
   int(size=3) add_buf;
 
   // Stores incoming Ac coeffs 128 divided to 64::64
-  Map(int(size=7) -> int(size=13)) buf;
+  Map(int(size=7) -> int(size=13), size=984) buf;
   // Flag to change buffer	
   bool half_ := false;		
 
   //if half_=0 writes to 0-63 else to 64-128
   function wa() --> int(size=7) :
-	(count & 63) | if half_ then 64 else 0 end 
+	bvresize((count & int(63,8)),7) | if half_ then int(64,7) else int(0,7) end 
   end
 
   // if half_=1 reads from 0-63 else from 64-128
-  function ra(int(size=7) address ) --> int(size=7)  :
-	(address & 63) | if half_ then 0 else 64 end 
+  function ra(int(size=7) address) --> int(size=7)  :
+	(address & int(63,7)) | if half_ then int(0,7) else int(64,7) end 
   end
 
   // Wait for a valid Inverse Scan

@@ -4,9 +4,9 @@ object Promela {
   
   trait Decl
   trait Stmt
-  trait Expr
-  trait Type
   trait VarInit
+  trait Expr extends VarInit
+  trait Type
   
   case class ProcType(name: String, params: List[ParamDecl], decls: List[VarDecl], stmt: List[Stmt]) extends Decl
   case class Init(stmt: List[Stmt]) extends Decl
@@ -16,23 +16,32 @@ object Promela {
   case class ChInit(size: Int, tp: Type) extends VarInit
   
   case class Atomic(stmt: List[Stmt]) extends Stmt
-  case class If(options: List[GuardStmt]) extends Stmt
-  case class Iteration(options: List[GuardStmt]) extends Stmt
+  case class If(options: List[OptionStmt]) extends Stmt
+  case class Iteration(options: List[OptionStmt]) extends Stmt
   case class Assign(trgt: Expr, value: Expr) extends Stmt
   case class Run(procId: String, params: List[Expr]) extends Stmt
   case class Send(ch: String, exp: Expr) extends Stmt
   case class Receive(ch: String, exp: Expr) extends Stmt
-  case class GuardStmt(guard: Expr, stmt: List[Stmt]) extends Stmt
+  case class GuardStmt(guard: Stmt, stmt: List[Stmt]) extends Stmt
+  case class OptionStmt(stmt: List[Stmt]) extends Stmt
+  case class PrintStmt(str: String) extends Stmt
+  case class ExprStmt(expr: Expr) extends Stmt
   case object Skip extends Stmt
+  case object Else extends Stmt
   
   case class BinaryExpr(left: Expr, op: String, right: Expr) extends Expr
+  case class UnaryExpr(op:String, exp: Expr) extends Expr
   case class FunCall(name: String, args: List[Expr]) extends Expr
+  case class IndexAccessor(exp: Expr, idx: Expr) extends Expr
+  case class ConditionalExpr(cond: Expr, thn: Expr, els: Expr) extends Expr
+  case class Poll(ch: String, exp: Expr) extends Expr
   case class VarExp(id: String) extends Expr
-  case class IntLiteral(i: Int) extends Expr with VarInit
-  case class BoolLiteral(b: Boolean) extends Expr with VarInit
+  case class IntLiteral(i: Int) extends Expr
+  case class BoolLiteral(b: Boolean) extends Expr
   
   
   case class NamedType(s: String) extends Type
+  case class ArrayType(cntType: Type, size: Int) extends Type
   
   
   private val nl = System.getProperty("line.separator");
@@ -56,13 +65,13 @@ object Promela {
           ") {" + nl +
           indentAdd + 
           printVarDecls(decls) +
-          printStmts(stmt) +
-          indentRem + 
+          printStmts(stmt) + nl +
+          indentRem +
           indent + "}" + nl
         case Init(stmts) => 
           "init {" + nl +
           indentAdd +
-          printStmts(stmts) +
+          printStmts(stmts) + nl +
           indentRem +
           "}" + nl
       }
@@ -84,47 +93,57 @@ object Promela {
     def printVarInit(varInit: VarInit): String = {
       varInit match {
         case ChInit(size,tp) => "[" + size + "] of {" + printType(tp) + "}"
-        case il: IntLiteral => printExpr(il)
-        case bl: BoolLiteral => printExpr(bl)
+        case e: Expr => printExpr(e)
       }
     }
     
     def printStmts(stmt: List[Stmt]): String = {
-      (stmt map { s => printStmt(s) }).mkString(nl) + nl
+      (stmt map { s => printStmt(s) }).mkString(nl)
     }
     
     def printStmt(stmt: Stmt): String = {
       stmt match {
-        case If(opts: List[GuardStmt]) => 
+        case If(opts) => 
           indent + "if" + nl + 
-          indent + (opts map { o => ":: " + printExpr(o.guard) + " -> " + nl + indentAdd + printStmts(o.stmt) + indentRem }).mkString(nl) +
+          printStmts(opts) + nl +
           indent + "fi"
-        case Iteration(opts: List[GuardStmt]) => 
+        case Iteration(opts) => 
           indent + "do" + nl + 
-          indent + (opts map { o => ":: " + printExpr(o.guard) + " -> " + nl + indentAdd + printStmts(o.stmt) + indentRem }).mkString(nl) +
+          printStmts(opts) + nl +
           indent + "od"
         case Assign(t,exp) => 
           indent + printExpr(t) + " = " + printExpr(exp) + ";"
         case Atomic(stmt) => 
           indent + "atomic {"+ nl +
           indentAdd +
-          printStmts(stmt) +
+          printStmts(stmt) + nl +
           indentRem +
           indent + "}"
+        case OptionStmt(stmt) =>
+          indent + "::" + nl + indentAdd + printStmts(stmt) + indentRem
+        case GuardStmt(grd,stmt) =>
+          indent + printStmt(grd) + " -> " + nl + indentAdd + printStmts(stmt) + indentRem
         case Send(cId, exp) => indent + cId + " ! (" + printExpr(exp) + ");"
-        case Receive(cId, exp) => indent + cId + " ? (" + printExpr(exp) + ");" 
+        case Receive(cId, exp) => indent + cId + " ? (" + printExpr(exp) + ");"
         case Run(pId, params) =>
           indent + "run " + pId + "(" + (params.map { e => printExpr(e) }).mkString(",") + ");"
         case vd: VarDecl => printVarDecl(vd)
+        case PrintStmt(str) => indent + "printf(\"" + str + "\");"
+        case ExprStmt(expr) => printExpr(expr)
         case Skip => indent + "skip;"
+        case Else => "else"
       }
     }
     
     def printExpr(e: Expr): String = {
       e match {
-        case BinaryExpr(l,o,r) => printExpr(l) + " " + o + " " + printExpr(r)
+        case BinaryExpr(l,o,r) => "(" + printExpr(l) + ") " + o + " (" + printExpr(r) + ")"
+        case UnaryExpr(o,e) => o + "(" + printExpr(e) + ")"  
         case VarExp(id) => id
         case FunCall(name,args) => name + "(" + (args.map { a => printExpr(a) }).mkString(",") + ")"
+        case IndexAccessor(exp,idx) => printExpr(exp)+ "[" + printExpr(idx) + "]"
+        case ConditionalExpr(cond,thn,els) => "(" + printExpr(cond) + " -> " + printExpr(thn) + " : " + printExpr(els) + ")"
+        case Poll(cId, exp) => indent + cId + " ?[" + printExpr(exp) + "]"
         case IntLiteral(i) => i.toString
         case BoolLiteral(true) => "true"
         case BoolLiteral(false) => "false"
@@ -135,6 +154,7 @@ object Promela {
     def printType(tp: Type): String = {
       tp match {
         case NamedType(n) => n
+        case ArrayType(cntType,_) => printType(cntType)
       }
     }
   }

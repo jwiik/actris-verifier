@@ -8,19 +8,27 @@ import java.io.InputStreamReader
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
-class PromelaRunner(val params: CommandLineParameters) extends Verifier[List[Promela.Decl], Unit]  {
+class PromelaRunner(val params: CommandLineParameters) extends Verifier[Map[ContractAction,List[Promela.Decl]], Unit]  {
   
   val translator = new PromelaTranslator(params)
   val printer = new Promela.PromelaPrinter
   
-  def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Promela.Decl] = translator.translateProgram(decls, typeCtx)
+  def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): Map[ContractAction,List[Promela.Decl]] = {
+    translator.translateProgram(decls, typeCtx) 
+  }
   
-  def verify(promelaProg: List[Promela.Decl]): Unit = {
+  def verify(promelaPrograms: Map[ContractAction,List[Promela.Decl]]): Unit = {
+    for ((contract,prog) <- promelaPrograms) {
+      verifyForContract(contract, prog)
+    }
+  }
+  
+  def verifyForContract(contract: ContractAction, promelaProg: List[Promela.Decl]) = {
     val progTxt = promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
     println(progTxt)
     println("Running spin...\n")
     writeFile("spin.pml",progTxt)
-    val spin = Runtime.getRuntime.exec("/Users/jonatan/Tools/bin/spin spin.pml")
+    val spin = Runtime.getRuntime.exec("/Users/jonatan/Tools/bin/spin -T -B spin.pml")
 //    val output = spin.getOutputStream
 //    output.write(progTxt.getBytes)
 //    output.close
@@ -51,7 +59,6 @@ class PromelaRunner(val params: CommandLineParameters) extends Verifier[List[Pro
     }
     spin.waitFor
     input.close
-    
   }
   
   def writeFile(filename: String, text: String) {

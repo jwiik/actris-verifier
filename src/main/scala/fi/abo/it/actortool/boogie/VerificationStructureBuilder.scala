@@ -141,7 +141,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
 
     val priorityList = buildPriorityMap(actor,false)
     
-    val funDeclRenamings = (actor.getFunctionDecls map { fd => (fd.name,Id(prefix+fd.name)) }).toMap
+    val funDeclRenamings = (actor.functionDecls map { fd => (fd.name,Id(prefix+fd.name)) }).toMap
     
     val actionData =
       (for (a <- actor.actorActions) yield {
@@ -156,7 +156,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
         actor.inports,
         actor.outports,
         actor.actorInvariants,
-        actor.getFunctionDecls,
+        actor.functionDecls,
         decls.toList,
         actorParamDecls,
         uniquenessCondition,

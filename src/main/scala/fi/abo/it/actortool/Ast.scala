@@ -97,7 +97,7 @@ sealed case class BasicActor(
     override val members: List[Member]) 
     extends DFActor(annotations,id,parameters,inports,outports,members) {
   
-  def getFunctionDecls = members.collect { case fd: FunctionDecl => fd }
+  def functionDecls = members.collect { case fd: FunctionDecl => fd }
   
   override def isActor = true
 }
@@ -347,6 +347,7 @@ sealed case class OutPort(override val id: String, override val portType: Type) 
 
 sealed abstract class Pattern(val portId: String, val repeat: Int) extends ASTNode {
   def rate: Int
+  var typ: Type = null
 }
 
 sealed case class InputPattern(override val portId: String, val vars: List[Id], override val repeat: Int) extends Pattern(portId,repeat) {
@@ -540,7 +541,7 @@ sealed abstract class IndexedType(
 
 sealed abstract class PrimitiveType(name: String) extends Type(name) 
 
-sealed abstract class AbstractIntType(name: String, val size: Int) extends PrimitiveType(name+"("+size+")") {
+sealed abstract class AbstractIntType(name: String, val size: Int) extends PrimitiveType(name+ (if (0 <= size) "("+size+")" else "")) {
   override def isInt = true
   override def isNumeric = true
   override def isBv = false
@@ -583,7 +584,7 @@ case class ListType(contentType: Type, val size: Int) extends IndexedType(
     "List("+contentType.id+","+size+")",contentType,IntType(-1)) {
   override def isList = true
 }
-case class MapType(val domainType: Type, val rangeType: Type) extends IndexedType("Map[" + domainType.id + "-->" + rangeType.id + "]", rangeType, domainType) {
+case class MapType(val domainType: Type, val rangeType: Type, val size: Int) extends IndexedType("Map[" + domainType.id + "-->" + rangeType.id + "]", rangeType, domainType) {
   override def isMap = true
 }
 case class BvType(val size: Int, val signed: Boolean) extends PrimitiveType((if (signed) "bv" else "ubv")+size) {

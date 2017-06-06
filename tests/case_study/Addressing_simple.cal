@@ -117,9 +117,9 @@ actor Addressing_simple ()
 	// Also, location 0 is reserved for all uncoded blocks. This protocol must
 	// be identical to the buffer addressing in Reconstruct.cal, since pointer
 	// values are passed on ports A, B, C.
-	//int BUF_SIZE = (121 + 2);
+	int(size=8) BUF_SIZE = int(121,8) + int(2,8);
 
-	Map(int(size=11) -> bool) coded //:= [ false : for int i in 1 .. BUF_SIZE * 8 ];
+	Map(int(size=11) -> bool, size=984) coded //:= [ false : for int i in 1 .. BUF_SIZE * 8 ];
 
 	int(size=8) ptr;
 
@@ -131,15 +131,15 @@ actor Addressing_simple ()
 
 	// buffer pointer wrap, skipping over address 0
 	function decrement(int(size=8) p) --> int(size=8) :
-		if p = 1 then
-			BUF_SIZE - 1
+		if p = int(1,8) then
+			BUF_SIZE - int(1,8)
 		else
-			p - 1
+			p - int(1,8)
 		end
 	end
 
 	function access(int(size=8) p, int(size=4) c) --> int(size=11) :
-		((p << 3) | c)
+		bvresize(((p << int(3,8)) | bvresize(c,8)),11)
 	end
 
 	// New VOP

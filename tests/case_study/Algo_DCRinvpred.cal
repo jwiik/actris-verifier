@@ -160,7 +160,7 @@ actor Algo_DCRinvpred ()
 
 	  // JWJ: increased size
 	// Initialize to the dummy values needed for uncoded blocks (always mapped to index 0)
-	Map(int(size=32) -> int(size=13)) dc_buf; //:= [ DCVAL : for int k in 1 .. BUF_SIZE ];
+	Map(int(size=32) -> int(size=13),size=984) dc_buf; //:= [ DCVAL : for int k in 1 .. BUF_SIZE ];
 
 	// Decoded DC prediction value
 	int(size=13) dc_pred;
@@ -173,42 +173,42 @@ actor Algo_DCRinvpred ()
 	
 	
 	function saturate(int(size=13) x) --> int(size=13):
-		if x < -2048 then
-			-2048
+		if x < -int(2048,13) then
+			-int(2048,13)
 		else
-			if x > 2047 then
-				2047
+			if x > int(2047,13) then
+				int(2047,13)
 			else
 				x
 			end
 		end
 	end
 	
-	function dc_scaler() --> int(size=7) :
-		if (comp & 4) = 0 then
+	function dc_scaler() --> int(size=6) :
+		if (comp & int(4,4)) = int(0,4) then
 		// Y component
-			if s_QP > 0 and s_QP < 5 then
-				8
+			if s_QP > int(0,6) and s_QP < int(5,6) then
+				int(8,6)
 			else
-				if s_QP > 4 and s_QP < 9 then
-					2 * s_QP
+				if s_QP > int(4,6) and s_QP < int(9,6) then
+					int(2,6) * s_QP
 				else
-					if s_QP > 8 and s_QP < 25 then
-						s_QP + 8
+					if s_QP > int(8,6) and s_QP < int(25,6) then
+						s_QP + int(8,6)
 					else
-						(2 * s_QP) - 16
+						(int(2,6) * s_QP) - int(16,6)
 					end
 				end
 			end
 		else
 		// UV component
-			if s_QP > 0 and s_QP < 5 then
-				8
+			if s_QP > int(0,6) and s_QP < int(5,6) then
+				int(8,6)
 			else
-				if s_QP > 4 and s_QP < 25 then
-					(s_QP + 13) >> 1
+				if s_QP > int(4,6) and s_QP < int(25,6) then
+					(s_QP + int(13,6)) >> int(1,6)
 				else
-					s_QP - 6
+					s_QP - int(6,6)
 				end
 			end
 		end
@@ -269,7 +269,7 @@ actor Algo_DCRinvpred ()
 		bool ac = (cmd & ACPRED) != int2bv(0,12)
 	do
 		s_QP := qp;
-		scaler := dc_scaler();
+		scaler := bvresize(dc_scaler(),7);
 		// Retrieve 'dc_scalar'. See ISO/IEC 14496-2 Table 7-1.
 		dc_pred := 
 			(if top then

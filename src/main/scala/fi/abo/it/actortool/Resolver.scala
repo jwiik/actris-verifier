@@ -97,6 +97,7 @@ object Resolver {
   sealed class ActionContext(val action: AbstractAction, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
   
   sealed class BasicContext(val action: ASTNode, override val parentCtx: Context) extends ChildContext(action, parentCtx, Map.empty)
+  sealed class FunctionBodyContext(val function: FunctionDecl, val inputs: Map[String,Declaration], override val parentCtx: Context) extends ChildContext(function,parentCtx,inputs)
   
   sealed class QuantifierContext(val quantifier: Quantifier, override val parentCtx: Context, 
       override val vars: Map[String,Declaration]) extends ChildContext(quantifier,parentCtx,vars)
@@ -186,7 +187,9 @@ object Resolver {
               }
               vars += (d.id -> d)
             }
-            case fd: FunctionDecl => functions += (fd.name -> fd)
+            case fd: FunctionDecl => {
+              functions += (fd.name -> fd)
+            }
             case _ =>
           }
           
@@ -217,7 +220,11 @@ object Resolver {
               }
             case sc: Schedule => schedule = Some(sc)
             case pr: Priority => priority = Some(pr)
-            case fd: FunctionDecl =>
+            case fd: FunctionDecl => {
+              val inputs = (fd.inputs map { p => (p.id, p) }).toMap
+              val funCtx = new FunctionBodyContext(fd,inputs,ctx)
+              resolveExpr(funCtx, fd.expr, fd.output)
+            }
           }
           val actionList = actions.toList
           schedule match {
@@ -313,6 +320,20 @@ object Resolver {
   def resolveContractAction(actorCtx: ActorContext, action: ContractAction) {
     if (!checkActionWellformedness(actorCtx, action)) return
     
+    for (ipat <- action.inputPattern) {
+      actorCtx.inports.get(ipat.portId) match {
+        case Some(ip) => ipat.typ = ip.portType
+        case None => actorCtx.error(ipat.pos, "Invalid port in contract input pattern: " + ipat.portId)
+      }
+    }
+    
+    for (opat <- action.outputPattern) {
+      actorCtx.outports.get(opat.portId) match {
+        case Some(op) => opat.typ = op.portType
+        case None => actorCtx.error(opat.pos, "Invalid port in contract output pattern: " + opat.portId)
+      }
+    }
+    
     val ctx = new ActionContext(action, actorCtx, Map.empty)
     
     for (grd <- action.guards) resolveExpr(ctx, grd, BoolType)
@@ -332,6 +353,7 @@ object Resolver {
     var vars = Map[String,Declaration]()
     for (inPat <- action.inputPattern) {
       val pDecl = actorCtx.inports(inPat.portId)
+      inPat.typ = pDecl.portType
       for (v <- inPat.vars) {
         if (vars contains v.id) actorCtx.error(inPat.pos, "Variable name already used: " + v.id)
         val d = Declaration(v.id,pDecl.portType,false,None)
@@ -360,6 +382,7 @@ object Resolver {
     
     for (outPat <- action.outputPattern) {
       val port = actorCtx.outports(outPat.portId)
+      outPat.typ = port.portType
       assert(port.portType != null)
       for ((e,i) <- (outPat.exps.zipWithIndex) ) {
         val eType = resolveExpr(ctx,e)
