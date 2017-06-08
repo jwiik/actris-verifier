@@ -202,7 +202,7 @@ procedure Net#init#6()
   assume 0 <= I#[Net#e];
   assume I#[Net#e] <= R#[Net#e];
   assume R#[Net#e] <= C#[Net#e];
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 2);
+  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume anon$4 == 0;
   assume Mode#[this#] == anon$4;
   assume C#[Net#a] == 0;
@@ -229,7 +229,7 @@ procedure Net#init#6()
   assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#26)"} (Mode#[this#] == anon$4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
   I# := R#;
   assert {:msg "AddDelay.actor(23.13): Initialization of network 'Net' might not establish the network invariant (#27)"} (C#[Net#b] - R#[Net#b]) == 1;
-  assert {:msg "Initialization of network 'Net' might not establish the network invariant (#28)"} (2 * R#[Net#a]) == C#[Net#d];
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant (#28)"} R#[Net#a] == C#[Net#d];
   assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel a (#29)"} (C#[Net#a] - R#[Net#a]) == 0;
   assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel c (#30)"} (C#[Net#c] - R#[Net#c]) == 0;
   assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel d (#31)"} (C#[Net#d] - R#[Net#d]) == 0;
@@ -267,7 +267,7 @@ procedure Net##Add#anon$0#7()
   assume 0 <= I#[Net#e];
   assume I#[Net#e] <= R#[Net#e];
   assume R#[Net#e] <= C#[Net#e];
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 2);
+  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume anon$4 == 0;
   assume Mode#[this#] == anon$4;
   I#sub[Net#a] := R#[Net#a];
@@ -347,7 +347,7 @@ procedure Net##Delay#anon$3#8()
   assume 0 <= I#[Net#e];
   assume I#[Net#e] <= R#[Net#e];
   assume R#[Net#e] <= C#[Net#e];
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 2);
+  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume anon$4 == 0;
   assume Mode#[this#] == anon$4;
   I#sub[Net#e] := R#[Net#e];
@@ -424,7 +424,7 @@ procedure Net##Split#anon$1#9()
   assume 0 <= I#[Net#e];
   assume I#[Net#e] <= R#[Net#e];
   assume R#[Net#e] <= C#[Net#e];
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 2);
+  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume anon$4 == 0;
   assume Mode#[this#] == anon$4;
   I#sub[Net#c] := R#[Net#c];
@@ -503,10 +503,10 @@ procedure Net#anon$4#input#in#10()
   assume 0 <= I#[Net#e];
   assume I#[Net#e] <= R#[Net#e];
   assume R#[Net#e] <= C#[Net#e];
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 2);
+  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume anon$4 == 0;
   assume Mode#[this#] == anon$4;
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 2);
+  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume Mode#[this#] == anon$4;
   assume (C#[Net#a] - I#[Net#a]) < 1;
   assume M#[Net#b][0] == 0;
@@ -577,11 +577,11 @@ procedure Net#anon$4#exit#11()
   assume 0 <= I#[Net#e];
   assume I#[Net#e] <= R#[Net#e];
   assume R#[Net#e] <= C#[Net#e];
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 2);
+  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume anon$4 == 0;
   assume Mode#[this#] == anon$4;
   assume Mode#[this#] == anon$4;
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 2);
+  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume M#[Net#b][0] == 0;
   assume 0 <= M#[Net#b][I#[Net#b]];
   assume I#[Net#c] == I#[Net#a];
@@ -613,11 +613,11 @@ procedure Net#anon$4#exit#11()
   assume !((1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b])));
   assume !(1 <= (C#[Net#e] - R#[Net#e]));
   assume !(1 <= (C#[Net#c] - R#[Net#c]));
-  assert {:msg "AddDelay.actor(16.3): The correct number of tokens might not be produced on output 'out' for contract 'anon$4' (#69)"} (C#[Net#d] - I#[Net#d]) == 2;
+  assert {:msg "AddDelay.actor(16.3): The correct number of tokens might not be produced on output 'out' for contract 'anon$4' (#69)"} (C#[Net#d] - I#[Net#d]) == 1;
   assert {:msg "AddDelay.actor(18.13): Network action postcondition might not hold (#70)"} M#[Net#d][0] == M#[Net#a][0];
   assert {:msg "AddDelay.actor(19.13): Network action postcondition might not hold (#71)"} M#[Net#d][I#[Net#d]] >= M#[Net#a][I#[Net#a]];
   assert {:msg "AddDelay.actor(20.13): Network action postcondition might not hold (#72)"} (0 < I#[Net#d]) ==> (M#[Net#d][I#[Net#d]] == (M#[Net#d][I#[Net#d] - 1] + M#[Net#a][I#[Net#a]]));
-  R#[Net#d] := R#[Net#d] + 2;
+  R#[Net#d] := R#[Net#d] + 1;
   I# := R#;
   assert {:msg "AddDelay.actor(24.15): The network might not preserve the channel invariant for contract 'anon$4' (#73)"} M#[Net#b][0] == 0;
   assert {:msg "AddDelay.actor(25.15): The network might not preserve the channel invariant for contract 'anon$4' (#74)"} 0 <= M#[Net#b][I#[Net#b]];
@@ -629,7 +629,7 @@ procedure Net#anon$4#exit#11()
   assert {:msg "The network might not preserve the channel invariant for contract 'anon$4' (#80)"} (Mode#[this#] == anon$4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
   assert {:msg "The network might not preserve the channel invariant for contract 'anon$4' (#81)"} (Mode#[this#] == anon$4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
   assert {:msg "AddDelay.actor(23.13): The network might not preserve the network invariant for contract 'anon$4' (#82)"} (C#[Net#b] - R#[Net#b]) == 1;
-  assert {:msg "The network might not preserve the network invariant for contract 'anon$4' (#83)"} (2 * R#[Net#a]) == C#[Net#d];
+  assert {:msg "The network might not preserve the network invariant for contract 'anon$4' (#83)"} R#[Net#a] == C#[Net#d];
   assert {:msg "The network might not preserve the network invariant for contract 'anon$4': Unread tokens might be left on channel a (#84)"} (C#[Net#a] - R#[Net#a]) == 0;
   assert {:msg "The network might not preserve the network invariant for contract 'anon$4': Unread tokens might be left on channel c (#85)"} (C#[Net#c] - R#[Net#c]) == 0;
   assert {:msg "The network might not preserve the network invariant for contract 'anon$4': Unread tokens might be left on channel d (#86)"} (C#[Net#d] - R#[Net#d]) == 0;

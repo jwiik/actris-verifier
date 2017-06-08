@@ -9,7 +9,6 @@ import java.io.FileWriter
 import scala.util.parsing.input.Position
 import fi.abo.it.actortool.boogie.Boogie
 import fi.abo.it.actortool.boogie.BoogieVerifier
-import fi.abo.it.actortool.orcc.OrccGuardTranslator
 import fi.abo.it.actortool.promela.PromelaRunner
 import fi.abo.it.actortool.util.ASTPrinter
 
@@ -205,7 +204,7 @@ object ActorTool {
         aBplFile = inputs(0) + ".bpl"
       }
       else {
-        aBplFile = "output.bpl"
+        aBplFile = "output/output.bpl"
       }
     }
 
@@ -356,11 +355,6 @@ object ActorTool {
     timings += (Step.Verification -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
-    if (params.ScheduleFile.isDefined) {
-      val orccTranslator = new OrccGuardTranslator()
-      orccTranslator.translateGuards(program,params.ScheduleFile.get)
-    }
-
     val totalTime = System.nanoTime - startTime
 
     if (0 < params.Timing)

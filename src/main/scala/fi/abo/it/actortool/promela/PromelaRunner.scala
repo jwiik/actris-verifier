@@ -27,8 +27,8 @@ class PromelaRunner(val params: CommandLineParameters) extends Verifier[Map[Cont
     val progTxt = promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
     //println(progTxt)
     println("Running spin on contract " + contract.fullName + "...")
-    writeFile("spin.pml",progTxt)
-    val spin = Runtime.getRuntime.exec("/Users/jonatan/Tools/bin/spin -T -B spin.pml")
+    writeFile("output/spin.pml",progTxt)
+    val spin = Runtime.getRuntime.exec("/Users/jonatan/Tools/bin/spin -T -B output/spin.pml")
 //    val output = spin.getOutputStream
 //    output.write(progTxt.getBytes)
 //    output.close
