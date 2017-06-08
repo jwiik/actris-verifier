@@ -52,7 +52,7 @@ object Resolver {
     override def variables = vars.values.toList
   }
   
-  sealed class ActorContext(val actor: DFActor,
+  sealed class ActorContext[T<:DFActor](val actor: T,
       override val parentCtx: RootContext, override val vars: Map[String,Declaration], 
       val inports: Map[String,InPort], val outports: Map[String,OutPort], 
       val functions: Map[String,FunctionDecl]) extends ChildContext(actor,parentCtx,vars) {
@@ -317,7 +317,7 @@ object Resolver {
     if (rootCtx.getErrors.isEmpty) Success(rootCtx) else Errors(rootCtx.getErrors.toList)
   }
   
-  def resolveContractAction(actorCtx: ActorContext, action: ContractAction) {
+  def resolveContractAction[T<:DFActor](actorCtx: ActorContext[T], action: ContractAction) {
     if (!checkActionWellformedness(actorCtx, action)) return
     
     for (ipat <- action.inputPattern) {
@@ -342,7 +342,7 @@ object Resolver {
     
   }
   
-  def resolveAction(actorCtx: ActorContext, action: ActorAction) {
+  def resolveAction(actorCtx: ActorContext[BasicActor], action: ActorAction) {
     if (action.init && action.inputPattern.length > 0) {
       actorCtx.error(action.pos, "Input patterns not allowed for intialize actions")
       return
@@ -404,7 +404,7 @@ object Resolver {
     resolveStmt(ctx,action.body)
   }
   
-  def checkActionWellformedness(actorCtx: ActorContext, action: AbstractAction): Boolean = {
+  def checkActionWellformedness[T<:DFActor](actorCtx: ActorContext[T], action: AbstractAction): Boolean = {
     var portWithPat = Set[String]()
     for (inPat <- action.inputPattern) {
       if (portWithPat contains inPat.portId) {
@@ -432,7 +432,7 @@ object Resolver {
     return true
   }
   
-  def resolveEntities(ctx: ActorContext, e: Entities): Map[String,Instance] = {
+  def resolveEntities(ctx: ActorContext[Network], e: Entities): Map[String,Instance] = {
     val instances = scala.collection.mutable.HashMap[String,Instance]()
     for (instance <- e.entities) {
       if (!(ctx.parentCtx.actors contains instance.actorId)) {
@@ -461,12 +461,13 @@ object Resolver {
         return instances.toMap
       }
       instance.actor = actor
+      instance.parent = ctx.actor
       instances += (instance.id -> instance)
     }
     instances.toMap
   }
   
-  def resolveStructure(ctx: ActorContext, entities: Map[String,Instance], structure: Structure) = {
+  def resolveStructure(ctx: ActorContext[Network], entities: Map[String,Instance], structure: Structure) = {
     val usedPorts = new ListBuffer[PortRef]()
     var channels = Map[String,Connection]()
     for (c <- structure.connections) {

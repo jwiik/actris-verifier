@@ -1,6 +1,7 @@
 package fi.abo.it.actortool.boogie
 
 import fi.abo.it.actortool._ 
+import fi.abo.it.actortool.util.PriorityMapBuilder
 import scala.collection.mutable.ListBuffer
 import Elements._
 
@@ -74,29 +75,8 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
     (decls.toList,assumes.toList)
   }
   
-  protected def buildPriorityMap(actor: DFActor, subComponent: Boolean): Map[AbstractAction,List[AbstractAction]] = {
-    if (subComponent && !actor.contractActions.isEmpty) {
-      return (actor.contractActions map { a => (a,Nil: List[AbstractAction]) }).toMap
-    }
-    
-    var orderedActions: Map[AbstractAction,List[AbstractAction]] = 
-      (actor.actorActions filter { a => !a.init } map {a => (a,Nil: List[AbstractAction])}).toMap
-    
-    actor.priority match {
-      case Some(pr) => {
-        for ((a1,a2) <- pr.orders) {
-          // Assuming valid label
-          val act1 = actor.actorActions.find{ a => a.fullName == a1.id }.get
-          val act2 = actor.actorActions.find{ a => a.fullName == a2.id }.get
-          // act1 is the higher prio action. We now add act1 as a higher prio action to act2
-          val current = act1 :: orderedActions(act2)
-          orderedActions = orderedActions + (act2 -> current)
-        }
-      }
-      case None =>
-    }
-    orderedActions
-  }
+  protected def buildPriorityMap(actor: DFActor, subComponent: Boolean) = 
+    PriorityMapBuilder.buildPriorityMap(actor, subComponent)
   
 }
 

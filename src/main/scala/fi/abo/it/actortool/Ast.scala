@@ -306,6 +306,31 @@ sealed case class Instance(
     override val annotations: List[Annotation]) extends ASTNode {
 
   var actor: DFActor = null
+  var parent: Network = null
+  
+  override def equals(a: Any) = {
+    a match {
+      case that: Instance => {
+        this.actor == that.actor && this.parent == that.parent && 
+        this.id == that.id && that.actorId == that.actorId && 
+        this.arguments == that.arguments && this.annotations == that.annotations
+      }
+      case _ => false
+    }
+  }
+  
+  override def hashCode: Int = {
+    val prime = 31
+    var result = 1
+    result = prime * result + id.hashCode
+    result = prime * result + actorId.hashCode
+    result = prime * result + arguments.hashCode
+    result = prime * result + annotations.hashCode
+    result = prime * result + (if (actor == null) 0 else actor.hashCode)
+    result = prime * result + (if (parent == null) 0 else parent.id.hashCode)
+    return result
+  }
+  
 }
 
 sealed case class Connection(

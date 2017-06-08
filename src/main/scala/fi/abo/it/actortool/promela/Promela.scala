@@ -25,6 +25,7 @@ object Promela {
   case class GuardStmt(guard: Stmt, stmt: List[Stmt]) extends Stmt
   case class OptionStmt(stmt: List[Stmt]) extends Stmt
   case class PrintStmt(str: String) extends Stmt
+  case class PrintStmtValue(str: String, values: List[Expr]) extends Stmt
   case class ExprStmt(expr: Expr) extends Stmt
   case object Skip extends Stmt
   case object Else extends Stmt
@@ -81,12 +82,22 @@ object Promela {
       (varDecls map { vd => indent + printType(vd.tp) + " " + vd.id }).mkString("; ")
     }
     
+    def printParamDecl(pd: ParamDecl) {
+      indent + printType(pd.tp) + " " + pd.id
+    }
+    
     def printVarDecls(varDecls: List[VarDecl]): String = {
       (varDecls map { vd => printVarDecl(vd) }).mkString(nl) + nl
     }
     
     def printVarDecl(vd: VarDecl) = 
       indent + printType(vd.tp) + " " + vd.id + 
+      {
+        vd.tp match {
+          case ArrayType(_,size) => "[" + size.toString + "]"
+          case _ => ""
+        }
+      } +
       (if (vd.value.isDefined) " = " + printVarInit(vd.value.get) else "") + ";"
       
     
@@ -129,6 +140,7 @@ object Promela {
           indent + "run " + pId + "(" + (params.map { e => printExpr(e) }).mkString(",") + ");"
         case vd: VarDecl => printVarDecl(vd)
         case PrintStmt(str) => indent + "printf(\"" + str + "\");"
+        case PrintStmtValue(str,args) => indent + "printf(\"" + str + "\"," + (args.map { e => printExpr(e) }).mkString(",") + ");"
         case ExprStmt(expr) => printExpr(expr)
         case Skip => indent + "skip;"
         case Else => "else"
