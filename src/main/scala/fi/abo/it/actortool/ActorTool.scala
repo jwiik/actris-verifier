@@ -73,6 +73,7 @@ object ActorTool {
     val SizedIntsAsBitvectors: Boolean
     val ScheduleFile: Option[File]
     val Promela: Option[String]
+    val PromelaPrint: Boolean
     final lazy val help = "actortool [option] <filename>+\n"
   }
 
@@ -100,6 +101,7 @@ object ActorTool {
     var aSizedIntsAsBitVectors = true
     var aScheduleFile: Option[File] = None
     var aPromela: Option[String] = None
+    var aPromelaPrint: Boolean = false
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -182,6 +184,7 @@ object ActorTool {
             case None => reportCommandLineError("parameter 'promela' takes a string as argument")
           }
         }
+        case Param("promelaPrint") => aPromelaPrint = true
         case Param("scheduleFile") => {
           value match {
             case Some(path) => {
@@ -247,6 +250,7 @@ object ActorTool {
       val SizedIntsAsBitvectors = aSizedIntsAsBitVectors
       val ScheduleFile = aScheduleFile
       val Promela = aPromela
+      val PromelaPrint = aPromelaPrint
     })
   }
 

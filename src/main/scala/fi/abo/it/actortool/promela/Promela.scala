@@ -22,6 +22,7 @@ object Promela {
   case class Run(procId: String, params: List[Expr]) extends Stmt
   case class Send(ch: String, exp: Expr) extends Stmt
   case class Receive(ch: String, exp: Expr) extends Stmt
+  case class Peek(ch: String, exp: Expr) extends Stmt
   case class GuardStmt(guard: Stmt, stmt: List[Stmt]) extends Stmt
   case class OptionStmt(stmt: List[Stmt]) extends Stmt
   case class PrintStmt(str: String) extends Stmt
@@ -35,7 +36,6 @@ object Promela {
   case class FunCall(name: String, args: List[Expr]) extends Expr
   case class IndexAccessor(exp: Expr, idx: Expr) extends Expr
   case class ConditionalExpr(cond: Expr, thn: Expr, els: Expr) extends Expr
-  case class Poll(ch: String, exp: Expr) extends Expr
   case class VarExp(id: String) extends Expr
   case class IntLiteral(i: Int) extends Expr
   case class BoolLiteral(b: Boolean) extends Expr
@@ -136,6 +136,7 @@ object Promela {
           indent + printStmt(grd) + " -> " + nl + indentAdd + printStmts(stmt) + indentRem
         case Send(cId, exp) => indent + cId + " ! (" + printExpr(exp) + ");"
         case Receive(cId, exp) => indent + cId + " ? (" + printExpr(exp) + ");"
+        case Peek(cId, exp) => indent + cId + " ? <" + printExpr(exp) + ">;"
         case Run(pId, params) =>
           indent + "run " + pId + "(" + (params.map { e => printExpr(e) }).mkString(",") + ");"
         case vd: VarDecl => printVarDecl(vd)
@@ -155,7 +156,6 @@ object Promela {
         case FunCall(name,args) => name + "(" + (args.map { a => printExpr(a) }).mkString(",") + ")"
         case IndexAccessor(exp,idx) => printExpr(exp)+ "[" + printExpr(idx) + "]"
         case ConditionalExpr(cond,thn,els) => "(" + printExpr(cond) + " -> " + printExpr(thn) + " : " + printExpr(els) + ")"
-        case Poll(cId, exp) => indent + cId + " ?[" + printExpr(exp) + "]"
         case IntLiteral(i) => i.toString
         case BoolLiteral(true) => "true"
         case BoolLiteral(false) => "false"

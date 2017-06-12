@@ -49,5 +49,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val SizedIntsAsBitvectors = true
       val ScheduleFile = None
       val Promela = None
+      val PromelaPrint = false
     } 
 }

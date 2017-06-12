@@ -304,25 +304,44 @@ class PromelaTranslator(params: CommandLineParameters) extends Backend[Translati
       a.inports.map {
         ip => (ip -> (a.actorActions.filter(!_.init).map { t => t.inportRate(ip.id) }).foldLeft(0)((a,b) => if (a < b) b else a))
       }
-      
+    
+    // Create enough input variable declarations for each inport
     for ((ip,rate) <- maxRates) {
       for (i <- 0 to rate-1)
         decls += P.VarDecl(ip.id+"__"+i.toString,translateType(ip.portType),None)
     }
-
+    
+    
+    val peeks = peekAnalyzer.analyze(a.actorActions.filter { !_.init })
+    
+    for ((port,rate) <- peeks) {
+      val stmt = new ListBuffer[P.Stmt]
+      decls += P.VarDecl(port+"__peek",P.NamedType("bool"),Some(P.BoolLiteral(false)))
+      stmt += P.Peek(port, P.VarExp(port+"__"+(rate-1).toString))
+      stmt += P.Assign(P.VarExp(port+"__peek"),P.BoolLiteral(true))
+      actions += P.Atomic(List(P.GuardStmt(P.ExprStmt(P.UnaryExpr("!", P.VarExp(port+"__peek"))),stmt.toList)))
+    }
     
     for (act <- a.actorActions.filter { !_.init }) {
       //println(act.fullName + ": " +(priorityMap(act).map { a => a.fullName }).mkString(",") )
       val actionRenamings = actorRenamings.getSubContext
       val peeking = peekAnalyzer.analyze(act)
       
+      val peekings = peekAnalyzer.analyze(act)
+      val peekGuards: Iterable[P.Expr] = 
+        peekings.flatMap {
+          case (p,r) => if (r > 0) List(P.VarExp(p+"__peek")) else Nil
+        }
+      val peekResets = 
+        peekings.flatMap {
+          case (p,r) => if (r > 0) List(P.Assign(P.VarExp(p+"__peek"),P.BoolLiteral(false))) else Nil
+        }
+      
       val stmt = new ListBuffer[P.Stmt]
       
       val inputRatePreds = 
         act.inputPattern.map { 
-          ip => {
-            P.BinaryExpr(P.IntLiteral(ip.rate),"<=",P.FunCall("len",List(P.VarExp(ip.portId)))) 
-          }
+          ip => P.BinaryExpr(P.IntLiteral(ip.rate),"<=",P.FunCall("len",List(P.VarExp(ip.portId)))) 
         }
       val inputPat = inputRatePreds.foldLeft(P.BoolLiteral(true): P.Expr)((a,b) => P.BinaryExpr(a,"&&",b))
 
@@ -330,13 +349,19 @@ class PromelaTranslator(params: CommandLineParameters) extends Backend[Translati
         ip.vars.zipWithIndex map { case (v,i) => actionRenamings.add(v.id,ip.portId+"__"+i.toString) }
       }
       
-      val firingRule = 
-        if (act.guards.isEmpty) inputPat
-        else {
-          val andedGuards = act.guards.reduceLeft((a,b) => { val and = And(a,b); and.typ = BoolType; and } )
-          P.BinaryExpr(inputPat,"&&",translateExpr(andedGuards)(actionRenamings) )
+      val firingRule = {
+        val pureFiringRule =
+          if (act.guards.isEmpty) inputPat
+          else {
+            val andedGuards = act.guards.reduceLeft((a,b) => { val and = And(a,b); and.typ = BoolType; and } )
+            P.BinaryExpr(inputPat,"&&",translateExpr(andedGuards)(actionRenamings) )
+          }
+        
+        if (!peekGuards.isEmpty) {
+          P.BinaryExpr(peekGuards.reduceLeft((a,b) => { P.BinaryExpr(a,"&&",b) }),"&&",pureFiringRule)
         }
-
+        else pureFiringRule
+      }
       val actionParams = 
         act.variables map { v => 
           P.VarDecl(renamings.R(v.id),translateType(v.typ),if (v.value.isDefined) Some(translateExpr(v.value.get)(actionRenamings)) else None) 
@@ -362,7 +387,7 @@ class PromelaTranslator(params: CommandLineParameters) extends Backend[Translati
           stmt += P.Send(renamings.R(p.portId), translateExpr(e)(actionRenamings))
         }
       }
-      
+      stmt ++= peekResets
       actions += P.Atomic(actionParams :::  List(P.GuardStmt(P.ExprStmt(firingRule), stmt.toList)))
     }
     

@@ -25,14 +25,13 @@ class PromelaRunner(val params: CommandLineParameters) extends Backend[List[Cont
   
   def verifyForContract(network: Network, contract: ContractAction, promelaProg: List[Promela.Decl], outputParser: SpinOutputParser) = {
     val progTxt = PromelaPrelude.get + promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
-    //println(progTxt)
+    if (params.PromelaPrint) {
+      println(progTxt)
+    }
     outputParser.startNewSchedule(contract)
     println("Running spin on contract " + contract.fullName + "...")
     writeFile("output/spin.pml",progTxt)
     val spin = Runtime.getRuntime.exec("/Users/jonatan/Tools/bin/spin -T -B output/spin.pml")
-//    val output = spin.getOutputStream
-//    output.write(progTxt.getBytes)
-//    output.close
     
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable() {
       def run {
@@ -53,7 +52,7 @@ class PromelaRunner(val params: CommandLineParameters) extends Backend[List[Cont
     var previousLine = null: String
     val spinOutput: ListBuffer[String] = new ListBuffer
     while (line != null) {
-      //println(line)
+      println(line)
       outputParser.read(line)
       spinOutput += line
       previousLine = line

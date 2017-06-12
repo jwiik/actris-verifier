@@ -14,6 +14,19 @@ class ActionPeekAnalyzer {
     return idFinder.getPeekDepth
   }
   
+  def analyze(actions: List[ActorAction]): Map[String,Int] = {
+    var map: Map[String,Int] = Map.empty 
+    for (a <- actions) {
+      for ((p,r) <- analyze(a)) {
+        assert(r <= 1, "Peeks deeper than 1 not supported yet")
+        if (!map.contains(p) || map(p) < r) {
+          map += (p -> r)
+        }
+      }
+    }
+    map
+  }
+  
   class IdFinder extends ASTVisitor[Map[String,(String,Int)]] {
     
     private val peekDepth = collection.mutable.Map[String,Int]()
