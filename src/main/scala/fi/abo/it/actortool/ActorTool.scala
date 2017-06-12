@@ -11,15 +11,23 @@ import fi.abo.it.actortool.boogie.Boogie
 import fi.abo.it.actortool.boogie.BoogieVerifier
 import fi.abo.it.actortool.promela.PromelaRunner
 import fi.abo.it.actortool.util.ASTPrinter
+import fi.abo.it.actortool.boogie.BoogieScheduleVerifier
+import fi.abo.it.actortool.schedule.ContractSchedule
 
-
-trait Translator[U] {
-  def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): U
+trait ProgramContext {
+  def program: List[TopDecl]
+  def typeContext: Resolver.Context
 }
 
-abstract class Verifier[U, T] extends Translator[U] {
-  def verify(input: U): T
-  def translateAndVerify(decls: List[TopDecl], typeCtx: Resolver.Context): T = verify(translateProgram(decls, typeCtx))
+class BasicProgramContext(val program: List[TopDecl], val typeContext: Resolver.Context) extends ProgramContext
+class ScheduleContext(val schedules: List[ContractSchedule], val program: List[TopDecl], val typeContext: Resolver.Context) extends ProgramContext
+
+trait GeneralBackend[T,U] {
+  def invoke(program: T): U
+}
+
+trait Backend[U] extends GeneralBackend[ProgramContext,U] {
+  def invoke(program: ProgramContext): U
 }
 
 object ActorTool {
@@ -37,7 +45,6 @@ object ActorTool {
     val Parse = Value("Parse")
     val Resolve = Value("Typecheck")
     val Infer = Value("Inference")
-    val Translation = Value("Translation")
     val Verification = Value("Verification")
   }
 
@@ -309,9 +316,14 @@ object ActorTool {
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
+    
+    
     if (params.Promela.isDefined) {
-      val promelaTranslator = new PromelaRunner(params)
-      promelaTranslator.translateAndVerify(program, typeCtx.get)
+      val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
+      val promelaBackend = new PromelaRunner(params)
+      val schedules = promelaBackend.invoke(programContext)
+      val scheduleVerifier = new BoogieScheduleVerifier(params)
+      scheduleVerifier.invoke(new ScheduleContext(schedules,program,typeCtx.get))
       return
     }
 
@@ -327,30 +339,16 @@ object ActorTool {
     tmpTime = System.nanoTime
 
     if (!params.DoTranslate) return
-
-    //val translator = new Translator(params.FixedBaseLength, params.FTMode, params.BVMode);
-
+    
     val verifier = new BoogieVerifier(params)
 
     val componentsToVerify =
       if (params.ComponentsToVerify.isEmpty) program
       else program.filter { x => params.ComponentsToVerify.contains(x.id) || x.isUnit || x.isType }
-
-    val bplProg =
-      try {
-        verifier.translateProgram(componentsToVerify, typeCtx.get);
-      } catch {
-        case ex: TranslationException =>
-          reportError(ex.pos, ex.msg)
-          return
-      }
-
-    timings += (Step.Translation -> (System.nanoTime - tmpTime))
-    tmpTime = System.nanoTime
-
+    
     if (!params.DoVerify) return
-
-    verifier.verify(bplProg)
+    val programContext = new BasicProgramContext(componentsToVerify,typeCtx.get)
+    verifier.invoke(programContext)
 
     timings += (Step.Verification -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime

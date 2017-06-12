@@ -182,7 +182,7 @@ sealed abstract class AbstractAction extends Member {
     case Some(i) => i.rate
   }
   
-  val fullName = label.getOrElse("anon$"+Count.next)
+  val fullName = label.getOrElse("anon__"+Count.next)
   
 }
 

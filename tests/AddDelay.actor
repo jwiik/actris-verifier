@@ -1,5 +1,7 @@
 actor Add int in1, int in2 ==> int out :
-  action in1:[i], in2:[j] ==> out:[i+j] end
+  action in1:[i], in2:[j] ==> out:[i+j] 
+    guard 0 <= i
+  end
 end
 
 actor Split int in ==> int out1, int out2 :

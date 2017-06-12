@@ -2,7 +2,7 @@ package fi.abo.it.actortool.util
 
 import fi.abo.it.actortool._
 
-class ASTPrinter {
+object ASTPrinter {
   
   private val nl = System.getProperty("line.separator");
   
@@ -115,12 +115,17 @@ class ASTPrinter {
   def printExpr(expr: Expr): String = {
     expr match {
       case be: BinaryExpr => "(" + printExpr(be.left) + ") " + be.operator + " (" + printExpr(be.right) + ")"
+      case Not(e) => "!(" + printExpr(e) + ")"
+      case UnMinus(e) => "-("+printExpr(e)+")"
       case Id(id) => id
       case IntLiteral(i) => i.toString
+      case BoolLiteral(b) => b.toString
+      case HexLiteral(x) => "0x"+x 
       case FunctionApp(n,args) => n + "(" + (args map printExpr).mkString(",") + ")"
       case IndexAccessor(e,idx) => printExpr(e) + "[" + printExpr(idx) + "]"
       case SpecialMarker(s) => s
-      case Forall(vars,expr,pat) => "(forall " + (vars map printDecl).mkString(", ") + " :: " + printExpr(expr) + ")" 
+      case Forall(vars,expr,pat) => "(forall " + (vars map printDecl).mkString(", ") + " :: " + printExpr(expr) + ")"
+      case IfThenElse(cond,thn,els) => "if " + printExpr(cond) + " then " + printExpr(thn) + " else " + printExpr(els) + " end"
     }
   }
   

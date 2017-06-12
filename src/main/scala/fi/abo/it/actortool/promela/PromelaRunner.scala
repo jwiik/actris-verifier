@@ -6,26 +6,27 @@ import collection.mutable.ListBuffer
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import fi.abo.it.actortool._
+import fi.abo.it.actortool.schedule.ContractSchedule
 import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
-class PromelaRunner(val params: CommandLineParameters) extends Verifier[Map[ContractAction,List[Promela.Decl]], Unit]  {
+class PromelaRunner(val params: CommandLineParameters) extends Backend[List[ContractSchedule]]  {
   
-  val translator = new PromelaTranslator(params)
   val printer = new Promela.PromelaPrinter
   
-  def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): Map[ContractAction,List[Promela.Decl]] = {
-    translator.translateProgram(decls, typeCtx) 
-  }
-  
-  def verify(promelaPrograms: Map[ContractAction,List[Promela.Decl]]): Unit = {
-    for ((contract,prog) <- promelaPrograms) {
-      verifyForContract(contract, prog)
+  def invoke(programCtx: ProgramContext): List[ContractSchedule] = {
+    val translator = new PromelaTranslator(params)
+    val translation = translator.invoke(programCtx)
+    val outputParser = new SpinOutputParser(translation)
+    for ((contract,prog) <- translation.promelaPrograms) {
+      verifyForContract(translation.network, contract, prog,outputParser)
     }
+    outputParser.allSchedules
   }
   
-  def verifyForContract(contract: ContractAction, promelaProg: List[Promela.Decl]) = {
-    val progTxt = promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
+  def verifyForContract(network: Network, contract: ContractAction, promelaProg: List[Promela.Decl], outputParser: SpinOutputParser) = {
+    val progTxt = PromelaPrelude.get + promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
     //println(progTxt)
+    outputParser.startNewSchedule(contract)
     println("Running spin on contract " + contract.fullName + "...")
     writeFile("output/spin.pml",progTxt)
     val spin = Runtime.getRuntime.exec("/Users/jonatan/Tools/bin/spin -T -B output/spin.pml")
@@ -52,7 +53,8 @@ class PromelaRunner(val params: CommandLineParameters) extends Verifier[Map[Cont
     var previousLine = null: String
     val spinOutput: ListBuffer[String] = new ListBuffer
     while (line != null) {
-      println(line)
+      //println(line)
+      outputParser.read(line)
       spinOutput += line
       previousLine = line
       line = input.readLine()

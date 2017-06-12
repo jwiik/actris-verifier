@@ -363,7 +363,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
       else {
         (for (ipat <- action.inputPattern) yield {
           for (v <- ipat.vars) yield {
-            val inVar = ipat.portId + B.Sep + v.id
+            val inVar = instance.id + B.Sep + ipat.portId + B.Sep + v.id
             vars += BDecl(inVar,B.Local(inVar,B.type2BType(v.typ)))
             (v.id,makeId(inVar,v.typ))
           }

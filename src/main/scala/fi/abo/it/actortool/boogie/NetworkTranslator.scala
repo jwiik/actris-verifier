@@ -140,7 +140,7 @@ class NetworkTranslator(
           
           val higherPrioFiringRules = higherPrioActions map {a => firingRules(a) }
           
-          val subActorStmt = transSubActionExecution(inst, ca, nwvs, firingRules(ca), higherPrioFiringRules)
+          val subActorStmt = transSubActionExecution(inst, ca, nwvs, firingRules(ca))
           boogieProcs += B.createProc(Uniquifier.get(procName),subActorStmt,smokeTest)
         }
       }
@@ -233,35 +233,13 @@ class NetworkTranslator(
     B.createProc(Uniquifier.get(nwvs.namePrefix+nwa.fullName+"#exit"),asgn.toList,smokeTest)
   }
   
-  def transSubActionFiringRules(
-      instance: Instance, 
-      action: AbstractAction, 
-      nwvs: NetworkVerificationStructure) = {
-    
-    val firingCondsBuffer = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
-    val renamings = nwvs.subActionRenamings(instance, action)
-    val replacementMap = nwvs.getEntityActionData(instance,action).replacements
-    
-    for (ipat <- action.inputPattern) {
-      val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
-      firingCondsBuffer += B.Int(ipat.rate) <= B.Urd(cId)
-    }
-    
-    for (g <- action.guards) {
-      val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
-      val transGuard = transExpr(renamedGuard)(renamings)
-      firingCondsBuffer += transGuard
-    }
-    
-    firingCondsBuffer.reduceLeft((a,b) => a && b)
-  }
+  
   
   def transSubActionExecution(
       instance: Instance, 
       action: AbstractAction, 
       nwvs: NetworkVerificationStructure,
-      firingRule: Boogie.Expr,
-      higherPriorityGuards: List[Boogie.Expr]): List[Boogie.Stmt] = {
+      firingRule: Boogie.Expr): List[Boogie.Stmt] = {
     
     val actor = instance.actor
     val asgn = new ListBuffer[Boogie.Stmt]()

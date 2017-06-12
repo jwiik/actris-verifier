@@ -13,7 +13,7 @@ import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool._ 
 
 
-abstract class EntityTranslator[T <: DFActor] {
+abstract class EntityTranslator[T] {
   
   val stmtTranslator = new StmtExpTranslator();
   
@@ -31,6 +31,29 @@ abstract class EntityTranslator[T <: DFActor] {
       }
       case Nil => Nil
     }
+  }
+  
+  def transSubActionFiringRules(
+      instance: Instance, 
+      action: AbstractAction, 
+      nwvs: NetworkVerificationStructure) = {
+    
+    val firingCondsBuffer = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
+    val renamings = nwvs.subActionRenamings(instance, action)
+    val replacementMap = nwvs.getEntityActionData(instance,action).replacements
+    
+    for (ipat <- action.inputPattern) {
+      val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
+      firingCondsBuffer += B.Int(ipat.rate) <= B.Urd(cId)
+    }
+    
+    for (g <- action.guards) {
+      val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
+      val transGuard = transExpr(renamedGuard)(renamings)
+      firingCondsBuffer += transGuard
+    }
+    
+    firingCondsBuffer.reduceLeft((a,b) => a && b)
   }
   
   def transExprPrecondCheck(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
@@ -69,10 +92,11 @@ abstract class EntityTranslator[T <: DFActor] {
 
 class Translator( 
     val smokeTest: Boolean,
-    val skipMutualExclusivenessCheck: Boolean) {  
+    val skipMutualExclusivenessCheck: Boolean) extends Backend[List[Boogie.Decl]] {  
   
   
-  def translateProgram(decls: List[TopDecl], typeCtx: Resolver.Context): List[Boogie.Decl] = {
+  def invoke(programCtx: ProgramContext): List[Boogie.Decl] = {
+    val typeCtx = programCtx.typeContext
     assert(typeCtx.getErrors.isEmpty)
     
     val stmtTranslator = new StmtExpTranslator();
@@ -80,7 +104,7 @@ class Translator(
     lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
     lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
     
-    val bProgram = decls flatMap {
+    val bProgram = programCtx.program flatMap {
       case a: BasicActor => actorTranslator.translateEntity(a)
       case n: Network => networkTranslator.translateEntity(n)
       case u: DataUnit => {

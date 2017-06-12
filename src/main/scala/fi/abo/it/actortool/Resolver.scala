@@ -36,7 +36,7 @@ object Resolver {
     override def lookUp(id: String) = constants.get(id)
   }
   
-  sealed class EmptyContext extends RootContext(null,Map.empty,Map.empty,Map.empty)
+  object EmptyContext extends RootContext(null,Map.empty,Map.empty,Map.empty)
   
   sealed abstract class ChildContext(override val parentNode: ASTNode, override val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
@@ -122,7 +122,7 @@ object Resolver {
         case td: TypeDecl => userTypes += (td.id -> td)
       }
     }
-    val constCtx = new EmptyContext
+    val constCtx = EmptyContext
     val constants: scala.collection.mutable.Map[String,Declaration] = new scala.collection.mutable.HashMap()
     for ((_,u) <- units) {
       for (d <- u.constants) {
@@ -932,6 +932,7 @@ object Resolver {
       ctx.error(fa.pos, "int2bv takes two integer literals as argument")
       return UnknownType
     }
+    for (p <- params) resolveExpr(ctx, p)
     val value = params(0) match {
       case IntLiteral(n) => n
       case UnMinus(IntLiteral(n)) => -n
@@ -945,7 +946,7 @@ object Resolver {
       case "uint2bv" => BvType(size,false)
       case "uint" => BvType(size,false)
     }
-    
+    assert(fa.typ != null)
     fa.typ
   }
   

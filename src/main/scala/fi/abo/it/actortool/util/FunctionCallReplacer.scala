@@ -20,14 +20,18 @@ class FunctionCallReplacer extends ASTReplacingVisitor[String,FunctionDecl] {
   
   override def visitExpr(expr: Expr)(implicit map: Map[String,FunctionDecl]): Expr = {
     expr match {
-      case FunctionApp(name,args) => {
+      case fa@FunctionApp(name,args) => {
         val newArgs = args map visitExpr
         map.get(name) match {
           case Some(fd) => {
             val replacements = (for ((param,arg)  <- fd.inputs.zip(newArgs)) yield (param.id,arg)).toMap
             argReplacer.visitExpr(fd.expr)(replacements)
           }
-          case None => FunctionApp(name,newArgs)
+          case None => {
+            val nfa = FunctionApp(name,newArgs)
+            nfa.typ = fa.typ
+            nfa
+          }
         }
       }
       case _ => super.visitExpr(expr)
@@ -39,7 +43,10 @@ class FunctionCallReplacer extends ASTReplacingVisitor[String,FunctionDecl] {
       expr match {
         case id@Id(name) => {
           map.get(name) match {
-            case Some(e) => e
+            case Some(e) => {
+              assert(e.typ != null, e)
+              e
+            }
             case None => id
           }
         }
