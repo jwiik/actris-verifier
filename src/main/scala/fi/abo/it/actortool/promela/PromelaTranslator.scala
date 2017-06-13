@@ -47,7 +47,7 @@ class IdMap {
   
 }
 
-class PromelaTranslator(params: CommandLineParameters) extends Backend[Translation] {
+class PromelaTranslator(params: CommandLineParameters, flatten: Boolean = false) extends Backend[List[Translation]] {
 
   val P = Promela
   val inputGenerator = new InputGenerator
@@ -110,7 +110,7 @@ class PromelaTranslator(params: CommandLineParameters) extends Backend[Translati
   def invoke(programCtx: ProgramContext) = {
     val decls = programCtx.program
     val topNwName = params.Promela.get
-    var translation: Option[Translation] = None
+    var translation: List[Translation] = Nil
     var constants: List[Declaration] = Nil
     var procs: Map[String,P.ProcType] = Map.empty
     
@@ -123,19 +123,10 @@ class PromelaTranslator(params: CommandLineParameters) extends Backend[Translati
     }
     
     for (n <- decls.collect{ case n: Network => n }) {
-      if (n.id == topNwName) { 
-        translation = Some(translateTopNetwork(n,constants,procs))
-      }
-      else {
-        // ..
-      }
+      translation = translateTopNetwork(n,constants,procs) :: translation
     }
     
-    
-    translation match {
-      case Some(translation) => translation
-      case None => throw new RuntimeException("Top-level network " + topNwName + " not found")
-    }
+    translation 
   }
   
   def translateTopNetwork(nw: Network, constants: List[Declaration], procs: Map[String,P.ProcType]): Translation = {
@@ -199,7 +190,7 @@ class PromelaTranslator(params: CommandLineParameters) extends Backend[Translati
           // Get the correct channel id
           val chan = channelMapping(PortRef(None,pat.portId))
           for (i <- 0 to pat.rate-1) {
-            val inputToken = input((pat.portId,i))
+            val inputToken = input(pat.portId)(i)
             initBlock += P.Send(renamings.R(chan.id), translateExpr(inputToken)(renamings))
           }
         }

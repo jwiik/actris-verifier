@@ -15,12 +15,14 @@ class PromelaRunner(val params: CommandLineParameters) extends Backend[List[Cont
   
   def invoke(programCtx: ProgramContext): List[ContractSchedule] = {
     val translator = new PromelaTranslator(params)
-    val translation = translator.invoke(programCtx)
-    val outputParser = new SpinOutputParser(translation)
-    for ((contract,prog) <- translation.promelaPrograms) {
-      verifyForContract(translation.network, contract, prog,outputParser)
+    val translations = translator.invoke(programCtx)
+    translations.flatMap { t =>
+      val outputParser = new SpinOutputParser(t)
+      for ((contract,prog) <- t.promelaPrograms) {
+        verifyForContract(t.network, contract, prog,outputParser)
+      }
+      outputParser.allSchedules
     }
-    outputParser.allSchedules
   }
   
   def verifyForContract(network: Network, contract: ContractAction, promelaProg: List[Promela.Decl], outputParser: SpinOutputParser) = {
