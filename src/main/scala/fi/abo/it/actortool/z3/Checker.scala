@@ -102,7 +102,6 @@ class Checker {
     solver.check match {
       case Some(true) => {
         val model = solver.getModel
-        println(solver.getModel)
         new Z3ModelResult(true,model,allConstants,z3Funcs)
       }
       case Some(false) => throw new RuntimeException()

@@ -9,10 +9,11 @@ import java.io.FileWriter
 import scala.util.parsing.input.Position
 import fi.abo.it.actortool.boogie.Boogie
 import fi.abo.it.actortool.boogie.BoogieVerifier
-import fi.abo.it.actortool.promela.PromelaRunner
+import fi.abo.it.actortool.promela.PromelaBackend
 import fi.abo.it.actortool.util.ASTPrinter
 import fi.abo.it.actortool.boogie.BoogieScheduleVerifier
 import fi.abo.it.actortool.schedule.ContractSchedule
+import fi.abo.it.actortool.merging.ActorMerger
 
 trait ProgramContext {
   def program: List[TopDecl]
@@ -324,10 +325,12 @@ object ActorTool {
     
     if (params.Promela.isDefined) {
       val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
-      val promelaBackend = new PromelaRunner(params)
+      val promelaBackend = new PromelaBackend(params)
       val schedules = promelaBackend.invoke(programContext)
-      val scheduleVerifier = new BoogieScheduleVerifier(params)
-      scheduleVerifier.invoke(new ScheduleContext(schedules,program,typeCtx.get))
+      val merger = new ActorMerger
+      merger.invoke(schedules)
+      //val scheduleVerifier = new BoogieScheduleVerifier(params)
+      //scheduleVerifier.invoke(new ScheduleContext(schedules,program,typeCtx.get))
       return
     }
 

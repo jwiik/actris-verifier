@@ -96,7 +96,7 @@ class NetworkTranslator(
       
       for (ca <- actions.filter(_.init)) {
         for (opat <- ca.outputPattern) {
-          val cId = nwvs.sourceMap(PortRef(Some(inst.id),opat.portId))
+          val cId = nwvs.connectionMap.getSrc(inst.id,opat.portId)
           for (e <- opat.asInstanceOf[OutputPattern].exps) {
             asgn += Boogie.Assign(B.ChannelIdx(cId,e.typ,B.C(cId)),transExpr(e)(renamings))
             asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(1))
@@ -211,7 +211,7 @@ class NetworkTranslator(
       c.to match {
         // Match network output channels
         case pf@PortRef(None,port) => {
-          val name = nwvs.targetMap(pf)
+          val name = nwvs.connectionMap.getDst(pf)
           asgn += Boogie.Assign(B.R(Boogie.VarExpr(name)), B.R(Boogie.VarExpr(name)) +  (B.Int(nwa.outportRate(port))))
         }
         case _ =>
@@ -252,12 +252,12 @@ class NetworkTranslator(
     asgn ++= nwvs.basicAssumes
     
     for (ip <- instance.actor.inports) {
-      val cId = nwvs.targetMap(PortRef(Some(instance.id),ip.id))
+      val cId = nwvs.connectionMap.getDst(PortRef(Some(instance.id),ip.id))
       asgn += Boogie.Assign(B.Isub(cId), B.R(cId))
     }
     
     for (op <- instance.actor.outports) {
-      val cId = nwvs.sourceMap(PortRef(Some(instance.id),op.id))
+      val cId = nwvs.connectionMap.getSrc(PortRef(Some(instance.id),op.id))
       asgn += Boogie.Assign(B.Isub(cId), B.C(cId))
     }
     
@@ -276,7 +276,7 @@ class NetworkTranslator(
     for (ipat <- action.inputPattern) {
       var repeats = 0
       while (repeats < ipat.repeat) {
-        val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
+        val cId = nwvs.connectionMap.getDst(PortRef(Some(instance.id),ipat.portId))
         if (action.isContractAction) {
           asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(ipat.rate))
         }
@@ -331,7 +331,7 @@ class NetworkTranslator(
     }
     
     for (opat <- action.outputPattern) {
-      val cId = nwvs.sourceMap(PortRef(Some(instance.id),opat.portId))
+      val cId = nwvs.connectionMap.getSrc(PortRef(Some(instance.id),opat.portId))
       var repeats = 0
       while (repeats < opat.repeat) {
         if (action.isContractAction) {

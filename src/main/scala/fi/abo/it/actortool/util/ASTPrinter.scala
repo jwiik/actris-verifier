@@ -54,9 +54,10 @@ object ASTPrinter {
         (inpats map { ip => ip.portId + ":[" + (ip.vars map printExpr).mkString(",")  + "]" }).mkString(", ") +
         " ==> " +
         (outpats map { op => op.portId + ":[" + (op.exps map printExpr).mkString(",")  + "]" }).mkString(", ") +
-        (guards map { g => nl +indent + "guard " + printExpr(g) }).mkString(nl) + 
-        (requires map { r => nl +indent + "requires " + printExpr(r) }).mkString(nl) +
-        (ensures map { q => nl + indent + "ensures " + printExpr(q) }).mkString(nl) + 
+        (guards map { g => nl +indent + "guard " + printExpr(g) }).mkString("") + 
+        (requires map { r => nl +indent + "requires " + printExpr(r) }).mkString("") +
+        (ensures map { q => nl + indent + "ensures " + printExpr(q) }).mkString("") + 
+        (if (vars.isEmpty) "" else nl + indent + "var " + indentAdd + vars.map(d => nl + indent + printDecl(d)).mkString(",") + indentRem) +
         (if (body.isEmpty) "" else nl + indent + "do " + nl + indentAdd + printStmts(body) + indentRem + nl) +
         indent + "end"
       }
@@ -114,7 +115,7 @@ object ASTPrinter {
   
   def printExpr(expr: Expr): String = {
     expr match {
-      case be: BinaryExpr => "(" + printExpr(be.left) + ") " + be.operator + " (" + printExpr(be.right) + ")"
+      case be: BinaryExpr => "(" + printExpr(be.left) + " "  + be.operator + " " + printExpr(be.right) + ")"
       case Not(e) => "!(" + printExpr(e) + ")"
       case UnMinus(e) => "-("+printExpr(e)+")"
       case Id(id) => id

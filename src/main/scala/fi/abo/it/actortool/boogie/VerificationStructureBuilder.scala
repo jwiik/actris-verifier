@@ -1,9 +1,10 @@
 package fi.abo.it.actortool.boogie
 
-import fi.abo.it.actortool._ 
+import fi.abo.it.actortool._
 import fi.abo.it.actortool.util.PriorityMapBuilder
 import scala.collection.mutable.ListBuffer
 import Elements._
+import fi.abo.it.actortool.util.ConnectionMap
 
 trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] {
   
@@ -211,19 +212,8 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
       }
     }
     
-    val (sourceMap,targetMap) = {
-      val tempRenamings = buffer.toMap
-      val source = scala.collection.mutable.HashMap.empty[PortRef,String]
-      val target = scala.collection.mutable.HashMap.empty[PortRef,String]
-      for (c <- connections) {
-        source(c.from) = tempRenamings(c.id).id
-        target(c.to) = tempRenamings(c.id).id
-      }
-      (source.toMap,target.toMap)
-    }
+    val connMap = ConnectionMap.build(connections, buffer.toMap)
     
-
-
     val subactorVarDecls = new ListBuffer[BDecl]
     val entityDecls = new ListBuffer[BDecl]
     val entityDataBuffer = new ListBuffer[(Instance,EntityData)]
@@ -238,12 +228,12 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
       buffer += ((e.id,makeId(namePrefix+e.id,ActorType(e.actor))))
      
       for (p <- actor.inports) {
-        val newName = targetMap(PortRef(Some(e.id),p.id))
+        val newName = connMap.getDst(e.id,p.id)
         renameBuffer += ((p.id,makeId(newName,ChanType(p.portType))))
       }
       
       for (p <- actor.outports) {
-        val newName = sourceMap(PortRef(Some(e.id),p.id))
+        val newName = connMap.getSrc(PortRef(Some(e.id),p.id))
         renameBuffer += ((p.id,makeId(newName,ChanType(p.portType))))
       }
       
@@ -260,7 +250,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         renameBuffer += ((v.id,makeId(newName,v.typ)))
       }
       
-      val actionData = (actor.actorActions map { a => (a,collectEntityData(e,a,targetMap)) }).toMap
+      val actionData = (actor.actorActions map { a => (a,collectEntityData(e,a,connMap)) }).toMap
       val priorityMap = buildPriorityMap(actor,true)
 
       
@@ -328,8 +318,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         publicInvs,
         connections, 
         entities, 
-        sourceMap, 
-        targetMap, 
+        connMap, 
         networkRenamings, 
         entityData,
         entityDeclList:::chanDeclList:::contractModeDecls.toList,
@@ -340,14 +329,14 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         namePrefix)
   }
   
-  def collectEntityData(instance: Instance, action: ActorAction, targetMap: Map[PortRef, String]) = {
+  def collectEntityData(instance: Instance, action: ActorAction, connMap: ConnectionMap) = {
     val actor = instance.actor
     val vars = new ListBuffer[BDecl]()
     
     val replacements = scala.collection.mutable.HashMap.empty[Id,Expr]
     
     for (ipat <- action.inputPattern) {
-      val cId = targetMap(PortRef(Some(instance.id),ipat.portId))      
+      val cId = connMap.getDst(instance.id,ipat.portId)      
       for ((v,ind) <- ipat.vars.zipWithIndex) {
         val c = Elements.ch(cId,v.typ)
         val index = 

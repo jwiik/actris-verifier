@@ -156,17 +156,17 @@ class PromelaTranslator(params: CommandLineParameters, flatten: Boolean = false)
           }.toMap
           instances += (e.id -> PromelaInstance(e.id,e,idMap.generateId(e),connections))
         case subnw: Network => {
-          
+          assert(false)
           // Build port to channel map
-          val ioConns = (for (p <- e.actor.inports:::e.actor.outports) yield (p.id,channelMapping(PortRef(Some(e.id),p.id)))).toMap
-          
-          val (subInstances,subDecls) = translateSubNetwork(subnw,e.id,ioConns,idMap)
-          for (si <- subInstances) {
-            instances += (si.id -> si)
-          }
-          for ((id,decl) <- subDecls) {
-            decls += (id -> decl)
-          }
+//          val ioConns = (for (p <- e.actor.inports:::e.actor.outports) yield (p.id,channelMapping(PortRef(Some(e.id),p.id)))).toMap
+//          
+//          val (subInstances,subDecls) = translateSubNetwork(subnw,e.id,ioConns,idMap)
+//          for (si <- subInstances) {
+//            instances += (si.id -> si)
+//          }
+//          for ((id,decl) <- subDecls) {
+//            decls += (id -> decl)
+//          }
         }
       }
     }
@@ -207,54 +207,54 @@ class PromelaTranslator(params: CommandLineParameters, flatten: Boolean = false)
   
   case class PromelaInstance(id: String, instance: Instance, mapId: Int, connections: Map[String,Connection])
   
-  def translateSubNetwork(nw: Network, prefix: String, ioConnections: Map[String,Connection], idMap: IdMap): (List[PromelaInstance],List[(String,P.VarDecl)]) = {
-    val decls = new ListBuffer[(String,P.VarDecl)]
-    val instances = new ListBuffer[PromelaInstance]
-    
-    val channelMapping = Util.buildConnectionMap(nw.structure.get.connections)
-    
-    for (c <- nw.structure.get.connections) {
-      (c.from,c.to) match {
-        case (PortRef(Some(x),_),PortRef(Some(y),_)) => 
-          val id = prefix+"__"+renamings.R(c.id)
-          decls += id -> P.VarDecl(id, P.NamedType("chan"), Some(P.ChInit(100,translateType(c.typ.asInstanceOf[ChanType].contentType))))
-        case (_,_) =>
-      }
-    }
-    for (e <- nw.entities.get.entities) {
-      val connections = {
-        for (p <- e.actor.inports:::e.actor.outports) yield {
-          val conn = channelMapping(PortRef(Some(e.id),p.id))
-          val mappedConn =
-            if (conn.isInput) {
-              ioConnections(conn.from.name)
-              //assert(false,parentConn)
-            }
-            else if (conn.isOutput) {
-              ioConnections(conn.to.name)
-              //assert(false,parentConn)
-            }
-            else {
-              Connection(Some(prefix+"__"+conn.id),conn.from,conn.to,conn.annotations)
-            }
-          (p.id,mappedConn)
-        }
-      }.toMap
-      instances += PromelaInstance(prefix+"__"+e.id,e,idMap.generateId(e),connections)
-    }
-    for (e <- nw.entities.get.entities) {
-      e.actor match {
-        case actor: BasicActor => 
-        case subnw: Network => {
-          val ioConns = (for (p <- e.actor.inports:::e.actor.outports) yield (p.id,channelMapping(PortRef(Some(e.id),p.id)))).toMap
-          val (instance,subDecls) = translateSubNetwork(subnw,prefix+"__"+e.id,ioConns,idMap)
-          instances ++= instance
-          decls ++= subDecls
-        }
-      }
-    }
-    (instances.toList,decls.toList)
-  }
+//  def translateSubNetwork(nw: Network, prefix: String, ioConnections: Map[String,Connection], idMap: IdMap): (List[PromelaInstance],List[(String,P.VarDecl)]) = {
+//    val decls = new ListBuffer[(String,P.VarDecl)]
+//    val instances = new ListBuffer[PromelaInstance]
+//    
+//    val channelMapping = Util.buildConnectionMap(nw.structure.get.connections)
+//    
+//    for (c <- nw.structure.get.connections) {
+//      (c.from,c.to) match {
+//        case (PortRef(Some(x),_),PortRef(Some(y),_)) => 
+//          val id = prefix+"__"+renamings.R(c.id)
+//          decls += id -> P.VarDecl(id, P.NamedType("chan"), Some(P.ChInit(100,translateType(c.typ.asInstanceOf[ChanType].contentType))))
+//        case (_,_) =>
+//      }
+//    }
+//    for (e <- nw.entities.get.entities) {
+//      val connections = {
+//        for (p <- e.actor.inports:::e.actor.outports) yield {
+//          val conn = channelMapping(PortRef(Some(e.id),p.id))
+//          val mappedConn =
+//            if (conn.isInput) {
+//              ioConnections(conn.from.name)
+//              //assert(false,parentConn)
+//            }
+//            else if (conn.isOutput) {
+//              ioConnections(conn.to.name)
+//              //assert(false,parentConn)
+//            }
+//            else {
+//              Connection(Some(prefix+"__"+conn.id),conn.from,conn.to,conn.annotations)
+//            }
+//          (p.id,mappedConn)
+//        }
+//      }.toMap
+//      instances += PromelaInstance(prefix+"__"+e.id,e,idMap.generateId(e),connections)
+//    }
+//    for (e <- nw.entities.get.entities) {
+//      e.actor match {
+//        case actor: BasicActor => 
+//        case subnw: Network => {
+//          val ioConns = (for (p <- e.actor.inports:::e.actor.outports) yield (p.id,channelMapping(PortRef(Some(e.id),p.id)))).toMap
+//          val (instance,subDecls) = translateSubNetwork(subnw,prefix+"__"+e.id,ioConns,idMap)
+//          instances ++= instance
+//          decls ++= subDecls
+//        }
+//      }
+//    }
+//    (instances.toList,decls.toList)
+//  }
   
   def translateActor(a: BasicActor): P.ProcType = {
     

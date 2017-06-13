@@ -43,7 +43,7 @@ abstract class EntityTranslator[T] {
     val replacementMap = nwvs.getEntityActionData(instance,action).replacements
     
     for (ipat <- action.inputPattern) {
-      val cId = nwvs.targetMap(PortRef(Some(instance.id),ipat.portId))
+      val cId = nwvs.connectionMap.getDst(instance.id,ipat.portId)
       firingCondsBuffer += B.Int(ipat.rate) <= B.Urd(cId)
     }
     

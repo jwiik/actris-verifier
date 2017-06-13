@@ -1,6 +1,7 @@
 package fi.abo.it.actortool.boogie
 
 import fi.abo.it.actortool._
+import fi.abo.it.actortool.util.ConnectionMap
 
 trait VerificationStructure[T <: DFActor] {
   val entity: T
@@ -38,8 +39,7 @@ class NetworkVerificationStructure(
     val publicSubInvariants: List[(ActorInvariant,Map[String,Expr])],
     val connections: List[Connection],
     val entities: List[Instance],
-    val sourceMap: Map[PortRef,String],
-    val targetMap: Map[PortRef,String],
+    val connectionMap: ConnectionMap,
     override val renamings: Map[String,Expr],
     val entityData: Map[Instance,EntityData],
     val entityDecls: List[BDecl],
