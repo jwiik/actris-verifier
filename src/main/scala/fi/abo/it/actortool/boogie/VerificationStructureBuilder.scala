@@ -154,7 +154,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
   
 }
 
-class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context) 
+class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context, val mergedActors: Map[String,BasicActor] = Map.empty) 
          extends VerificationStructureBuilder[Network, NetworkVerificationStructure] {
   
   val tokensFinder = new TokensFinder()

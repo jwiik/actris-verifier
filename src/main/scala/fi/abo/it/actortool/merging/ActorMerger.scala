@@ -7,23 +7,24 @@ import fi.abo.it.actortool.util.ConnectionMap
 import collection.mutable.ListBuffer
 
 object Constants {
-  val Sep = "$"
+  val Sep = "__"
 }
 
 /**
  * This class implements merging of networks and actors into composite actors. The composite
  * actors should have a (concrete) action for each contract.
  */
-class ActorMerger extends GeneralBackend[List[ContractSchedule],DFActor] {
+class ActorMerger extends GeneralBackend[List[ContractSchedule],BasicActor] {
   
   val Sep = Constants.Sep
   
-  def invoke(schedules: List[ContractSchedule]): DFActor = {
+  def invoke(schedules: List[ContractSchedule]): BasicActor = {
     val entity = schedules(0).entity
     val members: List[Member] =
       entity match {
         case nw: Network => {
-          for (s <- schedules) yield createActionForNetworkContract(nw, s)
+          val actorActions = for (s <- schedules) yield createActionForNetworkContract(nw, s)
+          nw.contractActions ::: actorActions
         }
         case ba: BasicActor => throw new RuntimeException("Merging of basic actors not supported yet")
       }
@@ -45,6 +46,7 @@ class ActorMerger extends GeneralBackend[List[ContractSchedule],DFActor] {
   
   def createActionForNetworkContract(nw: Network, schedule: ContractSchedule): ActorAction = {
     val contract = schedule.contract
+    assert(contract.label.isDefined)
     val connections = nw.structure.get.connections
     val stmt = new ListBuffer[Stmt]
     val connectionMap = ConnectionMap.build(connections,Map.empty)
@@ -71,7 +73,7 @@ class ActorMerger extends GeneralBackend[List[ContractSchedule],DFActor] {
     for ((e,a) <- schedule.sequence) {
       val renames = getReplacements(e, a)
       for ((from,to) <- renames) {
-        assert(from.typ != null)
+        assert(from.typ != null, from)
         variables += to.id -> Declaration(to.id,from.typ,false,None)
       }
       
@@ -122,7 +124,7 @@ class ActorMerger extends GeneralBackend[List[ContractSchedule],DFActor] {
       }
     
     val action = ActorAction(
-        Some(contract.fullName+Sep+"C"),
+        contract.label,
         false,
         inputPatterns,
         outputPatterns,
@@ -141,8 +143,8 @@ class ActorMerger extends GeneralBackend[List[ContractSchedule],DFActor] {
   def replace(e: List[Stmt], renamings: Map[Id,Id]) = IdToIdReplacer.visitStmt(e)(renamings)
   
   def getReplacements(e: Instance, a: ActorAction) = {
-    (e.actor.variables.map { v => (Id(v.id) -> Id(e.id+Sep+v.id)) } :::
-    a.variables.map { v => (Id(v.id) -> Id(e.id+Sep+a.fullName+Sep+v.id)) } :::
+    (e.actor.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(e.id+Sep+v.id) } } :::
+    a.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(e.id+Sep+a.fullName+Sep+v.id) } } :::
     a.inputPattern.flatMap(pat => pat.vars).map { v => (v -> Id(e.id+Sep+a.fullName+Sep+v.id)) })
     .toMap
   }

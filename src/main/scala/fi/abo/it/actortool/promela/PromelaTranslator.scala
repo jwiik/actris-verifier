@@ -9,10 +9,11 @@ import fi.abo.it.actortool.util.ActionPeekAnalyzer
 import fi.abo.it.actortool.util.PriorityMapBuilder
 import fi.abo.it.actortool.util.ASTPrinter
 
-case class Translation(
-    val network: Network, 
+case class Translation[+T<:DFActor](
+    val entity: T, 
     val promelaPrograms: Map[ContractAction,List[Promela.Decl]],
-    val idMap: IdMap)
+    val idMap: IdMap,
+    val mergedActors: Map[String,BasicActor])
 
 class BiMap[T,U] {
   private val to = collection.mutable.Map[T,U]()
@@ -47,7 +48,7 @@ class IdMap {
   
 }
 
-class PromelaTranslator(params: CommandLineParameters, flatten: Boolean = false) extends Backend[List[Translation]] {
+class PromelaTranslator(params: CommandLineParameters) {
 
   val P = Promela
   val inputGenerator = new InputGenerator
@@ -107,29 +108,61 @@ class PromelaTranslator(params: CommandLineParameters, flatten: Boolean = false)
     override def toString = map.toString
   }
   
-  def invoke(programCtx: ProgramContext) = {
-    val decls = programCtx.program
-    val topNwName = params.Promela.get
-    var translation: List[Translation] = Nil
-    var constants: List[Declaration] = Nil
+  def invoke(entity: DFActor, mergedActors: Map[String,BasicActor], alreadyTranslated: Map[String,P.ProcType], constants: List[Declaration]): Translation[DFActor] = {
+    assert(!entity.contractActions.isEmpty)
     var procs: Map[String,P.ProcType] = Map.empty
     
-    for (d <- decls.collect{ case du: DataUnit => du }) {
-      constants = constants ++ d.constants
+    entity match {
+      case nw: Network => {
+        val entities = nw.entities.get.entities
+        for (e <- entities) {
+          if (alreadyTranslated.contains(e.actor.id)) {
+            procs += (e.actor.id -> alreadyTranslated(e.actor.id))
+          }
+          else if (mergedActors.contains(e.actor.id)) {
+            val mergedActor = mergedActors(e.actor.id)
+            val proc = translateActor(mergedActor)
+            procs += (e.actor.id -> proc)
+          }
+          else {
+            assert(false)
+          }
+        }
+        translateNetwork(nw, constants, procs, mergedActors)
+      }
+      case ba: BasicActor => {
+        val proc = translateActor(ba)
+        assert(false)
+        null
+      }
     }
     
-    for (a <- decls.collect{ case ba: BasicActor => ba }) {
-      procs = procs + (a.id -> translateActor(a))
-    }
+//    entity match {
+//      case nw: Network =>
+//    }
     
-    for (n <- decls.collect{ case n: Network => n }) {
-      translation = translateTopNetwork(n,constants,procs) :: translation
-    }
-    
-    translation 
+//    val decls = programCtx.program
+//    val topNwName = params.Promela.get
+//    var translation: List[Translation] = Nil
+//    var constants: List[Declaration] = Nil
+//    var procs: Map[String,P.ProcType] = Map.empty
+//    
+//    for (d <- decls.collect{ case du: DataUnit => du }) {
+//      constants = constants ++ d.constants
+//    }
+//    
+//    for (a <- decls.collect{ case ba: BasicActor => ba }) {
+//      procs = procs + (a.id -> translateActor(a))
+//    }
+//    
+//    for (n <- decls.collect{ case n: Network => n }) {
+//      translation = translateTopNetwork(n,constants,procs) :: translation
+//    }
+//    
+//    translation 
   }
   
-  def translateTopNetwork(nw: Network, constants: List[Declaration], procs: Map[String,P.ProcType]): Translation = {
+  def translateNetwork(nw: Network, constants: List[Declaration], procs: Map[String,P.ProcType], mergedActors: Map[String,BasicActor]): Translation[Network] = {
     val idMap = new IdMap
     val decls = collection.mutable.Map[String,P.VarDecl]()
     val instances = collection.mutable.Map[String,PromelaInstance]()
@@ -154,9 +187,15 @@ class PromelaTranslator(params: CommandLineParameters, flatten: Boolean = false)
               (p.id,conn)
             }
           }.toMap
-          instances += (e.id -> PromelaInstance(e.id,e,idMap.generateId(e),connections))
+          instances += (e.id -> PromelaInstance(e.id,e.arguments,mergedActors(actor.id),idMap.generateId(e),connections))
         case subnw: Network => {
-          assert(false)
+          val connections = {
+            for (p <- e.actor.inports:::e.actor.outports) yield {
+              val conn = channelMapping(PortRef(Some(e.id),p.id))
+              (p.id,conn)
+            }
+          }.toMap
+          instances += (e.id -> PromelaInstance(e.id,e.arguments,mergedActors(subnw.id),idMap.generateId(e),connections))
           // Build port to channel map
 //          val ioConns = (for (p <- e.actor.inports:::e.actor.outports) yield (p.id,channelMapping(PortRef(Some(e.id),p.id)))).toMap
 //          
@@ -173,10 +212,10 @@ class PromelaTranslator(params: CommandLineParameters, flatten: Boolean = false)
     
     val runs: List[P.Run] = {
       for ((id,instance) <- instances.toList) yield {
-        val actor = instance.instance.actor
+        val actor = instance.actor
         val chanNames = actor.inports:::actor.outports map { p => instance.connections(p.id) }
         val chanParams = chanNames map { p => P.VarExp(renamings.R(p.id)) }
-        val givenParams = instance.instance.arguments map { x => translateExpr(x)(renamings) }
+        val givenParams = instance.arguments map { x => translateExpr(x)(renamings) }
         P.Run(actor.id, P.IntLiteral(instance.mapId)::chanParams:::givenParams)
       }
     }
@@ -202,10 +241,10 @@ class PromelaTranslator(params: CommandLineParameters, flatten: Boolean = false)
         val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: List(init)
         (contract,program)
       }).toMap
-    Translation(nw,contractTranslations,idMap)
+    Translation(nw,contractTranslations,idMap,mergedActors)
   }
   
-  case class PromelaInstance(id: String, instance: Instance, mapId: Int, connections: Map[String,Connection])
+  case class PromelaInstance(id: String, arguments: List[Expr], actor: BasicActor, mapId: Int, connections: Map[String,Connection])
   
 //  def translateSubNetwork(nw: Network, prefix: String, ioConnections: Map[String,Connection], idMap: IdMap): (List[PromelaInstance],List[(String,P.VarDecl)]) = {
 //    val decls = new ListBuffer[(String,P.VarDecl)]

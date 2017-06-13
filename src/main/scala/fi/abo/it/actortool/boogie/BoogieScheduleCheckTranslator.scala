@@ -3,24 +3,25 @@ package fi.abo.it.actortool.boogie
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule._
 
-class BoogieScheduleCheckTranslator extends EntityTranslator[ContractSchedule] with GeneralBackend[ScheduleContext,List[Boogie.Decl]] {
+class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] with GeneralBackend[ScheduleContext,List[Boogie.Decl]] {
+
   
-  val verificationStructureBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,Resolver.EmptyContext)
+  def invoke(scheduleCtx: ScheduleContext) = translateEntity(scheduleCtx)
   
-  def invoke(scheduleCtx: ScheduleContext) = {
-    
+  def translateEntity(scheduleCtx: ScheduleContext): List[Boogie.Decl] = {
+    val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,Resolver.EmptyContext,scheduleCtx.mergedActors)
     scheduleCtx.schedules.flatMap {
-      schedule => translateEntity(schedule)
+      schedule => translateSchedule(schedule,verStructBuilder)
     }
   }
   
-  def translateEntity(schedule: ContractSchedule): List[Boogie.Decl] = {
+  def translateSchedule(schedule: ContractSchedule, verStructBuilder: NetworkVerificationStructureBuilder) = {
     val decls = new collection.mutable.ListBuffer[Boogie.Stmt]
     val stmts = new collection.mutable.ListBuffer[Boogie.Stmt]
     val alreadyDeclared = collection.mutable.Set[String]()
     
     val nwvs = schedule.entity match {
-      case nw: Network => verificationStructureBuilder.buildStructure(nw)
+      case nw: Network => verStructBuilder.buildStructure(nw)
       case ba: BasicActor => throw new RuntimeException("Boogie schedule checker does not support basic actors yet")
     }
     
@@ -56,7 +57,6 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ContractSchedule] w
     
     for ((e,a) <- schedule.sequence) {
       stmts += Boogie.Comment("Instance: " + e.id)
-      
       val renamings = nwvs.subActionRenamings(e, a)
       for (d <- nwvs.getEntityActionData(e, a).declarations) {
         if (!alreadyDeclared.contains(d.name)) {
@@ -87,7 +87,6 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ContractSchedule] w
     }
     
     List(B.createProc(nwvs.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))
-    
   }
   
   def getFiringRules(instance: Instance, nwvs: NetworkVerificationStructure) = {

@@ -21,7 +21,7 @@ trait ProgramContext {
 }
 
 class BasicProgramContext(val program: List[TopDecl], val typeContext: Resolver.Context) extends ProgramContext
-class ScheduleContext(val schedules: List[ContractSchedule], val program: List[TopDecl], val typeContext: Resolver.Context) extends ProgramContext
+class ScheduleContext(val schedules: List[ContractSchedule], val program: List[TopDecl], val typeContext: Resolver.Context, val mergedActors: Map[String,BasicActor]) extends ProgramContext
 
 trait GeneralBackend[T,U] {
   def invoke(program: T): U
@@ -327,10 +327,10 @@ object ActorTool {
       val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
       val promelaBackend = new PromelaBackend(params)
       val schedules = promelaBackend.invoke(programContext)
-      val merger = new ActorMerger
-      merger.invoke(schedules)
-      //val scheduleVerifier = new BoogieScheduleVerifier(params)
-      //scheduleVerifier.invoke(new ScheduleContext(schedules,program,typeCtx.get))
+      //val merger = new ActorMerger
+      //merger.invoke(schedules)
+//      val scheduleVerifier = new BoogieScheduleVerifier(params)
+//      scheduleVerifier.invoke(new ScheduleContext(schedules,program,typeCtx.get))
       return
     }
 

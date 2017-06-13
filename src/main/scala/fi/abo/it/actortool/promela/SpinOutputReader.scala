@@ -4,7 +4,7 @@ import collection.mutable.ListBuffer
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule.ContractSchedule
 
-class SpinOutputParser(val translation: Translation) {
+class SpinOutputParser(val translation: Translation[_<:DFActor]) {
   
   private val schedules = new  ListBuffer[ContractSchedule]()
   private var current: ListBuffer[(Instance,ActorAction)] = null
@@ -19,7 +19,7 @@ class SpinOutputParser(val translation: Translation) {
   
   def read(str: String) {
     if (str == "timeout") {
-      val s = new ContractSchedule(translation.network,currentContract,current.toList)
+      val s = new ContractSchedule(translation.entity,currentContract,current.toList)
       schedules += s
     }
     else {
@@ -28,10 +28,11 @@ class SpinOutputParser(val translation: Translation) {
       //val actor = elem \ "@actor"
       val instId = elem \ "@id"
       val instance = translation.idMap.getInstance(instId.text.toInt)
-      val action = instance.actor.actorActions.find { a => a.fullName == actionLbl.text }
+      val actor = translation.mergedActors(instance.actorId)
+      val action = actor.actorActions.find { a => a.fullName == actionLbl.text }
       action match {
         case Some(a) => current += ((instance,a))
-        case None => throw new RuntimeException()
+        case None => throw new RuntimeException(elem.toString)
       }
     }
   }
