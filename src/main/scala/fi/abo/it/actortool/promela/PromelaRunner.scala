@@ -35,7 +35,7 @@ object PromelaRunner {
     var previousLine = null: String
     val spinOutput: ListBuffer[String] = new ListBuffer
     while (line != null) {
-      println(line)
+      //println(line)
       outputParser.read(line)
       spinOutput += line
       previousLine = line

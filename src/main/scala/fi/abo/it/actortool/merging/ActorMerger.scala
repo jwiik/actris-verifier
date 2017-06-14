@@ -23,8 +23,7 @@ class ActorMerger extends GeneralBackend[List[ContractSchedule],BasicActor] {
     val members: List[Member] =
       entity match {
         case nw: Network => {
-          val actorActions = for (s <- schedules) yield createActionForNetworkContract(nw, s)
-          nw.contractActions ::: actorActions
+          for (s <- schedules) yield createActionForNetworkContract(nw, s)
         }
         case ba: BasicActor => throw new RuntimeException("Merging of basic actors not supported yet")
       }
@@ -134,6 +133,7 @@ class ActorMerger extends GeneralBackend[List[ContractSchedule],BasicActor] {
         variables.values.toList,
         stmt.toList)
     //println(ASTPrinter.printMember(action))
+    action.refinedContract = Some(contract)
     action
   }
   

@@ -154,7 +154,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
   
 }
 
-class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context, val mergedActors: Map[String,BasicActor] = Map.empty) 
+class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[Network, NetworkVerificationStructure] {
   
   val tokensFinder = new TokensFinder()
@@ -225,7 +225,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
       
       val parameterArguments = actor.parameters.zip(e.arguments).map{ case (d,e) => (d.id,e) }.toMap
       
-      buffer += ((e.id,makeId(namePrefix+e.id,ActorType(e.actor))))
+      buffer += ((e.id,makeId(namePrefix+e.id,ActorType(actor))))
      
       for (p <- actor.inports) {
         val newName = connMap.getDst(e.id,p.id)
@@ -244,7 +244,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
       }
       
       for (v <- actor.variables) {
-        val newName = "AV"+B.Sep+e.id+B.Sep+v.id
+        val newName = e.id+B.Sep+v.id
         subactorVarDecls += BDecl(newName,v.typ)
         variables += newName
         renameBuffer += ((v.id,makeId(newName,v.typ)))
@@ -322,7 +322,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         networkRenamings, 
         entityData,
         entityDeclList:::chanDeclList:::contractModeDecls.toList,
-        Nil, /*subactorVarDecls.toList,*/
+        subactorVarDecls.toList,
         uniquenessConditions,
         actionRatePreds,
         basicAssumes:::contractModeAssumes.toList,

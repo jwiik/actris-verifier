@@ -52,7 +52,11 @@ class NetworkVerificationStructure(
   def instanceRenamings(instance: Instance) = renamings ++ entityData(instance).renamings
   
   def subActionRenamings(instance: Instance, action: AbstractAction) = {
-    val actionRenamings = if (action.isActorAction) entityData(instance).actionData(action.asInstanceOf[ActorAction]).renamings else Map.empty
+    val actionRenamings = 
+      if (action.isActorAction) {
+        entityData(instance).actionData(action.asInstanceOf[ActorAction]).renamings 
+      }
+      else Map.empty
     instanceRenamings(instance) ++ actionRenamings
   }
   

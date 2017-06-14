@@ -9,7 +9,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
   def invoke(scheduleCtx: ScheduleContext) = translateEntity(scheduleCtx)
   
   def translateEntity(scheduleCtx: ScheduleContext): List[Boogie.Decl] = {
-    val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,Resolver.EmptyContext,scheduleCtx.mergedActors)
+    val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,Resolver.EmptyContext)
     scheduleCtx.schedules.flatMap {
       schedule => translateSchedule(schedule,verStructBuilder)
     }
@@ -25,14 +25,13 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       case ba: BasicActor => throw new RuntimeException("Boogie schedule checker does not support basic actors yet")
     }
     
-    for (inst <- nwvs.entities) {
-      val actor = inst.actor
-      
-      /// This list includes contract actions if the entity has such, otherwise basic actions
-      val priorityList = nwvs.entityData(inst).priorities
-      
-      val firingRules = (priorityList.keys map { ca => (ca, transSubActionFiringRules(inst, ca, nwvs)) }).toMap
-    }
+//    for (inst <- nwvs.entities) {
+//      
+//      /// This list includes contract actions if the entity has such, otherwise basic actions
+//      val priorityList = nwvs.entityData(inst).priorities
+//      
+//      val firingRules = (priorityList.keys map { ca => (ca, transSubActionFiringRules(inst, ca, nwvs)) }).toMap
+//    }
     
     decls ++= (nwvs.entityDecls map { _.decl })
     decls ++= nwvs.subactorVarDecls map { _.decl }
@@ -55,10 +54,14 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       stmts += B.Assume(transExpr(pre)(nwvs.renamings))
     }
     
-    for ((e,a) <- schedule.sequence) {
+    for ((e,a1) <- schedule.sequence) {
+      
+      val action = a1.refinedContract.getOrElse(a1)
+      //decls+ ++= nwvs.getEntityActionData(e, action).declarations  map { _.decl }
+      
       stmts += Boogie.Comment("Instance: " + e.id)
-      val renamings = nwvs.subActionRenamings(e, a)
-      for (d <- nwvs.getEntityActionData(e, a).declarations) {
+      val renamings = nwvs.subActionRenamings(e, action)
+      for (d <- nwvs.getEntityActionData(e, action).declarations) {
         if (!alreadyDeclared.contains(d.name)) {
           decls += d.decl
           alreadyDeclared += d.name
@@ -66,22 +69,38 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       }
       
       val firingRules = getFiringRules(e, nwvs)
+      stmts += B.Assert(firingRules(action),action.pos,"Firing rule might not be satisfied for action '" + action.fullName + "' of instance '" + e.id +"'")
       
-      stmts += B.Assert(firingRules(a),a.pos,"Firing rule might not be satisfied for action '" + a.fullName + "' of instance '" + e.id +"'")
-      
-      for (ipat <- a.inputPattern) {
-        val id = nwvs.connectionMap.getDst(PortRef(Some(e.id),ipat.portId))
-        for (v <- ipat.vars) {
-          stmts += Boogie.Assign(transExpr(v.id,v.typ)(renamings),B.ChannelIdx(id,v.typ,B.R(id)))
-          stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(ipat.rate))
+      for (pat <- action.inputPattern) {
+        val id = nwvs.connectionMap.getDst(PortRef(Some(e.id),pat.portId))
+        pat match {
+          case ipat: InputPattern => {
+            for (v <- ipat.vars) {
+              stmts += Boogie.Assign(transExpr(v.id,v.typ)(renamings),B.ChannelIdx(id,v.typ,B.R(id)))
+              stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(ipat.rate))
+            }
+          }
+          case npat: NwPattern => {
+            stmts += Boogie.Assign(B.R(id), B.R(id) plus B.Int(npat.rate))
+          }
+          case _ => assert(false)
         }
       }
-      for (opat <- a.outputPattern) {
-        val id = nwvs.connectionMap.getSrc(PortRef(Some(e.id),opat.portId))
-        for (e <- opat.exps) {
-          stmts += Boogie.Assign(B.ChannelIdx(id,e.typ,B.C(id)),transExpr(e)(renamings))
-          stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(opat.rate))
+      for (pat <- action.outputPattern) {
+        val id = nwvs.connectionMap.getSrc(PortRef(Some(e.id),pat.portId))
+        pat match {
+          case opat: OutputPattern => {
+            for (e <- opat.exps) {
+              stmts += Boogie.Assign(B.ChannelIdx(id,e.typ,B.C(id)),transExpr(e)(renamings))
+              stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(opat.rate))
+            }
+          }
+          case npat: NwPattern => {
+            stmts += Boogie.Assign(B.C(id),B.C(id) plus B.Int(npat.rate))
+          }
+          case _ => assert(false)
         }
+        
       }
       
     }
@@ -90,7 +109,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
   }
   
   def getFiringRules(instance: Instance, nwvs: NetworkVerificationStructure) = {
-    val actor = instance.actor
+    ///val actor = nwvs.mergedActors(instance.actorId)
     // This list includes contract actions if the entity has such, otherwise basic actions
     val priorityList = nwvs.entityData(instance).priorities
     (priorityList.keys map { ca => (ca, transSubActionFiringRules(instance, ca, nwvs)) }).toMap

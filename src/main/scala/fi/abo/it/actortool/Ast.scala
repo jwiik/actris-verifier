@@ -211,7 +211,7 @@ sealed case class ActorAction(
     override val body: List[Stmt]) extends AbstractAction {
   
   override def isActorAction = true
-  
+  var refinedContract: Option[ContractAction] = None
 }
 
 sealed case class Declaration(val id: String, val typ: Type, 
