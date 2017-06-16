@@ -9,17 +9,18 @@ import fi.abo.it.actortool.boogie.BoogieScheduleVerifier
 class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicActor] {
   
   val printer = new Promela.PromelaPrinter
-  val mergerBackend = new ActorMerger
+  
   
   def invoke(programCtx: ProgramContext): BasicActor = {
     val translator = new PromelaTranslator(params)
     val scheduleVerifier = new BoogieScheduleVerifier(params)
     
-    
     val topNwName = params.Promela.get
     val topnw = programCtx.program.find { x => x.id == topNwName }
     val allSchedules = new collection.mutable.ListBuffer[ContractSchedule]
     
+    val constants = (programCtx.program.collect { case DataUnit(_,constants) => constants }).flatten
+    val mergerBackend = new ActorMerger(constants)
     topnw match {
       case Some(nw) => {
         val evaluationOrder = buildDependencyTree(nw.asInstanceOf[DFActor]).postOrder
@@ -30,7 +31,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
             case ba: BasicActor => {
               if (entity.contractActions.isEmpty) mergedActorMap += (entity.id -> ba)
               else {
-                val translation = translator.invoke(ba,mergedActorMap.toMap,Map.empty,Nil)
+                val translation = translator.invoke(ba,mergedActorMap.toMap,Map.empty,constants)
                 val outputParser = new SpinOutputParser(translation)
                 for ((contract,prog) <- translation.promelaPrograms) {
                   verifyForContract(translation.entity, contract, prog,outputParser)
@@ -39,12 +40,15 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
                 
                 scheduleVerifier.invoke(new ScheduleContext(schedules,programCtx.program,programCtx.typeContext))
                 val actor = mergerBackend.invoke(schedules)
-                
-                mergedActorMap += (entity.id -> actor)
+                actor match {
+                  case Some(a) => mergedActorMap += (entity.id -> a)
+                  case None => assert(false)
+                }
+                //mergedActorMap += (entity.id -> actor)
               }
             }
             case nw: Network => {
-              val translation = translator.invoke(nw,mergedActorMap.toMap,Map.empty,Nil)
+              val translation = translator.invoke(nw,mergedActorMap.toMap,Map.empty,constants)
               val outputParser = new SpinOutputParser(translation)
               for ((contract,prog) <- translation.promelaPrograms) {
                 verifyForContract(translation.entity, contract, prog,outputParser)
@@ -54,7 +58,11 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
               scheduleVerifier.invoke(new ScheduleContext(schedules,programCtx.program,programCtx.typeContext))
               println
               val actor = mergerBackend.invoke(schedules)
-              mergedActorMap += (entity.id -> actor)
+              actor match {
+                case Some(a) => mergedActorMap += (entity.id -> a)
+                case None => assert(false)
+              }
+              //mergedActorMap += (entity.id -> actor)
             }
           }
         }
@@ -81,7 +89,8 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
     }
     outputParser.startNewSchedule(contract)
     println("Running spin on contract '" + contract.fullName + "' of network '" + entity.id + "'...")
-    PromelaRunner.run(progTxt, outputParser)
+    PromelaRunner.run(progTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
+    outputParser.endSchedule
   }
   
   def buildDependencyTree(entity: DFActor): DepTree[DFActor] = {

@@ -9,29 +9,124 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
   def invoke(scheduleCtx: ScheduleContext) = translateEntity(scheduleCtx)
   
   def translateEntity(scheduleCtx: ScheduleContext): List[Boogie.Decl] = {
-    val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,Resolver.EmptyContext)
+    
+    
+    val constDecls =
+      (scheduleCtx.program.collect{ 
+        case u: DataUnit => {
+          u.constants flatMap { d =>
+            val (axiom,_) = stmtTranslator.transExpr(d.value.get,Map.empty,false)
+            List(Boogie.Const(d.id,false,B.type2BType(d.typ)),Boogie.Axiom(Boogie.VarExpr(d.id) ==@ axiom))
+          }
+        }
+      }).flatten
+    
+    constDecls :::
     scheduleCtx.schedules.flatMap {
-      schedule => translateSchedule(schedule,verStructBuilder)
+      schedule => {
+        schedule.entity match {
+          case nw: Network => {
+            val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true))
+            val nwvs = verStructBuilder.buildStructure(nw)
+            translateNetworkSchedule(schedule,nwvs)
+          }
+          case ba: BasicActor => {
+            val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true))
+            val avs = verStructBuilder.buildStructure(ba)
+            translateActorSchedule(schedule,avs)
+          }
+        }
+      }
     }
   }
   
-  def translateSchedule(schedule: ContractSchedule, verStructBuilder: NetworkVerificationStructureBuilder) = {
+  def translateActorSchedule(schedule: ContractSchedule, avs: ActorVerificationStructure) = {
     val decls = new collection.mutable.ListBuffer[Boogie.Stmt]
     val stmts = new collection.mutable.ListBuffer[Boogie.Stmt]
     val alreadyDeclared = collection.mutable.Set[String]()
+    decls ++= avs.actorVarDecls map { _.decl }
+    decls ++= avs.actorParamDecls map { _.decl }
+    stmts += B.Assume(avs.uniquenessCondition)
+    stmts ++= avs.basicAssumes
+    stmts += B.Assume(Boogie.VarExpr(BMap.R) ==@ Boogie.VarExpr(BMap.I))
+    //stmts += B.Assume(Boogie.VarExpr(BMap.R) ==@ Boogie.VarExpr(BMap.C))
+    for (inv <- avs.invariants) stmts += BAssume(inv, avs.renamings)
     
-    val nwvs = schedule.entity match {
-      case nw: Network => verStructBuilder.buildStructure(nw)
-      case ba: BasicActor => throw new RuntimeException("Boogie schedule checker does not support basic actors yet")
+    for (ipat <- schedule.contract.inputPattern) {
+      stmts += Boogie.Assign(
+          B.C(transExpr(ipat.portId,ipat.typ)(avs.renamings)), 
+          B.C(transExpr(ipat.portId,ipat.typ)(avs.renamings)) + B.Int(ipat.rate))
     }
     
-//    for (inst <- nwvs.entities) {
-//      
-//      /// This list includes contract actions if the entity has such, otherwise basic actions
-//      val priorityList = nwvs.entityData(inst).priorities
-//      
-//      val firingRules = (priorityList.keys map { ca => (ca, transSubActionFiringRules(inst, ca, nwvs)) }).toMap
-//    }
+    stmts ++= schedule.contract.guards.map { g => B.Assume(transExpr(g)(avs.renamings)) }
+    stmts ++= schedule.contract.requires.map { r => B.Assume(transExpr(r)(avs.renamings)) }
+    
+    val renamingsBuffer = collection.mutable.Map[ActorAction,Map[String,Id]]()
+    for (action <- schedule.entity.actorActions) {
+      val prefix = action.fullName
+      val actionRenamings = collection.mutable.Map[String,Id]()
+      for (v <- action.variables) {
+        val name = prefix+B.Sep+v.id
+        decls += B.Local(name,B.type2BType(v.typ))
+        val id = Id(name)
+        id.typ = v.typ
+        actionRenamings += (v.id -> id)
+      }
+      for (p <- action.inputPattern) {
+        for (v <- p.vars) {
+          val name = prefix+B.Sep+v.id
+          decls += B.Local(name,B.type2BType(v.typ))
+          val id = Id(name)
+          id.typ = v.typ
+          actionRenamings += (v.id -> id)
+        }
+      }
+      renamingsBuffer += (action -> actionRenamings.toMap)
+    }
+    
+    val renamings = renamingsBuffer.toMap
+    
+    for ((_,action) <- schedule.sequence) {
+      val actionRenamings = avs.renamings ++ renamings(action)
+      val actionData = avs.actionData(action)
+      
+      for (ipat <- action.inputPattern) {
+        val id = ipat.portId
+        stmts += B.Assert(B.Int(ipat.rate) <= B.Urd(id),ipat.pos,"Input pattern might not be satisfied for action '" + action.fullName + "'")
+        for (v <- ipat.vars) {
+          stmts += Boogie.Assign(transExpr(v.id,v.typ)(actionRenamings),B.ChannelIdx(id,v.typ,B.R(id)))
+          stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(ipat.rate))
+        }
+      }
+      stmts ++= action.guards.map { g => B.Assert(transExpr(g)(actionRenamings),g.pos,"Guard might not be satisfied for action '" + action.fullName + "'" ) }
+      stmts ++= action.requires.map { r => B.Assert(transExpr(r)(actionRenamings),r.pos,"Precondition might not hold for action '" + action.fullName + "'" ) }
+      stmts ++= transStmt(action.body)(actionRenamings)
+//      for (v <- actionData.assignedVariables) {
+//        v match {
+//          case id: Id => stmts += Boogie.Havoc(transExpr(id)(actionRenamings))
+//          case IndexAccessor(v,idx) => stmts += Boogie.Havoc(transExpr(v)(actionRenamings))
+//        }
+//      }
+      
+      for (opat <- action.outputPattern) {
+        val id = opat.portId
+        for (e <- opat.exps) {
+          stmts += Boogie.Assign(B.ChannelIdx(id,e.typ,B.C(id)),transExpr(e)(actionRenamings))
+          stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(opat.rate))
+        }
+
+      }
+      for (q <- action.ensures) stmts += B.Assume(transExpr(q)(actionRenamings))
+      for (inv <- avs.invariants) stmts += BAssume(inv, avs.renamings)
+    }
+    
+    List(B.createProc(schedule.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))
+  }
+  
+  def translateNetworkSchedule(schedule: ContractSchedule, nwvs: NetworkVerificationStructure) = {
+    val decls = new collection.mutable.ListBuffer[Boogie.Stmt]
+    val stmts = new collection.mutable.ListBuffer[Boogie.Stmt]
+    val alreadyDeclared = collection.mutable.Set[String]()
     
     decls ++= (nwvs.entityDecls map { _.decl })
     decls ++= nwvs.subactorVarDecls map { _.decl }

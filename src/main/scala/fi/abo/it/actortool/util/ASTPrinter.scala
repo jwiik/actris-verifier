@@ -110,6 +110,20 @@ object ASTPrinter {
   def printStmt(stmt: Stmt): String = {
     stmt match {
       case Assign(id,e) => indent + printExpr(id) + " := " + printExpr(e) + ";"
+      case MapAssign(id,e) => indent + printExpr(id) + " := " + printExpr(e) + ";"
+      case IfElse(cond,thn,elsifs,els) => 
+        indent + "if " + printExpr(cond) + " then\n" +
+        indentAdd + printStmts(thn) + indentRem +
+        (for (ei <- elsifs) yield {
+          indent + "else if " + printExpr(ei.cond) + " then\n" + 
+          indentAdd + indent + printStmts(ei.stmt) + indentRem
+        }).mkString + "\n" +
+        (if (!els.isEmpty) {
+          indent + "else\n" +
+          indentAdd + indent + printStmts(els) + indentRem + "\n" 
+        }
+        else "") +
+        indent + "end"
     }
   }
   
@@ -131,6 +145,6 @@ object ASTPrinter {
   }
   
   def printDecl(d: Declaration): String = {
-    d.typ.id + " " + d.id + (if (d.constant) " = " + d.value.get else "")
+    d.typ.id + " " + d.id + (if (d.constant) " = " + printExpr(d.value.get) else (if (d.value.isDefined)  " := " + printExpr(d.value.get) else ""))
   }
 }

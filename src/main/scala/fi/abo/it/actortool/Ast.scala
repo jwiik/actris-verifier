@@ -519,7 +519,7 @@ sealed case class SpecialMarker(val value: String) extends Expr {
 
 sealed abstract class Stmt extends ASTNode
 sealed case class Assign(val id: Id, val expr: Expr) extends Stmt
-sealed case class MapAssign(val id: Expr, val expr: Expr) extends Stmt
+sealed case class MapAssign(val id: IndexAccessor, val expr: Expr) extends Stmt
 sealed case class IfElse(val ifCond: Expr, val ifStmt: List[Stmt], val elseIfs: List[ElseIf], val elseStmt: List[Stmt]) extends Stmt
 sealed case class ElseIf(val cond: Expr, val stmt: List[Stmt])
 sealed case class While(val cond: Expr, val invariants: List[Expr], val stmt: List[Stmt]) extends Stmt

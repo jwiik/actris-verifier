@@ -56,6 +56,45 @@ abstract class EntityTranslator[T] {
     firingCondsBuffer.reduceLeft((a,b) => a && b)
   }
   
+  def translateActorGuards(a: ActorAction, avs: ActorVerificationStructure): (Boogie.Expr,Boogie.Expr,Boogie.Expr,List[BDecl],Map[String,Id]) = {
+    val renamingsBuffer = new ListBuffer[(String,Id)]
+    
+    val replacementBuffer = new ListBuffer[(String,Expr)]
+    
+    val inpatDeclBuffer = new ListBuffer[BDecl]
+    val patterns = new ListBuffer[Boogie.Expr]
+    for (ipat <- a.inputPattern) {
+      for ((v,i) <- ipat.vars.zipWithIndex) {
+        val name = ipat.portId+B.Sep+i.toString
+        renamingsBuffer += ((v.id, {val id = Id(name); id.typ = v.typ; id} ))
+        replacementBuffer += (( 
+            v.id, 
+            { 
+              val e = Elements.chAcc(Elements.ch(ipat.portId,v.typ), Elements.next(ipat.portId, ChanType(v.typ), i)); 
+              e.typ = v.typ; e 
+            } 
+        ))
+        val lVar = B.Local(name, v.typ)
+        inpatDeclBuffer += BDecl(name,lVar)
+      }
+      patterns += B.Int(ipat.vars.size) <= B.C(ipat.portId)-B.R(ipat.portId)
+    }
+    
+    val renamings = avs.renamings ++ renamingsBuffer.toMap
+
+    val guards =
+       a.guards map { e => transExpr(e)(avs.renamings ++ renamingsBuffer.toMap) }
+    // This version does not use variables local to the actions (input pattern variables)
+    // It is used (at least) as assumptions in contract action checking
+    val nonLocalGuards =
+       a.guards map { e => transExpr(e)(avs.renamings ++ replacementBuffer.toMap) }
+    
+    val pattern = if (patterns.isEmpty) B.Bool(true) else patterns.reduceLeft((a,b) => a && b)
+    val guard = if (guards.isEmpty) B.Bool(true) else guards.reduceLeft((a,b) => a && b)
+    val nonLocalGuard = if (nonLocalGuards.isEmpty) B.Bool(true) else nonLocalGuards.reduceLeft((a,b) => a && b)
+    (pattern, guard, nonLocalGuard, inpatDeclBuffer.toList, renamings)
+  }
+  
   def transExprPrecondCheck(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
     val (expr,ctx) = stmtTranslator.transExpr(exp,renamings,true)
     expr

@@ -19,27 +19,3 @@ actor Sum int x ==> int y:
     sum := sum+i;
   end 
 end
-
-network Net int in ==> int out :
-  
-  contract in:1 ==> out:1
-    guard 0 <= in[@]
-    guard in[@] != 0
-    ensures out[0] = in[0]
-    ensures out[@] >= in[@]
-    ensures 0 < @(out) ==> out[@] = out[@-1]+in[@]
-  end
-  
-  chinvariant @(in) = @(out)
-  chinvariant tot@(in) <= 1
-  
-  entities
-    sum = Sum();
-  end
-  
-  structure
-    in --> sum.x;
-    sum.y --> out;
-  end
-
-end

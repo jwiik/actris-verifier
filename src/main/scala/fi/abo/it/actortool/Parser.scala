@@ -425,7 +425,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
       case (id ~ exp) => Assign(id,exp)
     }) |
     (suffixExpr ~ (":=" ~> expression) <~ Semi ^^ {
-      case (id ~ exp) => MapAssign(id,exp)
+      case (id ~ exp) => MapAssign(id.asInstanceOf[IndexAccessor],exp)
     })
   )
   

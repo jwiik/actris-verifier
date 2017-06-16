@@ -84,6 +84,7 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
 class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
   
+         
   def buildStructure(actor: BasicActor): ActorVerificationStructure = {
     val prefix = actor.id+B.Sep
     val decls = new ListBuffer[BDecl]
@@ -111,14 +112,10 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
     val basicAssumes =
       (commonAssumes.toList) :::
       (actor.inports:::actor.outports map { p => B.Assume(B.Int(0) <= B.I(p.id) && B.I(p.id) <= B.R(p.id) && B.R(p.id) <= B.C(p.id)) }) 
-      //:::
-      //(actor.variables map { p => B.Assume(B.Int(0) <= B.R(stateChanRenamings(p.id).id) && B.C(stateChanRenamings(p.id).id) ==@ B.R(stateChanRenamings(p.id).id) + B.Int(1)) })
-    
+        
     val initAssumes = 
       (commonAssumes.toList) :::
       (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }) 
-      //:::
-      //(actor.variables map { p => B.Assume(B.R(stateChanRenamings(p.id).id) ==@ B.Int(0) && B.C(stateChanRenamings(p.id).id) ==@ B.Int(0))  })
 
     val priorityList = buildPriorityMap(actor,false)
     
@@ -129,6 +126,13 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
         (a, createVariableDeclarationsNoTranslate(a.variables,typeCtx))
       }).toMap
     
+      
+    val aData = 
+      (for (a <- actor.actorActions) yield {
+        val (decls,initialValues) = createVariableDeclarationsNoTranslate(a.variables,typeCtx)
+        val assignedVars = AssignedVarsFinder.find(a.body)
+        (a,new ActionData(decls,Map.empty,Map.empty,assignedVars,initialValues))
+      }).toMap
     
     return new ActorVerificationStructure(
         actor,
@@ -146,7 +150,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
         initAssumes,
         funDeclRenamings,
         Map.empty, // state chan renamings
-        actionData,
+        aData,
         prefix)
   }
   
@@ -359,18 +363,19 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         }).flatten.toMap
       }
     
-    val assignedVars = action.body flatMap { a => a match {
-      case Assign(x,_) => {
-        x match {
-          case id: Id => List(id)
-          //case fa: FieldAccessor => List(fa)
-          case _ => assert(false); Nil
-        }
-      }
-      case _ => Nil
-    }}
+    val assignedVars = AssignedVarsFinder.find(action.body)
+//      action.body flatMap { a => a match {
+//      case Assign(x,_) => {
+//        x match {
+//          case id: Id => List(id)
+//          //case fa: FieldAccessor => List(fa)
+//          case _ => assert(false); Nil
+//        }
+//      }
+//      case _ => Nil
+//    }}
     
-    new ActionData(vars.toList, patternVarRenamings, replacements.toMap, assignedVars.toSet)
+    new ActionData(vars.toList, patternVarRenamings, replacements.toMap, assignedVars.toSet,List.empty)
 
   }
   

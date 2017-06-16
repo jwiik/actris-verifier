@@ -12,6 +12,7 @@ object Resolver {
   case class Errors(ss: List[(Position,String)]) extends ResolverOutcome
   
   sealed abstract class Context(val parentNode: ASTNode, val parentCtx: Context) {
+    def useTypeOfIds: Boolean
     def getErrors = List.empty[(Position,String)]
     def error(p: Position, msg: String)
     def lookUp(id: String): Option[Declaration] = None
@@ -28,6 +29,8 @@ object Resolver {
   }
   
   sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor], val constants: Map[String,Declaration], val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
+    var reuseIdTypes = false
+    override def useTypeOfIds = reuseIdTypes
     override def getErrors = errors.toList
     private val errors: ListBuffer[(Position,String)] = new ListBuffer()
     def error(p: Position, msg: String) = { errors += ((p,msg))}
@@ -36,7 +39,7 @@ object Resolver {
     override def lookUp(id: String) = constants.get(id)
   }
   
-  object EmptyContext extends RootContext(null,Map.empty,Map.empty,Map.empty)
+  sealed class EmptyContext(override val useTypeOfIds: Boolean) extends RootContext(null,Map.empty,Map.empty,Map.empty)
   
   sealed abstract class ChildContext(override val parentNode: ASTNode, override val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
@@ -50,6 +53,7 @@ object Resolver {
     override def lookupOutport(id: String) = parentCtx.lookupOutport(id)
     override def lookupRefTypeDecl(id: String) = parentCtx.lookupRefTypeDecl(id)
     override def variables = vars.values.toList
+    override def useTypeOfIds = parentCtx.useTypeOfIds
   }
   
   sealed class ActorContext[T<:DFActor](val actor: T,
@@ -102,7 +106,7 @@ object Resolver {
   sealed class QuantifierContext(val quantifier: Quantifier, override val parentCtx: Context, 
       override val vars: Map[String,Declaration]) extends ChildContext(quantifier,parentCtx,vars)
 
-  def resolve(prog: List[TopDecl]): ResolverOutcome = {
+  def resolve(prog: List[TopDecl], providedConstants: List[Declaration] = List.empty): ResolverOutcome = {
     var decls = Map[String,TopDecl]()
     
     val actors: scala.collection.mutable.Map[String,DFActor] = new scala.collection.mutable.HashMap()
@@ -122,8 +126,9 @@ object Resolver {
         case td: TypeDecl => userTypes += (td.id -> td)
       }
     }
-    val constCtx = EmptyContext
+    val constCtx = new EmptyContext(false)
     val constants: scala.collection.mutable.Map[String,Declaration] = new scala.collection.mutable.HashMap()
+    constants ++= providedConstants map { d => (d.id,d) }
     for ((_,u) <- units) {
       for (d <- u.constants) {
         if (constants contains d.id) {
@@ -314,6 +319,7 @@ object Resolver {
         }
       } 
     } // End for
+    rootCtx.reuseIdTypes = true
     if (rootCtx.getErrors.isEmpty) Success(rootCtx) else Errors(rootCtx.getErrors.toList)
   }
   
@@ -581,6 +587,7 @@ object Resolver {
     result match {
       case Success(_) =>
       case Errors(errs) => {
+        println(ctx.useTypeOfIds)
         throw new TranslationException(exp.pos, "Error resolving type of expression: '" + exp + "': " + (errs map { case (pos,msg) => pos + ": " + msg } ) )
         assert(false,errs)
       }
@@ -896,7 +903,7 @@ object Resolver {
         IntType
       }
       case v@Id(id) =>
-        if (v.typ != null) {
+        if (ctx.useTypeOfIds && v.typ != null) {
           v.typ
         }
         else {

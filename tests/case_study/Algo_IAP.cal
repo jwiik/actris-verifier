@@ -23,6 +23,7 @@ actor Algo_IAP ()
   
   invariant mode(NewVop) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int2bv(2,3)
   invariant mode(NewVop) ==> tot@(QF_AC) = 0
+  invariant mode(NewVop) ==> state(start)
   
   invariant mode(Skip) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] != -int2bv(2,3) && AC_PRED_DIR[@] < int2bv(0,3)
   invariant mode(Skip) ==> tot@(QF_AC) = 0
@@ -33,6 +34,7 @@ actor Algo_IAP ()
   	(rd@(AC_PRED_DIR) = 1 && rd@(PTR) = 1 && tot@(QF_AC) = 63 && rd@(PQF_AC) = 63))
   invariant mode(Start) && state(pred) ==> rd@(AC_PRED_DIR) = 1 && rd@(PTR) = 1
   invariant mode(Start) && state(pred) ==> tot@(QF_AC) = bv2int(count)-1 && rd@(PQF_AC) = bv2int(count)-1
+  
 
   int(size=8) count;
 

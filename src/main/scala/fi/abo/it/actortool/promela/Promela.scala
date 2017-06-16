@@ -150,7 +150,8 @@ object Promela {
     
     def printExpr(e: Expr): String = {
       e match {
-        case BinaryExpr(l,o,r) => "(" + printExpr(l) + ") " + o + " (" + printExpr(r) + ")"
+        case BinaryExpr(l,"&&",r) => "(" + printExpr(l) + " " + "&&\n" + indentAdd + indent + " " + printExpr(r) + ")" + indentRem
+        case BinaryExpr(l,o,r) => "(" + printExpr(l) + " " + o + " " + printExpr(r) + ")"
         case UnaryExpr(o,e) => o + "(" + printExpr(e) + ")"  
         case VarExp(id) => id
         case FunCall(name,args) => name + "(" + (args.map { a => printExpr(a) }).mkString(",") + ")"

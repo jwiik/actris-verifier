@@ -202,6 +202,23 @@ object TokensDefFinder extends ASTVisitor[ListBuffer[(String, Expr)]] {
   }
 }
 
+object AssignedVarsFinder extends ASTVisitor[collection.mutable.Set[Assignable]] {
+  
+  def find(stmt: List[Stmt]): Set[Assignable] = {
+    val set = collection.mutable.Set[Assignable]()
+    visitStmt(stmt)(set)
+    set.toSet
+  }
+  
+  override def visitStmt(stmt: Stmt)(implicit info: collection.mutable.Set[Assignable]) {
+    stmt match {
+      case Assign(id, exp) => info += id
+      case MapAssign(id, exp) => info += id
+      case x => super.visitStmt(x)
+    }
+  }
+}
+
 abstract class ASTVisitor[T] {
 
   def visitStmt(stmt: List[Stmt])(implicit info: T) { for (s <- stmt) visitStmt(s) }
@@ -299,7 +316,7 @@ abstract class ASTReplacingVisitor[A, B <: ASTNode] {
   def visitStmt(stmt: Stmt)(implicit map: Map[A, B]): Stmt = {
     stmt match {
       case Assign(id, exp)             => Assign(visitId(id), visitExpr(exp))
-      case MapAssign(exp1, exp2)       => MapAssign(visitExpr(exp1), visitExpr(exp2))
+      case MapAssign(exp1, exp2)       => MapAssign(visitIndexAccessor(exp1), visitExpr(exp2))
       case Assert(e)                   => Assert(visitExpr(e))
       case Assume(e)                   => Assume(visitExpr(e))
       case Havoc(vars)                 => Havoc(for (v <- vars) yield visitId(v))
@@ -368,6 +385,14 @@ abstract class ASTReplacingVisitor[A, B <: ASTNode] {
       case IndexAccessor(l, i)   => IndexAccessor(visitExpr(l), visitExpr(i))
       case FieldAccessor(e, f)   => FieldAccessor(visitExpr(e), f)
     }
+  }
+  
+  def visitIndexAccessor(ia: IndexAccessor)(implicit map: Map[A, B]): IndexAccessor = {
+    IndexAccessor(visitExpr(ia.exp), visitExpr(ia.suffix))
+  }
+  
+  def visitFieldAccessor(fa: FieldAccessor)(implicit map: Map[A, B]): FieldAccessor = {
+    FieldAccessor(visitExpr(fa.exp), fa.suffix)
   }
 
   def visitId(id: Id)(implicit map: Map[A, B]): Id = {

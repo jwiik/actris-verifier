@@ -26,7 +26,7 @@ class ActorVerificationStructure(
     val initAssumes: List[Boogie.Assume],
     override val renamings: Map[String,Id],
     val stateChanRenamings: Map[String,Id],
-    val actionData: Map[ActorAction,(List[BDecl],List[Expr])],
+    val actionData: Map[ActorAction,ActionData],
     override val namePrefix: String) extends VerificationStructure[BasicActor]
 
 
@@ -78,6 +78,7 @@ class ActionData(
     val declarations: List[BDecl], 
     val renamings: Map[String,Id], 
     val replacements: Map[Id,Expr],
-    val assignedVariables: Set[Assignable])
+    val assignedVariables: Set[Assignable],
+    val variableInitialValues: List[Expr])
     
-object EmptyActionData extends ActionData(List.empty,Map.empty,Map.empty,Set.empty)
+object EmptyActionData extends ActionData(List.empty,Map.empty,Map.empty,Set.empty,List.empty)
