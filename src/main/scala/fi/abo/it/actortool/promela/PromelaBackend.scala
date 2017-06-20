@@ -44,6 +44,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
                 val scheduleCtx = new ScheduleContext(
                     ba, schedules, mergedActorMap.toMap,
                     programCtx.program, programCtx.typeContext)
+                println("Verifying obtained schedules...")
                 scheduleVerifier.invoke(scheduleCtx)
                 val actor = mergerBackend.invoke(scheduleCtx)
                 actor match {
@@ -60,10 +61,10 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
                 verifyForContract(translation.entity, contract, prog,outputParser)
               }
               val schedules = outputParser.allSchedules
-              println("Verifying obtained schedule...")
               val scheduleCtx = new ScheduleContext(
                     nw, schedules, mergedActorMap.toMap,
                     programCtx.program, programCtx.typeContext)
+              println("Verifying obtained schedules...")
               scheduleVerifier.invoke(scheduleCtx)
               val actor = mergerBackend.invoke(scheduleCtx)
               actor match {

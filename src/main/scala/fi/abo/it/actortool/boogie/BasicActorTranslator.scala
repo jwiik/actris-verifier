@@ -216,16 +216,7 @@ class BasicActorTranslator(
     List(proc)
   }
   
-  def translateFunctionDecl(avs: ActorVerificationStructure): List[Boogie.Function] = {
-    avs.functionDecls map {
-      fd => {
-        Boogie.Function(
-            avs.renamings(fd.name).id,
-            fd.inputs map { i => Boogie.BVar(i.id, B.type2BType(i.typ)) },
-            Boogie.BVar("out", B.type2BType(fd.output)))
-      }
-    }
-  }
+  
   
   def generateCommonContractProcedureHeader(avs: ActorVerificationStructure, action: ContractAction) = {
     val asgn = new ListBuffer[Boogie.Stmt]

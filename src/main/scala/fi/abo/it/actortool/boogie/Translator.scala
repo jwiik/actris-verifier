@@ -95,6 +95,17 @@ abstract class EntityTranslator[T] {
     (pattern, guard, nonLocalGuard, inpatDeclBuffer.toList, renamings)
   }
   
+  def translateFunctionDecl(avs: ActorVerificationStructure): List[Boogie.Function] = {
+    avs.functionDecls map {
+      fd => {
+        Boogie.Function(
+            avs.renamings(fd.name).id,
+            fd.inputs map { i => Boogie.BVar(i.id, B.type2BType(i.typ)) },
+            Boogie.BVar("out", B.type2BType(fd.output)))
+      }
+    }
+  }
+  
   def transExprPrecondCheck(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
     val (expr,ctx) = stmtTranslator.transExpr(exp,renamings,true)
     expr

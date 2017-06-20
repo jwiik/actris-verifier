@@ -21,23 +21,20 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
         }
       }).flatten
     
-    constDecls :::
-    scheduleCtx.schedules.flatMap {
-      schedule => {
-        schedule.entity match {
-          case nw: Network => {
-            val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true))
-            val nwvs = verStructBuilder.buildStructure(nw)
-            translateNetworkSchedule(schedule,nwvs)
-          }
-          case ba: BasicActor => {
-            val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true))
-            val avs = verStructBuilder.buildStructure(ba)
-            translateActorSchedule(schedule,avs)
-          }
-        }
+    val decls = scheduleCtx.entity match {
+      case nw: Network => {
+        val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true))
+        val nwvs = verStructBuilder.buildStructure(nw)
+        scheduleCtx.schedules.flatMap(s => translateNetworkSchedule(s, nwvs))
+      }
+      case ba: BasicActor => {
+        val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true))
+        val avs = verStructBuilder.buildStructure(ba)
+        translateFunctionDecl(avs) ::: scheduleCtx.schedules.flatMap(s => translateActorSchedule(s,avs))
       }
     }
+      
+    constDecls ::: decls
   }
   
   def translateActorSchedule(schedule: ContractSchedule, avs: ActorVerificationStructure) = {
@@ -49,7 +46,6 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     stmts += B.Assume(avs.uniquenessCondition)
     stmts ++= avs.basicAssumes
     stmts += B.Assume(Boogie.VarExpr(BMap.R) ==@ Boogie.VarExpr(BMap.I))
-    //stmts += B.Assume(Boogie.VarExpr(BMap.R) ==@ Boogie.VarExpr(BMap.C))
     for (inv <- avs.invariants) stmts += BAssume(inv, avs.renamings)
     
     for (ipat <- schedule.contract.inputPattern) {
