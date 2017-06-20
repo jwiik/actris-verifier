@@ -62,16 +62,10 @@ class InputGenerator {
               interpret match {
                 case Some(vl) => {
                   val value = vl._2.toString
-                  val dec =
-                    if (value.startsWith("#b")) {
-                      val v = get2Complement(value.substring(2))
-                      if (v < 0) UnMinus(IntLiteral(-v)) else IntLiteral(v)
-                    }
-                    else if (value.startsWith("#x")) HexLiteral(value.substring(2))
-                    else IntLiteral(value.toInt)
+                  val dec = getValue(value)
                   dec
                 }
-                case None => IntLiteral(mDef.toString.toInt)
+                case None => getValue(mDef.toString)
               }
             }).toList
           (pat.portId -> seq)
@@ -83,6 +77,15 @@ class InputGenerator {
         }
       }
     input.toMap
+  }
+  
+  def getValue(value: String) = {
+    if (value.startsWith("#b")) {
+      val v = get2Complement(value.substring(2))
+      if (v < 0) UnMinus(IntLiteral(-v)) else IntLiteral(v)
+    }
+    else if (value.startsWith("#x")) HexLiteral(value.substring(2))
+    else IntLiteral(value.toInt)
   }
   
   def getDefault(typ: Type) = {

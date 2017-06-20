@@ -27,13 +27,12 @@ class SpinOutputParser(val translation: Translation[_<:DFActor]) {
   def read(str: String) {
     val lines = str.split("\n")
     for (l <- lines) {
-      //println(l)
       try {
         val elem = scala.xml.XML.loadString(l)
         val actionLbl = elem \ "@action"
         //val actor = elem \ "@actor"
-        val instId = elem \ "@id"
-        val instance = translation.idMap.getInstance(instId.text.toInt)
+        val instId = (elem \ "@id").text.toInt
+        val instance = translation.idMap.getInstance(instId)
         val actor = translation.mergedActors.get(instance.actorId).getOrElse(instance.actor)
         val action = actor.actorActions.find { a => a.fullName == actionLbl.text }
         action match {
@@ -46,8 +45,9 @@ class SpinOutputParser(val translation: Translation[_<:DFActor]) {
           if (l.startsWith("spin:")) {
             println("Spin message:" + l.substring(5))
           }
+          else if (l == "timeout") {}
           else {
-            println("Error parsing spin output: " + e.getMessage)
+            println("Error parsing spin output: " + l)
           }
         }
       }

@@ -141,29 +141,6 @@ class PromelaTranslator(params: CommandLineParameters) {
       }
     }
     
-//    entity match {
-//      case nw: Network =>
-//    }
-    
-//    val decls = programCtx.program
-//    val topNwName = params.Promela.get
-//    var translation: List[Translation] = Nil
-//    var constants: List[Declaration] = Nil
-//    var procs: Map[String,P.ProcType] = Map.empty
-//    
-//    for (d <- decls.collect{ case du: DataUnit => du }) {
-//      constants = constants ++ d.constants
-//    }
-//    
-//    for (a <- decls.collect{ case ba: BasicActor => ba }) {
-//      procs = procs + (a.id -> translateActor(a))
-//    }
-//    
-//    for (n <- decls.collect{ case n: Network => n }) {
-//      translation = translateTopNetwork(n,constants,procs) :: translation
-//    }
-//    
-//    translation 
   }
   
   def translateBasicActor(
@@ -217,19 +194,44 @@ class PromelaTranslator(params: CommandLineParameters) {
     
     val contractTranslations = 
       for ((contract,init) <- inits) yield {
-        val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: List(init)
+        val ltl = P.Ltl("",generateActorLTLFormula(actor, contract, channelMapping,connections))
+        val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: List(init/*,ltl*/)
         (contract,program)
       }
     Translation(actor,contractTranslations,idMap,mergedActors)
   }
   
+  def generateActorLTLFormula(ba: BasicActor, contract: ContractAction, channelMap: Map[PortRef,Connection], connections: List[Connection]): P.Expr = {
+    val outputTokens = ba.outports.map( p => (channelMap(PortRef(None,p.id)).id, contract.outportRate(p.id)) ).toMap
+    val channelPredicate =
+      connections.map { c =>
+        val tokenAmount =
+          if (outputTokens.contains(c.id)) IntLiteral(outputTokens(c.id))
+          else IntLiteral(0)
+        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(renamings))
+      }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
+    P.UnaryExpr("[]",P.UnaryExpr("!",channelPredicate))
+  }
+  
+  def generateNetworkLTLFormula(nw: Network, contract: ContractAction, channelMap: Map[PortRef,Connection]): P.Expr = {
+    val delayTokens = TokensDefFinder.find(nw.actorInvariants map (_.expr)).toMap
+    val outputTokens = nw.outports.map( p => (channelMap(PortRef(None,p.id)).id, contract.outportRate(p.id)) ).toMap
+    val channelPredicate =
+      nw.structure.get.connections.map { c =>
+        val tokenAmount =
+          if (outputTokens.contains(c.id)) IntLiteral(outputTokens(c.id))
+          else delayTokens.getOrElse(c.id,IntLiteral(0))
+        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(renamings))
+      }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
+    P.UnaryExpr("[]",P.UnaryExpr("!",channelPredicate))
+  }
   
   def translateNetwork(nw: Network, constants: List[Declaration], procs: Map[String,P.ProcType], mergedActors: Map[String,BasicActor]): Translation[Network] = {
     val idMap = new IdMap
     val decls = collection.mutable.Map[String,P.VarDecl]()
     val instances = collection.mutable.Map[String,PromelaInstance]()
     
-    val channelMapping = Util.buildConnectionMap(nw.structure.get.connections)
+     val channelMapping = Util.buildConnectionMap(nw.structure.get.connections)
     
     for (c <- constants) {
       decls(c.id) = P.VarDecl(renamings.R(c.id), translateType(c.typ), Some(translateExpr(c.value.get)(renamings)))
@@ -264,7 +266,8 @@ class PromelaTranslator(params: CommandLineParameters) {
     
     val contractTranslations = 
       for ((contract,init) <- inits) yield {
-        val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: List(init)
+        val ltl = P.Ltl("",generateNetworkLTLFormula(nw, contract, channelMapping))
+        val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: List(init/*,ltl*/)
         (contract,program)
       }
     
@@ -394,7 +397,7 @@ class PromelaTranslator(params: CommandLineParameters) {
     }
     
     
-    val peeks = peekAnalyzer.analyze(a.actorActions.filter { !_.init })
+    val peeks = peekAnalyzer.analyze(a.actorActions.filter { !_.init }, priorityMap)
     
     for ((port,rate) <- peeks) {
       val stmt = new ListBuffer[P.Stmt]
@@ -412,12 +415,12 @@ class PromelaTranslator(params: CommandLineParameters) {
     
     for (act <- a.actorActions.filter { !_.init }) {
       
-      val peekings = peekAnalyzer.analyze(act)
-      val peekGuards: Iterable[P.Expr] = 
+      val peekings = peekAnalyzer.analyze(act, priorityMap)
+      val peekGuards: Iterable[P.Expr] = {
         peekings.flatMap {
           case (p,r) => if (r > 0) List(P.VarExp(p+"__peek")) else Nil
         }
-      
+      }
       val actionRenamings = actorRenamings.getSubContext
       val inputRatePreds = 
         act.inputPattern.map { 
@@ -450,21 +453,13 @@ class PromelaTranslator(params: CommandLineParameters) {
     
     for (act <- a.actorActions.filter { !_.init }) {
       
-      //println(act.fullName + ": " +(priorityMap(act).map { a => a.fullName }).mkString(",") )
-      
       val allFiringRules = firingRules(act) :: priorityMap(act).map { a => P.UnaryExpr("!",firingRules(a)) }
       val firingRule = allFiringRules.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
       
       val actionRenamings = actionRenamingMap(act)
       
+      val peekings = peekAnalyzer.analyze(act, priorityMap)
       
-      //val peeking = peekAnalyzer.analyze(act)
-      
-      val peekings = peekAnalyzer.analyze(act)
-//      val peekGuards: Iterable[P.Expr] = 
-//        peekings.flatMap {
-//          case (p,r) => if (r > 0) List(P.VarExp(p+"__peek")) else Nil
-//        }
       val peekResets = 
         peekings.flatMap {
           case (p,r) => if (r > 0) List(P.Assign(P.VarExp(p+"__peek"),P.BoolLiteral(false))) else Nil
@@ -498,7 +493,7 @@ class PromelaTranslator(params: CommandLineParameters) {
         }
       }
       stmt ++= peekResets
-      actions += P.Atomic(actionParams :::  List(P.GuardStmt(P.ExprStmt(firingRule), stmt.toList)))
+      actions += P.Atomic(P.Comment("Action: " + act.fullName)::List(P.GuardStmt(P.ExprStmt(firingRule), actionParams ::: stmt.toList)))
     }
     
 

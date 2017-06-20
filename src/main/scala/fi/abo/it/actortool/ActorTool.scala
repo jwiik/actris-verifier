@@ -21,7 +21,19 @@ trait ProgramContext {
 }
 
 class BasicProgramContext(val program: List[TopDecl], val typeContext: Resolver.Context) extends ProgramContext
-class ScheduleContext(val schedules: List[ContractSchedule], val program: List[TopDecl], val typeContext: Resolver.Context) extends ProgramContext
+class ScheduleContext(
+    val entity: DFActor,
+    val schedules: List[ContractSchedule],
+    val mergedActors: Map[String,BasicActor],
+    val program: List[TopDecl], 
+    val typeContext: Resolver.Context) extends ProgramContext {
+  
+  val entities = entity match {
+    case nw: Network => nw.entities.get.entities
+    case ba: BasicActor => Nil
+  }
+  
+}
 
 trait GeneralBackend[T,U] {
   def invoke(program: T): U
@@ -327,7 +339,7 @@ object ActorTool {
       val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
       val promelaBackend = new PromelaBackend(params)
       val mergedActor = promelaBackend.invoke(programContext)
-      println(fi.abo.it.actortool.util.ASTPrinter.print(mergedActor))
+      //println(fi.abo.it.actortool.util.ASTPrinter.print(mergedActor))
       return
     }
 

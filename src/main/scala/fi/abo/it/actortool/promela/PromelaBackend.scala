@@ -1,10 +1,13 @@
 package fi.abo.it.actortool.promela
 
+import java.io.File
+import java.io.FileWriter
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule.ContractSchedule
 import fi.abo.it.actortool.ActorTool.CommandLineParameters
 import fi.abo.it.actortool.merging.ActorMerger
 import fi.abo.it.actortool.boogie.BoogieScheduleVerifier
+import fi.abo.it.actortool.util.ASTPrinter
 
 class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicActor] {
   
@@ -38,8 +41,11 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
                 }
                 val schedules = outputParser.allSchedules
                 
-                scheduleVerifier.invoke(new ScheduleContext(schedules,programCtx.program,programCtx.typeContext))
-                val actor = mergerBackend.invoke(schedules)
+                val scheduleCtx = new ScheduleContext(
+                    ba, schedules, mergedActorMap.toMap,
+                    programCtx.program, programCtx.typeContext)
+                scheduleVerifier.invoke(scheduleCtx)
+                val actor = mergerBackend.invoke(scheduleCtx)
                 actor match {
                   case Some(a) => mergedActorMap += (entity.id -> a)
                   case None => assert(false)
@@ -55,9 +61,11 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
               }
               val schedules = outputParser.allSchedules
               println("Verifying obtained schedule...")
-              scheduleVerifier.invoke(new ScheduleContext(schedules,programCtx.program,programCtx.typeContext))
-              println
-              val actor = mergerBackend.invoke(schedules)
+              val scheduleCtx = new ScheduleContext(
+                    nw, schedules, mergedActorMap.toMap,
+                    programCtx.program, programCtx.typeContext)
+              scheduleVerifier.invoke(scheduleCtx)
+              val actor = mergerBackend.invoke(scheduleCtx)
               actor match {
                 case Some(a) => mergedActorMap += (entity.id -> a)
                 case None => assert(false)
@@ -67,7 +75,10 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
           }
         }
         println("Merging successful\n")
-        mergedActorMap(topNwName)
+        val finalActor = mergedActorMap(topNwName)
+        writeFile("output/"+finalActor.id+".actor", ASTPrinter.print(finalActor))
+        finalActor
+        
       }
       case None => throw new RuntimeException("There is no network named " + topNwName)
     }
@@ -102,6 +113,13 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
       }
       case ba: BasicActor => Leaf(ba)
     }
+  }
+  
+  def writeFile(filename: String, text: String) {
+    val writer = new FileWriter(new File(filename));
+    writer.write(text)
+    writer.flush
+    writer.close
   }
   
 }

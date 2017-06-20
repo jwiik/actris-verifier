@@ -10,6 +10,7 @@ object Promela {
   
   case class ProcType(name: String, params: List[ParamDecl], decls: List[VarDecl], stmt: List[Stmt]) extends Decl
   case class Init(stmt: List[Stmt]) extends Decl
+  case class Ltl(label: String, expr: Expr) extends Decl
   
   case class ParamDecl(id: String, tp: Type)
   case class VarDecl(id: String, tp: Type, value: Option[VarInit]) extends Decl with Stmt
@@ -30,6 +31,7 @@ object Promela {
   case class ExprStmt(expr: Expr) extends Stmt
   case object Skip extends Stmt
   case object Else extends Stmt
+  case class Comment(str: String) extends Stmt
   
   case class BinaryExpr(left: Expr, op: String, right: Expr) extends Expr
   case class UnaryExpr(op:String, exp: Expr) extends Expr
@@ -74,6 +76,10 @@ object Promela {
           indentAdd +
           printStmts(stmts) + nl +
           indentRem +
+          "}" + nl
+        case Ltl(lbl,exp) => 
+          "ltl " + lbl + "{" +
+          printExpr(exp) +
           "}" + nl
       }
     }
@@ -143,8 +149,9 @@ object Promela {
         case PrintStmt(str) => indent + "printf(\"" + str + "\");"
         case PrintStmtValue(str,args) => indent + "printf(\"" + str + "\"," + (args.map { e => printExpr(e) }).mkString(",") + ");"
         case ExprStmt(expr) => printExpr(expr)
-        case Skip => indent + "skip;"
+        case Skip => "skip"
         case Else => "else"
+        case Comment(str) => indent + "// " + str 
       }
     }
     

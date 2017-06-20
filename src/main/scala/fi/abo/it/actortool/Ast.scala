@@ -77,6 +77,7 @@ sealed abstract class DFActor(
   lazy val contractActions: List[ContractAction] = members.collect { case a: ContractAction => a }
   
   lazy val variables: List[Declaration] = members.collect { case d: Declaration => d }
+  lazy val functionDecls = members.collect { case fd: FunctionDecl => fd }
   
   lazy val streamInvariants = actorInvariants.filter { x => x.stream }
   
@@ -96,9 +97,7 @@ sealed case class BasicActor(
     override val inports: List[InPort], override val outports: List[OutPort], 
     override val members: List[Member]) 
     extends DFActor(annotations,id,parameters,inports,outports,members) {
-  
-  def functionDecls = members.collect { case fd: FunctionDecl => fd }
-  
+
   override def isActor = true
 }
 

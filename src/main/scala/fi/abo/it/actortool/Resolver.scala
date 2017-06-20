@@ -827,19 +827,21 @@ object Resolver {
           ctx.error(fa.pos, "The first argument to bvresize should be a bitvector")
           fa.typ = UnknownType
         }
-        if (!arg2T.isInt) {
+        else if (!arg2T.isInt) {
           ctx.error(fa.pos, "The second argument to bvresize should be int")
           fa.typ = UnknownType
         }
-        params(1) match {
-          case IntLiteral(n) => {
-            val argSize = arg1T.asInstanceOf[BvType].size
-            val signed = arg1T.asInstanceOf[BvType].signed
-            fa.typ = BvType(n,signed)
-          }
-          case x => {
-            ctx.error(x.pos,"The second argument to bvresize should an integer literal")
-            fa.typ = UnknownType
+        else {
+          params(1) match {
+            case IntLiteral(n) => {
+              val argSize = arg1T.asInstanceOf[BvType].size
+              val signed = arg1T.asInstanceOf[BvType].signed
+              fa.typ = BvType(n,signed)
+            }
+            case x => {
+              ctx.error(x.pos,"The second argument to bvresize should an integer literal")
+              fa.typ = UnknownType
+            }
           }
         }
         fa.typ

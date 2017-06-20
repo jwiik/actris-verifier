@@ -22,6 +22,7 @@ class Checker {
     val Int = z3.mkIntSort
     val Chan = z3.mkIntSort
     def Bv(size: Int) = z3.mkBVSort(size)
+    val Bool = z3.mkBoolSort
   }
   
   
@@ -139,6 +140,7 @@ class Checker {
     tp match {
       case IntType => Types.Int
       case BvType(size,_) => Types.Bv(size)
+      case BoolType => Types.Bool
     }
   }
   

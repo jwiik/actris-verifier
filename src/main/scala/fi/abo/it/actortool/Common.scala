@@ -179,6 +179,21 @@ object IdReplacer extends ASTReplacingVisitor[Id, Expr] {
 }
 
 object IdToIdReplacer extends ASTReplacingVisitor[Id, Id] {
+  override def visitExpr(e: Expr)(implicit map: Map[Id, Id]): Expr = {
+    e match {
+      case FunctionApp(name,args) => {
+        if (map.contains(Id(name))) {
+          val newName = map(Id(name))
+          FunctionApp(newName.id, args.map(visitExpr))
+        }
+        else {
+          FunctionApp(name, args.map(visitExpr))
+        }
+      }
+      case _ => super.visitExpr(e)
+    }
+  }
+  
   override def visitId(id: Id)(implicit map: Map[Id, Id]): Id = {
     val replacement = map.get(id) match {
       case None        => id
@@ -190,9 +205,22 @@ object IdToIdReplacer extends ASTReplacingVisitor[Id, Id] {
 }
 
 object TokensDefFinder extends ASTVisitor[ListBuffer[(String, Expr)]] {
+  
+  def find(exprs: List[Expr]): List[(String,Expr)] = {
+    val buffer = new ListBuffer[(String,Expr)]
+    for (expr <- exprs) visitExpr(expr)(buffer)
+    buffer.toList
+  }
+  
+  def find(expr: Expr): List[(String,Expr)] = {
+    val buffer = new ListBuffer[(String,Expr)]
+    visitExpr(expr)(buffer)
+    buffer.toList
+  }
+  
   override def visitExpr(expr: Expr)(implicit info: ListBuffer[(String, Expr)]) {
     expr match {
-      case delay @ FunctionApp("delay", params) => {
+      case tokens @ FunctionApp("tokens", params) => {
         val (ch, amount) = (params(0), params(1))
         info += ((ch.asInstanceOf[Id].id, amount))
       }

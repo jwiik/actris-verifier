@@ -16,22 +16,23 @@ object PromelaRunner {
     writeFile("output/"+outputFile,progTxt)
     
     val outputLog = new ListBuffer[String]
-    
-    outputLog += "spin -a ##########################################\n"
-    var output = sys.process.Process(Seq("/Users/jonatan/Tools/bin/spin","-a",outputFile), new java.io.File("output")).!!
-    //println(output)
-    outputLog += "gcc ##############################################\n"
-    output = sys.process.Process(Seq("gcc","-DVECTORSZ=6000","-o","pan","pan.c"), new java.io.File("output")).!!
-    outputLog += output + "\n"
-    //println(output)
-    outputLog += "pan ##############################################\n"
-    output = sys.process.Process(Seq("./pan"), new java.io.File("output")).!!
-    outputLog += output + "\n"
-    //println(output)
-    outputLog += "spin -t ##########################################\n"
-    output = sys.process.Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T","-B",outputFile), new java.io.File("output")).!!
-    //println(output)
-    outputLog += output + "\n"
+    outputLog += "spin ##########################################\n"
+    var output = sys.process.Process(Seq("/Users/jonatan/Tools/bin/spin","-T","-B",outputFile), new java.io.File("output")).!!
+//    outputLog += "spin -a ##########################################\n"
+//    var output = sys.process.Process(Seq("/Users/jonatan/Tools/bin/spin","-a",outputFile), new java.io.File("output")).!!
+//    //println(output)
+//    outputLog += "gcc ##############################################\n"
+//    output = sys.process.Process(Seq("gcc","-DVECTORSZ=6000","-o","pan","pan.c"), new java.io.File("output")).!!
+//    outputLog += output + "\n"
+//    //println(output)
+//    outputLog += "pan ##############################################\n"
+//    output = sys.process.Process(Seq("./pan"), new java.io.File("output")).!!
+//    outputLog += output + "\n"
+//    //println(output)
+//    outputLog += "spin -t ##########################################\n"
+//    output = sys.process.Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T","-B",outputFile), new java.io.File("output")).!!
+//    //println(output)
+//    outputLog += output + "\n"
     
     outputParser.read(output)
     

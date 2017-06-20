@@ -14,22 +14,83 @@ object Constants {
  * This class implements merging of networks and actors into composite actors. The composite
  * actors should have a (concrete) action for each contract.
  */
-class ActorMerger(constants: List[Declaration]) extends GeneralBackend[List[ContractSchedule],Option[BasicActor]] {
+class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleContext,Option[BasicActor]] {
   
   val Sep = Constants.Sep
   
-  def invoke(schedules: List[ContractSchedule]): Option[BasicActor] = {
-    val entity = schedules(0).entity
+  def invoke(scheduleCtx: ScheduleContext): Option[BasicActor] = {
+    val entity = scheduleCtx.entity
+    val schedules = scheduleCtx.schedules
     val members: List[Member] =
       entity match {
         case nw: Network => {
-          for (s <- schedules) yield createActionForNetworkContract(nw, s)
+          val members = new ListBuffer[Member]
+          val tokens = TokensDefFinder.find(nw.actorInvariants.map(_.expr))
+          val tokenAmounts = tokens.collect { case (ch,IntLiteral(i)) => (ch,i) }
+          var actorVariables: Map[Id,Id] = Map.empty
+          
+          for ((ch,amount) <- tokenAmounts) {
+            val conn = nw.structure.get.connections.find { c => c.id == ch }.get
+            for (i <- 0 until amount) {
+              members += Declaration(Sep+"del"+Sep+ch+Sep+i,conn.typ.asInstanceOf[ChanType].contentType,false,None)
+            }
+          }
+          
+          for (e <- scheduleCtx.entities) yield {
+            val actor = scheduleCtx.mergedActors.getOrElse(e.actorId,e.actor)
+            for (v <- actor.variables)  {
+              val name = e.id+Sep+v.id
+              members += Declaration(name,v.typ,v.constant,v.value)
+              
+              actorVariables += {
+                val fromId = Id(v.id)
+                val toId = Id(name)
+                fromId.typ = v.typ;
+                toId.typ = v.typ;
+                Id(v.id) -> Id(name)
+              }
+            }
+            for (f <- actor.functionDecls) {
+              val name = e.id+Sep+f.name
+              members += FunctionDecl(name,f.inputs,f.output,replace(f.expr, actorVariables))
+              actorVariables += Id(f.name) -> Id(name)
+            }
+          }
+          val actions = for (s <- schedules) yield createActionForNetworkContract(nw, s, tokenAmounts, actorVariables)
+          members.toList:::actions
         }
         case ba: BasicActor => {
+          val members = new ListBuffer[Member]
+          var actorVariables: Map[Id,Id] = Map.empty
           val variables = ba.variables
-          val initAction = ba.actorActions.find(_.init).toList
-          val actions = for (s <- schedules) yield createActionForActorContract(ba, s)
-          variables:::initAction:::actions
+          for (v <- ba.variables)  {
+            assert(v.typ != null, v)
+            val name = ba.id+Sep+v.id
+            members += Declaration(name,v.typ,v.constant,v.value)
+            
+            actorVariables += {
+              val fromId = Id(v.id)
+              val toId = Id(name)
+              fromId.typ = v.typ;
+              toId.typ = v.typ;
+              Id(v.id) -> Id(name)
+            }
+          }
+          for (f <- ba.functionDecls) {
+            val name = ba.id+Sep+f.name
+            members += FunctionDecl(name,f.inputs,f.output,replace(f.expr, actorVariables))
+            actorVariables += Id(f.name) -> Id(name)
+          }
+          val initActions = {
+            for (a <- ba.actorActions.find(_.init).toList) yield {
+              ActorAction(
+                  a.label,a.init,a.inputPattern,a.outputPattern,a.guards,a.requires,a.ensures,
+                  a.variables,IdToIdReplacer.visitStmt(a.body)(actorVariables))
+            }
+          }
+          members ++= initActions
+          val actions = for (s <- schedules) yield createActionForActorContract(ba, s, actorVariables)
+          members.toList:::actions
         }
       }
     
@@ -45,10 +106,14 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[List[Cont
       case Resolver.Errors(errs) => println(errs); None
       case Resolver.Success(ctx) => Some(actor)
     }
-    //actor
+    
   }
   
-  def createActionForNetworkContract(nw: Network, schedule: ContractSchedule): ActorAction = {
+  def createActionForNetworkContract(
+      nw: Network, 
+      schedule: ContractSchedule, 
+      tokenAmounts: List[(String,Int)], 
+      actorVariables: Map[Id,Id]): ActorAction = {
     val contract = schedule.contract
     val connections = nw.structure.get.connections
     val stmt = new ListBuffer[Stmt]
@@ -59,7 +124,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[List[Cont
     var consumeCount = connections.map( c => (c.id,0) ).toMap
     var produceCount = connections.map( c => (c.id,0) ).toMap
     
-    val inputPatterns = 
+    val inputPatterns = {
       contract.inputPattern.map {
         pat => {
           val conn = connectionMap.getIn(pat.portId)
@@ -72,13 +137,36 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[List[Cont
           }),1)
         }
       }
+    }
+//    if (!tokens.isEmpty) {
+//      val delIdxDecl = Declaration(Sep+"del"+Sep+"idx",IntType,false,Some(IntLiteral(0)))
+//      val delIdxId = Id(delIdxDecl.id)
+//      val delIdxIncr = Assign(delIdxId,Plus(delIdxId,IntLiteral(1)))
+//      for ((ch,del) <- tokens) {
+//        val stmt =
+//          List(
+//              MapAssign(IndexAccessor(Id(ch),delIdxId),IndexAccessor(Id(Sep+del+Sep+ch),delIdxId)),
+//              delIdxIncr)
+//        While(Less(delIdxId,del),Nil,stmt)
+//      }
+//    }
+    
+    
+    
+    for ((ch,amount) <- tokenAmounts) {
+      for (i <- 0 until amount) {
+        stmt += Assign(Id(ch+Sep+i),Id(Sep+"del"+Sep+ch+Sep+i))
+      }
+    }
     
     for ((e,a) <- schedule.sequence) {
-      val renames = getReplacements(e, a)
-      for ((from,to) <- renames) {
+      //val actor = schedule.mergedActors.getOrElse(e.actorId,e.actor)
+      val actionRenames = getActionReplacements(e, a)
+      for ((from,to) <- actionRenames) {
         assert(from.typ != null, from)
         variables += to.id -> Declaration(to.id,from.typ,false,None)
       }
+      val renames = actorVariables ++ actionRenames
       
       for (pat <- a.inputPattern) {
         for (v <- pat.vars) {
@@ -112,6 +200,12 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[List[Cont
       }
     }
     
+    for ((ch,amount) <- tokenAmounts) {
+      for (i <- 0 until amount) {
+        stmt += Assign(Id(Sep+"del"+Sep+ch+Sep+i),Id(ch+Sep+(consumeCount(ch)-1+i)))
+      }
+    }
+    
     val outputPatterns = 
       contract.outputPattern.map {
         pat => {
@@ -141,7 +235,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[List[Cont
     action
   }
   
-  def createActionForActorContract(ba: BasicActor, schedule: ContractSchedule): ActorAction = {
+  def createActionForActorContract(ba: BasicActor, schedule: ContractSchedule, actorVariables: Map[Id,Id]): ActorAction = {
     val contract = schedule.contract
     val stmt = new ListBuffer[Stmt]
     
@@ -163,14 +257,13 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[List[Cont
           }),1)
         }
       }
-    
     for ((_,a) <- schedule.sequence) {
-      val renames = getReplacements(ba, a)
-      for ((from,to) <- renames) {
+      val actionRenames = getReplacements(ba, a)
+      for ((from,to) <- actionRenames) {
         assert(from.typ != null, from)
         variables += to.id -> Declaration(to.id,from.typ,false,None)
       }
-      
+      val renames = actorVariables ++ actionRenames
       for (pat <- a.inputPattern) {
         for (v <- pat.vars) {
           val count = consumeCount(pat.portId)
@@ -221,24 +314,31 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[List[Cont
     action
   }
   
+  def createInitActionForNetwork(nw: Network) = {
+    val entities = nw.entities.get.entities
+    val initActions = entities.flatMap { e => e.actor.actorActions.filter(_.init) }
+  }
+  
   def replace(e: Expr, renamings: Map[Id,Id]) = IdToIdReplacer.visitExpr(e)(renamings)
   def replace(e: Stmt, renamings: Map[Id,Id]) = IdToIdReplacer.visitStmt(e)(renamings)
   def replace(id: Id, renamings: Map[Id,Id]) = IdToIdReplacer.visitId(id)(renamings)
   def replace(e: List[Stmt], renamings: Map[Id,Id]) = IdToIdReplacer.visitStmt(e)(renamings)
   
-  def getReplacements(e: Instance, a: ActorAction) = {
-    (e.actor.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(e.id+Sep+v.id) } } :::
-    a.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(e.id+Sep+a.fullName+Sep+v.id) } } :::
-    a.inputPattern.flatMap(pat => pat.vars).map { v => (v -> Id(e.id+Sep+a.fullName+Sep+v.id)) })
+  def getActionReplacements(e: Instance, a: ActorAction) = {
+    (//e.actor.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(e.id+Sep+v.id) } } :::
+    a.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(replaceChars(e.id+Sep+v.id)) } } :::
+    a.inputPattern.flatMap(pat => pat.vars).map { v => (v -> Id(replaceChars(e.id+Sep+v.id))) })
     .toMap
   }
   
   def getReplacements(ba: BasicActor, a: ActorAction) = {
     (//ba.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(v.id) } } :::
-    a.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(a.fullName+Sep+v.id) } } :::
-    a.inputPattern.flatMap(pat => pat.vars).map { v => (v -> Id(a.fullName+Sep+v.id)) })
+    a.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(replaceChars(ba.id+Sep+a.fullName+Sep+v.id)) } } :::
+    a.inputPattern.flatMap(pat => pat.vars).map { v => (v -> Id(replaceChars(ba.id+Sep+a.fullName+Sep+v.id))) })
     .toMap
   }
+  
+  def replaceChars(str: String) = str.replace(".", "_")
   
   def translateGuardToExecutableFormat(guard: Expr, inputPatterns: List[InputPattern]): Expr = {
     val map =

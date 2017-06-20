@@ -76,6 +76,11 @@ object ASTPrinter {
       case d: Declaration => {
         indent + printDecl(d) + ";"
       }
+      case fd: FunctionDecl => {
+        indent + "function " + fd.name + "(" + (fd.inputs map printDecl).mkString(",") + ") --> " + fd.output.id + "\n" +
+        indentAdd + indent + printExpr(fd.expr) + indentRem +
+        indent + "end"
+      }
       case ActorInvariant(Assertion(exp,free,msg),gen,stream) => {
         indent + "invariant " + (if (stream) "stream " else "") + printExpr(exp)
       }
@@ -145,6 +150,6 @@ object ASTPrinter {
   }
   
   def printDecl(d: Declaration): String = {
-    d.typ.id + " " + d.id + (if (d.constant) " = " + printExpr(d.value.get) else (if (d.value.isDefined)  " := " + printExpr(d.value.get) else ""))
+    d.typ.id + " " + d.id + (if (d.value.isDefined)  (if (d.constant) " = " else " := ") + printExpr(d.value.get) else "")
   }
 }
