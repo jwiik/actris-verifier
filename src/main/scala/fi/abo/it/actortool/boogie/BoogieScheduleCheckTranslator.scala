@@ -182,7 +182,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
           case ipat: InputPattern => {
             for (v <- ipat.vars) {
               stmts += Boogie.Assign(transExpr(v.id,v.typ)(renamings),B.ChannelIdx(id,v.typ,B.R(id)))
-              stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(ipat.rate))
+              stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(1))
             }
           }
           case npat: NwPattern => {
@@ -204,7 +204,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
           case opat: OutputPattern => {
             for (e <- opat.exps) {
               stmts += Boogie.Assign(B.ChannelIdx(id,e.typ,B.C(id)),transExpr(e)(renamings))
-              stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(opat.rate))
+              stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(1))
             }
           }
           case npat: NwPattern => {

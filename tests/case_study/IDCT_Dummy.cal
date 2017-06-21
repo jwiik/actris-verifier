@@ -1,6 +1,6 @@
 actor IDCT_Dummy() int(size=13) IN, bool SIGNED ==> int(size=13) OUT :
 
-	contract IN:64, SIGNED:1 ==> OUT:64 end
+	//contract IN:64, SIGNED:1 ==> OUT:64 end
 	
 	action IN:[
 		x0,x1,x2,x3,x4,x5,x6,x7,
