@@ -148,6 +148,8 @@ class Checker {
     //println(e)
     e match {
       case And(l,r) => z3.mkAnd(transExpr(l),transExpr(r))
+      case Or(l,r) => z3.mkOr(transExpr(l),transExpr(r))
+      case Not(e) => z3.mkNot(transExpr(e))
       case Implies(l,r) => z3.mkImplies(transExpr(l),transExpr(r))
       case Less(l,r) => {
         l.typ match {
@@ -190,6 +192,7 @@ class Checker {
       case Id(id) => ctx.z3Constants(id)
       case IndexAccessor(Id(ch),idx) => z3.mkApp(ctx.z3FuncDecls(("M#"+ch)), transExpr(idx))
       case FunctionApp("@",args) => z3.mkApp(ctx.z3FuncDecls("I#"), (args map transExpr):_*)
+      case IfThenElse(cond,thn,els) => z3.mkITE(transExpr(cond), transExpr(thn), transExpr(els))
       case sm@SpecialMarker("@") => {
         val name = sm.extraData("accessor").asInstanceOf[String]
         z3.mkApp(ctx.z3FuncDecls("I#"), ctx.z3Constants(name))

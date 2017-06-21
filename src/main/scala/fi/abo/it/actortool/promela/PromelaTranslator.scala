@@ -588,6 +588,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       case StateType(_,_) => P.NamedType("int")
       case BoolType => P.NamedType("bool")
       case MapType(_,r,s) => P.ArrayType(translateType(r),s)
+      case x => throw new RuntimeException("Unsupported type in Z3 backend: " + tp.id)
     }
   }
   

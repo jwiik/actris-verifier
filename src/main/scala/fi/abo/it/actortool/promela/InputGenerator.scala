@@ -80,12 +80,23 @@ class InputGenerator {
   }
   
   def getValue(value: String) = {
-    if (value.startsWith("#b")) {
-      val v = get2Complement(value.substring(2))
-      if (v < 0) UnMinus(IntLiteral(-v)) else IntLiteral(v)
+    var v = value
+    if (v.startsWith("(") && v.endsWith(")")) {
+      v = v.substring(1, v.length-1)
     }
-    else if (value.startsWith("#x")) HexLiteral(value.substring(2))
-    else IntLiteral(value.toInt)
+    
+    if (v.startsWith("#b")) {
+      val v2 = get2Complement(value.substring(2))
+      if (v2 < 0) UnMinus(IntLiteral(-v2)) else IntLiteral(v2)
+    }
+    else if (v.startsWith("#x")) HexLiteral(v.substring(2))
+    else {
+      if (v.startsWith("- ")) {
+        var c = v.substring(2)
+        UnMinus(IntLiteral(c.toInt))
+      }
+      else IntLiteral(v.toInt)
+    }
   }
   
   def getDefault(typ: Type) = {

@@ -129,6 +129,11 @@ object ASTPrinter {
         }
         else "") +
         indent + "end"
+//      case While(cond,invs,stmt) =>
+//        indent + "while " + printExpr(cond) + " then\n" +
+      case Assert(e) => indent + "assert " + printExpr(e) + ";"
+      case Assume(e) => indent + "assume " + printExpr(e) + ";"
+      case Havoc(vars) => indent + "havoc " + (vars map printExpr).mkString(",") + ";"
     }
   }
   

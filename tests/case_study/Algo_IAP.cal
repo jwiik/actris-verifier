@@ -27,6 +27,9 @@ actor Algo_IAP ()
   
   invariant mode(Skip) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] != -int2bv(2,3) && AC_PRED_DIR[@] < int2bv(0,3)
   invariant mode(Skip) ==> tot@(QF_AC) = 0
+  invariant mode(Skip) ==> state(pred) || state(start)
+  invariant mode(Skip) && state(pred) ==> rd@(AC_PRED_DIR) = 1
+  invariant mode(Skip) && rd@(AC_PRED_DIR) = 1 ==> count = int(64,8)
   
   invariant mode(Start) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] >= int2bv(0,3)
   invariant mode(Start) && state(start) ==> (
@@ -74,7 +77,7 @@ actor Algo_IAP ()
     s < int2bv(0,3)
   do
     count := int2bv(64,8);
-  end	
+  end
 
   start: action AC_PRED_DIR:[ s ], PTR:[ p ] ==>
   do

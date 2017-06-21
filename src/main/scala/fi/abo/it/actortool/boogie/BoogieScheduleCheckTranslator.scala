@@ -45,7 +45,9 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     decls ++= avs.actorParamDecls map { _.decl }
     stmts += B.Assume(avs.uniquenessCondition)
     stmts ++= avs.basicAssumes
+    stmts += B.Assume(B.Mode(B.This) ==@ Boogie.VarExpr(schedule.contract.fullName))
     stmts += B.Assume(Boogie.VarExpr(BMap.R) ==@ Boogie.VarExpr(BMap.I))
+    stmts += B.Assume(Boogie.VarExpr(BMap.C) ==@ Boogie.VarExpr(BMap.R))
     for (inv <- avs.invariants) stmts += BAssume(inv, avs.renamings)
     
     for (ipat <- schedule.contract.inputPattern) {
@@ -91,29 +93,30 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
         stmts += B.Assert(B.Int(ipat.rate) <= B.Urd(id),ipat.pos,"Input pattern might not be satisfied for action '" + action.fullName + "'")
         for (v <- ipat.vars) {
           stmts += Boogie.Assign(transExpr(v.id,v.typ)(actionRenamings),B.ChannelIdx(id,v.typ,B.R(id)))
-          stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(ipat.rate))
+          stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(1))
         }
       }
       stmts ++= action.guards.map { g => B.Assert(transExpr(g)(actionRenamings),g.pos,"Guard might not be satisfied for action '" + action.fullName + "'" ) }
       stmts ++= action.requires.map { r => B.Assert(transExpr(r)(actionRenamings),r.pos,"Precondition might not hold for action '" + action.fullName + "'" ) }
       stmts ++= transStmt(action.body)(actionRenamings)
-//      for (v <- actionData.assignedVariables) {
-//        v match {
-//          case id: Id => stmts += Boogie.Havoc(transExpr(id)(actionRenamings))
-//          case IndexAccessor(v,idx) => stmts += Boogie.Havoc(transExpr(v)(actionRenamings))
-//        }
-//      }
       
       for (opat <- action.outputPattern) {
         val id = opat.portId
         for (e <- opat.exps) {
           stmts += Boogie.Assign(B.ChannelIdx(id,e.typ,B.C(id)),transExpr(e)(actionRenamings))
-          stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(opat.rate))
+          stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(1))
         }
 
       }
       for (q <- action.ensures) stmts += B.Assume(transExpr(q)(actionRenamings))
       for (inv <- avs.invariants) stmts += BAssume(inv, avs.renamings)
+    }
+    
+    for (opat <- schedule.contract.outputPattern) {
+      stmts += B.Assert(
+          B.Urd(transExpr(opat.portId,opat.typ)(avs.renamings)) ==@ B.Int(opat.rate),
+          opat.pos,
+          "The correct amount of tokens might not be produced on output " + opat.portId)
     }
     
     List(B.createProc(schedule.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))
@@ -129,6 +132,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     
     stmts ++= nwvs.uniquenessConditions map { B.Assume(_) }
     stmts ++= nwvs.basicAssumes
+    stmts += B.Assume(B.Mode(B.This) ==@ Boogie.VarExpr(schedule.contract.fullName))
     stmts += B.Assume(Boogie.VarExpr(BMap.R) ==@ Boogie.VarExpr(BMap.I))
     for (nwi <- nwvs.nwInvariants) stmts += BAssume(nwi, nwvs.renamings)
     for (chi <- nwvs.chInvariants) stmts += BAssume(chi, nwvs.renamings)
@@ -150,13 +154,23 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       val action = a1.refinedContract.getOrElse(a1)
       //decls+ ++= nwvs.getEntityActionData(e, action).declarations  map { _.decl }
       
-      stmts += Boogie.Comment("Instance: " + e.id)
+      stmts += Boogie.Comment("Instance: " + e.id + ", Action: " + action.fullName)
       val renamings = nwvs.subActionRenamings(e, action)
       for (d <- nwvs.getEntityActionData(e, action).declarations) {
         if (!alreadyDeclared.contains(d.name)) {
           decls += d.decl
           alreadyDeclared += d.name
         }
+      }
+      
+      for (ip <- e.actor.inports) {
+        val cId = nwvs.connectionMap.getDst(PortRef(Some(e.id),ip.id))
+        stmts += Boogie.Assign(B.Isub(cId), B.R(cId))
+      }
+      
+      for (op <- e.actor.outports) {
+        val cId = nwvs.connectionMap.getSrc(PortRef(Some(e.id),op.id))
+        stmts += Boogie.Assign(B.Isub(cId), B.C(cId))
       }
       
       val firingRules = getFiringRules(e, nwvs)
@@ -177,6 +191,13 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
           case _ => assert(false)
         }
       }
+      
+      for (pre <- action.requires) {
+        stmts += B.Assert(
+          transExprPrecondCheck(pre)(renamings),pre.pos,
+          "Precondition might not hold")
+      }
+      
       for (pat <- action.outputPattern) {
         val id = nwvs.connectionMap.getSrc(PortRef(Some(e.id),pat.portId))
         pat match {
@@ -194,6 +215,17 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
         
       }
       
+      for (post <- action.ensures) {
+        stmts += B.Assume(transExprPrecondCheck(post)(renamings))
+      }
+      
+    }
+    
+    for (opat <- schedule.contract.outputPattern) {
+      stmts += B.Assert(
+          B.Urd(transExpr(opat.portId,opat.typ)(nwvs.renamings)) ==@ B.Int(opat.rate),
+          opat.pos,
+          "The correct amount of tokens might not be produced on output " + opat.portId)
     }
     
     List(B.createProc(nwvs.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))
