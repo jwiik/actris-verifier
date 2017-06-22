@@ -85,8 +85,8 @@ actor Dequant()
 		count = int2bv(63,7)
 	end
 
-	function abs(int x) --> int :
-		if x < 0 then
+	function abs(int(size=13) x) --> int(size=13) :
+		if x < int(0,13) then
 			-x
 		else
 			x

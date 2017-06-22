@@ -139,8 +139,7 @@ actor Addressing_simple ()
 	end
 
 	function access(int(size=8) p, int(size=4) c) --> int(size=11) :
-	  int(0,11)
-	  //bvresize(  bvresize(bvresize(p,11) << int(3,11),11) | bvresize(c,11), 11)
+	  bvresize(bvresize(p,11) << int(3,11),11) | bvresize(c,11)
 	end
 
 	// New VOP

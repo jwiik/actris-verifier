@@ -517,6 +517,7 @@ class PromelaTranslator(params: CommandLineParameters) {
           List(P.GuardStmt(P.Else,translateStmts(els))))
         P.If( grds map { g => P.OptionStmt(List(g)) } )
       }
+      case _ => throw new RuntimeException("Unsupported statement in Promela backend: " + stmt)
     }
   }
   

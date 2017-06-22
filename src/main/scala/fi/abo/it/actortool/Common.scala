@@ -204,6 +204,32 @@ object IdToIdReplacer extends ASTReplacingVisitor[Id, Id] {
   }
 }
 
+object IdToIdReplacerString extends ASTReplacingVisitor[String, Id] {
+  override def visitExpr(e: Expr)(implicit map: Map[String, Id]): Expr = {
+    e match {
+      case FunctionApp(name,args) => {
+        if (map.contains(name)) {
+          val newName = map(name)
+          FunctionApp(newName.id, args.map(visitExpr))
+        }
+        else {
+          FunctionApp(name, args.map(visitExpr))
+        }
+      }
+      case _ => super.visitExpr(e)
+    }
+  }
+  
+  override def visitId(id: Id)(implicit map: Map[String, Id]): Id = {
+    val replacement = map.get(id.id) match {
+      case None        => id
+      case Some(newId) => newId
+    }
+    replacement.typ = id.typ
+    replacement
+  }
+}
+
 object TokensDefFinder extends ASTVisitor[ListBuffer[(String, Expr)]] {
   
   def find(exprs: List[Expr]): List[(String,Expr)] = {

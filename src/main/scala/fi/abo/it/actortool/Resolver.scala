@@ -1015,7 +1015,7 @@ object Resolver {
       IntType
     }
     else {
-      ctx.error(exp.left.pos, "Operator not applicable to arguments of type '" + t1.id + "' and '" + t2.id + "'")
+      ctx.error(exp.left.pos, "Operator '" +  exp.operator + "' not applicable to arguments of type '" + t1.id + "' and '" + t2.id + "'")
       UnknownType
     }
   }

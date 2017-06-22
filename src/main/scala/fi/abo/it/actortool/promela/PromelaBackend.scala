@@ -77,7 +77,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
         }
         println("Merging done")
         val finalActor = mergedActorMap(topNwName)
-        writeFile("output/"+finalActor.id+".actor", ASTPrinter.print(finalActor))
+        writeFile("output/"+finalActor.id+".actor", ASTPrinter.orcc.print(finalActor))
         finalActor
         
       }
