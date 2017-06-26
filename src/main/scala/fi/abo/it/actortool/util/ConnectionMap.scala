@@ -9,15 +9,17 @@ trait ConnectionMap {
   def getDst(instance: String, port: String): String
   def getIn(port: String): String
   def getOut(port: String): String
+  def connections: List[Connection]
 }
 
-class ConnectionMapImpl(srcMap: Map[PortRef,String], trgtMap: Map[PortRef,String]) extends ConnectionMap {
+class ConnectionMapImpl(srcMap: Map[PortRef,String], trgtMap: Map[PortRef,String], conns: List[Connection]) extends ConnectionMap {
   def getSrc(pr: PortRef) = srcMap(pr)
   def getDst(pr: PortRef) = trgtMap(pr)
   def getSrc(instance: String, port: String) = srcMap(PortRef(Some(instance),port))
   def getDst(instance: String, port: String) = trgtMap(PortRef(Some(instance),port))
   def getIn(port: String) = srcMap(PortRef(None,port))
   def getOut(port: String) = trgtMap(PortRef(None,port))
+  def connections = conns
 }
 
 object ConnectionMap {
@@ -34,6 +36,6 @@ object ConnectionMap {
         case None => c.id
       }
     }
-    new ConnectionMapImpl(source.toMap,target.toMap)
+    new ConnectionMapImpl(source.toMap,target.toMap, connections)
   }
 }

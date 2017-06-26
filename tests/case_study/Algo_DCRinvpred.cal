@@ -171,6 +171,14 @@ actor Algo_DCRinvpred ()
 	// Flag to indicate INTER or INTRA block
 	bool is_signed;
 	
+	function abs(int(size=13) x) --> int(size=13):
+		if (x > int(0,13)) then
+			x
+		else
+			-x
+		end
+	end
+	
 	
 	function saturate(int(size=13) x) --> int(size=13):
 		if x < -int(2048,13) then

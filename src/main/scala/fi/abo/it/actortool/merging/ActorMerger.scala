@@ -27,7 +27,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           val members = new ListBuffer[Member]
           val tokens = TokensDefFinder.find(nw.actorInvariants.map(_.expr))
           val tokenAmounts = tokens.collect { case (ch,IntLiteral(i)) => (ch,i) }
-          var actorVariables: Map[String,Id] = Map.empty
+          var actorVariables: Map[String,Expr] = Map.empty
           
           for ((ch,amount) <- tokenAmounts) {
             val conn = nw.structure.get.connections.find { c => c.id == ch }.get
@@ -48,18 +48,33 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
                 v.id -> toId
               }
             }
+            for ((param,arg) <- actor.parameters.zip(e.arguments)) {
+              actorVariables += {
+                param.id -> arg
+              }
+            }
+            
             for (f <- actor.functionDecls) {
               val name = e.id+Sep+f.name
               members += FunctionDecl(name,f.inputs,f.output,replaceStr(f.expr, actorVariables))
               actorVariables += f.name -> Id(name)
             }
+
           }
+          
+          val initSequence = scheduleCtx.entities.map { e => 
+            val actor = scheduleCtx.mergedActors.getOrElse(e.actorId,e.actor); 
+            (e, actor.actorActions.find(_.init).get) 
+          }
+          
+          members += createInitActionForNetwork(nw, initSequence, actorVariables, tokenAmounts)
+          
           val actions = for (s <- schedules) yield createActionForNetworkContract(nw, s, tokenAmounts, actorVariables)
           members.toList:::actions
         }
         case ba: BasicActor => {
           val members = new ListBuffer[Member]
-          var actorVariables: Map[String,Id] = Map.empty
+          var actorVariables: Map[String,Expr] = Map.empty
           val variables = ba.variables
           for (v <- ba.variables)  {
             assert(v.typ != null, v)
@@ -112,7 +127,8 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       nw: Network, 
       schedule: ContractSchedule, 
       tokenAmounts: List[(String,Int)], 
-      actorVariables: Map[String,Id]): ActorAction = {
+      actorVariables: Map[String,Expr]): ActorAction = {
+    
     val contract = schedule.contract
     val connections = nw.structure.get.connections
     val stmt = new ListBuffer[Stmt]
@@ -146,75 +162,14 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     }
     
     for ((e,a) <- schedule.sequence) {
-      //val actor = schedule.mergedActors.getOrElse(e.actorId,e.actor)
-      val actionVarDecls = a.variables.map(d => (d.id,d)).toMap
-      val actionRenames = getActionReplacements(e, a)
-      val renames = actorVariables ++ actionRenames
-      
-      val actionVariables = a.inputPattern.flatMap(_.vars) ::: a.variables.map(d => {val id = Id(d.id); id.typ = d.typ; id})
-      val actionVariableInits = new ListBuffer[Stmt]()
-      
-      for (from <- actionVariables) {
-        val to = actionRenames(from.id)
-        assert(from.typ != null, from)
-        val varDecl = actionVarDecls.get(from.id)
-        varDecl match {
-          case Some(vd) => 
-            vd.value match {
-              case None => None
-              case Some(v) => actionVariableInits += Assign(to, replaceStr(v, actorVariables))
-            }
-            if (!usedVariableNames.contains(to.id)) {
-              variables += Declaration(to.id,vd.typ,false,None)
-              usedVariableNames += to.id
-            }
-          case None =>
-            // Input pattern variable
-            if (!usedVariableNames.contains(to.id)) {
-              variables += Declaration(to.id,from.typ,false,None)
-              usedVariableNames += to.id
-            }
-        }
-      }
-      
-      
-      for (pat <- a.inputPattern) {
-        for (v <- pat.vars) {
-          val conn = connectionMap.getDst(e.id,pat.portId)
-          val count = consumeCount(conn)
-          consumeCount = consumeCount + (conn ->  (count+1))
-          val name = conn+Sep+count
-          assert(pat.typ != null)
-          
-          val c = connections.find { _.id == conn }
-          if (c.get.from.actor.isDefined) {
-            // This avoids adding variables that are part of the input pattern
-            // to action variables
-            if (!usedVariableNames.contains(name)) {
-              variables += Declaration(name,pat.typ,false,None)
-              usedVariableNames += name
-            }
-          }
-          
-          stmt += Assign(replaceStr(v,renames),Id(conn+Sep+count))
-        }
-      }
-      stmt ++= actionVariableInits
-      stmt ++= replaceStr(a.body,renames)
-      for (pat <- a.outputPattern) {
-        for (exp <- pat.exps) {
-          val conn = connectionMap.getSrc(e.id,pat.portId)
-          val count = produceCount(conn)
-          produceCount = produceCount + (conn ->  (count+1))
-          val name = conn+Sep+count
-          assert(pat.typ != null)
-          if (!usedVariableNames.contains(name)) {
-            variables += Declaration(name,pat.typ,false,None)
-            usedVariableNames += name
-          }
-          stmt += Assign(Id(name),replaceStr(exp,renames))
-        }
-      }
+      val (subStmt,subVars,newConsCount,newProdCount,usedVariables) = 
+        handleActionExecution(
+          a, Some(e), Some(connectionMap), nw, actorVariables, usedVariableNames, consumeCount, produceCount)
+      stmt ++= subStmt
+      variables ++= subVars
+      consumeCount = newConsCount
+      produceCount = newProdCount
+      usedVariableNames = usedVariables
     }
     
     for ((ch,amount) <- tokenAmounts) {
@@ -252,7 +207,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     action
   }
   
-  def createActionForActorContract(ba: BasicActor, schedule: ContractSchedule, actorVariables: Map[String,Id]): ActorAction = {
+  def createActionForActorContract(ba: BasicActor, schedule: ContractSchedule, actorVariables: Map[String,Expr]): ActorAction = {
     val contract = schedule.contract
     val stmt = new ListBuffer[Stmt]
     
@@ -276,61 +231,13 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
         }
       }
     for ((_,a) <- schedule.sequence) {
-      val actionVarDecls = a.variables.map(d => (d.id,d)).toMap
-      val actionRenames = getReplacements(ba, a)
-      val renames = actorVariables ++ actionRenames
-      
-      val actionVariables = a.inputPattern.flatMap(_.vars) ::: a.variables.map(d => {val id = Id(d.id); id.typ = d.typ; id})
-      val actionVariableInits = new ListBuffer[Stmt]()
-      
-      for (from <- actionVariables) {
-        assert(from.typ != null, from)
-        val to = actionRenames(from.id)
-        val varDecl = actionVarDecls.get(from.id)
-        varDecl match {
-          case Some(vd) => 
-            vd.value match {
-              case None => 
-              case Some(v) => actionVariableInits += Assign(to,replaceStr(v, renames))
-            }
-            if (!usedVariableNames.contains(to.id)) {
-              variables += Declaration(to.id,vd.typ,false,None)
-              usedVariableNames += to.id
-            }
-          case None =>
-            // Input pattern variable
-            if (!usedVariableNames.contains(to.id)) {
-              variables += Declaration(to.id,from.typ,false,None)
-              usedVariableNames += to.id
-            }
-        }
-      }
-      
-      for (pat <- a.inputPattern) {
-        for (v <- pat.vars) {
-          val count = consumeCount(pat.portId)
-          consumeCount = consumeCount + (pat.portId ->  (count+1))
-          val name = pat.portId+Sep+count
-          assert(pat.typ != null)
-          
-          stmt += Assign(replaceStr(v,renames),Id(pat.portId+Sep+count))
-        }
-      }
-      stmt ++= actionVariableInits
-      stmt ++= replaceStr(a.body,renames)
-      for (pat <- a.outputPattern) {
-        for (exp <- pat.exps) {
-          val count = produceCount(pat.portId)
-          produceCount = produceCount + (pat.portId -> (count+1))
-          val name = pat.portId+Sep+count
-          assert(pat.typ != null)
-          if (!usedVariableNames.contains(name)) {
-            variables += Declaration(name,pat.typ,false,None)
-            usedVariableNames += name
-          }
-          stmt += Assign(Id(name),replaceStr(exp,renames))
-        }
-      }
+      val (subStmt,subVars,newConsCount,newProdCount,usedVariables) = 
+        handleActionExecution(a, None, None, ba, actorVariables, usedVariableNames, consumeCount, produceCount)
+      stmt ++= subStmt
+      variables ++= subVars
+      consumeCount = newConsCount
+      produceCount = newProdCount
+      usedVariableNames = usedVariables
     }
     
     val outputPatterns = 
@@ -360,9 +267,168 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     action
   }
   
-  def createInitActionForNetwork(nw: Network) = {
-    val entities = nw.entities.get.entities
-    val initActions = entities.flatMap { e => e.actor.actorActions.filter(_.init) }
+  def handleActionExecution(
+      a: ActorAction, 
+      eOpt: Option[Instance], 
+      connMapOpt: Option[ConnectionMap],
+      actor: DFActor, 
+      actorVariables: Map[String,Expr],
+      usedVariableNames1: Set[String],
+      startConsumeCount: Map[String,Int],
+      startProduceCount: Map[String,Int]): (List[Stmt],List[Declaration],Map[String,Int],Map[String,Int],Set[String]) = {
+    
+    val stmt = new ListBuffer[Stmt]
+    val variables = new ListBuffer[Declaration]
+    var allUsedVariableNames = usedVariableNames1
+    var consumeCount = startConsumeCount
+    var produceCount = startProduceCount
+    
+    val actionVarDecls = a.variables.map(d => (d.id,d)).toMap
+    val actionRenames = eOpt match {
+      case Some(e) => getActionReplacements(e, a)
+      case None => getReplacements(actor, a)
+    }
+    val renames = actorVariables ++ actionRenames
+    
+    val actionVariables = a.inputPattern.flatMap(_.vars) ::: a.variables.map(d => {val id = Id(d.id); id.typ = d.typ; id})
+    val actionVariableInits = new ListBuffer[Stmt]()
+    
+    for (from <- actionVariables) {
+      val to = actionRenames(from.id)
+      assert(from.typ != null, from)
+      val varDecl = actionVarDecls.get(from.id)
+      varDecl match {
+        case Some(vd) => 
+          vd.value match {
+            case None => None
+            case Some(v) => actionVariableInits += Assign(to, v)
+          }
+          if (!allUsedVariableNames.contains(to.id)) {
+            variables += Declaration(to.id,vd.typ,false,None)
+            allUsedVariableNames += to.id
+          }
+        case None =>
+          // Input pattern variable
+          if (!allUsedVariableNames.contains(to.id)) {
+            variables += Declaration(to.id,from.typ,false,None)
+            allUsedVariableNames += to.id
+          }
+      }
+    }
+    
+    
+    for (pat <- a.inputPattern) {
+      for (v <- pat.vars) {
+        
+        connMapOpt match {
+          case Some(connectionMap) => {
+            // Network
+            val connections = connectionMap.connections
+            val conn = connectionMap.getDst(eOpt.get.id,pat.portId)
+            val count = consumeCount(conn)
+            consumeCount = consumeCount + (conn ->  (count+1))
+            val name = conn+Sep+count
+            assert(pat.typ != null)
+            
+            val c = connections.find { _.id == conn }
+            if (c.get.from.actor.isDefined) {
+              // This avoids adding variables that are part of the input pattern
+              // to action variables
+              if (!allUsedVariableNames.contains(name)) {
+                variables += Declaration(name,pat.typ,false,None)
+                allUsedVariableNames += name
+              }
+            }
+            stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(conn+Sep+count))
+          }
+          case None => {
+            // Basic actor
+            val count = consumeCount(pat.portId)
+            consumeCount = consumeCount + (pat.portId ->  (count+1))
+            val name = pat.portId+Sep+count
+            assert(pat.typ != null)
+            
+            stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(pat.portId+Sep+count))
+          }
+        }
+        
+      }
+    }
+    stmt ++= replaceStr(actionVariableInits.toList,renames)
+    stmt ++= replaceStr(a.body,renames)
+    for (pat <- a.outputPattern) {
+      for (exp <- pat.exps) {
+        
+        connMapOpt match {
+          case Some(connectionMap) => {
+            // Network
+            val conn = connectionMap.getSrc(eOpt.get.id,pat.portId)
+            val count = produceCount(conn)
+            produceCount = produceCount + (conn ->  (count+1))
+            val name = conn+Sep+count
+            assert(pat.typ != null)
+            if (!allUsedVariableNames.contains(name)) {
+              variables += Declaration(name,pat.typ,false,None)
+              allUsedVariableNames += name
+            }
+            stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
+          }
+          case None => {
+            val count = produceCount(pat.portId)
+            produceCount = produceCount + (pat.portId -> (count+1))
+            val name = pat.portId+Sep+count
+            assert(pat.typ != null)
+            if (!allUsedVariableNames.contains(name)) {
+              variables += Declaration(name,pat.typ,false,None)
+              allUsedVariableNames += name
+            }
+            stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
+          }
+        }
+        
+      }
+    }
+    
+    (stmt.toList,variables.toList,consumeCount,produceCount,allUsedVariableNames)
+    
+  }
+  
+  def createInitActionForNetwork(nw: Network, initSequence: List[(Instance,ActorAction)], actorVariables: Map[String,Expr], tokenAmounts: List[(String,Int)]) = {
+    val connections = nw.structure.get.connections
+    val stmt = new ListBuffer[Stmt]
+    val connectionMap = ConnectionMap.build(connections,Map.empty)
+    var usedVariableNames = Set.empty[String]
+    val variables = new collection.mutable.ListBuffer[Declaration]()
+    var consumeCount = connections.map( c => (c.id,0) ).toMap
+    var produceCount = connections.map( c => (c.id,0) ).toMap
+    
+    for ((e,a) <- initSequence) {
+      val (subStmt,subVars,newConsCount,newProdCount,usedVariables) = 
+        handleActionExecution(a, Some(e), Some(connectionMap), nw, actorVariables, usedVariableNames, consumeCount, produceCount)
+      stmt ++= subStmt
+      variables ++= subVars
+      consumeCount = newConsCount
+      produceCount = newProdCount
+      usedVariableNames = usedVariables
+    }
+    
+    for ((ch,amount) <- tokenAmounts) {
+      for (i <- 0 until amount) {
+        stmt += Assign(Id(Sep+"del"+Sep+ch+Sep+i),Id(ch+Sep+i))
+      }
+    }
+    
+    val action = ActorAction(
+        Some("Init__"),
+        true,
+        Nil,
+        Nil,
+        Nil,
+        Nil,
+        Nil,
+        variables.toList,
+        stmt.toList)
+    action
   }
   
   
@@ -371,10 +437,10 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
   def replace(id: Id, renamings: Map[Id,Id]) = IdToIdReplacer.visitId(id)(renamings)
   def replace(e: List[Stmt], renamings: Map[Id,Id]) = IdToIdReplacer.visitStmt(e)(renamings)
   
-  def replaceStr(e: Expr, renamings: Map[String,Id]) = IdToIdReplacerString.visitExpr(e)(renamings)
-  def replaceStr(e: Stmt, renamings: Map[String,Id]) = IdToIdReplacerString.visitStmt(e)(renamings)
-  def replaceStr(id: Id, renamings: Map[String,Id]) = IdToIdReplacerString.visitId(id)(renamings)
-  def replaceStr(e: List[Stmt], renamings: Map[String,Id]) = IdToIdReplacerString.visitStmt(e)(renamings)
+  def replaceStr(e: Expr, renamings: Map[String,Expr]) = IdReplacerString.visitExpr(e)(renamings)
+  def replaceStr(e: Stmt, renamings: Map[String,Expr]) = IdReplacerString.visitStmt(e)(renamings)
+  //def replaceStr(id: Id, renamings: Map[String,Expr]) = IdReplacerString.visitId(id)(renamings)
+  def replaceStr(e: List[Stmt], renamings: Map[String,Expr]) = IdReplacerString.visitStmt(e)(renamings)
   
   def getActionReplacements(e: Instance, a: ActorAction) = {
     (//e.actor.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(e.id+Sep+v.id) } } :::
@@ -383,7 +449,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     .toMap
   }
   
-  def getReplacements(ba: BasicActor, a: ActorAction) = {
+  def getReplacements(ba: DFActor, a: ActorAction) = {
     (//ba.variables.map { v => { val id = Id(v.id); id.typ = v.typ; id -> Id(v.id) } } :::
     a.variables.map { v => { v.id -> Id(replaceChars(ba.id+Sep+a.fullName+Sep+v.id)) } } :::
     a.inputPattern.flatMap(pat => pat.vars).map { v => (v.id -> Id(replaceChars(ba.id+Sep+a.fullName+Sep+v.id))) })

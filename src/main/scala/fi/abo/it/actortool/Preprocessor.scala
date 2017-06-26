@@ -87,13 +87,13 @@ case object ActionScheduleProcessor extends Preprocessor {
             var newGuards = guard
             
             if (!init && labelOpt.isDefined) {
-              val transitionData: List[(Expr,(Expr,List[Stmt]))] =
+              val transitionData: List[(Expr,(Expr,List[Stmt]))] = {
                 for (t <- s.transitions.filter { t => t.action == labelOpt.get }) yield {
                    val guard = Eq(Id("St#"),Id(t.from))
                    val stUpdate = (guard, List(Assign(Id("St#"),Id(t.to))))
                    (guard,stUpdate)
                 }
-              
+              }
               val (guards,stUpdates) = transitionData.unzip
               
               if (!guards.isEmpty) {
@@ -101,7 +101,12 @@ case object ActionScheduleProcessor extends Preprocessor {
               }
               if (!stUpdates.isEmpty) {
                 val (g,s) = stUpdates.head
-                newBody = newBody ++ List(IfElse(g,s, stUpdates.tail map { case (g1,s1) => ElseIf(g1,s1) } ,Nil))
+                if (stUpdates.length == 1) {
+                  newBody = newBody ++ s
+                }
+                else {
+                  newBody = newBody ++ List(IfElse(g,s, stUpdates.tail map { case (g1,s1) => ElseIf(g1,s1) } ,Nil))
+                }
               }
             }
             else if (init) {

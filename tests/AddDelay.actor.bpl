@@ -66,6 +66,7 @@ procedure Net#anon__4()
   assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
   assume anon__4 == 0;
   assume Mode#[this#] == anon__4;
+  assume Mode#[this#] == anon__4;
   assume R# == I#;
   assume (C#[Net#b] - R#[Net#b]) == 1;
   assume (C#[Net#a] - R#[Net#a]) == 0;
@@ -76,7 +77,10 @@ procedure Net#anon__4()
   assume 0 <= M#[Net#b][I#[Net#b]];
   C#[Net#a] := C#[Net#a] + 1;
   assume 0 <= M#[Net#a][I#[Net#a]];
-  // Instance: add
+  // Instance: add, Action: anon__0
+  I#sub[Net#a] := R#[Net#a];
+  I#sub[Net#b] := R#[Net#b];
+  I#sub[Net#c] := C#[Net#c];
   assert {:msg "AddDelay.actor(2.3): Firing rule might not be satisfied for action 'anon__0' of instance 'add' (#0)"} (1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b])) && (0 <= M#[Net#a][R#[Net#a]]);
   add#in1#i := M#[Net#a][R#[Net#a]];
   R#[Net#a] := R#[Net#a] + 1;
@@ -84,7 +88,10 @@ procedure Net#anon__4()
   R#[Net#b] := R#[Net#b] + 1;
   M#[Net#c][C#[Net#c]] := add#in1#i + add#in2#j;
   C#[Net#c] := C#[Net#c] + 1;
-  // Instance: spl
+  // Instance: spl, Action: anon__1
+  I#sub[Net#c] := R#[Net#c];
+  I#sub[Net#d] := C#[Net#d];
+  I#sub[Net#e] := C#[Net#e];
   assert {:msg "AddDelay.actor(8.3): Firing rule might not be satisfied for action 'anon__1' of instance 'spl' (#1)"} 1 <= (C#[Net#c] - R#[Net#c]);
   spl#in#i := M#[Net#c][R#[Net#c]];
   R#[Net#c] := R#[Net#c] + 1;
@@ -92,10 +99,13 @@ procedure Net#anon__4()
   C#[Net#d] := C#[Net#d] + 1;
   M#[Net#e][C#[Net#e]] := spl#in#i;
   C#[Net#e] := C#[Net#e] + 1;
-  // Instance: del
+  // Instance: del, Action: anon__3
+  I#sub[Net#e] := R#[Net#e];
+  I#sub[Net#b] := C#[Net#b];
   assert {:msg "AddDelay.actor(13.3): Firing rule might not be satisfied for action 'anon__3' of instance 'del' (#2)"} 1 <= (C#[Net#e] - R#[Net#e]);
   del#in#i := M#[Net#e][R#[Net#e]];
   R#[Net#e] := R#[Net#e] + 1;
   M#[Net#b][C#[Net#b]] := del#in#i;
   C#[Net#b] := C#[Net#b] + 1;
+  assert {:msg "The correct amount of tokens might not be produced on output out (#3)"} (C#[Net#d] - R#[Net#d]) == 1;
 }

@@ -66,7 +66,7 @@ class ASTPrinter(orccCompatible: Boolean) {
         (outpats map { op => op.portId + ":[" + (op.exps map printExpr).mkString(",")  + "]" }).mkString(", ") +
         {
           if (!orccCompatible) (guards map { g => nl +indent + "guard " + printExpr(g) }).mkString("")
-          else if (guards.isEmpty) "" else indent + "guard " + (guards map { g => printExpr(g) }).mkString(", ")
+          else if (guards.isEmpty) "" else nl + indent + "guard " + (guards map { g => printExpr(g) }).mkString(", ")
         } +
         {
           if (!orccCompatible)

@@ -366,10 +366,14 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls += P.VarDecl(actorRenamings.R(v.id),translateType(v.typ), value)
     }
     
-    val initBody: List[P.Stmt] =
+    val initBodyInternal: List[P.Stmt] = 
       a.actorActions.find { _.init } match {
         case Some(act) => {
           val initStmt = new ListBuffer[P.Stmt]
+          for (v <- act.variables) {
+            val value = if (v.value.isDefined) Some(translateExpr(v.value.get)(actorRenamings)) else None  
+            initStmt += P.VarDecl(actorRenamings.R(v.id),translateType(v.typ),value)
+          }
           initStmt ++= translateStmts(act.body)(actorRenamings)
           for (p <- act.outputPattern) {
             for (e <- p.exps) {
@@ -380,6 +384,8 @@ class PromelaTranslator(params: CommandLineParameters) {
         }
         case None => Nil
       }
+    
+    val initBody = if (initBodyInternal.isEmpty) Nil else List(P.Atomic(initBodyInternal))
     
     val peekAnalyzer = new ActionPeekAnalyzer
     val priorityMap = PriorityMapBuilder.buildPriorityMap(a, false)
