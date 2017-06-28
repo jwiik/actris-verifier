@@ -176,6 +176,11 @@ object IdReplacer extends ASTReplacingVisitor[Id, Expr] {
     }
     super.visitExpr(expr)
   }
+  
+  override def visitId(id: Id)(implicit map: Map[Id, Expr]): Id = {
+    map.getOrElse(id, id).asInstanceOf[Id]
+  }
+  
 }
 
 object IdToIdReplacer extends ASTReplacingVisitor[Id, Id] {
@@ -289,6 +294,7 @@ abstract class ASTVisitor[T] {
       case IfElse(ifc, ifs, eifs, els) =>
         visitExpr(ifc); visitStmt(ifs); visitIfElses(eifs); visitStmt(els)
       case While(c, inv, s)            => visitExpr(c); visitExpr(inv); visitStmt(s)
+      case ProcCall(_,inputs)          => visitExpr(inputs)
     }
   }
 
@@ -378,6 +384,7 @@ abstract class ASTReplacingVisitor[A, B <: ASTNode] {
       case Havoc(vars)                 => Havoc(for (v <- vars) yield visitId(v))
       case IfElse(ifc, ifs, eifs, els) => IfElse(visitExpr(ifc), visitStmt(ifs), visitIfElses(eifs), visitStmt(els))
       case While(c, inv, s)            => While(visitExpr(c), visitExpr(inv), visitStmt(s))
+      case ProcCall(name,args)         => ProcCall(name, args map visitExpr)
     }
   }
 

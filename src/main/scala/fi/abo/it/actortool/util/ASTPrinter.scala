@@ -98,6 +98,14 @@ class ASTPrinter(orccCompatible: Boolean) {
         indentAdd + indent + printExpr(fd.expr) + indentRem + nl +
         indent + "end"
       }
+      case pd: ProcedureDecl => {
+        indent + "procedure " + pd.name + "(" + (pd.inputs map printDecl).mkString(",") + ")" + nl +
+        indent + "var" + nl + indentAdd +
+        indent + (pd.inputs map printDecl).mkString(",") + nl + indentRem +
+        indent + "begin" + nl + indentAdd +
+        printStmts(pd.body) + indentRem + nl +
+        indent + "end"
+      }
       case ActorInvariant(Assertion(exp,free,msg),gen,stream) => {
         indent + "invariant " + (if (stream) "stream " else "") + printExpr(exp)
       }

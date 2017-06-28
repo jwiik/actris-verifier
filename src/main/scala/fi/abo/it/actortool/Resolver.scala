@@ -19,6 +19,7 @@ object Resolver {
     def currentAccessedElement: Option[Expr] = None
     def actors = Map.empty[String,DFActor]
     def lookupFunction(name: String): Option[FunctionDecl] = None
+    def lookupProcedure(name: String): Option[ProcedureDecl] = None
     def containerActor: Option[DFActor] = None
     def lookupEntity(id: String): Option[Instance] = None
     def lookupChannel(id: String): Option[Connection] = None
@@ -45,7 +46,8 @@ object Resolver {
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
     override def getErrors = parentCtx.getErrors
     override def error(p: Position, msg: String) = parentCtx.error(p,msg)
-    override def lookupFunction(name: String): Option[FunctionDecl] = parentCtx.lookupFunction(name)
+    override def lookupFunction(name: String) = parentCtx.lookupFunction(name)
+    override def lookupProcedure(name: String) = parentCtx.lookupProcedure(name)
     override def containerActor = parentCtx.containerActor
     override def lookupEntity(id: String) = parentCtx.lookupEntity(id)
     override def lookupChannel(id: String) = parentCtx.lookupChannel(id)
@@ -59,7 +61,8 @@ object Resolver {
   sealed class ActorContext[T<:DFActor](val actor: T,
       override val parentCtx: RootContext, override val vars: Map[String,Declaration], 
       val inports: Map[String,InPort], val outports: Map[String,OutPort], 
-      val functions: Map[String,FunctionDecl]) extends ChildContext(actor,parentCtx,vars) {
+      val functions: Map[String,FunctionDecl],
+      val procedures: Map[String,ProcedureDecl]) extends ChildContext(actor,parentCtx,vars) {
     
     private var channels = Map[String,Connection]()
     private var entities = Map[String,Instance]()
@@ -95,13 +98,18 @@ object Resolver {
       else parentCtx.lookupFunction(name)
     }
     
+    override def lookupProcedure(name: String): Option[ProcedureDecl] = {
+      if (procedures contains name) Some(procedures(name))
+      else parentCtx.lookupProcedure(name)
+    }
+    
     override def containerActor = Some(actor)
   }
   
   sealed class ActionContext(val action: AbstractAction, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
   
   sealed class BasicContext(val action: ASTNode, override val parentCtx: Context) extends ChildContext(action, parentCtx, Map.empty)
-  sealed class FunctionBodyContext(val function: FunctionDecl, val inputs: Map[String,Declaration], override val parentCtx: Context) extends ChildContext(function,parentCtx,inputs)
+  sealed class FunctionBodyContext(val function: Member, val inputs: Map[String,Declaration], override val parentCtx: Context) extends ChildContext(function,parentCtx,inputs)
   
   sealed class QuantifierContext(val quantifier: Quantifier, override val parentCtx: Context, 
       override val vars: Map[String,Declaration]) extends ChildContext(quantifier,parentCtx,vars)
@@ -164,6 +172,7 @@ object Resolver {
       
       val vars = scala.collection.mutable.HashMap[String,Declaration]()
       val functions = scala.collection.mutable.HashMap[String,FunctionDecl]()
+      val procedures = scala.collection.mutable.HashMap[String,ProcedureDecl]()
       
       for (p <- decl.parameters) {
         vars += (p.id -> p)
@@ -195,10 +204,13 @@ object Resolver {
             case fd: FunctionDecl => {
               functions += (fd.name -> fd)
             }
+            case pd: ProcedureDecl => {
+              procedures += (pd.name -> pd)
+            }
             case _ =>
           }
           
-          val ctx = new ActorContext(a, rootCtx, vars.toMap, inports.toMap, outports.toMap, functions.toMap)
+          val ctx = new ActorContext(a, rootCtx, vars.toMap, inports.toMap, outports.toMap, functions.toMap, procedures.toMap)
           var schedule: Option[Schedule] = None
           var priority: Option[Priority] = None
           val actions = new ListBuffer[ActorAction]()
@@ -230,6 +242,12 @@ object Resolver {
               val funCtx = new FunctionBodyContext(fd,inputs,ctx)
               resolveExpr(funCtx, fd.expr, fd.output)
             }
+            case pd: ProcedureDecl => {
+              val inputs = (pd.inputs map { p => (p.id, p) }).toMap
+              val vars = (pd.variables map { p => (p.id, p) }).toMap
+              val procCtx = new FunctionBodyContext(pd,inputs ++ vars,ctx)
+              resolveStmt(procCtx, pd.body)
+            }
           }
           val actionList = actions.toList
           schedule match {
@@ -257,7 +275,7 @@ object Resolver {
             outports = outports + (p.id -> p)
           }
           
-          val ctx = new ActorContext(n, rootCtx, vars.toMap, inports, outports, Map.empty) 
+          val ctx = new ActorContext(n, rootCtx, vars.toMap, inports, outports, Map.empty, Map.empty) 
 
           var hasEntities, hasStructure = false
           var channels = Map.empty[String,Connection]
@@ -312,6 +330,7 @@ object Resolver {
               case sch: Schedule => return Errors(List((sch.pos,"Networks cannot have action schedules")))
               case sch: Priority => return Errors(List((sch.pos,"Networks cannot have action priorities")))
               case fd: FunctionDecl => return Errors(List((fd.pos,"Functions cannot be declared in networks for now.")))
+              case pd: ProcedureDecl => return Errors(List((pd.pos,"Procedures cannot be declared in networks for now.")))
             }
           }
           if (!hasEntities) return Errors(List((n.pos, "No entities block in " + n.id)))
@@ -1258,6 +1277,15 @@ object Resolver {
           resolveStmt(ctx,elseIf.stmt)
         }
         resolveStmt(ctx,elseStmt)
+      case pc@ProcCall(name,args) =>
+        ctx.lookupProcedure(name) match {
+          case None => ctx.error(pc.pos, "Undeclared procedure")
+          case Some(pd) => {
+            for ((a,p) <- args.zip(pd.inputs)) {
+              resolveExpr(ctx,a,p.typ)
+            }
+          }
+        }
       case Havoc(vars) => for (v <- vars) resolveExpr(ctx,v)
       case Assert(e) => resolveExpr(ctx,e,BoolType)
       case Assume(e) => resolveExpr(ctx,e,BoolType)

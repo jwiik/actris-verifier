@@ -78,6 +78,7 @@ sealed abstract class DFActor(
   
   lazy val variables: List[Declaration] = members.collect { case d: Declaration => d }
   lazy val functionDecls = members.collect { case fd: FunctionDecl => fd }
+  lazy val procedureDecls = members.collect { case pd: ProcedureDecl => pd }
   
   lazy val streamInvariants = actorInvariants.filter { x => x.stream }
   
@@ -142,6 +143,7 @@ sealed abstract class Member extends ASTNode {
   def isStructure = false
   def isSchedule = false
   def isFunctionDecl = false
+  def isProcedureDecl = false
   def isContractAction = false
   def isActorAction = false
 }
@@ -244,6 +246,10 @@ sealed case class ChannelInvariant(override val assertion: Assertion, override v
 
 sealed case class FunctionDecl(val name: String, val inputs: List[Declaration], val output: Type, val expr: Expr) extends Member {
   override def isFunctionDecl = true
+}
+
+sealed case class ProcedureDecl(val name: String, val inputs: List[Declaration], val variables: List[Declaration], val body: List[Stmt]) extends Member {
+  override def isProcedureDecl = true
 }
 
 sealed case class Entities(val entities: List[Instance]) extends Member {
@@ -525,6 +531,7 @@ sealed case class While(val cond: Expr, val invariants: List[Expr], val stmt: Li
 sealed case class Assert(val cond: Expr) extends Stmt
 sealed case class Assume(val cond: Expr) extends Stmt
 sealed case class Havoc(val vars: List[Id]) extends Stmt
+sealed case class ProcCall(val name: String, arguments: List[Expr]) extends Stmt
 
 
 

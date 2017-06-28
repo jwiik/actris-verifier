@@ -42,7 +42,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for" //, "in"
+                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for", "procedure", "begin" //, "in"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -92,6 +92,13 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
         case (tName ~ id) => Declaration(id,tName,true,None)
       }  
     )
+  
+  def procFormalParam = filePositioned(
+      (typeName ~ ident) ^^ {
+        case (tName ~ id) => Declaration(id,tName,false,None)
+      }  
+    )
+    
   def inPortDecl: Parser[InPort] = filePositioned((typeName ~ ident) ^^ {
     case (tName ~ id) => InPort(id,tName)
   })
@@ -101,7 +108,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   })
   
   def actorMember: Parser[Member] = 
-    filePositioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl | contractActionDecl)
+    filePositioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl | contractActionDecl | procedureDecl)
   
   def networkMember: Parser[Member] = filePositioned(
       actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl | contractActionDecl)
@@ -125,7 +132,11 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     filePositioned(("function" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")") ~ ("-->" ~> typeName) ~ (":" ~> expression) <~ "end") ^^ {
       case (name ~ inputs ~ output ~ body) => FunctionDecl(name,inputs,output,body)
     })
-  //def schedType = "fsm" | "regexp" 
+  
+  def procedureDecl: Parser[ProcedureDecl] =
+    filePositioned(("procedure" ~> ident ~ ("(" ~> repsep(procFormalParam,",") <~ ")") ~ (("var" ~> repsep(procFormalParam,",")) ?) ~ ("begin" ~> statementBody) <~ "end") ^^ {
+      case (name ~ inputs ~ variables ~ body) => ProcedureDecl(name,inputs,variables.getOrElse(Nil),body)
+    })
     
   def priorityBlock: Parser[Priority] = 
     filePositioned(("priority" ~> repsep(prioOrder,";") <~ (Semi?) <~ "end") ^^ {
@@ -426,6 +437,10 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     }) |
     (suffixExpr ~ (":=" ~> expression) <~ Semi ^^ {
       case (id ~ exp) => MapAssign(id.asInstanceOf[IndexAccessor],exp)
+    })
+    |
+    (ident ~ ("(" ~> repsep(expression,",") <~ ")") <~ Semi ^^ {
+      case (id ~ args) => ProcCall(id,args)
     })
   )
   

@@ -314,7 +314,7 @@ object ActorTool {
     }
 
     // Create a pipeline of preprocessors
-    val preprocessor = InitActionNormaliser | ActionScheduleProcessor /*| NetworkFlattener*/
+    val preprocessor = InitActionNormaliser | ActionScheduleProcessor | ProcedureExpander /*| NetworkFlattener*/
     program = preprocessor.process(program)
     //println(new ASTPrinter().print(program))
     

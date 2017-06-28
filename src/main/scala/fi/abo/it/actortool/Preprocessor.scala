@@ -1,6 +1,7 @@
 package fi.abo.it.actortool
 
 import collection.mutable.ListBuffer
+import fi.abo.it.actortool.util.ASTPrinter
 
 trait Preprocessor {
   def process(program: List[TopDecl]): List[TopDecl]
@@ -147,97 +148,68 @@ case object ActionScheduleProcessor extends Preprocessor {
 }
 
 
-object NetworkFlattener extends Preprocessor {
+case object ProcedureExpander extends Preprocessor {
   
-  override def process(program: List[TopDecl]): List[TopDecl] = {
-    
-    val actorDeclarations = 
-      (program flatMap { unit =>
-        unit match {
-          case nw: Network => List((nw.id,nw))
-          case ba: BasicActor => List((ba.id,ba))
-          case _ => Nil
-        }
-      }).toMap
-    
+  def process(program: List[TopDecl]): List[TopDecl] = {
     for (unit <- program) yield {
       unit match {
-        case nw@Network(annots,id,params,inports,outports,members) => {
-          val (entities,cons) = flattenRec(nw, actorDeclarations)
-          val filterMembers = members.filterNot { x => x.isStructure || x.isEntities }
-          val newMembers = Entities(entities)::Structure(cons)::filterMembers
-          Network(annots,id,params,inports,outports,newMembers)
-        }
+        case ba: BasicActor => expandProcedureCalls(ba)
         case _ => unit
       }
     }
   }
   
-  def flattenRec(nw: Network, actors: Map[String,DFActor]): (List[Instance],List[Connection]) = {
-    val entities = new ListBuffer[Instance]
-    val connections = new ListBuffer[Connection]
-    val channelMapping = Util.buildConnectionMap(nw.structure.get.connections)
-
-    val ownEntities = nw.entities.get.entities
-    //val ownConnections = nw.structure.get.connections.filterNot { c =>  c.isInput || c.isOutput }
-    //val ownIoConnections = nw.structure.get.connections.filter { c =>  c.isInput || c.isOutput }
+  def expandProcedureCalls(ba: BasicActor): BasicActor = {
+    val procedureDecls = ba.procedureDecls.map(pd => (pd.name,pd)).toMap
     
-    
-    val nonNwConns = nw.structure.get.connections.filter { 
-        c => {
-          (c.from match {
-            case PortRef(Some(id),_) => !actors(ownEntities.find(x => x.id == id).get.actorId ).isInstanceOf[Network]
-            case PortRef(None,_) => true
-          }) &&
-          (c.to match {
-            case PortRef(Some(id),_) => !actors(ownEntities.find(x => x.id == id).get.actorId ).isInstanceOf[Network]
-            case PortRef(None,_) => true
-          })
-        }
-      }
-    
-    connections ++= nonNwConns
-    
-    for (e <- ownEntities) {
-      val actor = actors(e.actorId)
-      actor match {
-        case subnw: Network => {
-          val (subEntities,subConnections) = flattenRec(subnw,actors)
-          for (se <- subEntities) {
-            entities += Instance(e.id+"#"+se.id,se.actorId,se.arguments,se.annotations)
-          }
-          //entities ++= subEntities
-          for (sc <- subConnections) {
-            val from = if (sc.from.actor.isDefined) Some(e.id+"#"+sc.from.actor.get) else None
-            val to = if (sc.to.actor.isDefined) Some(e.id+"#"+sc.to.actor.get) else None
-            connections += Connection(sc.label,PortRef(from,sc.from.name),PortRef(to,sc.to.name),sc.annotations)
-          }
-          //connections ++= subConnections
-          
-          val subChanMapping = Util.buildConnectionMap(subConnections)
-          for (p <- actor.inports) {
-            val subActorPortRef = subChanMapping(PortRef(None,p.id)).to
-            val parentActorPortRef = channelMapping(PortRef(Some(e.id),p.id)).from
-            val con = Connection(Some(e.id+"#"+p.id+"$chan"),parentActorPortRef,subActorPortRef,Nil)
-            connections += con
-          }
-          for (p <- actor.outports) {
-            val subActorPortRef = subChanMapping(PortRef(None,p.id)).from
-            val parentActorPortRef = channelMapping(PortRef(Some(e.id),p.id)).to
-            val con = Connection(Some(e.id+"#"+p.id+"$chan"),parentActorPortRef,subActorPortRef,Nil)
-            connections += con
-          }
-          
-        }
-        case ba: BasicActor => entities += e
+    val newMembers = for (m <- ba.members) yield {
+      m match {
+        case a: ActorAction => 
+          val newDecls = collection.mutable.Set[Declaration]()
+          val newBody = expandProcedureCalls(procedureDecls,newDecls,a.body)
+          ActorAction(a.label, a.init, a.inputPattern, a.outputPattern, a.guards, a.requires, a.ensures, a.variables ++ newDecls , newBody)
+        case x => x
       }
     }
     
-    (entities.toList,connections.toList)
+    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+    println(ASTPrinter.get.print(a))
+    a
+  }
+  
+  def expandProcedureCalls(decls: Map[String,ProcedureDecl], newDecls:  collection.mutable.Set[Declaration], stmt: List[Stmt]): List[Stmt] = {
+    val newStmt = new ListBuffer[Stmt]
+    for (s <- stmt) {
+      s match {
+        case ProcCall(name,inputs) => {
+          decls.get(name) match {
+            case Some(pd) => {
+              val inputReplacements = pd.inputs.zip(inputs).map { case (p,a) => Id(p.id) -> a }
+              val newVars = pd.variables.map { v => Declaration(pd.name+"#"+v.id,v.typ,v.constant,v.value)  }
+              newDecls ++= newVars
+              val varReplacements = pd.variables.map { v => Id(v.id) -> Id(pd.name+"#"+v.id)  }
+              val replacements = (inputReplacements ::: varReplacements).toMap
+              val replacedProcedureBody = IdReplacer.visitStmt(pd.body)(replacements)
+              newStmt ++= replacedProcedureBody
+              //println(ASTPrinter.get.printStmts(replacedProcedureBody)) 
+            }
+            case None => throw new RuntimeException()
+          }
+        }
+        case IfElse(cond,thn,elsifs,els) =>
+          newStmt += IfElse(
+              cond,
+              expandProcedureCalls(decls,newDecls,thn),
+              elsifs.map { e => ElseIf(e.cond, expandProcedureCalls(decls,newDecls,e.stmt)) } ,
+              expandProcedureCalls(decls,newDecls,els))
+        case While(cond,inv,body) => newStmt += While(cond,inv,expandProcedureCalls(decls,newDecls,body))
+        case x => newStmt += x
+      }
+    }
+    newStmt.toList
   }
   
 }
-
 
 class RepeatUnroller extends Preprocessor {
   // STUB, not in working state  
@@ -268,99 +240,5 @@ class RepeatUnroller extends Preprocessor {
   
 }
 
-/**
- * This preprocessor transforms function calls in actor bodies
- * to be called in a separate statement. This also includes output
- * patterns.
- */
-//object FunctionCallNormaliser extends Preprocessor {
-//  def process(program: List[TopDecl]): List[TopDecl] = {
-//    for (unit <- program) yield {
-//      unit match {
-//        case BasicActor(annots,id,params,inports,outports,members) => 
-//          val newMembers = {
-//            for (m <- members) yield {
-//              m match {
-//                case a: ActorAction => transformFunCallsInAction(a)
-//                case _ => m
-//              }
-//            }
-//          }
-//          BasicActor(annots,id,params,inports,outports,newMembers)
-//        case _ => unit
-//      }
-//    }
-//  }
-//  
-//  def transformFunCallsInAction(a: ActorAction): ActorAction = {
-//    val newTempVarDeclarations = new ListBuffer[Declaration]
-//    val newBody = transformStatement(a.body, newTempVarDeclarations)
-//    ActorAction(a.label,a.init,a.inputPattern,a.outputPattern,a.guards,a.requires,a.ensures,a.variables,newBody)
-//  }
-//  
-//  val funCallCollector = new FunCallCollector
-//  val funCallReplacer = new FunCallReplacer
-//  
-//  def transformStatement(stmt: List[Stmt], newTempVarDecls: ListBuffer[Declaration]) = {
-//    val newStmt = new ListBuffer[Stmt]
-//    
-//    for (s <- stmt) {
-//      s match {
-//        case Assign(v,exp) => {
-//          println("==")
-//          val replMap = collection.mutable.Map[FunctionApp,Id]()
-//          val calls = funCallCollector.collectFunCalls(exp)
-//          println("Calls: " + calls)
-//          var e = exp
-//          for (c <- calls) {
-//            println(e)
-//            val replId = Id("test")
-//            replMap(c) = replId
-//            //newTempVarDecls += Declaration(replId.id,c.ty)
-//            e = funCallReplacer.visitExpr(e)(replMap.toMap)
-//            newStmt += Assign(replId,c)
-//          }
-//          newStmt += Assign(v,e)
-//        }
-//      }
-//    }
-//    newStmt.toList
-//  }
-//  
-//  class FunCallReplacer extends ASTReplacingVisitor[FunctionApp,Id] {
-//    override def visitExpr(expr: Expr)(implicit map: Map[FunctionApp,Id]): Expr = {
-//      expr match {
-//        case fa: FunctionApp => {
-//          if (map contains fa) map(fa)
-//          else {
-//            val args = visitExpr(fa.parameters)
-//            FunctionApp(fa.name,args)
-//          }
-//        }
-//        case _ => super.visitExpr(expr)
-//      }
-//    }
-//  }
-//  
-//  class FunCallCollector extends ASTVisitor[ListBuffer[FunctionApp]] {
-//    
-//    def collectFunCalls(expr: Expr): List[FunctionApp] = {
-//      val calls = new ListBuffer[FunctionApp]
-//      visitExpr(expr)(calls)
-//      calls.toList
-//    }
-//    
-//    override def visitExpr(expr: Expr)(implicit info: ListBuffer[FunctionApp]) {
-//       expr match {
-//         case fa@FunctionApp(name,args) => {
-//           for (a <- args) visitExpr(a)
-//           info += fa
-//         }
-//         case x => super.visitExpr(x)
-//       }
-//     }
-//  }
-//  
-//}
 
 
