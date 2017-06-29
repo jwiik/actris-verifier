@@ -61,9 +61,9 @@ class ASTPrinter(orccCompatible: Boolean) {
         indent + 
         (if (lbl.isDefined) getId(lbl.get) + ": " else "") + 
         (if (init) "initialize " else "action ") +
-        (inpats map { ip => ip.portId + ":[" + (ip.vars map printExpr).mkString(",")  + "]" }).mkString(", ") +
+        (inpats map { ip => ip.portId + ":[" + (ip.vars map printExpr).mkString(",")  + "]" + (if (ip.repeat > 1) " repeat " + ip.repeat else "" ) }).mkString(", ") +
         " ==> " +
-        (outpats map { op => op.portId + ":[" + (op.exps map printExpr).mkString(",")  + "]" }).mkString(", ") +
+        (outpats map { op => op.portId + ":[" + (op.exps map printExpr).mkString(",")  + "]"  + (if (op.repeat > 1) " repeat " + op.repeat else "" ) }).mkString(", ") +
         {
           if (!orccCompatible) (guards map { g => nl +indent + "guard " + printExpr(g) }).mkString("")
           else if (guards.isEmpty) "" else nl + indent + "guard " + (guards map { g => printExpr(g) }).mkString(", ")
@@ -169,13 +169,21 @@ class ASTPrinter(orccCompatible: Boolean) {
           }
         } +
         indent + "end"
+      case ForEach(v,iter,invs,stmt) =>
+        indent + "foreach " + printDecl(v) + " in " + printExpr(iter) + nl +
+        invs.map(i => indent + "invariant " + printExpr(i)).mkString(nl) +
+        indent + "do" + nl +
+        indentAdd +
+        printStmts(stmt) +
+        indentRem + nl +
+        indent + "end"
       case While(cond,invs,stmt) =>
         indent + "while " + printExpr(cond) + nl +
         invs.map(i => indent + "invariant " + printExpr(i)).mkString(nl) +
         indent + "do" + nl +
         indentAdd +
         printStmts(stmt) +
-        indentRem +
+        indentRem + nl +
         indent + "end"
       case Assert(e) => indent + "assert " + printExpr(e) + ";"
       case Assume(e) => indent + "assume " + printExpr(e) + ";"
@@ -204,6 +212,9 @@ class ASTPrinter(orccCompatible: Boolean) {
       case SpecialMarker(s) => s
       case Forall(vars,expr,pat) => "(forall " + (vars map printDecl).mkString(", ") + " :: " + printExpr(expr) + ")"
       case IfThenElse(cond,thn,els) => "if " + printExpr(cond) + " then " + printExpr(thn) + " else " + printExpr(els) + " end"
+      case Range(str,end) => "(" + printExpr(str) + ".." + printExpr(end) + ")"
+      case ListLiteral(lst) => "[" + lst.map(printExpr).mkString(",") + "]"
+      case Comprehension(expr,v,iter) => "[" + printExpr(expr) + " : for " + printDecl(v) + " in " + printExpr(iter) + "]"
     }
   }
   

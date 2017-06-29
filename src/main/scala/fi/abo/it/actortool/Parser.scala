@@ -42,7 +42,8 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for", "procedure", "begin" //, "in"
+                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for", "procedure", "begin",
+                       "foreach" , "in"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -88,14 +89,16 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   })  
   
   def formalParam = filePositioned(
-      (typeName ~ ident) ^^ {
-        case (tName ~ id) => Declaration(id,tName,true,None)
+      (typeName ~ ident ~ opt("[" ~> numericLit <~ "]")  ) ^^ {
+        case (tName ~ id ~ None) => Declaration(id,tName,true,None)
+        case (tName ~ id ~ Some(n)) => Declaration(id,ListType(tName,n.toInt),true,None)
       }  
     )
   
   def procFormalParam = filePositioned(
-      (typeName ~ ident) ^^ {
-        case (tName ~ id) => Declaration(id,tName,false,None)
+      (typeName ~ ident ~ opt("[" ~> numericLit <~ "]") ) ^^ {
+        case (tName ~ id ~ None) => Declaration(id,tName,false,None)
+        case (tName ~ id ~ Some(n)) => Declaration(id,ListType(tName,n.toInt) ,false,None)
       }  
     )
     
@@ -174,10 +177,13 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     case Some(_) ~ _ ~ expr => ChannelInvariant(Assertion(expr,true),false)
   })
   
-  def varDecl = filePositioned((typeName ~ ident ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {
-    case (typ ~ id ~ None) => Declaration(id,typ,false,None)
-    case (typ ~ id ~ Some("=" ~ value)) => Declaration(id,typ,true,Some(value))
-    case (typ ~ id ~ Some(":=" ~ value)) => Declaration(id,typ,false,Some(value))
+  def varDecl = filePositioned((typeName ~ ident ~ opt("[" ~> numericLit <~ "]" ) ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {
+    case (typ ~ id ~ None ~ None) => Declaration(id,typ,false,None)
+    case (typ ~ id ~ None ~ Some("=" ~ value)) => Declaration(id,typ,true,Some(value))
+    case (typ ~ id ~ None ~ Some(":=" ~ value)) => Declaration(id,typ,false,Some(value))
+    case (typ ~ id ~ Some(n) ~ None) => Declaration(id,ListType(typ,n.toInt),false,None)
+    case (typ ~ id ~ Some(n) ~ Some("=" ~ value)) => Declaration(id,ListType(typ,n.toInt),true,Some(value))
+    case (typ ~ id ~ Some(n) ~ Some(":=" ~ value)) => Declaration(id,ListType(typ,n.toInt),false,Some(value))
   })
   
   def actionLabel: Parser[String] = repsep(ident,".") ^^ { case list => list.mkString(".") }
@@ -305,7 +311,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
             case (a, "-" ~ b) => Minus(a,b) }
   })
   
-  def mulExpr: Parser[Expr] = filePositioned((unaryExpr ~ (("*" | "/" | "%") ~ unaryExpr *)) ^^{
+  def mulExpr: Parser[Expr] = filePositioned((almostUnaryExpr ~ (("*" | "/" | "%") ~ almostUnaryExpr *)) ^^{
     case e0 ~ rest => (rest foldLeft e0) {
       case (a, "*" ~ b) => Times(a,b)
       case (a, "/" ~ b) => Div(a,b)
@@ -313,6 +319,13 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     }
   })
   
+  def almostUnaryExpr = filePositioned(
+    (unaryExpr ~ (".." ~  unaryExpr *)) ^^ {
+      case e0 ~ rest => (rest foldLeft e0) {
+        case (a, ".." ~ b) => Range(a,b)
+      }
+    }
+  )
   
   
   def unaryExpr: Parser[Expr] = filePositioned(
@@ -325,7 +338,6 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     functionApp |
     suffixExpr |
     listLiteral |
-    //range |
     atom
   )
   
@@ -378,15 +390,15 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
       })
     ) 
     
-  def comprehension = filePositioned( 
-    (iffExpr ~ (":" ~> ( ("for" ~> (typeName ~ ident)) ~ ("in" ~> range) ))) ^^ {
-      case (e1 ~ ((typ ~ id) ~ range)) => BoolLiteral(true)
+  def comprehension: Parser[Expr] = filePositioned( 
+    (expression ~ (":" ~> ("for" ~> formalParam) ~ ("in" ~> expression))) ^^ {
+      case (e1 ~ (param ~ range)) => Comprehension(e1,param,range)
     }
   )
   
   def range: Parser[Expr] = filePositioned(
-      (numericLit ~ ".." ~ numericLit) ^^{
-        case start ~ ".." ~ end => BoolLiteral(true)
+      (expression ~ ".." ~ expression) ^^{
+        case start ~ ".." ~ end => Range(start,end)
       })
   
   
@@ -430,6 +442,9 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     "assume" ~> expression <~ Semi ^^ Assume |
     ((("if" ~> expression) ~ ("then" ~> statementBody) ~ opt("else" ~> statementBody) <~ "end") ^^ {
       case (e ~ thn ~ els) => IfElse(e,thn,Nil,els.getOrElse(Nil))
+    }) |
+    ((("foreach" ~> formalParam) ~ ("in" ~> expression) ~ (("invariant" ~> expression) *) ~ ("do" ~> statementBody) <~ "end") ^^ {
+      case (v ~ iter ~ invs ~ body) => ForEach(v,iter,invs,body)
     }) |
     "havoc" ~> repsep(ident,",") <~ Semi ^^ {case ids => Havoc(ids map { Id(_) })} |
     (identifier ~ (":=" ~> expression) <~ Semi ^^ {

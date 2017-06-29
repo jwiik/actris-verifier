@@ -358,11 +358,11 @@ class StmtExpTranslator() {
         B.Field(tExpr, e.typ.asInstanceOf[RefType].id, f)
       }
       case ListLiteral(lst) => {
-        var listlit: Boogie.Expr = B.intlst
+        var listlit: Boogie.Expr = B.ListEmpty(transExprI(lst(0)))
         var i = 0
         for (e <- lst) {
           val transE = transExprI(e)
-          listlit = Boogie.MapStore(listlit,B.Int(i),transE)
+          listlit = B.Fun("Map#Store",listlit,B.Int(i),transE)
           i = i+1
         }
         listlit

@@ -393,6 +393,7 @@ sealed case class NwPattern(override val portId: String, override val rate: Int)
 
 sealed abstract class Expr extends ASTNode {
   var typ: Type = null
+  def withType(tp: Type) = { this.typ = tp; this }
 }
 sealed case class UnMinus(val exp: Expr) extends Expr {
   val operator = "-"
@@ -503,7 +504,8 @@ case class FieldAccessor(override val exp: Expr, val suffix: String) extends Suf
 sealed case class FunctionApp(val name: String, val parameters: List[Expr]) extends Expr
 
 sealed case class ListLiteral(val elements: List[Expr]) extends Expr
-//sealed case class Range(val start: Int, val end: Int) extends Expr
+sealed case class Range(val start: Expr, val end: Expr) extends Expr
+sealed case class Comprehension(val expr: Expr, val variable: Declaration, val iterand: Expr) extends Expr
 
 
 sealed case class Id(val id: String) extends Assignable
@@ -528,6 +530,7 @@ sealed case class MapAssign(val id: IndexAccessor, val expr: Expr) extends Stmt
 sealed case class IfElse(val ifCond: Expr, val ifStmt: List[Stmt], val elseIfs: List[ElseIf], val elseStmt: List[Stmt]) extends Stmt
 sealed case class ElseIf(val cond: Expr, val stmt: List[Stmt])
 sealed case class While(val cond: Expr, val invariants: List[Expr], val stmt: List[Stmt]) extends Stmt
+sealed case class ForEach(val variable: Declaration, iterand: Expr, val invariants: List[Expr], val stmt: List[Stmt]) extends Stmt
 sealed case class Assert(val cond: Expr) extends Stmt
 sealed case class Assume(val cond: Expr) extends Stmt
 sealed case class Havoc(val vars: List[Id]) extends Stmt

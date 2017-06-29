@@ -164,6 +164,6 @@ object B {
   
   def This = VarExpr("this#")
   
-  val intlst = VarExpr("AT#intlst");
+  def ListEmpty(arg: Boogie.Expr) = Boogie.FunctionApp("List#Empty",List(arg));
   
 }

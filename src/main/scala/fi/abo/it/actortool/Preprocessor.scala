@@ -173,7 +173,6 @@ case object ProcedureExpander extends Preprocessor {
     }
     
     val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
-    println(ASTPrinter.get.print(a))
     a
   }
   
@@ -191,7 +190,6 @@ case object ProcedureExpander extends Preprocessor {
               val replacements = (inputReplacements ::: varReplacements).toMap
               val replacedProcedureBody = IdReplacer.visitStmt(pd.body)(replacements)
               newStmt ++= replacedProcedureBody
-              //println(ASTPrinter.get.printStmts(replacedProcedureBody)) 
             }
             case None => throw new RuntimeException()
           }
@@ -210,6 +208,147 @@ case object ProcedureExpander extends Preprocessor {
   }
   
 }
+
+/**
+ * This preprocessor unrolls foreach loops. In contrast to most other preprocessors this preprocessor must
+ * be called after typechecking.
+ */
+case object ForEachExpander extends Preprocessor {
+  def process(program: List[TopDecl]): List[TopDecl] = {
+    for (unit <- program) yield {
+      unit match {
+        case ba: BasicActor => unrollLoops(ba)
+        case _ => unit
+      }
+    }
+  }
+  
+  def unrollLoops(ba: BasicActor): BasicActor = {
+    val newMembers = for (m <- ba.members) yield {
+      m match {
+        case a: ActorAction => 
+          val newDecls = collection.mutable.Set[Declaration]()
+          val newBody = unrollLoops(newDecls, a.body)
+          ActorAction(a.label, a.init, a.inputPattern, a.outputPattern, a.guards, a.requires, a.ensures, a.variables ++ newDecls , newBody)
+        case x => x
+      }
+    }
+    
+    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+    a
+  }
+  
+  def unrollLoops(newDecls: collection.mutable.Set[Declaration], stmt: List[Stmt]): List[Stmt] = {
+    val newStmt = new ListBuffer[Stmt]
+    for (s <- stmt) {
+      s match {
+        case ForEach(v,iterand,invs,body) => {
+          newDecls += Declaration(v.id,v.typ,false,None)
+          val vId = Id(v.id); vId.typ = v.typ
+          val size = iterand.typ.asInstanceOf[ListType].size
+          for (i <- 0 until size) {
+            val accessor = iterand match {
+              // If the iterand is a list literal, we can directly pick the correct element (reducing the AST)
+              case ListLiteral(lst) => lst(i)
+              case _ => IndexAccessor(iterand,IntLiteral(i).withType(IntType)).withType(v.typ)
+            }
+            newStmt += Assign(vId,accessor)
+            newStmt ++= body
+          }
+        }
+        case IfElse(cond,thn,elsifs,els) =>
+          newStmt += IfElse(
+              cond,
+              unrollLoops(newDecls,thn),
+              elsifs.map { e => ElseIf(e.cond, unrollLoops(newDecls,e.stmt)) } ,
+              unrollLoops(newDecls,els))
+        case While(cond,inv,body) => newStmt += While(cond,inv,unrollLoops(newDecls,body))
+        case x => newStmt += x
+      }
+    }
+    newStmt.toList
+  }
+}
+
+/**
+ * This preprocessor unrolls foreach loops. In contrast to most other preprocessors this preprocessor must
+ * be called after typechecking.
+ */
+case object RangeExpander extends Preprocessor {
+  def process(program: List[TopDecl]): List[TopDecl] = {
+    for (unit <- program) yield {
+      unit match {
+        case ba: BasicActor => unrollRange(ba)
+        case _ => unit
+      }
+    }
+  }
+  
+  def unrollRange(ba: BasicActor): BasicActor = {
+    val newMembers = for (m <- ba.members) yield {
+      m match {
+        case a: ActorAction => 
+          val newBody = unrollRange(a.body)
+          val newOpats = a.outputPattern.map { o => OutputPattern(o.portId, o.exps.map(unrollRange), o.repeat) }
+          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, a.variables , newBody)
+        case x => x
+      }
+    }
+    
+    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+    a
+  }
+  
+  def unrollRange(stmt: List[Stmt]): List[Stmt] = RangeReplacer.visitStmt(stmt)(Map.empty)
+  def unrollRange(expr: Expr): Expr = RangeReplacer.visitExpr(expr)(Map.empty)
+  
+  object RangeReplacer extends ASTReplacingVisitor[Unit,ASTNode] {
+    override def visitExpr(expr: Expr)(implicit map: Map[Unit,ASTNode]): Expr = {
+      expr match {
+        case rng@Range(str,end) => {
+          val size = rng.typ.asInstanceOf[ListType].size
+          var list = List[Expr](str)
+          for (i <- 1 until size) {
+            list = list :+ (str match {
+              // This is to avoid unnecessary additions with zero
+              case IntLiteral(0) => IntLiteral(i).withType(IntType)
+              case _ => Plus(str,IntLiteral(i).withType(IntType)).withType(IntType)
+            })
+          }
+          ListLiteral(list).withType(rng.typ)
+        }
+        case cmpr@Comprehension(expr,v,iter) => {
+          val nExpr = visitExpr(expr)
+          val nIter = visitExpr(iter)
+          val lstType = nIter.typ.asInstanceOf[ListType]
+          var list = List[Expr]()
+          nIter match {
+            case ListLiteral(lst) => {
+              for (l <- lst) {
+                assert(l.typ != null)
+                val el = IdReplacerString.visitExpr(nExpr)(Map(v.id -> l))
+                assert(el.typ != null)
+                list = list :+ el
+              }
+            }
+            case x => {
+              for (i <- 0 until lstType.size) {
+                val acc = IndexAccessor(x,IntLiteral(i).withType(IntType)).withType(lstType.contentType)
+                list = list :+ IdReplacerString.visitExpr(nExpr)(Map(v.id -> acc))
+              }
+            }
+          }
+          
+          ListLiteral(list).withType(cmpr.typ)
+        }
+        case _ => super.visitExpr(expr)
+      }
+    }
+  }
+  
+}
+
+
 
 class RepeatUnroller extends Preprocessor {
   // STUB, not in working state  

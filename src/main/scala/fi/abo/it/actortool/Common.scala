@@ -211,23 +211,26 @@ object IdToIdReplacer extends ASTReplacingVisitor[Id, Id] {
 
 object IdReplacerString extends ASTReplacingVisitor[String, Expr] {
   override def visitExpr(e: Expr)(implicit map: Map[String, Expr]): Expr = {
-    e match {
-      case FunctionApp(name,args) => {
-        if (map.contains(name)) {
-          val newName = map(name).asInstanceOf[Id]
-          FunctionApp(newName.id, args.map(visitExpr))
+    val newe =
+      e match {
+        case FunctionApp(name,args) => {
+          if (map.contains(name)) {
+            val newName = map(name).asInstanceOf[Id]
+            FunctionApp(newName.id, args.map(visitExpr))
+          }
+          else {
+            FunctionApp(name, args.map(visitExpr))
+          }
         }
-        else {
-          FunctionApp(name, args.map(visitExpr))
+        case id@Id(name) => {
+          val ne  = if (map.contains(name)) map(name) else id
+          ne
         }
+          
+        case _ => super.visitExpr(e)
       }
-      case id@Id(name) => {
-        val ne  = if (map.contains(name)) map(name) else id
-        ne
-      }
-        
-      case _ => super.visitExpr(e)
-    }
+    newe.typ = e.typ
+    newe
   }
   
   override def visitId(id: Id)(implicit map: Map[String,Expr]): Id = {
@@ -384,6 +387,7 @@ abstract class ASTReplacingVisitor[A, B <: ASTNode] {
       case Havoc(vars)                 => Havoc(for (v <- vars) yield visitId(v))
       case IfElse(ifc, ifs, eifs, els) => IfElse(visitExpr(ifc), visitStmt(ifs), visitIfElses(eifs), visitStmt(els))
       case While(c, inv, s)            => While(visitExpr(c), visitExpr(inv), visitStmt(s))
+      case ForEach(v,iter,inv,s)       => ForEach(v, visitExpr(iter), visitExpr(inv), visitStmt(s))
       case ProcCall(name,args)         => ProcCall(name, args map visitExpr)
     }
   }
@@ -432,6 +436,8 @@ abstract class ASTReplacingVisitor[A, B <: ASTNode] {
       case fa: FieldAccessor     => visitAssignable(fa)
       case FunctionApp(n, args)  => FunctionApp(n, visitExpr(args))
       case ListLiteral(els)      => ListLiteral(for (e <- els) yield visitExpr(e))
+      case Range(str,end)        => Range(visitExpr(str),visitExpr(end))
+      case Comprehension(exp,v,iter) => Comprehension(visitExpr(exp),v,visitExpr(iter))
       case il: IntLiteral   => il
       case hxl: HexLiteral  => hxl
       case bl: BoolLiteral  => bl

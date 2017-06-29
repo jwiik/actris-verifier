@@ -41,7 +41,6 @@ var I#sub: CType;
 var H#: HType;
 
 const unique this#: Actor;
-
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
 """
 }
@@ -247,7 +246,7 @@ object MapPL extends BoogiePreludeComponent {
 // -- Axiomatisation for map data type ---------------------------
 // ---------------------------------------------------------------
 type Map a b;
-
+function List#Empty<U>(U): Map int U;
 function Map#Select<T,U>(Map T U, T): U;
 function Map#Store<T,U>(Map T U, T, U): Map T U;
 axiom (

@@ -1,27 +1,27 @@
 actor Algo_IDCT2D_ISOIEC_23002_1()
 	int(size=13) IN, bool SIGNED ==> int(size=9) OUT :
 
-	int A = 1024;
+	int(size=13) A = int(1024,13);
 
-	int B = 1138;
+	int(size=13)  B = int(1138,13);
 
-	int C = 1730;
+	int(size=13)  C = int(1730,13);
 
-	int D = 1609;
+	int(size=13)  D = int(1609,13);
 
-	int E = 1264;
+	int(size=13)  E = int(1264,13);
 
-	int F = 1922;
+	int(size=13)  F = int(1922,13);
 
-	int G = 1788;
+	int(size=13)  G = int(1788,13);
 
-	int H = 2923;
+	int(size=13)  H = int(2923,13);
 
-	int I = 2718;
+	int(size=13)  I = int(2718,13);
 
-	int J = 2528;
+	int(size=13)  J = int(2528,13);
 
-	List(type: int, size=64) scale = [
+	List(type: int(size=13), size=64) scale = [
 		A, B, C, D, A, D, C, B,
 		B, E, F, G, B, G, F, E,
 		C, F, H, I, C, I, H, F,
@@ -36,31 +36,31 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 		==> 
 		OUT:[ // downshifting & clipping
 			if s then
-				[ clip((block1[n] >> 13), -255) : for int n in 0 .. 63 ]
+				[ clip((block1[n] >> int(13,13)), -int(255,13)) : for int n in 0 .. 63 ]
 			else
-				[ clip((block1[n] >>13), 0) : for int n in 0 .. 63 ]
+				[ clip((block1[n] >>  int(13,13)), int(0,13)) : for int n in 0 .. 63 ]
 			end 
 			] repeat 64
 	var
-		int block1[64] := [ scale[n] * x[n] : for int n in 0 .. 63 ],
-		int block2[64]
+		int(size=13) block1[64] := [ scale[n] * x[n] : for int n in 0 .. 63 ],
+		int(size=13) block2[64]
 	do
 		// multiplier-based scaling
-		block1[0] := block1[0] + (1 << 12);
+		block1[0] := block1[0] + (int(1,13) << int(12,13));
 
 		// scaled 1D IDCT for rows and columns
 		idct1d(block1, block2);
 		idct1d(block2, block1);
 	end
 
-	procedure idct1d(int X[64], int Y[64])
+	procedure idct1d(int(size=13) X[64], int(size=13) Y[64])
 	var
-		int temp1,
-		int temp2,
-		int temp3,
-		int temp4,
-		int xa,
-		int xb
+		int(size=13) temp1,
+		int(size=13) temp2,
+		int(size=13) temp3,
+		int(size=13) temp4,
+		int(size=13) xa,
+		int(size=13) xb
 	begin
 		foreach int i in 0 .. 7 do
 			xa := X[8 * i + 1] + X[8 * i + 7];
@@ -104,54 +104,41 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 		end
 	end
 
-	function pmul_1_1(int X) --> int
-	var
-		int Temp1 = (X >> 3) - (X >> 7)
+	function pmul_1_1(int(size=13) X) --> int(size=13)
 	:
-		X - Temp1
+		X - (X >> int(3,13)) - (X >> int(7,13))
 	end
 
-	function pmul_1_2(int X) --> int
-	var
-		int Temp1 = (X >> 3) - (X >> 7),
-		int Temp2 = Temp1 - (X >> 11)
+	function pmul_1_2(int(size=13) X) --> int(size=13)
 	:
-		Temp1 + (Temp2 >> 1)
+		((X >> int(3,13)) - (X >> int(7,13))) + ((((X >> int(3,13)) - (X >> int(7,13))) - (X >> int(11,13))) >> int(1,13))
 	end
 
-	function pmul_2_1(int X) --> int
-	var
-		int Temp1 = (X >> 9) - X
+	function pmul_2_1(int(size=13) X) --> int(size=13)
 	:
-		(Temp1 >> 2) - Temp1
+		(((X >> int(9,13)) - X) >> int(2,13)) - ((X >> int(9,13)) - X)
 	end
 
-	function pmul_2_2(int X) --> int :
-		(X >> 1)
+	function pmul_2_2(int(size=13) X) --> int(size=13) :
+		(X >> int(1,13))
 	end
 
-	function pmul_3_1(int X) --> int
-	var
-		int Temp1 = X + (X >> 5),
-		int Temp2 = (Temp1 >> 2)
+	function pmul_3_1(int(size=13) X) --> int(size=13)
 	:
-		Temp2 + (X >> 4)
+		((X + (X >> int(5,13))) >> int(2,13)) + (X >> int(4,13))
 	end
 
-	function pmul_3_2(int X) --> int
-	var
-		int Temp1 = X + (X >> 5),
-		int Temp2 = (Temp1 >> 2)
+	function pmul_3_2(int(size=13) X) --> int(size=13)
 	:
-		Temp1 - Temp2
+		X + (X >> int(5,13)) - ((X + (X >> int(5,13))) >> int(2,13))
 	end
 
-	function clip(int x, int lim) --> int :
+	function clip(int(size=13) x, int(size=13) lim) --> int(size=13) :
 		if x < lim then
 			lim
 		else
-			if x > 255 then
-				255
+			if x > int(255,13) then
+				int(255,13)
 			else
 				x
 			end

@@ -1,21 +1,18 @@
-actor Repeater int in ==> int out :
-  action in:[i] ==> out:[i,i] end
+actor Repeat int x ==> int y :
+  action x:[i] repeat 3 ==> y:[i] repeat 3 end
 end
 
-network Net int in ==> int out :
+network Net int x ==> int y :
   
-  action in:1 ==> out:2 end
+  contract x:3 ==> y:3 end
   
-  chinvariant 2*@(a) = @(b)
-  chinvariant 2*rd(a) = tot(b)
-
   entities
-    rep = Repeater();
+    rep = Repeat();
   end
   
   structure
-    a: in --> rep.in;
-    b: rep.out --> out;
+    a: x --> rep.x;
+    b: rep.y --> y;
   end
 
 end

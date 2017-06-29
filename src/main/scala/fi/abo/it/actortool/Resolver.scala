@@ -109,7 +109,7 @@ object Resolver {
   sealed class ActionContext(val action: AbstractAction, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
   
   sealed class BasicContext(val action: ASTNode, override val parentCtx: Context) extends ChildContext(action, parentCtx, Map.empty)
-  sealed class FunctionBodyContext(val function: Member, val inputs: Map[String,Declaration], override val parentCtx: Context) extends ChildContext(function,parentCtx,inputs)
+  sealed class FunctionBodyContext(val node: ASTNode, val inputs: Map[String,Declaration], override val parentCtx: Context) extends ChildContext(node,parentCtx,inputs)
   
   sealed class QuantifierContext(val quantifier: Quantifier, override val parentCtx: Context, 
       override val vars: Map[String,Declaration]) extends ChildContext(quantifier,parentCtx,vars)
@@ -231,7 +231,10 @@ object Resolver {
               if (!d.typ.isState) {
                 // FIXME ugly hack
                 d.value match {
-                  case Some(e) => resolveExpr(ctx,e,d.typ)
+                  case Some(e) => {
+                    resolveExpr(ctx,e,d.typ)
+                    assert(e.typ != null, e)
+                  }
                   case None =>
                 }
               }
@@ -379,11 +382,25 @@ object Resolver {
     for (inPat <- action.inputPattern) {
       val pDecl = actorCtx.inports(inPat.portId)
       inPat.typ = pDecl.portType
-      for (v <- inPat.vars) {
+      
+      if (inPat.repeat > 1) {
+        if (inPat.vars.size != 1) {
+          actorCtx.error(inPat.pos, "Input patterns with a repeat clause an only be of length 1")
+        }
+        val v = inPat.vars(0)
         if (vars contains v.id) actorCtx.error(inPat.pos, "Variable name already used: " + v.id)
-        val d = Declaration(v.id,pDecl.portType,false,None)
-        v.typ = actorCtx.inports(inPat.portId).portType
+        val d = Declaration(v.id,ListType(pDecl.portType,inPat.repeat),false,None)
+        v.typ = d.typ
         vars = vars + (d.id -> d)
+      }
+      else {
+      
+        for (v <- inPat.vars) {
+          if (vars contains v.id) actorCtx.error(inPat.pos, "Variable name already used: " + v.id)
+          val d = Declaration(v.id,pDecl.portType,false,None)
+          v.typ = d.typ
+          vars = vars + (d.id -> d)
+        }
       }
     }
     
@@ -409,15 +426,33 @@ object Resolver {
       val port = actorCtx.outports(outPat.portId)
       outPat.typ = port.portType
       assert(port.portType != null)
-      for ((e,i) <- (outPat.exps.zipWithIndex) ) {
-        val eType = resolveExpr(ctx,e)
-        if (eType.isList) {
-          assert(false);
+      
+      if (outPat.repeat > 1) {
+        if (outPat.exps.size != 1) {
+          actorCtx.error(outPat.pos, "Output patterns with a repeat clause an only be of length 1")
         }
-        else {
-          if (!TypeUtil.isCompatible(eType, port.portType)) {
-            ctx.error(e.pos, 
-                "Expression type " + eType.id + " does not match port type " + port.portType.id)
+        val e = outPat.exps(0)
+        val eType = resolveExpr(ctx,e)
+        if (!eType.isList) {
+          actorCtx.error(outPat.pos, "Output pattern expression with a repeat clause has to be of type List")
+        }
+        val size = eType.asInstanceOf[ListType].size 
+        if (size < outPat.repeat) {
+          actorCtx.error(outPat.pos, "Repeat has to be smaller than or equal to List size")
+        }
+      }
+      else {
+      
+        for ((e,i) <- (outPat.exps.zipWithIndex) ) {
+          val eType = resolveExpr(ctx,e)
+          if (eType.isList) {
+            assert(false);
+          }
+          else {
+            if (!TypeUtil.isCompatible(eType, port.portType)) {
+              ctx.error(e.pos, 
+                  "Expression type " + eType.id + " does not match port type " + port.portType.id)
+            }
           }
         }
       }
@@ -905,7 +940,39 @@ object Resolver {
             ctx.error(e.pos,"List elements do not have consistent types. Found " + cntType.id + " and " + t.id)
           }
         }
-        ListType(cntType,size)
+        ll.typ = ListType(cntType,size)
+        ll.typ
+      }
+      case cmpr@Comprehension(exp,v,iter) => {
+        val tIter = resolveExpr(ctx,iter)
+        if (tIter.isInstanceOf[ListType]) {
+          val lstType = tIter.asInstanceOf[ListType]
+          val cntType = lstType.contentType
+          if (!TypeUtil.isCompatible(cntType, v.typ)) {
+            ctx.error(cmpr.pos, "The comprehension variable and iterand types do not match")
+          }
+          val cmprCtx = new FunctionBodyContext(cmpr,Map(v.id -> v),ctx)
+          val tExp = resolveExpr(cmprCtx, exp)
+          cmpr.typ = ListType(tExp,lstType.size)
+        }
+        else {
+          ctx.error(cmpr.pos,"The iterand of a comprehension has to be a list")
+          cmpr.typ = UnknownType
+        }
+        cmpr.typ
+      }
+      case rng@Range(IntLiteral(s),IntLiteral(e)) => {
+        if (e < s) {
+          ctx.error(rng.pos, "Start value cannot be greater than end value in a range")
+        }
+        resolveExpr(ctx,rng.start)
+        resolveExpr(ctx,rng.end)
+        rng.typ = ListType(IntType,e-s+1)
+        rng.typ
+      }
+      case rng@Range(_,_) => {
+        ctx.error(rng.pos,"Only ranges containing integer literals are supported")
+        UnknownType
       }
       case l@BoolLiteral(_) => l.typ = BoolType; BoolType
       case l@IntLiteral(n) => l.typ = TypeUtil.createIntOrUint(n); l.typ
@@ -1269,6 +1336,21 @@ object Resolver {
         resolveExpr(ctx,cond,BoolType)
         for (i <- invs) resolveExpr(ctx,i,BoolType)
         resolveStmt(ctx,body)
+      case loop@ForEach(v,iterand,invs,body) =>
+        val iterT = resolveExpr(ctx,iterand)
+        iterT match {
+          case ListType(cType,size) => {
+            if (!TypeUtil.isCompatible(cType, v.typ)) {
+              ctx.error(iterand.pos, "Iterator variable is not compatible with the list content")
+            }
+          }
+          case _ => {
+            ctx.error(iterand.pos, "Foreach loops has to iterate over lists, found: " + iterT.id)
+          }
+        }
+        val loopCtx = new FunctionBodyContext(loop,Map(v.id -> v),ctx)
+        for (i <- invs) resolveExpr(loopCtx,i,BoolType)
+        resolveStmt(loopCtx,body)
       case IfElse(ifCond,ifStmt,elseIfs,elseStmt) =>
         resolveExpr(ctx,ifCond,BoolType)
         resolveStmt(ctx,ifStmt)

@@ -329,7 +329,11 @@ object ActorTool {
       case Resolver.Success(rootCtx) =>
         Some(rootCtx)
     }
+    
+    program = (RangeExpander | ForEachExpander).process(program)
 
+    println(ASTPrinter.get.print(program))
+    
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
