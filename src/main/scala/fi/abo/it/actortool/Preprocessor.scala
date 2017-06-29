@@ -291,8 +291,16 @@ case object RangeExpander extends Preprocessor {
       m match {
         case a: ActorAction => 
           val newBody = unrollRange(a.body)
-          val newOpats = a.outputPattern.map { o => OutputPattern(o.portId, o.exps.map(unrollRange), o.repeat) }
-          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, a.variables , newBody)
+          val newOpats = a.outputPattern.map { o => OutputPattern(o.portId, o.exps.map(unrollRange), o.repeat).withType(o.typ) }
+          val newVars = a.variables.map {
+            d => 
+              val value = d.value match {
+                case Some(v) => Some(unrollRange(v))
+                case None => None
+              }
+              Declaration(d.id,d.typ,d.constant,value) 
+          }
+          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody)
         case x => x
       }
     }
@@ -304,8 +312,8 @@ case object RangeExpander extends Preprocessor {
   def unrollRange(stmt: List[Stmt]): List[Stmt] = RangeReplacer.visitStmt(stmt)(Map.empty)
   def unrollRange(expr: Expr): Expr = RangeReplacer.visitExpr(expr)(Map.empty)
   
-  object RangeReplacer extends ASTReplacingVisitor[Unit,ASTNode] {
-    override def visitExpr(expr: Expr)(implicit map: Map[Unit,ASTNode]): Expr = {
+  object RangeReplacer extends ASTReplacingVisitor[Unit] {
+    override def visitExpr(expr: Expr)(implicit map: Unit): Expr = {
       expr match {
         case rng@Range(str,end) => {
           val size = rng.typ.asInstanceOf[ListType].size

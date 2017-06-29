@@ -1,7 +1,8 @@
 actor Algo_IDCT2D_ISOIEC_23002_1()
 	int(size=13) IN, bool SIGNED ==> int(size=9) OUT :
 	
-	contract IN:64, SIGNED:1 ==> OUT:64 end
+	contract IN:64, SIGNED:1 ==> OUT:64 
+	end
 
 	int(size=13) A = int(1024,13);
 
@@ -34,18 +35,11 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 		B, E, F, G, B, G, F, E
 	];
 
-	action IN:[ x ] repeat 64, SIGNED:[ s ] 
-		==> 
-		OUT:[ // downshifting & clipping
-			if s then
-				[ clip((block1[n] >> int(13,13)), -int(255,13)) : for int n in 0 .. 63 ]
-			else
-				[ clip((block1[n] >>  int(13,13)), int(0,13)) : for int n in 0 .. 63 ]
-			end 
-			] repeat 64
+	action IN:[ x ] repeat 64, SIGNED:[ s ] ==> OUT:[ output ] repeat 64
 	var
 		int(size=13) block1[64] := [ scale[n] * x[n] : for int n in 0 .. 63 ],
-		int(size=13) block2[64]
+		int(size=13) block2[64],
+		int(size=9) output[64]
 	do
 		// multiplier-based scaling
 		block1[0] := block1[0] + (int(1,13) << int(12,13));
@@ -53,6 +47,12 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 		// scaled 1D IDCT for rows and columns
 		idct1d(block1, block2);
 		idct1d(block2, block1);
+		output :=
+			if s then
+				[ clip((block1[n] >> int(13,13)), -int(255,13)) : for int n in 0 .. 63 ]
+			else
+				[ clip((block1[n] >>  int(13,13)), int(0,13)) : for int n in 0 .. 63 ]
+			end  
 	end
 
 	procedure idct1d(int(size=13) X[64], int(size=13) Y[64])

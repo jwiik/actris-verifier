@@ -2,7 +2,7 @@ package fi.abo.it.actortool.util
 
 import fi.abo.it.actortool._
 
-class FunctionCallReplacer extends ASTReplacingVisitor[String,FunctionDecl] {
+class FunctionCallReplacer extends ASTReplacingVisitor[Map[String,FunctionDecl]] {
   
   private val argReplacer = new ArgumentReplacer
   private var funcDecls: Map[String,FunctionDecl] = Map.empty
@@ -38,7 +38,7 @@ class FunctionCallReplacer extends ASTReplacingVisitor[String,FunctionDecl] {
     }
   }
   
-  class ArgumentReplacer extends ASTReplacingVisitor[String,Expr] {
+  class ArgumentReplacer extends ASTReplacingVisitor[Map[String,Expr]] {
     override def visitExpr(expr: Expr)(implicit map: Map[String,Expr]): Expr = {
       expr match {
         case id@Id(name) => {

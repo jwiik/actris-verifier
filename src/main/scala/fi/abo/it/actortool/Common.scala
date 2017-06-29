@@ -160,8 +160,8 @@ object ConjunctionSplitter extends ASTVisitor[ListBuffer[Expr]] {
 
 
 
-object IdReplacer extends ASTReplacingVisitor[Id, Expr] {
-  override def visitExpr(expr: Expr)(implicit map: Map[Id, Expr]): Expr = {
+object IdReplacer extends ASTReplacingVisitor[Map[Id,Expr]] {
+  override def visitExpr(expr: Expr)(implicit map: Map[Id,Expr]): Expr = {
     expr match {
       case id: Id => {
         map.get(id) match {
@@ -175,15 +175,16 @@ object IdReplacer extends ASTReplacingVisitor[Id, Expr] {
       case _ =>
     }
     super.visitExpr(expr)
+    
   }
   
-  override def visitId(id: Id)(implicit map: Map[Id, Expr]): Id = {
+  override def visitId(id: Id)(implicit map: Map[Id,Expr]): Id = {
     map.getOrElse(id, id).asInstanceOf[Id]
   }
   
 }
 
-object IdToIdReplacer extends ASTReplacingVisitor[Id, Id] {
+object IdToIdReplacer extends ASTReplacingVisitor[Map[Id,Id]] {
   override def visitExpr(e: Expr)(implicit map: Map[Id, Id]): Expr = {
     e match {
       case FunctionApp(name,args) => {
@@ -209,7 +210,7 @@ object IdToIdReplacer extends ASTReplacingVisitor[Id, Id] {
   }
 }
 
-object IdReplacerString extends ASTReplacingVisitor[String, Expr] {
+object IdReplacerString extends ASTReplacingVisitor[Map[String,Expr]] {
   override def visitExpr(e: Expr)(implicit map: Map[String, Expr]): Expr = {
     val newe =
       e match {
@@ -373,12 +374,12 @@ abstract class ASTVisitor[T] {
   def visitId(id: Id)(implicit info: T) {}
 }
 
-abstract class ASTReplacingVisitor[A, B <: ASTNode] {
-  def visitStmt(stmt: List[Stmt])(implicit map: Map[A, B]): List[Stmt] = {
+abstract class ASTReplacingVisitor[A] {
+  def visitStmt(stmt: List[Stmt])(implicit map: A): List[Stmt] = {
     for (s <- stmt) yield visitStmt(s)
   }
 
-  def visitStmt(stmt: Stmt)(implicit map: Map[A, B]): Stmt = {
+  def visitStmt(stmt: Stmt)(implicit map: A): Stmt = {
     stmt match {
       case Assign(id, exp)             => Assign(visitId(id), visitExpr(exp))
       case MapAssign(exp1, exp2)       => MapAssign(visitIndexAccessor(exp1), visitExpr(exp2))
@@ -392,16 +393,16 @@ abstract class ASTReplacingVisitor[A, B <: ASTNode] {
     }
   }
 
-  def visitIfElses(eifs: List[ElseIf])(implicit map: Map[A, B]): List[ElseIf] = {
+  def visitIfElses(eifs: List[ElseIf])(implicit map: A): List[ElseIf] = {
     for (eif <- eifs) yield eif match {
       case ElseIf(c, s) => ElseIf(visitExpr(c), visitStmt(s))
     }
   }
 
-  def visitExpr(expr: List[Expr])(implicit map: Map[A, B]): List[Expr] =
+  def visitExpr(expr: List[Expr])(implicit map: A): List[Expr] =
     for (e <- expr) yield visitExpr(e)
 
-  def visitExpr(expr: Expr)(implicit map: Map[A, B]): Expr = {
+  def visitExpr(expr: Expr)(implicit map: A): Expr = {
     val newExpr = expr match {
       case id: Id                => visitId(id)
       case Iff(l, r)             => Iff(visitExpr(l), visitExpr(r))
@@ -448,7 +449,7 @@ abstract class ASTReplacingVisitor[A, B <: ASTNode] {
     newExpr
   }
   
-  def visitAssignable(asgn: Assignable)(implicit map: Map[A, B]): Assignable = {
+  def visitAssignable(asgn: Assignable)(implicit map: A): Assignable = {
     asgn match {
       case id: Id => visitId(id)
       case IndexAccessor(l, i)   => IndexAccessor(visitExpr(l), visitExpr(i))
@@ -456,15 +457,15 @@ abstract class ASTReplacingVisitor[A, B <: ASTNode] {
     }
   }
   
-  def visitIndexAccessor(ia: IndexAccessor)(implicit map: Map[A, B]): IndexAccessor = {
+  def visitIndexAccessor(ia: IndexAccessor)(implicit map: A): IndexAccessor = {
     IndexAccessor(visitExpr(ia.exp), visitExpr(ia.suffix))
   }
   
-  def visitFieldAccessor(fa: FieldAccessor)(implicit map: Map[A, B]): FieldAccessor = {
+  def visitFieldAccessor(fa: FieldAccessor)(implicit map: A): FieldAccessor = {
     FieldAccessor(visitExpr(fa.exp), fa.suffix)
   }
 
-  def visitId(id: Id)(implicit map: Map[A, B]): Id = {
+  def visitId(id: Id)(implicit map: A): Id = {
     id
   }
 }

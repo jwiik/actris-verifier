@@ -74,7 +74,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       else parent.get(name)
     }
     def add(from: String, to: String) = {
-      if (has(from) || parent.has(from)) throw new IllegalArgumentException("Renaming already defined for " + from)
+      //if (has(from) || parent.has(from)) throw new IllegalArgumentException("Renaming already defined for " + from)
       map(from) = to
       to
     }
@@ -293,66 +293,15 @@ class PromelaTranslator(params: CommandLineParameters) {
       (contract,P.Init(initBlock.toList))
     }).toMap
   }
-  
-  
-  
+
   case class PromelaInstance(id: String, arguments: List[Expr], actor: BasicActor, mapId: Int, connections: Map[String,Connection])
-  
-//  def translateSubNetwork(nw: Network, prefix: String, ioConnections: Map[String,Connection], idMap: IdMap): (List[PromelaInstance],List[(String,P.VarDecl)]) = {
-//    val decls = new ListBuffer[(String,P.VarDecl)]
-//    val instances = new ListBuffer[PromelaInstance]
-//    
-//    val channelMapping = Util.buildConnectionMap(nw.structure.get.connections)
-//    
-//    for (c <- nw.structure.get.connections) {
-//      (c.from,c.to) match {
-//        case (PortRef(Some(x),_),PortRef(Some(y),_)) => 
-//          val id = prefix+"__"+renamings.R(c.id)
-//          decls += id -> P.VarDecl(id, P.NamedType("chan"), Some(P.ChInit(100,translateType(c.typ.asInstanceOf[ChanType].contentType))))
-//        case (_,_) =>
-//      }
-//    }
-//    for (e <- nw.entities.get.entities) {
-//      val connections = {
-//        for (p <- e.actor.inports:::e.actor.outports) yield {
-//          val conn = channelMapping(PortRef(Some(e.id),p.id))
-//          val mappedConn =
-//            if (conn.isInput) {
-//              ioConnections(conn.from.name)
-//              //assert(false,parentConn)
-//            }
-//            else if (conn.isOutput) {
-//              ioConnections(conn.to.name)
-//              //assert(false,parentConn)
-//            }
-//            else {
-//              Connection(Some(prefix+"__"+conn.id),conn.from,conn.to,conn.annotations)
-//            }
-//          (p.id,mappedConn)
-//        }
-//      }.toMap
-//      instances += PromelaInstance(prefix+"__"+e.id,e,idMap.generateId(e),connections)
-//    }
-//    for (e <- nw.entities.get.entities) {
-//      e.actor match {
-//        case actor: BasicActor => 
-//        case subnw: Network => {
-//          val ioConns = (for (p <- e.actor.inports:::e.actor.outports) yield (p.id,channelMapping(PortRef(Some(e.id),p.id)))).toMap
-//          val (instance,subDecls) = translateSubNetwork(subnw,prefix+"__"+e.id,ioConns,idMap)
-//          instances ++= instance
-//          decls ++= subDecls
-//        }
-//      }
-//    }
-//    (instances.toList,decls.toList)
-//  }
   
   def translateActor(a: BasicActor): P.ProcType = {
     
     val actorRenamings = renamings.getSubContext
     
     val params = new ListBuffer[P.ParamDecl]
-    val decls = new ListBuffer[P.VarDecl]
+    val decls = new ListBuffer[P.Stmt]
     val actions = new ListBuffer[P.Stmt]
     
     funCallReplacer.setFunctionDeclarations(a.functionDecls)
@@ -362,8 +311,10 @@ class PromelaTranslator(params: CommandLineParameters) {
     for (op <- a.outports) params += P.ParamDecl(op.id,P.NamedType("chan"))
     for (p <- a.parameters) params += P.ParamDecl(p.id, translateType(p.typ))
     for (v <- a.variables) {
-      val value = if (v.value.isDefined) Some(translateExpr(v.value.get)(actorRenamings)) else None  
-      decls += P.VarDecl(actorRenamings.R(v.id),translateType(v.typ), value)
+      decls ++= translateDeclaration(v, actorRenamings.R(v.id), actorRenamings)
+      
+//      val value = if (v.value.isDefined) Some(translateExpr(v.value.get)(actorRenamings)) else None  
+//      decls += P.VarDecl(actorRenamings.R(v.id),translateType(v.typ), value)
     }
     
     val initBodyInternal: List[P.Stmt] = 
@@ -391,10 +342,23 @@ class PromelaTranslator(params: CommandLineParameters) {
     val priorityMap = PriorityMapBuilder.buildPriorityMap(a, false)
     
     // Get the most tokens consumed on each port by any action
-    val maxRates = 
-      a.inports.map {
-        ip => (ip -> (a.actorActions.filter(!_.init).map { t => t.inportRate(ip.id) }).foldLeft(0)((a,b) => if (a < b) b else a))
+//    val maxRates = 
+//      a.inports.map {
+//        ip => (ip -> (a.actorActions.filter(!_.init).map { t => t.inportRate(ip.id) }).foldLeft(0)((a,b) => if (a < b) b else a))
+//      }
+    val rates = a.inports.map {
+      ip => { 
+        ip ->
+        (a.actorActions.filter(!_.init).map { 
+          t =>
+            t.portInputPattern(ip.id) match {
+              case None => 0
+              case Some(pat) => if (pat.repeat == 1) pat.rate else 1
+            }
+        })
       }
+    }
+    val maxRates = rates.map { case (p,r) => (p, r.foldLeft(0)((a,b) => if (a < b) b else a)) }
     
     // Create enough input variable declarations for each inport
     for ((ip,rate) <- maxRates) {
@@ -462,7 +426,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       val allFiringRules = firingRules(act) :: priorityMap(act).map { a => P.UnaryExpr("!",firingRules(a)) }
       val firingRule = allFiringRules.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
       
-      val actionRenamings = actionRenamingMap(act)
+      val beforeInputRenamings = actionRenamingMap(act)
       
       val peekings = peekAnalyzer.analyze(act, priorityMap)
       
@@ -472,17 +436,19 @@ class PromelaTranslator(params: CommandLineParameters) {
         }
       
       val stmt = new ListBuffer[P.Stmt]
-      
-      val actionParams = 
-        act.variables map { v => 
-          P.VarDecl(renamings.R(v.id),translateType(v.typ),if (v.value.isDefined) Some(translateExpr(v.value.get)(actionRenamings)) else None) 
-        }
         
       stmt += P.PrintStmtValue("<action id='%d' actor='"+renamings.R(a.fullName)+ "' action='" + renamings.R(act.fullName) + "' />\\n",List(P.VarExp("__uid")))
-      
+      val actionRenamings = beforeInputRenamings.getSubContext
       for (p <- act.inputPattern) {
         if (p.repeat > 1) {
-          if (p.vars.size > 1) throw new RuntimeException("Unsupported pattern with repeat")
+          val v = p.vars(0)
+          val name = p.portId+"__List"
+          actionRenamings.add(v.id, name)
+          stmt += P.VarDecl(name,P.ArrayType(translateType(p.typ),p.repeat), None)
+          for (i <- 0 until p.repeat) {
+            stmt += P.Receive(renamings.R(p.portId), translateExpr(v)(beforeInputRenamings))
+            stmt += P.Assign(P.IndexAccessor(P.VarExp(name),P.IntLiteral(i)), translateExpr(v)(beforeInputRenamings))
+          }
         }
         else {
           for (v <- p.vars) {
@@ -491,21 +457,52 @@ class PromelaTranslator(params: CommandLineParameters) {
         }
       }
       
+      for (v <- act.variables) {
+        stmt ++= translateDeclaration(v, renamings.R(v.id), actionRenamings)
+      }
+      
       stmt ++= translateStmts(act.body)(actionRenamings)
       
       for (p <- act.outputPattern) {
-        for (e <- p.exps) {
-          stmt += P.Send(renamings.R(p.portId), translateExpr(e)(actionRenamings))
+        if (p.repeat > 1) {
+          val e = translateExpr(p.exps(0))(actionRenamings)
+          for (i <- 0 until p.repeat) {
+            stmt += P.Send(renamings.R(p.portId), P.IndexAccessor(e,P.IntLiteral(i)))
+          }
+        }
+        else {
+          for (e <- p.exps) {
+            stmt += P.Send(renamings.R(p.portId), translateExpr(e)(actionRenamings))
+          }
         }
       }
       stmt ++= peekResets
-      actions += P.Atomic(P.Comment("Action: " + act.fullName)::List(P.GuardStmt(P.ExprStmt(firingRule), actionParams ::: stmt.toList)))
+      actions += P.Atomic(P.Comment("Action: " + act.fullName)::List(P.GuardStmt(P.ExprStmt(firingRule), stmt.toList)))
     }
     
 
     
     val opts = actions.toList map { a => P.OptionStmt(List(a)) }
-    P.ProcType(a.id, params.toList,decls.toList,initBody ::: List(P.Iteration(opts)))
+    P.ProcType(a.id, params.toList, Nil, decls.toList ::: initBody ::: List(P.Iteration(opts)))
+  }
+  
+  def translateDeclaration(d: Declaration, newName: String, renamings: RenamingContext): List[P.Stmt] = {
+    val stmt = new ListBuffer[P.Stmt]
+    d.value match {
+      case Some(value) => {
+        value match {
+          case ListLiteral(lst) => {
+            stmt += P.VarDecl(newName,translateType(d.typ), None)
+            for ((l,i) <- lst.zipWithIndex) {
+              stmt += P.Assign(P.IndexAccessor(P.VarExp(newName),P.IntLiteral(i)) , translateExpr(l)(renamings))
+            }
+          }
+          case x => stmt += P.VarDecl(newName,translateType(d.typ), Some(translateExpr(x)(renamings)))
+        }
+      }
+      case None => stmt += P.VarDecl(newName,translateType(d.typ), None)
+    }
+    stmt.toList
   }
   
   def translateStmts(stmt: List[Stmt])(implicit renamings: RenamingContext): List[P.Stmt] = {
@@ -514,8 +511,74 @@ class PromelaTranslator(params: CommandLineParameters) {
   
   def translateStmt(stmt: Stmt)(implicit renamings: RenamingContext): P.Stmt = {
     stmt match {
-      case Assign(i,e) => P.Assign(translateExpr(i),translateExpr(e))
-      case MapAssign(i,e) => P.Assign(translateExpr(i),translateExpr(e))
+      case Assign(id,e) => {
+        val (newE,info) = ListLiteralReplacer.findAndReplace(e)
+        if (id.typ.isList) {
+          e match {
+            case IfThenElse(cond,thn,els) => {
+              val newIfStmt = {
+                val (newThn,info) = ListLiteralReplacer.findAndReplace(thn)
+                if (!info.isEmpty) {
+                  val sequence = new ListBuffer[P.Stmt]
+                  for ((s,lit) <- info) {
+                    sequence += P.VarDecl(s,translateType(lit.typ),None)
+                    for ((l,i) <- lit.elements.zipWithIndex) {
+                      sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
+                    }
+                  }
+                  //sequence += P.Assign(translateExpr(id),translateExpr(newThn))
+                  P.Sequence(sequence.toList)
+                }
+                else P.Assign(translateExpr(id),translateExpr(newThn))
+              }
+              val ifPart = P.GuardStmt(P.ExprStmt(translateExpr(cond)), List(newIfStmt))
+               
+              
+              val newElsStmt = {
+                val (newEls,info) = ListLiteralReplacer.findAndReplace(els)
+                if (!info.isEmpty) {
+                  val sequence = new ListBuffer[P.Stmt]
+                  for ((s,lit) <- info) {
+                    sequence += P.VarDecl(s,translateType(lit.typ),None)
+                    for ((l,i) <- lit.elements.zipWithIndex) {
+                      sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
+                    }
+                  }
+                  //sequence += P.Assign(translateExpr(i),translateExpr(newEls))
+                  P.Sequence(sequence.toList)
+                }
+                else P.Assign(translateExpr(id),translateExpr(newEls))
+              }
+              val elsPart = P.GuardStmt(P.Else, List(newElsStmt))
+              
+              P.If(List(P.OptionStmt(List(ifPart)),P.OptionStmt(List(elsPart))))
+            }
+            case _ => throw new RuntimeException("Cannot assign directly to array in Promela")
+          }
+          
+        }
+//        
+//        val (newE,info) = ListLiteralReplacer.findAndReplace(e)
+//        val asgn = P.Assign(translateExpr(i),translateExpr(newE))
+//        if (!info.isEmpty) {
+//          val sequence = new ListBuffer[P.Stmt]
+//          for ((s,lit) <- info) {
+//            sequence += P.VarDecl(s,translateType(lit.typ),None)
+//            for ((l,i) <- lit.elements.zipWithIndex) {
+//              sequence += P.Assign(P.IndexAccessor(P.VarExp(s),P.IntLiteral(i)) , translateExpr(l)(renamings))
+//            }
+//          }
+//          sequence += asgn
+//          P.Sequence(sequence.toList)
+//        }
+        else {
+          P.Assign(translateExpr(id),translateExpr(newE))
+        }
+      }
+      case MapAssign(i,e) => {
+        
+        P.Assign(translateExpr(i),translateExpr(e))
+      }
       case IfElse(cond,thn,elifs,els) => {
         val grds =
           (List(P.GuardStmt(P.ExprStmt(translateExpr(cond)),translateStmts(thn))):::
@@ -524,6 +587,30 @@ class PromelaTranslator(params: CommandLineParameters) {
         P.If( grds map { g => P.OptionStmt(List(g)) } )
       }
       case _ => throw new RuntimeException("Unsupported statement in Promela backend: " + stmt)
+    }
+  }
+  
+  object ListLiteralReplacer extends ASTReplacingVisitor[ListBuffer[(String,ListLiteral)]] {
+    
+    var count = 0
+    
+    def findAndReplace(expr: Expr): (Expr,List[(String,ListLiteral)]) = {
+      val buffer = new ListBuffer[(String,ListLiteral)]
+      count = 0
+      val e = visitExpr(expr)(buffer)
+      (e, buffer.toList)
+    }
+    
+    override def visitExpr(expr: Expr)(implicit map: ListBuffer[(String,ListLiteral)]) = {
+      expr match {
+        case ll: ListLiteral => {
+          val name = "__replaced_lstlit__"+count
+          count = count+1
+          map += (name -> ll)
+          Id(name).withType(ll.typ)
+        }
+        case _ => super.visitExpr(expr)
+      }
     }
   }
   
@@ -577,6 +664,7 @@ class PromelaTranslator(params: CommandLineParameters) {
         }
         translateExpr(replaced)
       }
+      case ll@ListLiteral(lst) => throw new RuntimeException("Encountered list literal in Promela translation at " + ll.pos + ": " + ll)
       case Id(i) => 
         P.VarExp(renamings.get(i).getOrElse(renamings.R(i)))
       case HexLiteral(h) => {
@@ -595,7 +683,8 @@ class PromelaTranslator(params: CommandLineParameters) {
       case StateType(_,_) => P.NamedType("int")
       case BoolType => P.NamedType("bool")
       case MapType(_,r,s) => P.ArrayType(translateType(r),s)
-      case x => throw new RuntimeException("Unsupported type in Z3 backend: " + tp.id)
+      case ListType(c,s) => P.ArrayType(translateType(c),s)
+      case x => throw new RuntimeException("Unsupported type in Promela backend: " + tp.id)
     }
   }
   

@@ -22,7 +22,6 @@ var I#sub: CType;
 var H#: HType;
 
 const unique this#: Actor;
-
 function AT#Min(x:int, y: int): int { if x <= y then x else y }
 
 // ---------------------------------------------------------------
@@ -43,8 +42,8 @@ procedure Net#anon__4()
   var anon__4: int;
   var add#in1#i: int;
   var add#in2#j: int;
-  var spl#in#i: int;
-  var del#in#i: int;
+  var spl#in1#i: int;
+  var del#in1#i: int;
   assume (Net#add != Net#del) && (Net#add != Net#spl) && (Net#del != Net#spl);
   assume (Net#a != Net#b) && (Net#a != Net#c) && (Net#a != Net#d) && (Net#a != Net#e) && (Net#b != Net#c) && (Net#b != Net#d) && (Net#b != Net#e) && (Net#c != Net#d) && (Net#c != Net#e) && (Net#d != Net#e);
   assume 0 <= I#[Net#a];
@@ -77,35 +76,35 @@ procedure Net#anon__4()
   assume 0 <= M#[Net#b][I#[Net#b]];
   C#[Net#a] := C#[Net#a] + 1;
   assume 0 <= M#[Net#a][I#[Net#a]];
-  // Instance: add, Action: anon__0
+  // Instance: add, Action: anon__6
   I#sub[Net#a] := R#[Net#a];
   I#sub[Net#b] := R#[Net#b];
   I#sub[Net#c] := C#[Net#c];
-  assert {:msg "AddDelay.actor(2.3): Firing rule might not be satisfied for action 'anon__0' of instance 'add' (#0)"} (1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b])) && (0 <= M#[Net#a][R#[Net#a]]);
+  assert {:msg "Firing rule might not be satisfied for action 'anon__6' of instance 'add' (#0)"} (1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b])) && (0 <= M#[Net#a][R#[Net#a]]);
   add#in1#i := M#[Net#a][R#[Net#a]];
   R#[Net#a] := R#[Net#a] + 1;
   add#in2#j := M#[Net#b][R#[Net#b]];
   R#[Net#b] := R#[Net#b] + 1;
   M#[Net#c][C#[Net#c]] := add#in1#i + add#in2#j;
   C#[Net#c] := C#[Net#c] + 1;
-  // Instance: spl, Action: anon__1
+  // Instance: spl, Action: anon__7
   I#sub[Net#c] := R#[Net#c];
   I#sub[Net#d] := C#[Net#d];
   I#sub[Net#e] := C#[Net#e];
-  assert {:msg "AddDelay.actor(8.3): Firing rule might not be satisfied for action 'anon__1' of instance 'spl' (#1)"} 1 <= (C#[Net#c] - R#[Net#c]);
-  spl#in#i := M#[Net#c][R#[Net#c]];
+  assert {:msg "Firing rule might not be satisfied for action 'anon__7' of instance 'spl' (#1)"} 1 <= (C#[Net#c] - R#[Net#c]);
+  spl#in1#i := M#[Net#c][R#[Net#c]];
   R#[Net#c] := R#[Net#c] + 1;
-  M#[Net#d][C#[Net#d]] := spl#in#i;
+  M#[Net#d][C#[Net#d]] := spl#in1#i;
   C#[Net#d] := C#[Net#d] + 1;
-  M#[Net#e][C#[Net#e]] := spl#in#i;
+  M#[Net#e][C#[Net#e]] := spl#in1#i;
   C#[Net#e] := C#[Net#e] + 1;
-  // Instance: del, Action: anon__3
+  // Instance: del, Action: anon__9
   I#sub[Net#e] := R#[Net#e];
   I#sub[Net#b] := C#[Net#b];
-  assert {:msg "AddDelay.actor(13.3): Firing rule might not be satisfied for action 'anon__3' of instance 'del' (#2)"} 1 <= (C#[Net#e] - R#[Net#e]);
-  del#in#i := M#[Net#e][R#[Net#e]];
+  assert {:msg "Firing rule might not be satisfied for action 'anon__9' of instance 'del' (#2)"} 1 <= (C#[Net#e] - R#[Net#e]);
+  del#in1#i := M#[Net#e][R#[Net#e]];
   R#[Net#e] := R#[Net#e] + 1;
-  M#[Net#b][C#[Net#b]] := del#in#i;
+  M#[Net#b][C#[Net#b]] := del#in1#i;
   C#[Net#b] := C#[Net#b] + 1;
   assert {:msg "The correct amount of tokens might not be produced on output out (#3)"} (C#[Net#d] - R#[Net#d]) == 1;
 }

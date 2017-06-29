@@ -189,6 +189,7 @@ class Checker {
       case IntLiteral(i) => z3.mkInt(i, Types.Int)
       case hx@HexLiteral(i) => z3.mkNumeral(Integer.parseInt(i, 16).toString, transType(hx.typ))
       case FunctionApp("int2bv",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
+      case FunctionApp("int",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
       case Id(id) => ctx.z3Constants(id)
       case IndexAccessor(Id(ch),idx) => z3.mkApp(ctx.z3FuncDecls(("M#"+ch)), transExpr(idx))
       case FunctionApp("@",args) => z3.mkApp(ctx.z3FuncDecls("I#"), (args map transExpr):_*)

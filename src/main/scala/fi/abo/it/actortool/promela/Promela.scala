@@ -32,6 +32,7 @@ object Promela {
   case object Skip extends Stmt
   case object Else extends Stmt
   case class Comment(str: String) extends Stmt
+  case class Sequence(stmt: List[Stmt]) extends Stmt
   
   case class BinaryExpr(left: Expr, op: String, right: Expr) extends Expr
   case class UnaryExpr(op:String, exp: Expr) extends Expr
@@ -41,6 +42,7 @@ object Promela {
   case class VarExp(id: String) extends Expr
   case class IntLiteral(i: Int) extends Expr
   case class BoolLiteral(b: Boolean) extends Expr
+  case class ArrayLiteral(values: List[Expr]) extends Expr
   
   
   case class NamedType(s: String) extends Type
@@ -136,6 +138,12 @@ object Promela {
           printStmts(stmt) + nl +
           indentRem +
           indent + "}"
+        case Sequence(stmt) => 
+          indent + "{"+ nl +
+          indentAdd +
+          printStmts(stmt) + nl +
+          indentRem +
+          indent + "}"
         case OptionStmt(stmt) =>
           indent + "::" + nl + indentAdd + printStmts(stmt) + indentRem
         case GuardStmt(grd,stmt) =>
@@ -164,6 +172,7 @@ object Promela {
         case FunCall(name,args) => name + "(" + (args.map { a => printExpr(a) }).mkString(",") + ")"
         case IndexAccessor(exp,idx) => printExpr(exp)+ "[" + printExpr(idx) + "]"
         case ConditionalExpr(cond,thn,els) => "(" + printExpr(cond) + " -> " + printExpr(thn) + " : " + printExpr(els) + ")"
+        case ArrayLiteral(lst) => "{" + lst.map(printExpr).mkString(",") + "}"
         case IntLiteral(i) => i.toString
         case BoolLiteral(true) => "true"
         case BoolLiteral(false) => "false"

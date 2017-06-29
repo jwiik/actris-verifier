@@ -36,6 +36,12 @@ trait ASTNode {
   
 }
 
+trait Typable extends ASTNode {
+  var typ: Type = null
+  def withType(tp: Type): this.type = { this.typ = tp; this }
+}
+
+
 sealed abstract class TopDecl(val id: String) extends ASTNode {
   def isNetwork: Boolean = false
   def isActor: Boolean = false
@@ -375,9 +381,8 @@ sealed case class OutPort(override val id: String, override val portType: Type) 
   override def outPort = true
 }
 
-sealed abstract class Pattern(val portId: String, val repeat: Int) extends ASTNode {
+sealed abstract class Pattern(val portId: String, val repeat: Int) extends Typable {
   def rate: Int
-  var typ: Type = null
 }
 
 sealed case class InputPattern(override val portId: String, val vars: List[Id], override val repeat: Int) extends Pattern(portId,repeat) {
@@ -391,10 +396,8 @@ sealed case class OutputPattern(override val portId: String, val exps: List[Expr
 sealed case class NwPattern(override val portId: String, override val rate: Int) extends Pattern(portId,1)
 
 
-sealed abstract class Expr extends ASTNode {
-  var typ: Type = null
-  def withType(tp: Type): this.type = { this.typ = tp; this }
-}
+sealed abstract class Expr extends Typable
+
 sealed case class UnMinus(val exp: Expr) extends Expr {
   val operator = "-"
 }

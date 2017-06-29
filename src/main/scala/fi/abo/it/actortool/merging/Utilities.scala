@@ -2,7 +2,7 @@ package fi.abo.it.actortool.merging
 
 import fi.abo.it.actortool._
 
-object ContractGuardToActorGuardTranslator extends ASTReplacingVisitor[(String,Int), Id] {
+object ContractGuardToActorGuardTranslator extends ASTReplacingVisitor[Map[(String,Int), Id]] {
   
   val Sep = Constants.Sep
   
