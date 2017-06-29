@@ -381,19 +381,19 @@ sealed abstract class Pattern(val portId: String, val repeat: Int) extends ASTNo
 }
 
 sealed case class InputPattern(override val portId: String, val vars: List[Id], override val repeat: Int) extends Pattern(portId,repeat) {
-  def numConsumed = vars.size
-  override def rate = vars.size
+  def numConsumed = vars.size*repeat
+  override def rate = vars.size*repeat
 }
 sealed case class OutputPattern(override val portId: String, val exps: List[Expr], override val repeat: Int) extends Pattern(portId,repeat) {
-  def numProduced = exps.size
-  override def rate = exps.size
+  def numProduced = exps.size*repeat
+  override def rate = exps.size*repeat
 }
 sealed case class NwPattern(override val portId: String, override val rate: Int) extends Pattern(portId,1)
 
 
 sealed abstract class Expr extends ASTNode {
   var typ: Type = null
-  def withType(tp: Type) = { this.typ = tp; this }
+  def withType(tp: Type): this.type = { this.typ = tp; this }
 }
 sealed case class UnMinus(val exp: Expr) extends Expr {
   val operator = "-"

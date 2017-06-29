@@ -435,6 +435,12 @@ object Inferencer {
       for (action <- actions) {
         var seenPorts = ports
         for (pat <- action.allPatterns) {
+          // FIXME: patterns with repeats should be at least partially supported in invariant inference
+          pat match {
+            case ipat: InputPattern => if (ipat.repeat != 1) return false
+            case opat: OutputPattern => if (opat.repeat != 1) return false
+            case _ => 
+          }
           seenPorts = seenPorts - pat.portId
           portRates.get(pat.portId) match {
             case Some(rate) =>

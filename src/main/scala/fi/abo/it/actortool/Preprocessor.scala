@@ -162,17 +162,19 @@ case object ProcedureExpander extends Preprocessor {
   def expandProcedureCalls(ba: BasicActor): BasicActor = {
     val procedureDecls = ba.procedureDecls.map(pd => (pd.name,pd)).toMap
     
+    
     val newMembers = for (m <- ba.members) yield {
       m match {
         case a: ActorAction => 
           val newDecls = collection.mutable.Set[Declaration]()
           val newBody = expandProcedureCalls(procedureDecls,newDecls,a.body)
-          ActorAction(a.label, a.init, a.inputPattern, a.outputPattern, a.guards, a.requires, a.ensures, a.variables ++ newDecls , newBody)
-        case x => x
+          List(ActorAction(a.label, a.init, a.inputPattern, a.outputPattern, a.guards, a.requires, a.ensures, a.variables ++ newDecls , newBody))
+        case pd: ProcedureDecl => Nil 
+        case x => List(x)
       }
     }
     
-    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers.flatten)
     a
   }
   

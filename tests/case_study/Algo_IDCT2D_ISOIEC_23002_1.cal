@@ -1,5 +1,7 @@
 actor Algo_IDCT2D_ISOIEC_23002_1()
 	int(size=13) IN, bool SIGNED ==> int(size=9) OUT :
+	
+	contract IN:64, SIGNED:1 ==> OUT:64 end
 
 	int(size=13) A = int(1024,13);
 
@@ -133,14 +135,14 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 		X + (X >> int(5,13)) - ((X + (X >> int(5,13))) >> int(2,13))
 	end
 
-	function clip(int(size=13) x, int(size=13) lim) --> int(size=13) :
+	function clip(int(size=13) x, int(size=13) lim) --> int(size=9) :
 		if x < lim then
-			lim
+			bvresize(lim,9)
 		else
 			if x > int(255,13) then
-				int(255,13)
+				int(255,9)
 			else
-				x
+				bvresize(x,9)
 			end
 		end
 	end

@@ -121,12 +121,6 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
     
     val funDeclRenamings = (actor.functionDecls map { fd => (fd.name,Id(prefix+fd.name)) }).toMap
     
-    val actionData =
-      (for (a <- actor.actorActions) yield {
-        (a, createVariableDeclarationsNoTranslate(a.variables,typeCtx))
-      }).toMap
-    
-      
     val aData = 
       (for (a <- actor.actorActions) yield {
         val (decls,initialValues) = createVariableDeclarationsNoTranslate(a.variables,typeCtx)

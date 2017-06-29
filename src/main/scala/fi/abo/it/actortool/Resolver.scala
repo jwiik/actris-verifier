@@ -385,7 +385,7 @@ object Resolver {
       
       if (inPat.repeat > 1) {
         if (inPat.vars.size != 1) {
-          actorCtx.error(inPat.pos, "Input patterns with a repeat clause an only be of length 1")
+          actorCtx.error(inPat.pos, "Input patterns with a repeat clause can only be of length 1")
         }
         val v = inPat.vars(0)
         if (vars contains v.id) actorCtx.error(inPat.pos, "Variable name already used: " + v.id)
@@ -429,15 +429,19 @@ object Resolver {
       
       if (outPat.repeat > 1) {
         if (outPat.exps.size != 1) {
-          actorCtx.error(outPat.pos, "Output patterns with a repeat clause an only be of length 1")
+          actorCtx.error(outPat.pos, "Output patterns with a repeat clause can only be of length 1")
         }
         val e = outPat.exps(0)
         val eType = resolveExpr(ctx,e)
         if (!eType.isList) {
           actorCtx.error(outPat.pos, "Output pattern expression with a repeat clause has to be of type List")
         }
-        val size = eType.asInstanceOf[ListType].size 
-        if (size < outPat.repeat) {
+        val lstType = eType.asInstanceOf[ListType]
+        if (!TypeUtil.isCompatible(lstType.contentType, port.portType)) {
+          ctx.error(e.pos, 
+                  "Output pattern type " + lstType.contentType.id + " does not match port type " + port.portType.id)
+        }
+        if (lstType.size < outPat.repeat) {
           actorCtx.error(outPat.pos, "Repeat has to be smaller than or equal to List size")
         }
       }
@@ -451,7 +455,7 @@ object Resolver {
           else {
             if (!TypeUtil.isCompatible(eType, port.portType)) {
               ctx.error(e.pos, 
-                  "Expression type " + eType.id + " does not match port type " + port.portType.id)
+                  "Output pattern type " + eType.id + " does not match port type " + port.portType.id)
             }
           }
         }

@@ -64,20 +64,30 @@ abstract class EntityTranslator[T] {
     val inpatDeclBuffer = new ListBuffer[BDecl]
     val patterns = new ListBuffer[Boogie.Expr]
     for (ipat <- a.inputPattern) {
-      for ((v,i) <- ipat.vars.zipWithIndex) {
-        val name = ipat.portId+B.Sep+i.toString
-        renamingsBuffer += ((v.id, {val id = Id(name); id.typ = v.typ; id} ))
+      if (ipat.repeat == 1) {
+        for ((v,i) <- ipat.vars.zipWithIndex) {
+          val name = ipat.portId+B.Sep+i.toString
+          renamingsBuffer += ((v.id, Id(name).withType(v.typ) ))
+          replacementBuffer += (( 
+              v.id, 
+              Elements.chAcc(Elements.ch(ipat.portId,v.typ), Elements.next(ipat.portId, ChanType(v.typ), i)).withType(v.typ) 
+          ))
+          val lVar = B.Local(name, v.typ)
+          inpatDeclBuffer += BDecl(name,lVar)
+        }
+      }
+      else {
+        val v = ipat.vars(0)
+        val name = ipat.portId+B.Sep+"0"
+        renamingsBuffer += ((v.id, Id(name).withType(v.typ) ))
         replacementBuffer += (( 
-            v.id, 
-            { 
-              val e = Elements.chAcc(Elements.ch(ipat.portId,v.typ), Elements.next(ipat.portId, ChanType(v.typ), i)); 
-              e.typ = v.typ; e 
-            } 
-        ))
+              v.id, 
+              Elements.chAcc(Elements.ch(ipat.portId,v.typ), Elements.next(ipat.portId, ChanType(v.typ), 0)).withType(v.typ) 
+          ))
         val lVar = B.Local(name, v.typ)
         inpatDeclBuffer += BDecl(name,lVar)
       }
-      patterns += B.Int(ipat.vars.size) <= B.C(ipat.portId)-B.R(ipat.portId)
+      patterns += B.Int(ipat.rate) <= B.C(ipat.portId)-B.R(ipat.portId)
     }
     
     val renamings = avs.renamings ++ renamingsBuffer.toMap

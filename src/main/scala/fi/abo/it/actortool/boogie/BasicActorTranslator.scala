@@ -179,10 +179,18 @@ class BasicActorTranslator(
      
     for (ipat <- a.inputPattern) {
       val cId = ipat.portId
-       
-      for (v <- ipat.vars) {
-        asgn += Boogie.Assign(transExpr(v)(renamings), B.ChannelIdx(cId, v.typ, B.R(cId)))
-        asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
+      if (ipat.repeat == 1) {
+        for (v <- ipat.vars) {
+          asgn += Boogie.Assign(transExpr(v)(renamings), B.ChannelIdx(cId, v.typ, B.R(cId)))
+          asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
+        }
+      }
+      else {
+        val v = ipat.vars(0)
+        for (i <- 0 until ipat.repeat) {
+          asgn += Boogie.Assign(transExpr(v)(renamings), B.Fun("Map#Store",transExpr(v)(renamings) , B.Int(i) , B.ChannelIdx(cId, v.typ, B.R(cId)) )  )
+          asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
+        }
       }
     }
      
@@ -200,9 +208,18 @@ class BasicActorTranslator(
      
     for (opat <- a.outputPattern) {
       val cId = opat.portId
-      for (v <- opat.exps) {
-        asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(renamings))
-        asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
+      if (opat.repeat == 1) {
+        for (v <- opat.exps) {
+          asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), transExpr(v)(renamings))
+          asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
+        }
+      }
+      else {
+        val v = opat.exps(0)
+        for (i <- 0 until opat.repeat) {
+          asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), B.Fun("Map#Select",transExpr(v)(renamings), B.Int(i)))
+          asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
+        }
       }
     }
      

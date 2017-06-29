@@ -274,20 +274,25 @@ class NetworkTranslator(
     asgn += B.Assume(firingRule)
     
     for (ipat <- action.inputPattern) {
-      var repeats = 0
-      while (repeats < ipat.repeat) {
-        val cId = nwvs.connectionMap.getDst(PortRef(Some(instance.id),ipat.portId))
-        if (action.isContractAction) {
-          asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(ipat.rate))
-        }
-        else {
-          val inputPat = ipat.asInstanceOf[InputPattern]
+      val cId = nwvs.connectionMap.getDst(PortRef(Some(instance.id),ipat.portId))
+      if (action.isContractAction) {
+        asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(ipat.rate))
+      }
+      else {
+        val inputPat = ipat.asInstanceOf[InputPattern]
+        if (inputPat.repeat == 1) {
           for (v <- inputPat.vars) {
             asgn += Boogie.Assign(transExpr(v.id,v.typ)(renamings),B.ChannelIdx(cId,v.typ,B.R(cId)))
             asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
           }
         }
-        repeats = repeats+1
+        else {
+          val v = inputPat.vars(0)
+          for (i <- 0 until inputPat.repeat) {
+            asgn += Boogie.Assign(transExpr(v)(renamings), B.Fun("Map#Store",transExpr(v)(renamings) , B.Int(i) , B.ChannelIdx(cId, v.typ, B.R(cId)) )  )
+            asgn += Boogie.Assign(B.R(cId), B.R(cId) plus B.Int(1))
+          }
+        }
       }
     }
     
@@ -332,19 +337,24 @@ class NetworkTranslator(
     
     for (opat <- action.outputPattern) {
       val cId = nwvs.connectionMap.getSrc(PortRef(Some(instance.id),opat.portId))
-      var repeats = 0
-      while (repeats < opat.repeat) {
-        if (action.isContractAction) {
-          asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(opat.rate))
-        }
-        else {
-          val outputPat = opat.asInstanceOf[OutputPattern]
+      if (action.isContractAction) {
+        asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(opat.rate))
+      }
+      else {
+        val outputPat = opat.asInstanceOf[OutputPattern]
+        if (opat.repeat == 1) {
           for (e <- outputPat.exps) {
             asgn += Boogie.Assign(B.ChannelIdx(cId,e.typ,B.C(cId)),transExpr(e)(renamings))
             asgn += Boogie.Assign(B.C(cId),B.C(cId) plus B.Int(1))
           }
         }
-        repeats = repeats+1
+        else {
+          val v = outputPat.exps(0)
+          for (i <- 0 until opat.repeat) {
+            asgn += Boogie.Assign(B.ChannelIdx(cId, v.typ, B.C(cId)), B.Fun("Map#Select",transExpr(v)(renamings), B.Int(i)))
+            asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
+          }
+        }
       }
     }
     

@@ -1,10 +1,16 @@
 actor Repeat int x ==> int y :
+  stream invariant tot(y) = rd(x)
+  stream invariant rd(x) % 3 = 0
   action x:[i] repeat 3 ==> y:[i] repeat 3 end
 end
+
 
 network Net int x ==> int y :
   
   contract x:3 ==> y:3 end
+  
+  chinvariant @(x) = @(y)
+  chinvariant tot(y) = rd(x)
   
   entities
     rep = Repeat();
