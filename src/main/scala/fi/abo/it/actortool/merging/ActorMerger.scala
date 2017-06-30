@@ -40,7 +40,10 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             val actor = scheduleCtx.mergedActors.getOrElse(e.actorId,e.actor)
             for (v <- actor.variables)  {
               val name = e.id+Sep+v.id
-              members += Declaration(name,v.typ,v.constant,v.value)
+              members += {
+                val newVal = v.value.map { v => replaceStr(v, actorVariables) }
+                Declaration(name,v.typ,v.constant, newVal)
+              }
               
               actorVariables += {
                 val toId = Id(name)
@@ -79,7 +82,10 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           for (v <- ba.variables)  {
             assert(v.typ != null, v)
             val name = ba.id+Sep+v.id
-            members += Declaration(name,v.typ,v.constant,v.value)
+            members += {
+              val newVal = v.value.map { v => replaceStr(v, actorVariables) }
+              Declaration(name,v.typ,v.constant,newVal)
+            }
             
             actorVariables += {
               val toId = Id(name)
@@ -325,30 +331,45 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             // Network
             val connections = connectionMap.connections
             val conn = connectionMap.getDst(eOpt.get.id,pat.portId)
-            val count = consumeCount(conn)
-            consumeCount = consumeCount + (conn ->  (count+1))
-            val name = conn+Sep+count
+            
             assert(pat.typ != null)
             
-            val c = connections.find { _.id == conn }
-            if (c.get.from.actor.isDefined) {
-              // This avoids adding variables that are part of the input pattern
-              // to action variables
-              if (!allUsedVariableNames.contains(name)) {
-                variables += Declaration(name,pat.typ,false,None)
-                allUsedVariableNames += name
+            for (i <- 0 until pat.repeat) {
+              var count = consumeCount(conn)
+              consumeCount = consumeCount + (conn ->  (count+1))
+              val name = conn+Sep+count
+              val c = connections.find { _.id == conn }
+              if (c.get.from.actor.isDefined) {
+                // This avoids adding variables that are part of the input pattern
+                // to action variables
+                if (!allUsedVariableNames.contains(name)) {
+                  variables += Declaration(name,pat.typ,false,None)
+                  allUsedVariableNames += name
+                }
               }
+              if (pat.repeat > 1) {
+                stmt += MapAssign(IndexAccessor(replaceStr(v,renames),IntLiteral(i)) ,Id(conn+Sep+count))
+              }
+              else {
+                stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(conn+Sep+count))
+              }
+              
             }
-            stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(conn+Sep+count))
+            
           }
           case None => {
             // Basic actor
-            val count = consumeCount(pat.portId)
-            consumeCount = consumeCount + (pat.portId ->  (count+1))
-            val name = pat.portId+Sep+count
-            assert(pat.typ != null)
-            
-            stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(pat.portId+Sep+count))
+            for (i <- 0 until pat.repeat) {
+              val count = consumeCount(pat.portId)
+              consumeCount = consumeCount + (pat.portId ->  (count+1))
+              assert(pat.typ != null)
+              if (pat.repeat > 1) {
+                stmt += MapAssign(IndexAccessor(replaceStr(v,renames),IntLiteral(i)) ,Id(pat.portId+Sep+count))
+              }
+              else {
+                stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(pat.portId+Sep+count))
+              }
+            }
           }
         }
         
@@ -363,26 +384,38 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           case Some(connectionMap) => {
             // Network
             val conn = connectionMap.getSrc(eOpt.get.id,pat.portId)
-            val count = produceCount(conn)
-            produceCount = produceCount + (conn ->  (count+1))
-            val name = conn+Sep+count
-            assert(pat.typ != null)
-            if (!allUsedVariableNames.contains(name)) {
-              variables += Declaration(name,pat.typ,false,None)
-              allUsedVariableNames += name
+            for (i <- 0 until pat.repeat) {
+              val count = produceCount(conn)
+              produceCount = produceCount + (conn ->  (count+1))
+              val name = conn+Sep+count
+              assert(pat.typ != null)
+              if (!allUsedVariableNames.contains(name)) {
+                variables += Declaration(name,pat.typ,false,None)
+                allUsedVariableNames += name
+              }
+              if (pat.repeat > 1) {
+                //assert(false)
+                stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],IndexAccessor(replaceStr(exp,renames),IntLiteral(i)))
+              }
+              else stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
             }
-            stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
           }
           case None => {
-            val count = produceCount(pat.portId)
-            produceCount = produceCount + (pat.portId -> (count+1))
-            val name = pat.portId+Sep+count
-            assert(pat.typ != null)
-            if (!allUsedVariableNames.contains(name)) {
-              variables += Declaration(name,pat.typ,false,None)
-              allUsedVariableNames += name
+            for (i <- 0 until pat.repeat) {
+              val count = produceCount(pat.portId)
+              produceCount = produceCount + (pat.portId -> (count+1))
+              val name = pat.portId+Sep+count
+              assert(pat.typ != null)
+              if (!allUsedVariableNames.contains(name)) {
+                variables += Declaration(name,pat.typ,false,None)
+                allUsedVariableNames += name
+              }
+              if (pat.repeat > 1) {
+                //assert(false)
+                stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],IndexAccessor(replaceStr(exp,renames),IntLiteral(i)) )
+              }
+              else stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
             }
-            stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
           }
         }
         

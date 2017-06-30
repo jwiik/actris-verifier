@@ -111,7 +111,7 @@ class PromelaTranslator(params: CommandLineParameters) {
   def invoke(entity: DFActor, mergedActors: Map[String,BasicActor], alreadyTranslated: Map[String,P.ProcType], constants: List[Declaration]): Translation[DFActor] = {
     assert(!entity.contractActions.isEmpty)
     var procs: Map[String,P.ProcType] = Map.empty
-    
+    println(ASTPrinter.get.print(entity))
     entity match {
       case nw: Network => {
         val entities = nw.entities.get.entities
@@ -512,7 +512,7 @@ class PromelaTranslator(params: CommandLineParameters) {
   def translateStmt(stmt: Stmt)(implicit renamings: RenamingContext): P.Stmt = {
     stmt match {
       case Assign(id,e) => {
-        val (newE,info) = ListLiteralReplacer.findAndReplace(e)
+        //val (newE,info) = ListLiteralReplacer.findAndReplace(e)
         if (id.typ.isList) {
           e match {
             case IfThenElse(cond,thn,els) => {
@@ -553,7 +553,19 @@ class PromelaTranslator(params: CommandLineParameters) {
               
               P.If(List(P.OptionStmt(List(ifPart)),P.OptionStmt(List(elsPart))))
             }
-            case _ => throw new RuntimeException("Cannot assign directly to array in Promela")
+            case ListLiteral(lst) => {
+              val (_,info) = ListLiteralReplacer.findAndReplace(e)
+              val sequence = new ListBuffer[P.Stmt]
+              for ((s,lit) <- info) {
+                sequence += P.VarDecl(s,translateType(lit.typ),None)
+                for ((l,i) <- lit.elements.zipWithIndex) {
+                  sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
+                }
+              }
+              //sequence += P.Assign(translateExpr(id),translateExpr(newThn))
+              P.Sequence(sequence.toList)
+            }
+            case x => throw new RuntimeException("Cannot assign directly to array in Promela: " + ASTPrinter.get.printExpr(x))
           }
           
         }
@@ -572,7 +584,8 @@ class PromelaTranslator(params: CommandLineParameters) {
 //          P.Sequence(sequence.toList)
 //        }
         else {
-          P.Assign(translateExpr(id),translateExpr(newE))
+          
+          P.Assign(translateExpr(id),translateExpr(e))
         }
       }
       case MapAssign(i,e) => {
@@ -665,6 +678,7 @@ class PromelaTranslator(params: CommandLineParameters) {
         translateExpr(replaced)
       }
       case ll@ListLiteral(lst) => throw new RuntimeException("Encountered list literal in Promela translation at " + ll.pos + ": " + ll)
+      case cmpr: Comprehension => throw new RuntimeException("Encountered comprehension in Promela translation at " + cmpr.pos + ": " + cmpr)
       case Id(i) => 
         P.VarExp(renamings.get(i).getOrElse(renamings.R(i)))
       case HexLiteral(h) => {

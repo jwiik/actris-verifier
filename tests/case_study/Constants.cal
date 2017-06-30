@@ -8,4 +8,6 @@ unit Constants:
   
   int(size=11) MAXW_IN_MB = int2bv(121,11);
   int(size=11) MAXH_IN_MB = int2bv(69,11);
+  
+  int(size=13) DCVAL = int(1024,13)
 end

@@ -118,9 +118,13 @@ object TypeUtil {
     (t1.isBool && t2.isBool) || 
     (t1.isInt && t2.isInt) ||
     (t1.isBv && t2.isBv && t1.asInstanceOf[BvType].size == t2.asInstanceOf[BvType].size) ||
-    (t1.isIndexed && t2.isIndexed && 
+    (t1.isList && t2.isList && 
         isCompatible(t1.asInstanceOf[ListType].resultType, t2.asInstanceOf[ListType].resultType) && 
         isCompatible(t1.asInstanceOf[ListType].indexType, t2.asInstanceOf[ListType].indexType) &&
+        t1.asInstanceOf[ListType].size == t2.asInstanceOf[ListType].size) ||
+    (t1.isMap && t2.isMap && 
+        isCompatible(t1.asInstanceOf[MapType].resultType, t2.asInstanceOf[MapType].resultType) && 
+        isCompatible(t1.asInstanceOf[MapType].indexType, t2.asInstanceOf[MapType].indexType) &&
         t1.asInstanceOf[ListType].size == t2.asInstanceOf[ListType].size) ||
     (t1.isRef && t2.isRef && t1.asInstanceOf[RefType].id == t2.asInstanceOf[RefType].id) ||
     (t1.isState && t2.isState) ||

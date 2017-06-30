@@ -48,6 +48,12 @@ class ASTPrinter(orccCompatible: Boolean) {
         printMembers(members) +
         indentRem + nl + "end"
       }
+      case DataUnit(id,constants) => {
+        indent + "unit " + id +
+        indentAdd +
+        constants.map(d => nl + indent + printDecl(d)).mkString("") +
+        indentRem + nl + "end"
+      }
     }
   }
   
@@ -85,7 +91,7 @@ class ASTPrinter(orccCompatible: Boolean) {
         (inpats map { ip => ip.portId + ":" + ip.rate }).mkString(", ") +
         " ==> " +
         (outpats map { op => op.portId + ":" + op.rate }).mkString(", ") + indentAdd +
-        (guards map { g => nl +indent + "guard " + printExpr(g) }).mkString(nl) + 
+        (guards map { g => nl +indent + "guard " + printExpr(g) }).mkString("") + 
         (requires map { r => nl +indent + "requires " + printExpr(r) }).mkString(nl) +
         (ensures map { q => nl + indent + "ensures " + printExpr(q) }).mkString(nl) + nl + indentRem +
         indent + "end"
@@ -120,6 +126,11 @@ class ASTPrinter(orccCompatible: Boolean) {
       case Structure(connections) =>
         indent + "structure" + nl + indentAdd +
         (connections map { c => indent + printPortRef(c.from) + " --> " + printPortRef(c.to) }).mkString(";"+nl) +
+        indentRem + nl + 
+        indent + "end"
+      case Priority(orders) =>
+        indent + "priority" + nl + indentAdd +
+        (orders map { case (a,b) => indent + a.id + " > " + b.id }).mkString(";"+nl) +
         indentRem + nl + 
         indent + "end"
         
@@ -214,7 +225,8 @@ class ASTPrinter(orccCompatible: Boolean) {
       case IfThenElse(cond,thn,els) => "if " + printExpr(cond) + " then " + printExpr(thn) + " else " + printExpr(els) + " end"
       case Range(str,end) => "(" + printExpr(str) + ".." + printExpr(end) + ")"
       case ListLiteral(lst) => "[" + lst.map(printExpr).mkString(",") + "]"
-      case Comprehension(expr,v,iter) => "[" + printExpr(expr) + " : for " + printDecl(v) + " in " + printExpr(iter) + "]"
+      case Comprehension(expr,v,iter) => 
+        "[" + printExpr(expr) + " : for " + printDecl(v) + " in " + printExpr(iter) + "]"
     }
   }
   

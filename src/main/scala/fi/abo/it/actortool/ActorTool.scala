@@ -323,7 +323,7 @@ object ActorTool {
     if (program.isEmpty) return // Error message has already been displayed
     if (!params.DoTypecheck) return
 
-    val typeCtx = Resolver.resolve(program) match {
+    var typeCtx = Resolver.resolve(program) match {
       case Resolver.Errors(msgs) =>
         msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
       case Resolver.Success(rootCtx) =>
@@ -332,6 +332,13 @@ object ActorTool {
     
     program = (RangeExpander | ForEachExpander).process(program)
 
+    typeCtx = Resolver.resolve(program) match {
+      case Resolver.Errors(msgs) =>
+        msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
+      case Resolver.Success(rootCtx) =>
+        Some(rootCtx)
+    }
+    
     println(ASTPrinter.get.print(program))
     
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))

@@ -291,7 +291,9 @@ case object RangeExpander extends Preprocessor {
       m match {
         case a: ActorAction => 
           val newBody = unrollRange(a.body)
-          val newOpats = a.outputPattern.map { o => OutputPattern(o.portId, o.exps.map(unrollRange), o.repeat).withType(o.typ) }
+          val newOpats = a.outputPattern.map { 
+            o => OutputPattern(o.portId, o.exps.map(unrollRange), o.repeat).withType(o.typ) 
+          }
           val newVars = a.variables.map {
             d => 
               val value = d.value match {
