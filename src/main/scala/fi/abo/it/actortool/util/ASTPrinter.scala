@@ -225,6 +225,10 @@ class ASTPrinter(orccCompatible: Boolean) {
       case IfThenElse(cond,thn,els) => "if " + printExpr(cond) + " then " + printExpr(thn) + " else " + printExpr(els) + " end"
       case Range(str,end) => "(" + printExpr(str) + ".." + printExpr(end) + ")"
       case ListLiteral(lst) => "[" + lst.map(printExpr).mkString(",") + "]"
+      case MapLiteral(dom,lst) => {
+        if (orccCompatible) printExpr(ListLiteral(lst))
+        else printType(dom)+"[" + lst.map(printExpr).mkString(",") + "]"
+      }
       case Comprehension(expr,v,iter) => 
         "[" + printExpr(expr) + " : for " + printDecl(v) + " in " + printExpr(iter) + "]"
     }
@@ -245,10 +249,10 @@ class ASTPrinter(orccCompatible: Boolean) {
         case BoolType => "bool"
         case StateType(_,_) => "int"
         case MapType(dom,rng,size) => {
-          if (dom.isBv || dom.isInt) printType(ListType(rng,size))
+          if (dom.isBv || dom.isInt) "List(type:" + printType(rng) + ", size="+size+")"
           else throw new RuntimeException()
         }
-        case ListType(rng,size) => "List(type:" + printType(rng) + ", size="+size+")"
+        //case ListType(rng,size) => "List(type:" + printType(rng) + ", size="+size+")"
         case _ => throw new RuntimeException()
       }
     }

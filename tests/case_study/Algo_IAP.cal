@@ -5,33 +5,33 @@ actor Algo_IAP ()
   
   NewVop:
   contract AC_PRED_DIR:1 ==>
-    guard AC_PRED_DIR[@] = -int2bv(2,3)
+    guard AC_PRED_DIR[@] = -int(2,3)
   end
   
   Skip:
   contract AC_PRED_DIR:1 ==>
-    guard AC_PRED_DIR[@] != -int2bv(2,3)
-    guard AC_PRED_DIR[@] < int2bv(0,3)
+    guard AC_PRED_DIR[@] != -int(2,3)
+    guard AC_PRED_DIR[@] < int(0,3)
   end
   
   Start:
   contract AC_PRED_DIR:1, PTR:1, PQF_AC:63 ==> QF_AC:63
-    guard AC_PRED_DIR[@] >= int2bv(0,3)
+    guard AC_PRED_DIR[@] >= int(0,3)
   end
   
-  invariant state(pred) ==> int2bv(1,8) <= count && count <= int2bv(64,8)
+  invariant state(pred) ==> int(1,8) <= count && count <= int(64,8)
   
-  invariant mode(NewVop) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int2bv(2,3)
+  invariant mode(NewVop) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int(2,3)
   invariant mode(NewVop) ==> tot@(QF_AC) = 0
   invariant mode(NewVop) ==> state(start)
   
-  invariant mode(Skip) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] != -int2bv(2,3) && AC_PRED_DIR[@] < int2bv(0,3)
+  invariant mode(Skip) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] != -int(2,3) && AC_PRED_DIR[@] < int(0,3)
   invariant mode(Skip) ==> tot@(QF_AC) = 0
   invariant mode(Skip) ==> state(pred) || state(start)
   invariant mode(Skip) && state(pred) ==> rd@(AC_PRED_DIR) = 1
   invariant mode(Skip) && rd@(AC_PRED_DIR) = 1 ==> count = int(64,8)
   
-  invariant mode(Start) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] >= int2bv(0,3)
+  invariant mode(Start) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] >= int(0,3)
   invariant mode(Start) && state(start) ==> (
   	(rd@(AC_PRED_DIR) = 0 && rd@(PTR) = 0 && tot@(QF_AC) = 0 && rd@(PQF_AC) = 0) ||  
   	(rd@(AC_PRED_DIR) = 1 && rd@(PTR) = 1 && tot@(QF_AC) = 63 && rd@(PQF_AC) = 63))
@@ -45,7 +45,7 @@ actor Algo_IAP ()
   // Also, location 0 is reserved for all uncoded blocks. This protocol must
   // be identical to the buffer addressing in Predict.cal and Sequence.cal, since
   // pointer values are generated there.
-  int(size=11) BUF_SIZE = (MAXW_IN_MB + int2bv(2,11)) * int2bv(8,11);
+  int(size=11) BUF_SIZE = (MAXW_IN_MB + int(2,11)) * int(8,11);
 
   int(size=11) ptr;
 
@@ -64,40 +64,40 @@ actor Algo_IAP ()
 
   newvop: action AC_PRED_DIR:[ s ] ==>
   guard
-    s = -int2bv(2,3)
+    s = -int(2,3)
   do
-    comp := int2bv(0,4);
-    ptr := int2bv(8,11);
+    comp := int(0,4);
+    ptr := int(8,11);
     // Start at 8, since 0-7 are reserved
 
   end
 
   skip: action AC_PRED_DIR:[ s ] ==>
   guard
-    s < int2bv(0,3)
+    s < int(0,3)
   do
-    count := int2bv(64,8);
+    count := int(64,8);
   end
 
   start: action AC_PRED_DIR:[ s ], PTR:[ p ] ==>
   do
-    count := int2bv(1,8);
+    count := int(1,8);
     pred_ptr := p;
-    top := s = int2bv(2,3);
-    acpred_flag := s != int2bv(0,3);
+    top := s = int(2,3);
+    acpred_flag := s != int(0,3);
   end
 
   advance: action ==>
   guard
-    count = int2bv(64,8)
+    count = int(64,8)
   do
-    comp := comp + int2bv(1,4);
-    if comp = int2bv(6,4) then
-      comp := int2bv(0,4);
-      ptr := if ptr = int2bv(8,11) then
-        BUF_SIZE - int2bv(8,11)
+    comp := comp + int(1,4);
+    if comp = int(6,4) then
+      comp := int(0,4);
+      ptr := if ptr = int(8,11) then
+        BUF_SIZE - int(8,11)
       else
-        ptr - int2bv(8,11)
+        ptr - int(8,11)
       end;
     end
   end
@@ -105,23 +105,23 @@ actor Algo_IAP ()
   copy: action PQF_AC:[ ac ] ==> QF_AC:[ pred_ ]
   var
     int(size=13) pred_ := ac , 
-    int(size=4) v = bvresize (count & int2bv(7,8), 4) ,
-    int(size=4) h = bvresize( (count >> int2bv(3,8)) & int2bv(7,8), 4) , 
-    bool top_edge = (h = int2bv(0,4)) ,
-    bool left_edge = (v = int2bv(0,4)) , 
+    int(size=4) v = bvresize (count & int(7,8), 4) ,
+    int(size=4) h = bvresize( (count >> int(3,8)) & int(7,8), 4) , 
+    bool top_edge = (h = int(0,4)) ,
+    bool left_edge = (v = int(0,4)) , 
     int(size=5) index = bvresize(if top_edge then
       v
     else
-      (h | int2bv(8,4))
+      (h | int(8,4))
     end, 5)
   do
     if acpred_flag and ((top and top_edge) or ((not top) and left_edge)) then
-      pred_ := pred_ + buf[((pred_ptr << int2bv(4,11)) | bvresize(index,11))];
+      pred_ := pred_ + buf[((pred_ptr << int(4,11)) | bvresize(index,11))];
     end
     if left_edge or top_edge then
-      buf[(((ptr | bvresize(comp,11)) << int2bv(4,11)) | bvresize(index,11))] := pred_;
+      buf[(((ptr | bvresize(comp,11)) << int(4,11)) | bvresize(index,11))] := pred_;
     end
-    count := count + int2bv(1,8);
+    count := count + int(1,8);
   end
 
 

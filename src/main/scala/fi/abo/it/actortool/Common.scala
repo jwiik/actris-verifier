@@ -118,14 +118,14 @@ object TypeUtil {
     (t1.isBool && t2.isBool) || 
     (t1.isInt && t2.isInt) ||
     (t1.isBv && t2.isBv && t1.asInstanceOf[BvType].size == t2.asInstanceOf[BvType].size) ||
-    (t1.isList && t2.isList && 
-        isCompatible(t1.asInstanceOf[ListType].resultType, t2.asInstanceOf[ListType].resultType) && 
-        isCompatible(t1.asInstanceOf[ListType].indexType, t2.asInstanceOf[ListType].indexType) &&
-        t1.asInstanceOf[ListType].size == t2.asInstanceOf[ListType].size) ||
+//    (t1.isList && t2.isList && 
+//        isCompatible(t1.asInstanceOf[ListType].resultType, t2.asInstanceOf[ListType].resultType) && 
+//        isCompatible(t1.asInstanceOf[ListType].indexType, t2.asInstanceOf[ListType].indexType) &&
+//        t1.asInstanceOf[ListType].size == t2.asInstanceOf[ListType].size) ||
     (t1.isMap && t2.isMap && 
         isCompatible(t1.asInstanceOf[MapType].resultType, t2.asInstanceOf[MapType].resultType) && 
         isCompatible(t1.asInstanceOf[MapType].indexType, t2.asInstanceOf[MapType].indexType) &&
-        t1.asInstanceOf[ListType].size == t2.asInstanceOf[ListType].size) ||
+        t1.asInstanceOf[MapType].size == t2.asInstanceOf[MapType].size) ||
     (t1.isRef && t2.isRef && t1.asInstanceOf[RefType].id == t2.asInstanceOf[RefType].id) ||
     (t1.isState && t2.isState) ||
     (t1.isMode && t2.isMode)
@@ -367,6 +367,7 @@ abstract class ASTVisitor[T] {
       case FieldAccessor(e, f) => visitExpr(e)
       case FunctionApp(n, args) => visitExpr(args)
       case ListLiteral(els) => for (e <- els) visitExpr(e)
+      case MapLiteral(_,els) => for (e <- els) visitExpr(e)
       case il: IntLiteral =>
       case hxl: HexLiteral =>
       case bl: BoolLiteral =>
@@ -440,7 +441,8 @@ abstract class ASTReplacingVisitor[A] {
       case ia: IndexAccessor     => visitAssignable(ia)
       case fa: FieldAccessor     => visitAssignable(fa)
       case FunctionApp(n, args)  => FunctionApp(n, visitExpr(args))
-      case ListLiteral(els)      => ListLiteral(for (e <- els) yield visitExpr(e))
+      case ListLiteral(els)      => ListLiteral(els map visitExpr)
+      case MapLiteral(dom,els)   => MapLiteral(dom,els map visitExpr)
       case Range(str,end)        => Range(visitExpr(str),visitExpr(end))
       case Comprehension(exp,v,iter) => Comprehension(visitExpr(exp),v,visitExpr(iter))
       case il: IntLiteral   => il

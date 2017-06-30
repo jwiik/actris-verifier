@@ -42,13 +42,13 @@ ENDCOPYRIGHT
 actor DCSplit()
 	int(size=13) IN ==> int(size=13) DC, int(size=13) AC :
 
-	int(size=8) count := int2bv(0,8);
+	int(size=8) count := int(0,8);
 	
 	contract IN:64 ==> DC:1, AC:63 
 	  ensures DC[@] = IN[@]
 	end
 	
-	invariant int2bv(0,8) <= count && count < int2bv(64,8)
+	invariant int(0,8) <= count && count < int(64,8)
 	invariant (rd@(IN) % 64) = bv2int(count)
 	invariant rd@(IN) = 0 ==> tot@(DC) = 0
 	invariant rd@(IN) < 2 ==> tot@(AC) = 0
@@ -57,15 +57,15 @@ actor DCSplit()
 
 	dc: action IN:[ x ] ==> DC:[ x ]
 	guard
-		count = int2bv(0,8)
+		count = int(0,8)
 	do
-		count := int2bv(1,8);
+		count := int(1,8);
 	end
 
 	ac: action IN:[ x ] ==> AC:[ x ]
 	do
 		// This actually limits count to 63, equivalent to '(count+1) mod 64' it seems ...
-		count := (count + int2bv(1,8)) & int2bv(63,8);
+		count := (count + int(1,8)) & int(63,8);
 	end
 
 	priority

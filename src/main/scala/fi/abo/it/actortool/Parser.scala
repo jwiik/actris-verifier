@@ -91,14 +91,14 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   def formalParam = filePositioned(
       (typeName ~ ident ~ opt("[" ~> numericLit <~ "]")  ) ^^ {
         case (tName ~ id ~ None) => Declaration(id,tName,true,None)
-        case (tName ~ id ~ Some(n)) => Declaration(id,ListType(tName,n.toInt),true,None)
+        case (tName ~ id ~ Some(n)) => Declaration(id,MapType(IntType,tName,n.toInt),true,None)
       }  
     )
   
   def procFormalParam = filePositioned(
       (typeName ~ ident ~ opt("[" ~> numericLit <~ "]") ) ^^ {
         case (tName ~ id ~ None) => Declaration(id,tName,false,None)
-        case (tName ~ id ~ Some(n)) => Declaration(id,ListType(tName,n.toInt) ,false,None)
+        case (tName ~ id ~ Some(n)) => Declaration(id,MapType(IntType,tName,n.toInt) ,false,None)
       }  
     )
     
@@ -181,9 +181,9 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     case (typ ~ id ~ None ~ None) => Declaration(id,typ,false,None)
     case (typ ~ id ~ None ~ Some("=" ~ value)) => Declaration(id,typ,true,Some(value))
     case (typ ~ id ~ None ~ Some(":=" ~ value)) => Declaration(id,typ,false,Some(value))
-    case (typ ~ id ~ Some(n) ~ None) => Declaration(id,ListType(typ,n.toInt),false,None)
-    case (typ ~ id ~ Some(n) ~ Some("=" ~ value)) => Declaration(id,ListType(typ,n.toInt),true,Some(value))
-    case (typ ~ id ~ Some(n) ~ Some(":=" ~ value)) => Declaration(id,ListType(typ,n.toInt),false,Some(value))
+    case (typ ~ id ~ Some(n) ~ None) => Declaration(id,MapType(IntType,typ,n.toInt),false,None)
+    case (typ ~ id ~ Some(n) ~ Some("=" ~ value)) => Declaration(id,MapType(IntType,typ,n.toInt),true,Some(value))
+    case (typ ~ id ~ Some(n) ~ Some(":=" ~ value)) => Declaration(id,MapType(IntType,typ,n.toInt),false,Some(value))
   })
   
   def actionLabel: Parser[String] = repsep(ident,".") ^^ { case list => list.mkString(".") }
@@ -382,8 +382,9 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
       })
   
   def listLiteral: Parser[Expr] = filePositioned(
-      (("[" ~> repsep(expression,",") <~ "]") ^^{
-        case lst => ListLiteral(lst)
+      (opt("[" ~> typeName <~ "]") ~ ("[" ~> repsep(expression,",") <~ "]") ^^{
+        case (None ~ lst) => ListLiteral(lst)
+        case (Some(t) ~ lst) => MapLiteral(t,lst)
       }) |
       (("[" ~> comprehension <~ "]") ^^{
         case lst => lst
@@ -482,7 +483,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   
   def compositeType: Parser[Type] = filePositioned(
     ("List" ~> ("(" ~> "type" ~> ":" ~> typeName ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")") ^^ {
-      case (contType ~ size) => ListType(contType,size.toInt)
+      case (contType ~ size) => MapType(IntType,contType,size.toInt)
     }) |
     ("Map" ~> ("(" ~>  typeName ~ "->" ~ typeName) ~ ("," ~> "size" ~> "=" ~> numericLit) <~ ")" ^^ {
       case ((domainType ~ "->" ~ rangeType) ~ size) => MapType(domainType,rangeType,size.toInt)

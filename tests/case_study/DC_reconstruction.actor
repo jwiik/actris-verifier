@@ -16,7 +16,7 @@ network DC_Reconstruction()
   StartMode:
   contract BTYPE:3 ==> AC_PRED_DIR:1
     guard (BTYPE[@] & NEWVOP) != 0x000
-    ensures AC_PRED_DIR[@] = -int2bv(2,3)
+    ensures AC_PRED_DIR[@] = -int(2,3)
   end
 	
   InterMode:
@@ -26,8 +26,8 @@ network DC_Reconstruction()
     guard (BTYPE[@] & NEWVOP) = 0x000
     guard (BTYPE[@] & INTRA) = 0x000
     guard (BTYPE[@] & INTER) != 0x000 && (BTYPE[@] & ACCODED) != 0x000
-    ensures AC_PRED_DIR[@] = int2bv(0,3)
-	ensures MODE[@] = int2bv(0,3)
+    ensures AC_PRED_DIR[@] = int(0,3)
+	ensures MODE[@] = int(0,3)
   end
   
   IntraMode:
@@ -37,8 +37,8 @@ network DC_Reconstruction()
     guard (BTYPE[@] & NEWVOP) = 0x000
     guard (BTYPE[@] & INTER) = 0x000
     guard (BTYPE[@] & INTRA) != 0x000
-    ensures int2bv(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int2bv(2,3)
-	ensures int2bv(0,3) <= MODE[@] && MODE[@] <= int2bv(2,3)
+    ensures int(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int(2,3)
+	ensures int(0,3) <= MODE[@] && MODE[@] <= int(2,3)
   end
 	
   OtherMode:
@@ -47,7 +47,7 @@ network DC_Reconstruction()
     //guard (BTYPE[@] & INTER) = 0x000
     guard (BTYPE[@] & INTRA) = 0x000
     guard (BTYPE[@] & ACCODED) = 0x000
-    ensures AC_PRED_DIR[@] = -int2bv(1,3)
+    ensures AC_PRED_DIR[@] = -int(1,3)
   end
   
   
@@ -61,7 +61,7 @@ network DC_Reconstruction()
   	tot@(ch_A) = 0 && tot@(ch_B) = 0 && tot@(ch_C) = 0
   chinvariant mode(StartMode) ==>  3 * tot@(AC_PRED_DIR) = rd@(ch_BTYPE_ip)
   
-  chinvariant mode(StartMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int2bv(2,3) 
+  chinvariant mode(StartMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int(2,3) 
   
   // ================ Inter ================
   chinvariant mode(InterMode) && tot@(BTYPE) > 0 ==> 
@@ -82,7 +82,7 @@ network DC_Reconstruction()
     rd@(ch_BTYPE_ip) = tot@(SIGNED) &&
     rd@(ch_BTYPE_ip) = tot@(QUANT)
     
-  chinvariant mode(InterMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = int2bv(0,3) && AC_PRED_DIR[@] = MODE[@]
+  chinvariant mode(InterMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = int(0,3) && AC_PRED_DIR[@] = MODE[@]
     
   
   // ================ Intra ================
@@ -107,8 +107,8 @@ network DC_Reconstruction()
     rd@(ch_BTYPE_ip) = tot@(SIGNED) &&
     rd@(ch_BTYPE_ip) = tot@(QUANT)
   
-  chinvariant mode(IntraMode) && tot@(AC_PRED_DIR) > 0 ==> int2bv(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int2bv(2,3)
-  chinvariant mode(IntraMode) && tot@(MODE) > 0 ==> int2bv(0,3) <= MODE[@] && MODE[@] <= int2bv(2,3)
+  chinvariant mode(IntraMode) && tot@(AC_PRED_DIR) > 0 ==> int(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int(2,3)
+  chinvariant mode(IntraMode) && tot@(MODE) > 0 ==> int(0,3) <= MODE[@] && MODE[@] <= int(2,3)
   
   // ================ Other ================
   chinvariant mode(OtherMode) && tot@(BTYPE) > 0 ==> 
@@ -129,7 +129,7 @@ network DC_Reconstruction()
     0 = tot@(SIGNED) &&
     0 = tot@(QUANT)
   
-  chinvariant mode(OtherMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int2bv(1,3) 
+  chinvariant mode(OtherMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int(1,3) 
   
   entities
     broadcast = Broadcast();

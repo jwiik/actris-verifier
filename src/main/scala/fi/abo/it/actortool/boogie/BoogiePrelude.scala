@@ -247,6 +247,7 @@ object MapPL extends BoogiePreludeComponent {
 // ---------------------------------------------------------------
 type Map a b;
 function List#Empty<U>(U): Map int U;
+function Map#Empty<T,U>(T, U): Map T U;
 function Map#Select<T,U>(Map T U, T): U;
 function Map#Store<T,U>(Map T U, T, U): Map T U;
 axiom (

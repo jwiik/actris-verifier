@@ -367,6 +367,17 @@ class StmtExpTranslator() {
         }
         listlit
       }
+      case MapLiteral(dom,lst) => {
+        val domDummy = getDummyValue(dom)
+        var listlit: Boogie.Expr = B.MapEmpty(domDummy,transExprI(lst(0)))
+        var i = 0
+        for (e <- lst) {
+          val transE = transExprI(e)
+          listlit = B.Fun("Map#Store",listlit,getValue(dom,i),transE)
+          i = i+1
+        }
+        listlit
+      }
 
       case il@IntLiteral(i) =>
         if (il.typ.isBv) {
@@ -409,6 +420,18 @@ class StmtExpTranslator() {
         }
       }
     }
+  }
+  
+  def getDummyValue(tp: Type) = tp match {
+    case IntType => B.Int(0)
+    case BvType(sz,_) => Boogie.BVLiteral("0",sz)
+    case _ => throw new RuntimeException()
+  }
+  
+  def getValue(tp: Type, num: Int) = tp match {
+    case IntType => B.Int(num)
+    case BvType(sz,_) => Boogie.BVLiteral(num.toString,sz)
+    case _ => throw new RuntimeException()
   }
   
   def getBullet(ch: Boogie.Expr, subBullet: Boolean) = if (subBullet) B.Isub(ch) else B.I(ch)

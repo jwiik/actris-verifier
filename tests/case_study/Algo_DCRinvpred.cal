@@ -21,7 +21,7 @@ actor Algo_DCRinvpred ()
 		AC_PRED_DIR:1
 		
 		guard (BTYPE[@] & NEWVOP) != 0x000
-		ensures AC_PRED_DIR[@] = -int2bv(2,3)
+		ensures AC_PRED_DIR[@] = -int(2,3)
 		
 	end
 	
@@ -40,8 +40,8 @@ actor Algo_DCRinvpred ()
 		
 		guard (BTYPE[@] & NEWVOP) = 0x000
 		guard (BTYPE[@] & INTER) != 0x000 && (BTYPE[@] & ACCODED) != 0x000
-		ensures AC_PRED_DIR[@] = int2bv(0,3)
-		ensures MODE[@] = int2bv(0,3)
+		ensures AC_PRED_DIR[@] = int(0,3)
+		ensures MODE[@] = int(0,3)
 	end
 	
 	OtherMode:
@@ -54,7 +54,7 @@ actor Algo_DCRinvpred ()
 		guard (BTYPE[@] & NEWVOP) = 0x000
 		guard (BTYPE[@] & INTRA) = 0x000
 		guard (BTYPE[@] & ACCODED) = 0x000
-		ensures AC_PRED_DIR[@] = -int2bv(1,3)
+		ensures AC_PRED_DIR[@] = -int(1,3)
 	end
 	
 	IntraMode:
@@ -76,8 +76,8 @@ actor Algo_DCRinvpred ()
 		guard (BTYPE[@] & NEWVOP) = 0x000
 		guard (BTYPE[@] & INTER) = 0x000
 		guard (BTYPE[@] & INTRA) != 0x000
-		ensures int2bv(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int2bv(2,3)
-		ensures int2bv(0,3) <= MODE[@] && MODE[@] <= int2bv(2,3)
+		ensures int(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int(2,3)
+		ensures int(0,3) <= MODE[@] && MODE[@] <= int(2,3)
 	end
 	
 	invariant rd@(BTYPE) = 0 ==> state(read)
@@ -96,7 +96,7 @@ actor Algo_DCRinvpred ()
 		rd@(QP) = 0 && rd@(QFS_DC) = 0 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot(QF_DC) = 0
 	invariant mode(StartMode) && rd@(BTYPE) = 0 ==> tot@(AC_PRED_DIR) = 0
 	invariant mode(StartMode) && rd@(BTYPE) > 0 ==> tot@(AC_PRED_DIR) = 1
-	invariant mode(StartMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int2bv(2,3)
+	invariant mode(StartMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int(2,3)
 	
 	
 	// Inter Mode
@@ -113,7 +113,7 @@ actor Algo_DCRinvpred ()
 		rd@(BTYPE) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 0
 	invariant mode(InterMode) && state(advance)  ==> 
 		rd@(BTYPE) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 1
-	invariant mode(InterMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = int2bv(0,3) && MODE[@] = int2bv(0,3)
+	invariant mode(InterMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = int(0,3) && MODE[@] = int(0,3)
 	
 	// Intra Mode
 	invariant mode(IntraMode) ==> state(read) || state(intra) || state(sat) || state(advance)
@@ -128,7 +128,7 @@ actor Algo_DCRinvpred ()
 		rd@(BTYPE) = 1 && rd@(A) = 1 && rd@(B) = 1 && rd@(C) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 0
 	invariant mode(IntraMode) && state(advance)  ==> 
 		rd@(BTYPE) = 1 && rd@(A) = 1 && rd@(B) = 1 && rd@(C) = 1 && rd@(QP) = 1 && rd@(QFS_DC) = 1 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 1 && tot@(PTR) = 1 && tot@(SIGNED) = 1 && tot@(QUANT) = 1  && tot@(QF_DC) = 1
-	invariant mode(IntraMode) && tot@(AC_PRED_DIR) > 0 ==> int2bv(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int2bv(2,3) && AC_PRED_DIR[@] = MODE[@]
+	invariant mode(IntraMode) && tot@(AC_PRED_DIR) > 0 ==> int(0,3) <= AC_PRED_DIR[@] && AC_PRED_DIR[@] <= int(2,3) && AC_PRED_DIR[@] = MODE[@]
 	
 	
 	// Other Mode
@@ -140,7 +140,7 @@ actor Algo_DCRinvpred ()
 		
 	invariant mode(OtherMode) && state(advance) ==>
 		(rd@(BTYPE) = 1 && rd@(A) = 0 && rd@(B) = 0 && rd@(C) = 0 && rd@(QP) = 1 && rd@(QFS_DC) = 0 && tot@(AC_PRED_DIR) = 1 && tot@(MODE) = 0 && tot@(PTR) = 0 && tot@(SIGNED) = 0 && tot@(QUANT) = 0 && tot@(QF_DC) = 0)
-	invariant mode(OtherMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int2bv(1,3)
+	invariant mode(OtherMode) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] = -int(1,3)
 	
 	// Decoded 'quantiser_scale' - see ISO/IEC 14496-2
 	int(size=6) s_QP;
@@ -149,7 +149,7 @@ actor Algo_DCRinvpred ()
 	int(size=2) round;
 
 	// Have 4 8x8 blocks per MB
-	int(size=32) BUF_SIZE = int2bv(984,32);
+	int(size=32) BUF_SIZE = int(984,32);
 
 	// Pointer to current 8x8 block on current row
 	// using circular buffer addressing. Start at 4, since 0-3 are reserved.
@@ -160,7 +160,7 @@ actor Algo_DCRinvpred ()
 
 	  // JWJ: increased size
 	// Initialize to the dummy values needed for uncoded blocks (always mapped to index 0)
-	Map(int(size=32) -> int(size=13),size=984) dc_buf; //:= [ DCVAL : for int k in 1 .. BUF_SIZE ];
+	Map(int(size=32) -> int(size=13),size=984) dc_buf := [ DCVAL : for int(size=32) k in 1 .. 984 ];
 
 	// Decoded DC prediction value
 	int(size=13) dc_pred;
@@ -225,23 +225,23 @@ actor Algo_DCRinvpred ()
 	initialize ==>
 	do
 		comp := 0x0;
-		ptr := int2bv(8,32);
+		ptr := int(8,32);
 	end
 
 	// Reconstructed DC coefficient  
-	start: action BTYPE:[ cmd ] ==> AC_PRED_DIR:[ int2bv(-2,3) ]
+	start: action BTYPE:[ cmd ] ==> AC_PRED_DIR:[ -int(2,3) ]
 	guard
 		(cmd & NEWVOP) != 0x000
 	do
 		comp := 0x0;
-		ptr := int2bv(8,32);
+		ptr := int(8,32);
 	end
 
 	// Used to skip BTYPE tokens where necessary
 	skip: action BTYPE:[ x ] ==>
 	end
 
-	read.inter_ac: action BTYPE:[ cmd ], QP:[ qp ] ==> AC_PRED_DIR:[ int2bv(0,3) ], MODE:[ int2bv(0,3) ], PTR:[ int2bv(0,11) ],
+	read.inter_ac: action BTYPE:[ cmd ], QP:[ qp ] ==> AC_PRED_DIR:[ int(0,3) ], MODE:[ int(0,3) ], PTR:[ int(0,11) ],
 		SIGNED:[ true ], QUANT:[ s_QP ]
 	guard
 		(cmd & INTER) != 0x000 &&
@@ -249,10 +249,10 @@ actor Algo_DCRinvpred ()
 	do
 		is_signed := true;
 		s_QP := qp;
-		round := bvresize( ((s_QP & int2bv(1,6)) ^ int2bv(1,6)) , 2 );
+		round := bvresize( ((s_QP & int(1,6)) ^ int(1,6)) , 2 );
 	end
 
-	read.other: action BTYPE:[ cmd ], QP:[ qp ] ==> AC_PRED_DIR:[ int2bv(-1,3) ]
+	read.other: action BTYPE:[ cmd ], QP:[ qp ] ==> AC_PRED_DIR:[ -int(1,3) ]
 	guard
 		(cmd & INTRA) = 0x000 &&
 		(cmd & ACCODED) = 0x000
@@ -274,7 +274,7 @@ actor Algo_DCRinvpred ()
 		int(size=13) vert = abs(dca - dcb) , 
 		bool top = vert < horiz , 
 		int(size=3) s , 
-		bool ac = (cmd & ACPRED) != int2bv(0,12)
+		bool ac = (cmd & ACPRED) != int(0,12)
 	do
 		s_QP := qp;
 		scaler := bvresize(dc_scaler(),7);
@@ -285,37 +285,37 @@ actor Algo_DCRinvpred ()
 			else
 				dca
 			end) 
-			+ bvresize( (scaler >> int2bv(1,7)) / scaler , 13 );
+			+ bvresize( (scaler >> int(1,7)) / scaler , 13 );
 			
 		// See ISO/IEC 14496-2 Section 7.4.3.2.
 		s := 
 			if not ac then
-				int2bv(0,3)
+				int(0,3)
 			else
 				if top then
-					int2bv(2,3)
+					int(2,3)
 				else
-					int2bv(1,3)
+					int(1,3)
 				end
 			end;
 		// Set 'ac_pred_dir'
-		is_signed := scaler = int2bv(0,7);
+		is_signed := scaler = int(0,7);
 		// Will never be true!
 
 	end
 
 	getdc.inter: action QFS_DC:[ dc ] ==>
 	var
-		int(size=13) v = (bvresize(s_QP,13) * ((abs(dc) << int2bv(1,13)) + int2bv(1,13))) - bvresize(round,13) // See ISO/IEC 14496-2 Section 7.4.4.2.1 (H.263).
+		int(size=13) v = (bvresize(s_QP,13) * ((abs(dc) << int(1,13)) + int(1,13))) - bvresize(round,13) // See ISO/IEC 14496-2 Section 7.4.4.2.1 (H.263).
 
 	do
-		dc_val := if dc = int2bv(0,13) then
-			int2bv(0,13)
+		dc_val := if dc = int(0,13) then
+			int(0,13)
 		else
 			if not is_signed then
 				dc
 			else
-				if dc < int2bv(0,13) then
+				if dc < int(0,13) then
 					-v
 				else
 					v
@@ -341,13 +341,13 @@ actor Algo_DCRinvpred ()
 
 	advance: action ==>
 	do
-		comp := comp + int2bv(1,4);
-		if comp = int2bv(6,4) then
-			comp := int2bv(0,4);
-			ptr := if ptr = int2bv(8,32) then
-				BUF_SIZE - int2bv(8,32)
+		comp := comp + int(1,4);
+		if comp = int(6,4) then
+			comp := int(0,4);
+			ptr := if ptr = int(8,32) then
+				BUF_SIZE - int(8,32)
 			else
-				ptr - int2bv(8,32)
+				ptr - int(8,32)
 			end;
 		end
 	end

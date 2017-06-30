@@ -506,7 +506,11 @@ case class FieldAccessor(override val exp: Expr, val suffix: String) extends Suf
 
 sealed case class FunctionApp(val name: String, val parameters: List[Expr]) extends Expr
 
-sealed case class ListLiteral(val elements: List[Expr]) extends Expr
+sealed abstract class EnumLiteral extends Expr {
+  val elements: List[Expr]
+}
+sealed case class ListLiteral(override val elements: List[Expr]) extends EnumLiteral
+sealed case class MapLiteral(val domType: Type, override val elements: List[Expr]) extends EnumLiteral
 sealed case class Range(val start: Expr, val end: Expr) extends Expr
 sealed case class Comprehension(val expr: Expr, val variable: Declaration, val iterand: Expr) extends Expr
 
@@ -555,7 +559,12 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isChannel = false
   def isIndexed = false
   def isActor = false
-  def isList = false
+  def isList = {
+    this match {
+      case MapType(IntType,_,_) => true
+      case _ => false
+    }
+  }
   def isRef = false
   def isBv = false
   def isMap = false
@@ -617,11 +626,11 @@ case class ChanType(contentType: Type) extends IndexedType("Chan",contentType,In
 case class ActorType(actor: DFActor) extends Type("actor") {
   override def isActor = true
 }
-case class ListType(contentType: Type, val size: Int) extends IndexedType(
-    "List("+contentType.id+","+size+")",contentType,IntType(-1)) {
-  override def isList = true
-}
-case class MapType(val domainType: Type, val rangeType: Type, val size: Int) extends IndexedType("Map[" + domainType.id + "-->" + rangeType.id + "]", rangeType, domainType) {
+//case class ListType(contentType: Type, val size: Int) extends IndexedType(
+//    "List("+contentType.id+","+size+")",contentType,IntType(-1)) {
+//  override def isList = true
+//}
+case class MapType(val domainType: Type, val rangeType: Type, val size: Int) extends IndexedType("Map(" + domainType.id + "->" + rangeType.id + ",size=" + size + ")", rangeType, domainType) {
   override def isMap = true
 }
 case class BvType(val size: Int, val signed: Boolean) extends PrimitiveType((if (signed) "bv" else "ubv")+size) {

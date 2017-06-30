@@ -389,7 +389,7 @@ object Resolver {
         }
         val v = inPat.vars(0)
         if (vars contains v.id) actorCtx.error(inPat.pos, "Variable name already used: " + v.id)
-        val d = Declaration(v.id,ListType(pDecl.portType,inPat.repeat),false,None)
+        val d = Declaration(v.id,MapType(IntType,pDecl.portType,inPat.repeat),false,None)
         v.typ = d.typ
         vars = vars + (d.id -> d)
       }
@@ -436,10 +436,10 @@ object Resolver {
         if (!eType.isList) {
           actorCtx.error(outPat.pos, "Output pattern expression with a repeat clause has to be of type List")
         }
-        val lstType = eType.asInstanceOf[ListType]
-        if (!TypeUtil.isCompatible(lstType.contentType, port.portType)) {
+        val lstType = eType.asInstanceOf[MapType]
+        if (!TypeUtil.isCompatible(lstType.rangeType, port.portType)) {
           ctx.error(e.pos, 
-                  "Output pattern type " + lstType.contentType.id + " does not match port type " + port.portType.id)
+                  "Output pattern type " + lstType.rangeType.id + " does not match port type " + port.portType.id)
         }
         if (lstType.size < outPat.repeat) {
           actorCtx.error(outPat.pos, "Repeat has to be smaller than or equal to List size")
@@ -944,20 +944,40 @@ object Resolver {
             ctx.error(e.pos,"List elements do not have consistent types. Found " + cntType.id + " and " + t.id)
           }
         }
-        ll.typ = ListType(cntType,size)
+        ll.typ = MapType(IntType,cntType,size)
         ll.typ
+      }
+      case ml@MapLiteral(dom,lst) => {
+        val size = lst.size
+        assert(size > 0)
+        var cntType = resolveExpr(ctx,lst(0))
+        for (e <- lst.drop(1)) {
+          val t = resolveExpr(ctx,e)
+          val lub = TypeUtil.getLub(cntType, t)
+          if (lub.isDefined) {
+            cntType = lub.get
+          }
+          else {
+            ctx.error(e.pos,"List elements do not have consistent types. Found " + cntType.id + " and " + t.id)
+          }
+        }
+        ml.typ = MapType(dom,cntType,size)
+        ml.typ
       }
       case cmpr@Comprehension(exp,v,iter) => {
         val tIter = resolveExpr(ctx,iter)
-        if (tIter.isInstanceOf[ListType]) {
-          val lstType = tIter.asInstanceOf[ListType]
-          val cntType = lstType.contentType
-          if (!TypeUtil.isCompatible(cntType, v.typ)) {
-            ctx.error(cmpr.pos, "The comprehension variable and iterand types do not match")
+        if (tIter.isMap) {
+          val lstType = tIter.asInstanceOf[MapType]
+//          val cntType = lstType.contentType
+//          if (!TypeUtil.isCompatible(cntType, v.typ)) {
+//            ctx.error(cmpr.pos, "The comprehension variable and iterand types do not match")
+//          }
+          if (!v.typ.isInt && !v.typ.isBv) {
+            ctx.error(v.pos, "Illegal comprehension variable type: " + v.typ.id)
           }
           val cmprCtx = new FunctionBodyContext(cmpr,Map(v.id -> v),ctx)
           val tExp = resolveExpr(cmprCtx, exp)
-          cmpr.typ = ListType(tExp,lstType.size)
+          cmpr.typ = MapType(v.typ,tExp,lstType.size)
         }
         else {
           ctx.error(cmpr.pos,"The iterand of a comprehension has to be a list")
@@ -971,7 +991,7 @@ object Resolver {
         }
         resolveExpr(ctx,rng.start)
         resolveExpr(ctx,rng.end)
-        rng.typ = ListType(IntType,e-s+1)
+        rng.typ = MapType(IntType,IntType,e-s+1)
         rng.typ
       }
       case rng@Range(_,_) => {
@@ -1032,10 +1052,9 @@ object Resolver {
       return UnknownType
     }
     for (p <- params) resolveExpr(ctx, p)
-    val value = params(0) match {
-      case IntLiteral(n) => n
-      case UnMinus(IntLiteral(n)) => -n
-      case _ => ctx.error(params(0).pos, "The 1st argument to '" + fa.name +  "' has to be an integer literal")
+    params(0) match {
+      case IntLiteral(n) =>
+      case _ => ctx.error(params(0).pos, "The 1st argument to '" + fa.name +  "' has to be an integer literal " + params(0))
     }
     val size = params(1).asInstanceOf[IntLiteral].value
     
@@ -1329,8 +1348,11 @@ object Resolver {
         if (isConstant(ctx,id)) ctx.error(id.pos, "Assignment to constant " + id.id) 
         val it = resolveExpr(ctx,id)
         val et = resolveExpr(ctx, exp)
-        if (!TypeUtil.isCompatible(it, et)) 
+        
+        if (!TypeUtil.isCompatible(it, et)) {
+          println(exp)
           ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable '" + id.id + "' of type " + it.id)
+        }
       case MapAssign(e1,e2) =>
         val it = resolveExpr(ctx,e1)
         val et = resolveExpr(ctx,e2)
@@ -1343,7 +1365,7 @@ object Resolver {
       case loop@ForEach(v,iterand,invs,body) =>
         val iterT = resolveExpr(ctx,iterand)
         iterT match {
-          case ListType(cType,size) => {
+          case MapType(IntType,cType,size) => {
             if (!TypeUtil.isCompatible(cType, v.typ)) {
               ctx.error(iterand.pos, "Iterator variable is not compatible with the list content")
             }

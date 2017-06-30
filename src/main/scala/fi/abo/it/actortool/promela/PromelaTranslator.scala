@@ -497,6 +497,12 @@ class PromelaTranslator(params: CommandLineParameters) {
               stmt += P.Assign(P.IndexAccessor(P.VarExp(newName),P.IntLiteral(i)) , translateExpr(l)(renamings))
             }
           }
+          case MapLiteral(_,lst) => {
+            stmt += P.VarDecl(newName,translateType(d.typ), None)
+            for ((l,i) <- lst.zipWithIndex) {
+              stmt += P.Assign(P.IndexAccessor(P.VarExp(newName),P.IntLiteral(i)) , translateExpr(l)(renamings))
+            }
+          }
           case x => stmt += P.VarDecl(newName,translateType(d.typ), Some(translateExpr(x)(renamings)))
         }
       }
@@ -513,7 +519,7 @@ class PromelaTranslator(params: CommandLineParameters) {
     stmt match {
       case Assign(id,e) => {
         //val (newE,info) = ListLiteralReplacer.findAndReplace(e)
-        if (id.typ.isList) {
+        if (id.typ.isMap) {
           e match {
             case IfThenElse(cond,thn,els) => {
               val newIfStmt = {
@@ -565,6 +571,18 @@ class PromelaTranslator(params: CommandLineParameters) {
               //sequence += P.Assign(translateExpr(id),translateExpr(newThn))
               P.Sequence(sequence.toList)
             }
+            case MapLiteral(_,lst) => {
+              val (_,info) = ListLiteralReplacer.findAndReplace(e)
+              val sequence = new ListBuffer[P.Stmt]
+              for ((s,lit) <- info) {
+                sequence += P.VarDecl(s,translateType(lit.typ),None)
+                for ((l,i) <- lit.elements.zipWithIndex) {
+                  sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
+                }
+              }
+              //sequence += P.Assign(translateExpr(id),translateExpr(newThn))
+              P.Sequence(sequence.toList)
+            }
             case x => throw new RuntimeException("Cannot assign directly to array in Promela: " + ASTPrinter.get.printExpr(x))
           }
           
@@ -603,24 +621,30 @@ class PromelaTranslator(params: CommandLineParameters) {
     }
   }
   
-  object ListLiteralReplacer extends ASTReplacingVisitor[ListBuffer[(String,ListLiteral)]] {
+  object ListLiteralReplacer extends ASTReplacingVisitor[ListBuffer[(String,EnumLiteral)]] {
     
     var count = 0
     
-    def findAndReplace(expr: Expr): (Expr,List[(String,ListLiteral)]) = {
-      val buffer = new ListBuffer[(String,ListLiteral)]
+    def findAndReplace(expr: Expr): (Expr,List[(String,EnumLiteral)]) = {
+      val buffer = new ListBuffer[(String,EnumLiteral)]
       count = 0
       val e = visitExpr(expr)(buffer)
       (e, buffer.toList)
     }
     
-    override def visitExpr(expr: Expr)(implicit map: ListBuffer[(String,ListLiteral)]) = {
+    override def visitExpr(expr: Expr)(implicit map: ListBuffer[(String,EnumLiteral)]) = {
       expr match {
         case ll: ListLiteral => {
           val name = "__replaced_lstlit__"+count
           count = count+1
           map += (name -> ll)
           Id(name).withType(ll.typ)
+        }
+        case ml: MapLiteral => {
+          val name = "__replaced_lstlit__"+count
+          count = count+1
+          map += (name -> ml)
+          Id(name).withType(ml.typ)
         }
         case _ => super.visitExpr(expr)
       }
@@ -697,7 +721,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       case StateType(_,_) => P.NamedType("int")
       case BoolType => P.NamedType("bool")
       case MapType(_,r,s) => P.ArrayType(translateType(r),s)
-      case ListType(c,s) => P.ArrayType(translateType(c),s)
+      //case ListType(c,s) => P.ArrayType(translateType(c),s)
       case x => throw new RuntimeException("Unsupported type in Promela backend: " + tp.id)
     }
   }

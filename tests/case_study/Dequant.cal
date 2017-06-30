@@ -76,13 +76,13 @@ actor Dequant()
 	get_qp: action QP:[ q ], DC:[ i ] ==> OUT:[ i ]
 	do
 		quant := q;
-		round := bvresize((q & int2bv(1,6)) ^ int2bv(1,6), 2);
-		count := int2bv(0,7);
+		round := bvresize((q & int(1,6)) ^ int(1,6), 2);
+		count := int(0,7);
 	end
 
 	done: action ==>
 	guard
-		count = int2bv(63,7)
+		count = int(63,7)
 	end
 
 	function abs(int(size=13) x) --> int(size=13) :
@@ -95,19 +95,19 @@ actor Dequant()
 
 	ac: action AC:[ i ] ==> OUT:[ saturate(o) ]
 	var
-		int(size=13) v = bvresize(quant,13) * ((abs(i) << int2bv(1,13)) + int2bv(1,13)) - bvresize(round,13),
+		int(size=13) v = bvresize(quant,13) * ((abs(i) << int(1,13)) + int(1,13)) - bvresize(round,13),
 		int(size=13) o =
-		if i = int2bv(0,13) then
-			int2bv(0,13)
+		if i = int(0,13) then
+			int(0,13)
 		else
-			if i < int2bv(0,13) then
+			if i < int(0,13) then
 				-v
 			else
 				v
 			end
 		end
 	do
-		count := count + int2bv(1,7);
+		count := count + int(1,7);
 	end
 
 	schedule fsm start :

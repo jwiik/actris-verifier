@@ -247,7 +247,7 @@ case object ForEachExpander extends Preprocessor {
         case ForEach(v,iterand,invs,body) => {
           newDecls += Declaration(v.id,v.typ,false,None)
           val vId = Id(v.id); vId.typ = v.typ
-          val size = iterand.typ.asInstanceOf[ListType].size
+          val size = iterand.typ.asInstanceOf[MapType].size
           for (i <- 0 until size) {
             val accessor = iterand match {
               // If the iterand is a list literal, we can directly pick the correct element (reducing the AST)
@@ -276,49 +276,16 @@ case object ForEachExpander extends Preprocessor {
  * This preprocessor unrolls foreach loops. In contrast to most other preprocessors this preprocessor must
  * be called after typechecking.
  */
-case object RangeExpander extends Preprocessor {
-  def process(program: List[TopDecl]): List[TopDecl] = {
-    for (unit <- program) yield {
-      unit match {
-        case ba: BasicActor => unrollRange(ba)
-        case _ => unit
-      }
-    }
-  }
+case object RangeExpander extends BasicActorExprAndStmtReplacer {
   
-  def unrollRange(ba: BasicActor): BasicActor = {
-    val newMembers = for (m <- ba.members) yield {
-      m match {
-        case a: ActorAction => 
-          val newBody = unrollRange(a.body)
-          val newOpats = a.outputPattern.map { 
-            o => OutputPattern(o.portId, o.exps.map(unrollRange), o.repeat).withType(o.typ) 
-          }
-          val newVars = a.variables.map {
-            d => 
-              val value = d.value match {
-                case Some(v) => Some(unrollRange(v))
-                case None => None
-              }
-              Declaration(d.id,d.typ,d.constant,value) 
-          }
-          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody)
-        case x => x
-      }
-    }
-    
-    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
-    a
-  }
-  
-  def unrollRange(stmt: List[Stmt]): List[Stmt] = RangeReplacer.visitStmt(stmt)(Map.empty)
-  def unrollRange(expr: Expr): Expr = RangeReplacer.visitExpr(expr)(Map.empty)
+  def replace(stmt: List[Stmt]): List[Stmt] = RangeReplacer.visitStmt(stmt)(Map.empty)
+  def replace(expr: Expr): Expr = RangeReplacer.visitExpr(expr)(Map.empty)
   
   object RangeReplacer extends ASTReplacingVisitor[Unit] {
     override def visitExpr(expr: Expr)(implicit map: Unit): Expr = {
       expr match {
         case rng@Range(str,end) => {
-          val size = rng.typ.asInstanceOf[ListType].size
+          val size = rng.typ.asInstanceOf[MapType].size
           var list = List[Expr](str)
           for (i <- 1 until size) {
             list = list :+ (str match {
@@ -332,7 +299,7 @@ case object RangeExpander extends Preprocessor {
         case cmpr@Comprehension(expr,v,iter) => {
           val nExpr = visitExpr(expr)
           val nIter = visitExpr(iter)
-          val lstType = nIter.typ.asInstanceOf[ListType]
+          val lstType = nIter.typ.asInstanceOf[MapType]
           var list = List[Expr]()
           nIter match {
             case ListLiteral(lst) => {
@@ -345,13 +312,13 @@ case object RangeExpander extends Preprocessor {
             }
             case x => {
               for (i <- 0 until lstType.size) {
-                val acc = IndexAccessor(x,IntLiteral(i).withType(IntType)).withType(lstType.contentType)
+                val acc = IndexAccessor(x,IntLiteral(i).withType(IntType)).withType(lstType.rangeType)
                 list = list :+ IdReplacerString.visitExpr(nExpr)(Map(v.id -> acc))
               }
             }
           }
           
-          ListLiteral(list).withType(cmpr.typ)
+          MapLiteral(v.typ,list).withType(cmpr.typ)
         }
         case _ => super.visitExpr(expr)
       }
@@ -360,35 +327,87 @@ case object RangeExpander extends Preprocessor {
   
 }
 
+case object EnumLiteralToBvHandler extends BasicActorExprAndStmtReplacer {
+  
+  def replace(stmt: List[Stmt]): List[Stmt] = EnumLiteralHandler.visitStmt(stmt)(Map.empty)
+  def replace(expr: Expr): Expr = EnumLiteralHandler.visitExpr(expr)(Map.empty)
+  
+  object EnumLiteralHandler extends ASTReplacingVisitor[Unit] {
+    override def visitExpr(expr: Expr)(implicit map: Unit): Expr = {
+      expr match {
+        case FunctionApp("int",List(ListLiteral(lst),s)) => {
+          ListLiteral(
+            lst.map { l =>
+              l match {
+                case il: IntLiteral => FunctionApp("int",List(il,s))
+                case _ => throw new RuntimeException()
+              }
+            }
+          )
+        }
+        case FunctionApp("int",List(MapLiteral(dom,lst),s)) => {
+          MapLiteral(dom,
+            lst.map { l =>
+              l match {
+                case il: IntLiteral => FunctionApp("int",List(il,s))
+                case _ => throw new RuntimeException()
+              }
+            }
+          )
+        }
+        case _ => super.visitExpr(expr)
+      }
+    }
+  }
+  
+}
 
-
-class RepeatUnroller extends Preprocessor {
-  // STUB, not in working state  
+abstract class BasicActorExprAndStmtReplacer extends Preprocessor {
+  
   def process(program: List[TopDecl]): List[TopDecl] = {
     for (unit <- program) yield {
       unit match {
-        case ba: BasicActor => unrollRepeats(ba)
+        case ba: BasicActor => replace(ba)
         case _ => unit
       }
     }
   }
   
-  def unrollRepeats(ba: BasicActor): BasicActor = {
-    val newMembers = {
-      for (m <- ba.members) yield {
-        m match {
-          case a: ActorAction => {
-            for (ip <- a.inputPattern) yield {
-              
-            }
+  def replace(ba: BasicActor): BasicActor = {
+    val newMembers = for (m <- ba.members) yield {
+      m match {
+        case a: ActorAction => 
+          val newBody = replace(a.body)
+          val newOpats = a.outputPattern.map { 
+            o => OutputPattern(o.portId, o.exps.map(replace), o.repeat).withType(o.typ) 
           }
-          case x => x
+          val newVars = a.variables.map {
+            d => 
+              val value = d.value match {
+                case Some(v) => Some(replace(v))
+                case None => None
+              }
+              Declaration(d.id,d.typ,d.constant,value) 
+          }
+          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody)
+        case d: Declaration => {
+          val value = d.value match {
+            case Some(v) => Some(replace(v))
+            case None => None
+          }
+          Declaration(d.id,d.typ,d.constant,value) 
         }
+        case x => x
       }
     }
-    ba
+    
+    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+    a
   }
   
+  def replace(expr: Expr): Expr
+  def replace(stmt: List[Stmt]): List[Stmt]
+
 }
 
 

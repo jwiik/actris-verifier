@@ -100,7 +100,7 @@ actor Addressing_simple ()
 	//  | 2 | 3 | 
 	//  +---+---+
 	
-	int(size=8) mbx := int2bv(0,8);
+	int(size=8) mbx := int(0,8);
 
 	// Current macroblock x position
 	bool top_edge := true;
@@ -108,9 +108,9 @@ actor Addressing_simple ()
 	// Top edge macroblock flag
 	bool left_edge;
 
-	int(size=4) comp := int2bv(0,4);
+	int(size=4) comp := int(0,4);
 
-	int(size=8) mbwidth := int2bv(0,8);
+	int(size=8) mbwidth := int(0,8);
 
 	// Macroblock width of current vop
 	// Use 3 address lines for component index to save address calculation effort
@@ -119,7 +119,7 @@ actor Addressing_simple ()
 	// values are passed on ports A, B, C.
 	int(size=8) BUF_SIZE = int(121,8) + int(2,8);
 
-	Map(int(size=11) -> bool, size=984) coded //:= [ false : for int i in 1 .. BUF_SIZE * 8 ];
+	Map(int(size=11) -> bool, size=984) coded := [ false : for int(size=11) i in 1 .. 984 ];
 
 	int(size=8) ptr;
 
@@ -145,21 +145,21 @@ actor Addressing_simple ()
 	// New VOP
 	start: action BTYPE:[ cmd ] ==>
 	guard
-		(cmd & NEWVOP) != int2bv(0,12)
+		(cmd & NEWVOP) != int(0,12)
 	do
-		mbx := int2bv(0,8);
+		mbx := int(0,8);
 		top_edge := true;
 		left_edge := true;
-		comp := int2bv(0,4);
+		comp := int(0,4);
 	end
 
 	getw: action BTYPE:[ w ] ==>
 	do
 		mbwidth := bvresize(w,8);
-		ptr := int2bv(1,8);
-		ptr_left := int2bv(2,8);
-		ptr_above := int2bv(1,8) + bvresize(w,8);
-		ptr_above_left := int2bv(2,8) + bvresize(w,8);
+		ptr := int(1,8);
+		ptr_left := int(2,8);
+		ptr_above := int(1,8) + bvresize(w,8);
+		ptr_above_left := int(2,8) + bvresize(w,8);
 	end
 
 	geth: action BTYPE:[ h ] ==>
@@ -167,7 +167,7 @@ actor Addressing_simple ()
 
 	read.intra: action BTYPE:[ btype ] ==>
 	guard
-		(btype & INTRA) != int2bv(0,12)
+		(btype & INTRA) != int(0,12)
 	do
 		coded[access(ptr, comp)] := true;
 	end
@@ -179,13 +179,13 @@ actor Addressing_simple ()
 
 	advance: action ==>
 	do
-		comp := comp + int2bv(1,4);
-		if comp = int2bv(6,4) then
-			comp := int2bv(0,4);
-			mbx := mbx + int2bv(1,8);
+		comp := comp + int(1,4);
+		if comp = int(6,4) then
+			comp := int(0,4);
+			mbx := mbx + int(1,8);
 			left_edge := false;
 			if mbx = mbwidth then
-				mbx := int2bv(0,8);
+				mbx := int(0,8);
 				top_edge := false;
 				left_edge := true;
 			end
@@ -203,117 +203,117 @@ actor Addressing_simple ()
 		int(size=11) b, 
 		int(size=11) c
 	do
-		if comp = int2bv(0,4) then
+		if comp = int(0,4) then
 		
-			a := int2bv(0,11);  
-			b := int2bv(0,11);  
-			c := int2bv(0,11);
+			a := int(0,11);  
+			b := int(0,11);  
+			c := int(0,11);
 		
 			if not left_edge then
 			// left-neighbor is block 1 from previous macroblock
-				a := access(ptr_left, int2bv(1,4));
+				a := access(ptr_left, int(1,4));
 				if not coded[a] then
-					a := int2bv(0,11);
+					a := int(0,11);
 				end
 				if not top_edge then
 				// above-left-neighbor is block 3 from previous row, col macroblock
-					b := access(ptr_above_left, int2bv(3,4));
+					b := access(ptr_above_left, int(3,4));
 					if not coded[b] then
-						b := int2bv(0,11);
+						b := int(0,11);
 					end
 				end
 			end
 			// above-neighbor is block 2 from previous row macroblock
 			if not top_edge then
-				c := access(ptr_above, int2bv(2,4));
+				c := access(ptr_above, int(2,4));
 				if not coded[c] then
-					c := int2bv(0,11);
+					c := int(0,11);
 				end
 			end
 		end
 		
-		if comp = int2bv(1,4) then
+		if comp = int(1,4) then
 
-			a := access(ptr, int2bv(0,4)); // left-neighbor is block 0 from this macroblock
-			b := int2bv(0,11);
-			c := int2bv(0,11);
+			a := access(ptr, int(0,4)); // left-neighbor is block 0 from this macroblock
+			b := int(0,11);
+			c := int(0,11);
 
 			if not coded[a] then
-				a := int2bv(0,11);
+				a := int(0,11);
 			end
 			if not top_edge then
 			// above-left-neighbor is block 2 from previous row macroblock
-				b := access(ptr_above, int2bv(2,4));
+				b := access(ptr_above, int(2,4));
 				if not coded[b] then
-					b := int2bv(0,11);
+					b := int(0,11);
 				end
 				// above-neighbor is block 3 from previous row macroblock
-				c := access(ptr_above, int2bv(3,4));
+				c := access(ptr_above, int(3,4));
 				if not coded[c] then
-					c := int2bv(0,11);
+					c := int(0,11);
 				end
 			end
 		end
 		
-		if comp = int2bv(2,4) then
+		if comp = int(2,4) then
 			// Locate prediction indices for block 2
-			a := int2bv(0,11); 
-			b := int2bv(0,11); 
-			c := access(ptr, int2bv(0,4)); // above-neighbor is block 0 from this macroblock
+			a := int(0,11); 
+			b := int(0,11); 
+			c := access(ptr, int(0,4)); // above-neighbor is block 0 from this macroblock
 	
 			if not left_edge then
 			// left-neighbor is block 3 from previous macroblock
-				a := access(ptr_left, int2bv(3,4));
+				a := access(ptr_left, int(3,4));
 				if not coded[a] then
-					a := int2bv(0,11);
+					a := int(0,11);
 				end
 				// above-left-neighbor is block 1 from previous macroblock
-				b := access(ptr_left, int2bv(1,4));
+				b := access(ptr_left, int(1,4));
 				if not coded[b] then
-					b := int2bv(0,11);
+					b := int(0,11);
 				end
 			end
 			if not coded[c] then
-				c := int2bv(0,11)
+				c := int(0,11)
 			end
 		end
 		
-		if comp = int2bv(3,4) then
+		if comp = int(3,4) then
 		
-			a := access(ptr, int2bv(2,4)); // left-neighbor is block 2 from this macroblock
-			b := access(ptr, int2bv(0,4)); // above-left-neighbor is block 0 from this macroblock
-			c := access(ptr, int2bv(1,4)); // above-neighbor is block 1 from this macroblock
+			a := access(ptr, int(2,4)); // left-neighbor is block 2 from this macroblock
+			b := access(ptr, int(0,4)); // above-left-neighbor is block 0 from this macroblock
+			c := access(ptr, int(1,4)); // above-neighbor is block 1 from this macroblock
 		
 			if not coded[a] then
-				a := int2bv(0,11);
+				a := int(0,11);
 			end
 			if not coded[b] then
-				b := int2bv(0,11);
+				b := int(0,11);
 			end
 			if not coded[c] then
-				c := int2bv(0,11);
+				c := int(0,11);
 			end
 		end
 		
-		if comp = int2bv(4,4) or comp = int2bv(5,4) then
+		if comp = int(4,4) or comp = int(5,4) then
 		
-			a := int2bv(0,11); 
-			b := int2bv(0,11); 
-			c := int2bv(0,11);
+			a := int(0,11); 
+			b := int(0,11); 
+			c := int(0,11);
 		
 			if not left_edge then
 			// left-neighbor is from previous macroblock
 				// Note: just set curr and requested comp to 0 since they offset
 				a := access(ptr_left, comp);
 				if not coded[a] then
-					a := int2bv(0,11);
+					a := int(0,11);
 				end
 				if not top_edge then
 				// above-left-neighbor is from previous row, col macroblock
 					// Note: just set curr and requested comp to 0 since they offset
 					b := access(ptr_above_left, comp);
 					if not coded[b] then
-						b := int2bv(0,11);
+						b := int(0,11);
 					end
 				end
 			end
@@ -322,7 +322,7 @@ actor Addressing_simple ()
 			if not top_edge then
 				c := access(ptr_above, comp);
 				if not coded[c] then
-					c := int2bv(0,11);
+					c := int(0,11);
 				end
 			end
 		end

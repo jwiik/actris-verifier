@@ -81,10 +81,10 @@ object B {
       case UintType(_) => BType.Int // BType.BV(x)
       case ChanType(contentType) => BType.Chan(type2BType(contentType))
       case ActorType(_) => BType.Actor
-      case ListType(contentType,_) =>{
-        BoogiePrelude.addComponent(MapPL)
-        BType.MapType(BType.Int,type2BType(contentType))
-      }
+//      case ListType(contentType,_) =>{
+//        BoogiePrelude.addComponent(MapPL)
+//        BType.MapType(BType.Int,type2BType(contentType))
+//      }
       case RefType(_) => BType.Ref
       case BvType(x,_) => BType.BV(x)
       case MapType(d,r,_) => {
@@ -165,5 +165,6 @@ object B {
   def This = VarExpr("this#")
   
   def ListEmpty(arg: Boogie.Expr) = Boogie.FunctionApp("List#Empty",List(arg));
+  def MapEmpty(dom: Boogie.Expr, rng: Boogie.Expr) = Boogie.FunctionApp("Map#Empty",List(dom,rng));
   
 }
