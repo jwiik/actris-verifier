@@ -25,19 +25,19 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       case nw: Network => {
         val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),false)
         val nwvs = verStructBuilder.buildStructure(nw)
-        scheduleCtx.schedules.flatMap(s => translateNetworkSchedule(s, nwvs))
+        scheduleCtx.schedules.flatMap(s => translateNetworkSchedule(scheduleCtx, s, nwvs))
       }
       case ba: BasicActor => {
         val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),false)
         val avs = verStructBuilder.buildStructure(ba)
-        translateFunctionDecl(avs) ::: scheduleCtx.schedules.flatMap(s => translateActorSchedule(s,avs))
+        translateFunctionDecl(avs) ::: scheduleCtx.schedules.flatMap(s => translateActorSchedule(scheduleCtx,s,avs))
       }
     }
       
     constDecls ::: decls
   }
   
-  def translateActorSchedule(schedule: ContractSchedule, avs: ActorVerificationStructure) = {
+  def translateActorSchedule(scheduleCtx: ScheduleContext, schedule: ContractSchedule, avs: ActorVerificationStructure) = {
     val decls = new collection.mutable.ListBuffer[Boogie.Stmt]
     val stmts = new collection.mutable.ListBuffer[Boogie.Stmt]
     val alreadyDeclared = collection.mutable.Set[String]()
@@ -122,7 +122,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     List(B.createProc(schedule.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))
   }
   
-  def translateNetworkSchedule(schedule: ContractSchedule, nwvs: NetworkVerificationStructure) = {
+  def translateNetworkSchedule(scheduleCtx: ScheduleContext, schedule: ContractSchedule, nwvs: NetworkVerificationStructure) = {
     val decls = new collection.mutable.ListBuffer[Boogie.Stmt]
     val stmts = new collection.mutable.ListBuffer[Boogie.Stmt]
     val alreadyDeclared = collection.mutable.Set[String]()
@@ -137,6 +137,11 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     for (nwi <- nwvs.nwInvariants) stmts += BAssume(nwi, nwvs.renamings)
     for (chi <- nwvs.chInvariants) stmts += BAssume(chi, nwvs.renamings)
     
+    for (e <- scheduleCtx.entities) {
+      val renamings = nwvs.instanceRenamings(e)
+      for (inv <- e.actor.streamInvariants) stmts += B.Assume(transExpr(inv.expr)(renamings))
+    }
+    
     for (ipat <- schedule.contract.inputPattern) {
       stmts += Boogie.Assign(
           B.C(transExpr(ipat.portId,ipat.typ)(nwvs.renamings)), 
@@ -148,6 +153,9 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     for (pre <- schedule.contract.requires) {
       stmts += B.Assume(transExpr(pre.expr)(nwvs.renamings))
     }
+    
+    
+
     
     for ((e,a1) <- schedule.sequence) {
       
@@ -173,8 +181,13 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
         stmts += Boogie.Assign(B.Isub(cId), B.C(cId))
       }
       
+      for (d <- nwvs.getEntityActionData(e, action).oldDeclarations) {
+        val renamed = renamings(d.id).asInstanceOf[Id].id
+        stmts += Boogie.Assign(Boogie.VarExpr(renamed+B.Sep+"old"),transExpr(d)(renamings))
+      }
+      
       val firingRules = getFiringRules(e, nwvs)
-      stmts += B.Assert(firingRules(action),action.pos,"Firing rule might not be satisfied for action '" + action.fullName + "' of instance '" + e.id +"'")
+      stmts += B.Assert(firingRules(action),action.pos,schedule.contract.fullName + ": Firing rule might not be satisfied for action '" + action.fullName + "' of instance '" + e.id +"'")
       
       for (pat <- action.inputPattern) {
         val id = nwvs.connectionMap.getDst(PortRef(Some(e.id),pat.portId))
@@ -198,6 +211,8 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
         }
       }
       
+      stmts ++= generateHavoc(nwvs.getEntityActionData(e, action).assignedVariables, renamings)
+      
       for (pat <- action.outputPattern) {
         val id = nwvs.connectionMap.getSrc(PortRef(Some(e.id),pat.portId))
         pat match {
@@ -218,6 +233,8 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       for (post <- action.ensures) {
         stmts += B.Assume(transExprPrecondCheck(post.expr)(renamings))
       }
+      
+      for (inv <- e.actor.streamInvariants) stmts += B.Assume(transExpr(inv.expr)(renamings))
       
     }
     

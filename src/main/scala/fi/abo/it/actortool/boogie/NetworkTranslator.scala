@@ -312,38 +312,7 @@ class NetworkTranslator(
       }
     }
     
-    for (ev <- nwvs.getEntityActionData(instance, action).assignedVariables) {
-      
-      val hVar = Boogie.VarExpr(BMap.H)
-      val qF = Boogie.VarExpr("f$")
-      val qR = Boogie.VarExpr("r$")
-      val qVars =
-          List(Boogie.BVar("r$", BType.Ref),Boogie.BVar("f$", BType.ParamField("a")))
-      val qExp1 = 
-        hVar.apply(qR).apply(qF) ==@ Boogie.Old(hVar).apply(qR).apply(qF)
-      
-      ev match {
-        case fa@FieldAccessor(r,f) => {
-          val fieldName = B.FieldName(r.typ.asInstanceOf[RefType].name, f);
-          val qExp2 = ((qR ==@ transExpr(r)(renamings)) && (qF ==@ Boogie.VarExpr(fieldName)))
-          val frameCond = Boogie.Forall(List(Boogie.TVar("a")),qVars,Nil, (qExp1 || qExp2) )
-          asgn += Boogie.Havoc(hVar)
-          asgn += B.Assume(frameCond)
-        }
-        case id: Id => {
-          if (id.typ.isRef) {
-            val qExp2 = qR ==@ transExpr(id)(renamings)
-            val frameCond = Boogie.Forall(List(Boogie.TVar("a")),qVars,Nil,qExp1 || qExp2)
-            asgn += Boogie.Havoc(hVar)
-            asgn += B.Assume(frameCond)
-          }
-          else {
-            asgn += Boogie.Havoc(transExpr(ev)(renamings)) 
-          }
-        }
-        case IndexAccessor(_,_) => throw new TranslationException(ev.pos, "")
-      }
-    }
+    asgn ++= generateHavoc(nwvs.getEntityActionData(instance, action).assignedVariables, renamings)
     
     for (opat <- action.outputPattern) {
       val cId = nwvs.connectionMap.getSrc(PortRef(Some(instance.id),opat.portId))
@@ -383,6 +352,7 @@ class NetworkTranslator(
     
     asgn.toList
   }
+  
   
   
   def translateNetworkInput(action: ContractAction, pattern: NwPattern, nwvs: NetworkVerificationStructure) = {

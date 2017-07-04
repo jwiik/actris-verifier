@@ -120,7 +120,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     //println(ASTPrinter.get.print(actor))
     Resolver.resolve(List(actor),constants) match {
       case Resolver.Errors(errs) => {
-        println(ASTPrinter.get.print(actor))
+        //println(ASTPrinter.get.print(actor))
         println(errs); None
       }
       case Resolver.Success(ctx) => Some(actor)

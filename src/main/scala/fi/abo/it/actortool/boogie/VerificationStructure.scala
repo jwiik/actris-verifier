@@ -79,6 +79,7 @@ class ActionData(
     val renamings: Map[String,Id], 
     val replacements: Map[Id,Expr],
     val assignedVariables: Set[Assignable],
-    val variableInitialValues: List[Expr])
+    val variableInitialValues: List[Expr],
+    val oldDeclarations: Set[Id])
     
-object EmptyActionData extends ActionData(List.empty,Map.empty,Map.empty,Set.empty,List.empty)
+object EmptyActionData extends ActionData(List.empty,Map.empty,Map.empty,Set.empty,List.empty,Set.empty)

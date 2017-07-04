@@ -327,7 +327,16 @@ class StmtExpTranslator() {
             B.Mode(B.This) ==@ transExprI(params(0))
           }
           case "state" => {
-            Boogie.VarExpr("St#") ==@ transExprI(params(0))
+            context.renamings.get("St#") match {
+              // This happens if we are e.g. translating an invariant of a subactor
+              case Some(s) => transExprI(s) ==@ transExprI(params(0))
+              case None => Boogie.VarExpr("St#") ==@ transExprI(params(0))
+            }
+          }
+          case "old" => {
+            val id = params(0).asInstanceOf[Id]
+            val nId = context.renamings.getOrElse(id.id,id).asInstanceOf[Id]
+            Boogie.VarExpr(nId.id+B.Sep+"old")
           }
           case x => {
             // User-defined function
@@ -336,7 +345,7 @@ class StmtExpTranslator() {
               case Some(name) =>
                 Boogie.FunctionApp(name.asInstanceOf[Id].id, args)
               case None =>
-                assert(false)
+                println(context.renamings)
                 throw new TranslationException(fa.pos, "Error, unknown function '" + x + "'")
             }
           }

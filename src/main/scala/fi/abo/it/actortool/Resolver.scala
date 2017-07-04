@@ -646,7 +646,6 @@ object Resolver {
     result match {
       case Success(_) =>
       case Errors(errs) => {
-        println(ctx.useTypeOfIds)
         throw new TranslationException(exp.pos, "Error resolving type of expression: '" + exp + "': " + (errs map { case (pos,msg) => pos + ": " + msg } ) )
         assert(false,errs)
       }
@@ -726,7 +725,7 @@ object Resolver {
           ac.typ = indexedType.resultType
           indexedType.resultType
         }
-      case fa@FieldAccessor(e,f) =>
+      case fa@FieldAccessor(e,f) => {
         val tExp = resolveExpr(ctx,e)
         if (!tExp.isRef) {
           ctx.error(e.pos, "Expected reference type, found: " + tExp.id)
@@ -764,6 +763,14 @@ object Resolver {
               fa.typ
           }
         }
+      }
+      case fa@FunctionApp("old",params) => {
+        if (params.size != 1) ctx.error(fa.pos, "Function old takes exactly one parameter")
+        if (!params(0).isInstanceOf[Id]) ctx.error(fa.pos, "The argument to 'old' has to be a variable")
+        val t = resolveExpr(ctx,params(0))
+        fa.typ = t
+        fa.typ
+      }
       case fa@FunctionApp("urd",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("rd@",params) => resolveChannelCountFunction(ctx, fa)
       case fa@FunctionApp("tot@",params) => resolveChannelCountFunction(ctx, fa)
@@ -1351,7 +1358,6 @@ object Resolver {
         val et = resolveExpr(ctx, exp)
         
         if (!TypeUtil.isCompatible(it, et)) {
-          println(exp)
           ctx.error(id.pos, "Cannot assign value of type " + et.id + " to variable '" + id.id + "' of type " + it.id)
         }
       case MapAssign(e1,e2) =>

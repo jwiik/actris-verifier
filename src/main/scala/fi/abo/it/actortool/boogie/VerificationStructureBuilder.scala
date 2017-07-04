@@ -78,8 +78,33 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   
   protected def buildPriorityMap(actor: DFActor, subComponent: Boolean, alwaysUseContracts: Boolean) = 
     PriorityMapBuilder.buildPriorityMap(actor, subComponent, alwaysUseContracts)
+    
+  def getNeededOldVariables(action: AbstractAction) = NeededOldFinder.find(action.ensuresExpr)
   
 }
+
+object NeededOldFinder extends ASTVisitor[ListBuffer[(Id,Declaration)]] {
+  
+  def find(exps: List[Expr]) = {
+    val buffer = new ListBuffer[(Id,Declaration)]
+    for (e <- exps) visitExpr(e)(buffer)
+    buffer.toList
+  }
+  
+  def find(e: Expr) = {
+    val buffer = new ListBuffer[(Id,Declaration)]
+    visitExpr(e)(buffer)
+    buffer.toList
+  }
+  
+  override def visitExpr(expr: Expr)(implicit info: ListBuffer[(Id,Declaration)]) {
+    expr match {
+      case FunctionApp("old",List(id@Id(i))) => info += id -> Declaration(i+B.Sep+"old",id.typ,false,None)
+      case _ => super.visitExpr(expr)
+    }
+  }
+}
+
 
 class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context, alwaysUseContracts: Boolean) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
@@ -125,7 +150,8 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
       (for (a <- actor.actorActions) yield {
         val (decls,initialValues) = createVariableDeclarationsNoTranslate(a.variables,typeCtx)
         val assignedVars = AssignedVarsFinder.find(a.body)
-        (a,new ActionData(decls,Map.empty,Map.empty,assignedVars,initialValues))
+        val (oldVars,_) = getNeededOldVariables(a).unzip
+        (a,new ActionData(decls,Map.empty,Map.empty,assignedVars,initialValues,oldVars.toSet))
       }).toMap
     
     return new ActorVerificationStructure(
@@ -241,12 +267,16 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         renameBuffer += ((p.id,parameterArguments(p.id)))
       }
       
-      for (v <- actor.variables) {
+      val (_,neededOldVariables) = ((actor.actorActions ::: actor.contractActions) map getNeededOldVariables).flatten.unzip
+      val neededOldVariablesSet = neededOldVariables.toSet
+      
+      for (v <- actor.variables ++ neededOldVariablesSet) {
         val newName = e.id+B.Sep+v.id
         subactorVarDecls += BDecl(newName,v.typ)
         variables += newName
         renameBuffer += ((v.id,makeId(newName,v.typ)))
       }
+      
       
       val actionData = (actor.actorActions map { a => (a,collectEntityData(e,a,connMap)) }).toMap
       val priorityMap = buildPriorityMap(actor,true,alwaysUseContracts)
@@ -361,22 +391,13 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
             vars += BDecl(actionVar,B.Local(actionVar,B.type2BType(v.typ)))
             (v.id,makeId(actionVar,v.typ))
           }
-        })).toMap
+        })
+        ).toMap
       }
     
     val assignedVars = AssignedVarsFinder.find(action.body)
-//      action.body flatMap { a => a match {
-//      case Assign(x,_) => {
-//        x match {
-//          case id: Id => List(id)
-//          //case fa: FieldAccessor => List(fa)
-//          case _ => assert(false); Nil
-//        }
-//      }
-//      case _ => Nil
-//    }}
-    
-    new ActionData(vars.toList, patternVarRenamings, replacements.toMap, assignedVars.toSet,List.empty)
+    val (oldVariables,_) = getNeededOldVariables(action).unzip
+    new ActionData(vars.toList, patternVarRenamings, replacements.toMap, assignedVars.toSet,List.empty, oldVariables.toSet)
 
   }
   

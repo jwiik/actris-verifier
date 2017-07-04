@@ -116,6 +116,45 @@ abstract class EntityTranslator[T] {
     }
   }
   
+  def generateHavoc(assignables: Set[Assignable], renamings: Map[String,Expr]) = {
+    val asgn = new ListBuffer[Boogie.Stmt]
+    for (ev <- assignables) {
+      val hVar = Boogie.VarExpr(BMap.H)
+      val qF = Boogie.VarExpr("f$")
+      val qR = Boogie.VarExpr("r$")
+      val qVars =
+          List(Boogie.BVar("r$", BType.Ref),Boogie.BVar("f$", BType.ParamField("a")))
+      val qExp1 = 
+        hVar.apply(qR).apply(qF) ==@ Boogie.Old(hVar).apply(qR).apply(qF)
+      
+      ev match {
+        case fa@FieldAccessor(r,f) => {
+          val fieldName = B.FieldName(r.typ.asInstanceOf[RefType].name, f);
+          val qExp2 = ((qR ==@ transExpr(r)(renamings)) && (qF ==@ Boogie.VarExpr(fieldName)))
+          val frameCond = Boogie.Forall(List(Boogie.TVar("a")),qVars,Nil, (qExp1 || qExp2) )
+          asgn += Boogie.Havoc(hVar)
+          asgn += B.Assume(frameCond)
+        }
+        case id: Id => {
+          if (id.typ.isRef) {
+            val qExp2 = qR ==@ transExpr(id)(renamings)
+            val frameCond = Boogie.Forall(List(Boogie.TVar("a")),qVars,Nil,qExp1 || qExp2)
+            asgn += Boogie.Havoc(hVar)
+            asgn += B.Assume(frameCond)
+          }
+          else {
+            asgn += Boogie.Havoc(transExpr(ev)(renamings)) 
+          }
+        }
+        case IndexAccessor(v,_) => {
+          asgn += Boogie.Havoc(transExpr(v)(renamings)) 
+          //throw new TranslationException(ev.pos, "")
+        }
+      }
+    }
+    asgn.toList
+  }
+  
   def transExprPrecondCheck(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
     val (expr,ctx) = stmtTranslator.transExpr(exp,renamings,true)
     expr

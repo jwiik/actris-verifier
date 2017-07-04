@@ -323,6 +323,8 @@ object ActorTool {
     if (program.isEmpty) return // Error message has already been displayed
     if (!params.DoTypecheck) return
 
+    println(ASTPrinter.get.print(program))
+    
     var typeCtx = Resolver.resolve(program) match {
       case Resolver.Errors(msgs) =>
         msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
@@ -339,7 +341,7 @@ object ActorTool {
         Some(rootCtx)
     }
     
-    println(ASTPrinter.get.print(program))
+    //println(ASTPrinter.get.print(program))
     
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime

@@ -86,16 +86,18 @@ case object ActionScheduleProcessor extends Preprocessor {
           case ActorAction(labelOpt,init,inputPattern,outputPattern,guard,requires,ensures,variables,body) => {
             var newBody = body
             var newGuards = guard
+            var newEnsures = ensures
             
             if (!init && labelOpt.isDefined) {
-              val transitionData: List[(Expr,(Expr,List[Stmt]))] = {
+              val transitionData: List[(Expr,(Expr,List[Stmt]),(Expr,Expr))] = {
                 for (t <- s.transitions.filter { t => t.action == labelOpt.get }) yield {
                    val guard = Eq(Id("St#"),Id(t.from))
                    val stUpdate = (guard, List(Assign(Id("St#"),Id(t.to))))
-                   (guard,stUpdate)
+                   val stFromTo = (Eq(FunctionApp("old",List(Id("St#"))),Id(t.from)), Eq(Id("St#"),Id(t.to)))
+                   (guard,stUpdate,stFromTo)
                 }
               }
-              val (guards,stUpdates) = transitionData.unzip
+              val (guards,stUpdates, stFromTo) = transitionData.unzip3
               
               if (!guards.isEmpty) {
                 newGuards = newGuards :+ guards.reduceLeft { (a,b) => Or(a,b) }
@@ -109,13 +111,24 @@ case object ActionScheduleProcessor extends Preprocessor {
                   newBody = newBody ++ List(IfElse(g,s, stUpdates.tail map { case (g1,s1) => ElseIf(g1,s1) } ,Nil))
                 }
               }
+              
+              if (stFromTo.isEmpty) {}
+              else if (stFromTo.size == 1) {
+                val (_,to) = stFromTo.head
+                newEnsures = newEnsures :+ Assertion(to,true) 
+              }
+              else {
+                newEnsures = newEnsures :+ Assertion(stFromTo.map{ case (from,to) => Implies(from,to): Expr }.reduceLeft((a,b) => And(a,b)),true)
+              }
+              
             }
             else if (init) {
               hasInitAction = true
               newBody = body ::: List(Assign(Id("St#"),Id(s.initState)))
+              newEnsures = newEnsures :+ Assertion(Eq(Id("St#"),Id(s.initState)),true) 
             }
             
-            val action = ActorAction(labelOpt,init,inputPattern,outputPattern,newGuards,requires,ensures,variables,newBody)
+            val action = ActorAction(labelOpt,init,inputPattern,outputPattern,newGuards,requires,newEnsures,variables,newBody)
             action.setPos(m.pos)
           }
           case _ => m
