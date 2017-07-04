@@ -172,7 +172,7 @@ actor Algo_DCRinvpred ()
 	bool is_signed;
 	
 	function abs(int(size=13) x) --> int(size=13):
-		if (x > int(0,13)) then
+		if (x >= int(0,13)) then
 			x
 		else
 			-x
@@ -192,31 +192,31 @@ actor Algo_DCRinvpred ()
 		end
 	end
 	
-	function dc_scaler() --> int(size=6) :
+	function dc_scaler() --> int(size=7) :
 		if (comp & int(4,4)) = int(0,4) then
 		// Y component
-			if s_QP > int(0,6) and s_QP < int(5,6) then
-				int(8,6)
+			if bvresize(s_QP,7) > int(0,7) and bvresize(s_QP,7) < int(5,7) then
+				int(8,7)
 			else
-				if s_QP > int(4,6) and s_QP < int(9,6) then
-					int(2,6) * s_QP
+				if bvresize(s_QP,7) > int(4,7) and bvresize(s_QP,7) < int(9,7) then
+					int(2,7) * bvresize(s_QP,7)
 				else
-					if s_QP > int(8,6) and s_QP < int(25,6) then
-						s_QP + int(8,6)
+					if bvresize(s_QP,7) > int(8,7) and bvresize(s_QP,7) < int(25,7) then
+						bvresize(s_QP,7) + int(8,7)
 					else
-						(int(2,6) * s_QP) - int(16,6)
+						(int(2,7) * bvresize(s_QP,7)) - int(16,7)
 					end
 				end
 			end
 		else
 		// UV component
-			if s_QP > int(0,6) and s_QP < int(5,6) then
-				int(8,6)
+			if bvresize(s_QP,7) > int(0,7) and bvresize(s_QP,7) < int(5,7) then
+				int(8,7)
 			else
-				if s_QP > int(4,6) and s_QP < int(25,6) then
-					(s_QP + int(13,6)) >> int(1,6)
+				if bvresize(s_QP,7) > int(4,7) and bvresize(s_QP,7) < int(25,7) then
+					(bvresize(s_QP,7) + int(13,7)) >> int(1,7)
 				else
-					s_QP - int(6,6)
+					bvresize(s_QP,7) - int(6,7)
 				end
 			end
 		end
@@ -277,15 +277,15 @@ actor Algo_DCRinvpred ()
 		bool ac = (cmd & ACPRED) != int(0,12)
 	do
 		s_QP := qp;
-		scaler := bvresize(dc_scaler(),7);
+		scaler := dc_scaler();
 		// Retrieve 'dc_scalar'. See ISO/IEC 14496-2 Table 7-1.
 		dc_pred := 
-			(if top then
+			((if top then
 				dcc
 			else
 				dca
 			end) 
-			+ bvresize( (scaler >> int(1,7)) / scaler , 13 );
+			+ bvresize( (scaler >> int(1,7)), 13)) / bvresize(scaler , 13 );
 			
 		// See ISO/IEC 14496-2 Section 7.4.3.2.
 		s := 

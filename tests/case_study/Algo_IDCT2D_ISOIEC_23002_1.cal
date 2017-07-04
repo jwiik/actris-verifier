@@ -4,27 +4,27 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 	contract IN:64, SIGNED:1 ==> OUT:64 
 	end
 
-	int(size=13) A = int(1024,13);
+	int(size=32) A = int(1024,32);
 
-	int(size=13)  B = int(1138,13);
+	int(size=32)  B = int(1138,32);
 
-	int(size=13)  C = int(1730,13);
+	int(size=32)  C = int(1730,32);
 
-	int(size=13)  D = int(1609,13);
+	int(size=32)  D = int(1609,32);
 
-	int(size=13)  E = int(1264,13);
+	int(size=32)  E = int(1264,32);
 
-	int(size=13)  F = int(1922,13);
+	int(size=32)  F = int(1922,32);
 
-	int(size=13)  G = int(1788,13);
+	int(size=32)  G = int(1788,32);
 
-	int(size=13)  H = int(2923,13);
+	int(size=32)  H = int(2923,32);
 
-	int(size=13)  I = int(2718,13);
+	int(size=32)  I = int(2718,32);
 
-	int(size=13)  J = int(2528,13);
+	int(size=32)  J = int(2528,32);
 
-	List(type: int(size=13), size=64) scale = [
+	List(type: int(size=32), size=64) scale = [
 		A, B, C, D, A, D, C, B,
 		B, E, F, G, B, G, F, E,
 		C, F, H, I, C, I, H, F,
@@ -37,32 +37,32 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 
 	action IN:[ x ] repeat 64, SIGNED:[ s ] ==> OUT:[ output ] repeat 64
 	var
-		int(size=13) block1[64] := [ scale[n] * x[n] : for int n in 0 .. 63 ],
-		int(size=13) block2[64],
+		int(size=32) block1[64] := [ scale[n] * bvresize(x[n],32) : for int n in 0 .. 63 ],
+		int(size=32) block2[64],
 		int(size=9) output[64]
 	do
 		// multiplier-based scaling
-		block1[0] := block1[0] + (int(1,13) << int(12,13));
+		block1[0] := block1[0] + (int(1,32) << int(12,32));
 
 		// scaled 1D IDCT for rows and columns
 		idct1d(block1, block2);
 		idct1d(block2, block1);
 		output :=
 			if s then
-				[ clip((block1[n] >> int(13,13)), -int(255,13)) : for int n in 0 .. 63 ]
+				[ clip((block1[n] >> int(13,32)), -int(255,32)) : for int n in 0 .. 63 ]
 			else
-				[ clip((block1[n] >>  int(13,13)), int(0,13)) : for int n in 0 .. 63 ]
+				[ clip((block1[n] >>  int(13,32)), int(0,32)) : for int n in 0 .. 63 ]
 			end  
 	end
 
-	procedure idct1d(int(size=13) X[64], int(size=13) Y[64])
+	procedure idct1d(int(size=32) X[64], int(size=32) Y[64])
 	var
-		int(size=13) temp1,
-		int(size=13) temp2,
-		int(size=13) temp3,
-		int(size=13) temp4,
-		int(size=13) xa,
-		int(size=13) xb
+		int(size=32) temp1,
+		int(size=32) temp2,
+		int(size=32) temp3,
+		int(size=32) temp4,
+		int(size=32) xa,
+		int(size=32) xb
 	begin
 		foreach int i in 0 .. 7 do
 			xa := X[8 * i + 1] + X[8 * i + 7];
@@ -106,40 +106,40 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 		end
 	end
 
-	function pmul_1_1(int(size=13) X) --> int(size=13)
+	function pmul_1_1(int(size=32) X) --> int(size=32)
 	:
-		X - (X >> int(3,13)) - (X >> int(7,13))
+		X - (X >> int(3,32)) - (X >> int(7,32))
 	end
 
-	function pmul_1_2(int(size=13) X) --> int(size=13)
+	function pmul_1_2(int(size=32) X) --> int(size=32)
 	:
-		((X >> int(3,13)) - (X >> int(7,13))) + ((((X >> int(3,13)) - (X >> int(7,13))) - (X >> int(11,13))) >> int(1,13))
+		((X >> int(3,32)) - (X >> int(7,32))) + ((((X >> int(3,32)) - (X >> int(7,32))) - (X >> int(11,32))) >> int(1,32))
 	end
 
-	function pmul_2_1(int(size=13) X) --> int(size=13)
+	function pmul_2_1(int(size=32) X) --> int(size=32)
 	:
-		(((X >> int(9,13)) - X) >> int(2,13)) - ((X >> int(9,13)) - X)
+		(((X >> int(9,32)) - X) >> int(2,32)) - ((X >> int(9,32)) - X)
 	end
 
-	function pmul_2_2(int(size=13) X) --> int(size=13) :
-		(X >> int(1,13))
+	function pmul_2_2(int(size=32) X) --> int(size=32) :
+		(X >> int(1,32))
 	end
 
-	function pmul_3_1(int(size=13) X) --> int(size=13)
+	function pmul_3_1(int(size=32) X) --> int(size=32)
 	:
-		((X + (X >> int(5,13))) >> int(2,13)) + (X >> int(4,13))
+		((X + (X >> int(5,32))) >> int(2,32)) + (X >> int(4,32))
 	end
 
-	function pmul_3_2(int(size=13) X) --> int(size=13)
+	function pmul_3_2(int(size=32) X) --> int(size=32)
 	:
-		X + (X >> int(5,13)) - ((X + (X >> int(5,13))) >> int(2,13))
+		X + (X >> int(5,32)) - ((X + (X >> int(5,32))) >> int(2,32))
 	end
 
-	function clip(int(size=13) x, int(size=13) lim) --> int(size=9) :
+	function clip(int(size=32) x, int(size=32) lim) --> int(size=9) :
 		if x < lim then
 			bvresize(lim,9)
 		else
-			if x > int(255,13) then
+			if x > int(255,32) then
 				int(255,9)
 			else
 				bvresize(x,9)

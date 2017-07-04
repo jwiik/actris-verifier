@@ -40,6 +40,7 @@ object Resolver {
     override def lookUp(id: String) = constants.get(id)
   }
   
+  
   sealed class EmptyContext(override val useTypeOfIds: Boolean) extends RootContext(null,Map.empty,Map.empty,Map.empty)
   
   sealed abstract class ChildContext(override val parentNode: ASTNode, override val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
@@ -365,8 +366,8 @@ object Resolver {
     val ctx = new ActionContext(action, actorCtx, Map.empty)
     
     for (grd <- action.guards) resolveExpr(ctx, grd, BoolType)
-    for (pre <- action.requires) resolveExpr(ctx, pre, BoolType)
-    for (post <- action.ensures) resolveExpr(ctx, post, BoolType)
+    for (pre <- action.requiresExpr) resolveExpr(ctx, pre, BoolType)
+    for (post <- action.ensuresExpr) resolveExpr(ctx, post, BoolType)
     
   }
   
@@ -420,7 +421,7 @@ object Resolver {
       resolveExpr(ctx, g, BoolType)
     }
     
-    for (pre <- action.requires) resolveExpr(ctx, pre, BoolType)
+    for (pre <- action.requiresExpr) resolveExpr(ctx, pre, BoolType)
     
     for (outPat <- action.outputPattern) {
       val port = actorCtx.outports(outPat.portId)
@@ -463,7 +464,7 @@ object Resolver {
     }
     
     val postCtx = new ActionContext(action,actorCtx,vars)
-    for (post <- action.ensures) resolveExpr(postCtx, post, BoolType)
+    for (post <- action.ensuresExpr) resolveExpr(postCtx, post, BoolType)
     
     resolveStmt(ctx,action.body)
   }

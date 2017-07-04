@@ -32,7 +32,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
         for (entity <- evaluationOrder) {
           entity match {
             case ba: BasicActor => {
-              if (entity.contractActions.isEmpty) mergedActorMap += (entity.id -> ba)
+              if (!ba.hasAnnotation("schedule")) mergedActorMap += (entity.id -> ba)
               else {
                 val translation = translator.invoke(ba,mergedActorMap.toMap,Map.empty,constants)
                 val outputParser = new SpinOutputParser(translation)

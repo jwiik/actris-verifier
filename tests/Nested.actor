@@ -4,29 +4,29 @@ actor Add int in1, int in2 ==> int out :
 end
 
 @static
-actor Split int in ==> int out1, int out2 :
-  action in:[i] ==> out1:[i], out2:[i] end
+actor Split int in1 ==> int out1, int out2 :
+  action in1:[i] ==> out1:[i], out2:[i] end
 end
 
 @static
-actor Delay(int k) int in ==> int out :
+actor Delay(int k) int in1 ==> int out :
   initialize ==> out:[k] end
-  action in:[i] ==> out:[i] end
+  action in1:[i] ==> out:[i] end
 end
 
-network SumNet int in ==> int out :
+network SumNet int in1 ==> int out :
   
-  Main: contract in:1 ==> out:1
-    requires 0 <= in[@]
-    ensures out[0] = in[0]
-    ensures out[@] >= in[@]
-    ensures 0 < @(out) ==> out[@] = out[@-1]+in[@]
+  Main: contract in1:1 ==> out:1
+    requires 0 <= in1[@]
+    ensures out[0] = in1[0]
+    ensures out[@] >= in1[@]
+    ensures 0 < @(out) ==> out[@] = out[@-1]+in1[@]
   end
   
   invariant tokens(sn_b,1)
-  stream invariant rd(in) = tot(out)
-  stream invariant tot(out) > 0 ==> out[0] = in[0]
-  stream invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in[i])
+  stream invariant rd(in1) = tot(out)
+  stream invariant tot(out) > 0 ==> out[0] = in1[0]
+  stream invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in1[i])
   
   chinvariant sn_b[0] = 0
   chinvariant 0 <= sn_b[@]
@@ -38,11 +38,11 @@ network SumNet int in ==> int out :
   end
   
   structure
-    sn_a: in --> add.in1;
+    sn_a: in1 --> add.in1;
     sn_b: del.out --> add.in2;
-    sn_c: add.out --> spl.in;
+    sn_c: add.out --> spl.in1;
     sn_d: spl.out1 --> out;
-    sn_e: spl.out2 --> del.in;
+    sn_e: spl.out2 --> del.in1;
   end
 
 end
@@ -72,15 +72,15 @@ actor Sum int x ==> int y:
   
 end
 
-network Nested int in ==> int out1, int out2 :
+network Nested int in1 ==> int out1, int out2 :
   
-  Main: contract in:1 ==> out1:1, out2:1
-    requires 0 <= in[@]
-    requires 0 <= in[@+1]
-    ensures out1[0] = in[0]
-    ensures out2[0] = in[0]
-    ensures 0 < @(out1) ==> out1[@] = out1[@-1]+in[@]
-    ensures 0 < @(out2) ==> out2[@] = out2[@-1]+in[@]
+  Main: contract in1:1 ==> out1:1, out2:1
+    requires 0 <= in1[@]
+    requires 0 <= in1[@+1]
+    ensures out1[0] = in1[0]
+    ensures out2[0] = in1[0]
+    ensures 0 < @(out1) ==> out1[@] = out1[@-1]+in1[@]
+    ensures 0 < @(out2) ==> out2[@] = out2[@-1]+in1[@]
     ensures out1[@] = out2[@]
   end
   
@@ -97,8 +97,8 @@ network Nested int in ==> int out1, int out2 :
   end
   
   structure
-    a: in --> spl.in;
-    b: spl.out1 --> net.in;
+    a: in1 --> spl.in1;
+    b: spl.out1 --> net.in1;
     c: spl.out2 --> sum.x;
     d: net.out --> out1;
     e: sum.y --> out2;

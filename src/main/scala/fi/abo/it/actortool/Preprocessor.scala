@@ -42,7 +42,7 @@ case object InitActionNormaliser extends Preprocessor {
               }
             }
           
-          BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+          BasicActor(ba.id,ba.parameters,ba.inports,ba.outports,newMembers).withAnnotationsFrom(ba)
           
         }
         case _ => unit
@@ -136,12 +136,11 @@ case object ActionScheduleProcessor extends Preprocessor {
     newMembers = ActorInvariant(Assertion(predicate,false,None),true,false) :: newMembers
     val actor = 
       BasicActor(
-        a.annotations,
         a.id,
         a.parameters,
         a.inports,
         a.outports,
-        newMembers)
+        newMembers).withAnnotationsFrom(a)
     actor.setPos(a.pos)
   }
   
@@ -174,7 +173,7 @@ case object ProcedureExpander extends Preprocessor {
       }
     }
     
-    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers.flatten)
+    val a = BasicActor(ba.id,ba.parameters,ba.inports,ba.outports,newMembers.flatten).withAnnotationsFrom(ba)
     a
   }
   
@@ -236,7 +235,7 @@ case object ForEachExpander extends Preprocessor {
       }
     }
     
-    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+    val a = BasicActor(ba.id,ba.parameters,ba.inports,ba.outports,newMembers).withAnnotationsFrom(ba)
     a
   }
   
@@ -401,7 +400,7 @@ abstract class BasicActorExprAndStmtReplacer extends Preprocessor {
       }
     }
     
-    val a = BasicActor(ba.annotations,ba.id,ba.parameters,ba.inports,ba.outports,newMembers)
+    val a = BasicActor(ba.id,ba.parameters,ba.inports,ba.outports,newMembers).withAnnotationsFrom(ba)
     a
   }
   

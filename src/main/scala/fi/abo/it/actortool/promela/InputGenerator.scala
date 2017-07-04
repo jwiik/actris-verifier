@@ -25,7 +25,7 @@ class InputGenerator {
     }
     
     val checker = new fi.abo.it.actortool.z3.Checker 
-    val result = checker.getSatisfyingModel(contract.guards ::: contract.requires ::: contract.ensures, declarations, portIdDeclarations, constants)
+    val result = checker.getSatisfyingModel(contract.guards ::: contract.requiresExpr ::: contract.ensuresExpr, declarations, portIdDeclarations, constants)
     
     val inputSeqs = queryModel(contract, result, portId)
     //println(contract.fullName + ": " +inputSeqs)

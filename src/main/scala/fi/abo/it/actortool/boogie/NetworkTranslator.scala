@@ -9,7 +9,7 @@ class NetworkTranslator(
     val skipMutualExclusivenessCheck: Boolean,
     val typeCtx: Resolver.Context) extends EntityTranslator[Network] {
   
-  val nwVerStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,typeCtx)
+  val nwVerStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,typeCtx,true)
   
   def translateEntity(network: Network): List[Boogie.Decl] = {
     val nwvs = nwVerStructBuilder.buildStructure(network)
@@ -203,10 +203,20 @@ class NetworkTranslator(
       asgn += BAssume(pinv, renames)
     }
     asgn ++= inputBounds
-    asgn ++= (nwa.requires.map { r => B.Assume(transExpr(r)(nwvs.renamings)) })
+    
+    for (r <- nwa.requires) {
+      asgn += B.Assume(transExpr(r.expr)(nwvs.renamings))
+    }
+    
     asgn ++= firingNegAssumes
     asgn ++= outputBounds
-    asgn ++= (nwa.ensures.map { q => B.Assert(transExpr(q)(nwvs.renamings),q.pos,"Network action postcondition might not hold") })
+    
+    for (q <- nwa.ensures) {
+      if (!q.free) {
+        asgn += B.Assert(transExpr(q.expr)(nwvs.renamings),q.pos,"Network action postcondition might not hold")
+      }
+    }
+    
     for (c <- nwvs.connections) {
       c.to match {
         // Match network output channels
@@ -297,9 +307,9 @@ class NetworkTranslator(
     }
     
     for (pre <- action.requires) {
-      asgn += B.Assert(
-          transExprPrecondCheck(pre)(renamings),pre.pos,
-          "Precondition might not hold for instance at " + instance.pos)
+      if (!pre.free) {
+        asgn += B.Assert(transExprPrecondCheck(pre.expr)(renamings),pre.pos,"Precondition might not hold for instance at " + instance.pos)
+      }
     }
     
     for (ev <- nwvs.getEntityActionData(instance, action).assignedVariables) {
@@ -359,7 +369,7 @@ class NetworkTranslator(
     }
     
     for (post <- action.ensures) {
-      asgn += B.Assume(transExprPrecondCheck(post)(renamings))
+      asgn += B.Assume(transExprPrecondCheck(post.expr)(renamings))
     }
     
     for (chi <- nwvs.chInvariants) {
@@ -406,7 +416,7 @@ class NetworkTranslator(
       asgn += B.Assume(transExpr(g)(nwvs.renamings))
     }
     for (r <- action.requires) {
-      asgn += B.Assume(transExpr(r)(nwvs.renamings))
+      asgn += B.Assume(transExpr(r.expr)(nwvs.renamings))
     }
     
     

@@ -111,7 +111,6 @@ class PromelaTranslator(params: CommandLineParameters) {
   def invoke(entity: DFActor, mergedActors: Map[String,BasicActor], alreadyTranslated: Map[String,P.ProcType], constants: List[Declaration]): Translation[DFActor] = {
     assert(!entity.contractActions.isEmpty)
     var procs: Map[String,P.ProcType] = Map.empty
-    println(ASTPrinter.get.print(entity))
     entity match {
       case nw: Network => {
         val entities = nw.entities.get.entities
@@ -154,11 +153,11 @@ class PromelaTranslator(params: CommandLineParameters) {
     val instances = collection.mutable.Map[String,PromelaInstance]()
     
     
-    val instance = Instance("this",actor.id,Nil,Nil)
+    val instance = Instance("this",actor.id,Nil)
     instance.actor = actor
     val connections = 
-      actor.inports.map { p => val c = Connection(Some("ch__"+p.id),PortRef(None,p.id),PortRef(Some("this"),p.id),Nil); c.typ = ChanType(p.portType); c } :::
-      actor.outports.map { p => val c = Connection(Some("ch__"+p.id),PortRef(Some("this"),p.id),PortRef(None,p.id),Nil); c.typ = ChanType(p.portType); c }
+      actor.inports.map { p => val c = Connection(Some("ch__"+p.id),PortRef(None,p.id),PortRef(Some("this"),p.id)); c.typ = ChanType(p.portType); c } :::
+      actor.outports.map { p => val c = Connection(Some("ch__"+p.id),PortRef(Some("this"),p.id),PortRef(None,p.id)); c.typ = ChanType(p.portType); c }
     val channelMapping = Util.buildConnectionMap(connections)
     
     for (c <- constants) {
@@ -339,7 +338,7 @@ class PromelaTranslator(params: CommandLineParameters) {
     val initBody = if (initBodyInternal.isEmpty) Nil else List(P.Atomic(initBodyInternal))
     
     val peekAnalyzer = new ActionPeekAnalyzer
-    val priorityMap = PriorityMapBuilder.buildPriorityMap(a, false)
+    val priorityMap = PriorityMapBuilder.buildPriorityMap(a, false, true)
     
     // Get the most tokens consumed on each port by any action
 //    val maxRates = 

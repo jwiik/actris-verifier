@@ -8,7 +8,7 @@ class BasicActorTranslator(
     val skipMutualExclusivenessCheck: Boolean,
     val typeCtx: Resolver.Context) extends EntityTranslator[BasicActor] {
 
-  val actorVerStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,typeCtx)
+  val actorVerStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,typeCtx,true)
   
   def translateEntity(actor: BasicActor): List[Boogie.Decl] = {
     val avs = actorVerStructBuilder.buildStructure(actor)
@@ -123,10 +123,11 @@ class BasicActorTranslator(
     initAction match {
       case Some(a) => {
         asgn ++= transStmt( a.body )(avs.renamings)
-        asgn ++= (for (q <- a.ensures) yield {
-          B.Assert(transExpr(q)(avs.renamings), q.pos, "Action postcondition might not hold")
-        })
-     
+        for (q <- a.ensures) {
+          if (!q.free) {
+            asgn += B.Assert(transExpr(q.expr)(avs.renamings), q.pos, "Action postcondition might not hold")
+          }
+        }
         for (opat <- a.outputPattern) {
           val cId = opat.portId
           for (v <- opat.exps) {
@@ -193,18 +194,22 @@ class BasicActorTranslator(
         }
       }
     }
-     
-    asgn ++= (for (p <- a.requires) yield {B.Assume(transExpr(p)(renamings)) })
+    
+    for (p <- a.requires) {
+      asgn += B.Assume(transExpr(p.expr)(renamings))
+    }
 
     asgn ++= higherPrioGuards map { case (pat,guard) => B.Assume(Boogie.UnaryExpr("!", /*pat &&*/ guard)) }
     
     asgn ++= ( guard1 match { case (_,guard) => List(B.Assume(guard)) } )
     asgn ++= actionData.variableInitialValues map { a => B.Assume(transExpr(a)(renamings) ) }
     asgn ++= transStmt( a.body )(renamings)
-     
-    asgn ++= (for (q <- a.ensures) yield {
-      B.Assert(transExpr(q)(renamings), q.pos, "Action postcondition might not hold")
-    })
+    
+    for (q <- a.ensures) {
+      if (!q.free) {
+        asgn += B.Assert(transExpr(q.expr)(renamings), q.pos, "Action postcondition might not hold")
+      }
+    }
      
     for (opat <- a.outputPattern) {
       val cId = opat.portId
@@ -266,7 +271,7 @@ class BasicActorTranslator(
     asgn += Boogie.Assign(B.C(portVar), B.C(portVar) + B.Int(1))
         
     for (r <- action.requires) {
-      asgn += B.Assume(transExpr(r)(avs.renamings))
+      asgn += B.Assume(transExpr(r.expr)(avs.renamings))
     }
     for (r <- action.guards) {
       asgn += B.Assume(transExpr(r)(avs.renamings))
@@ -291,7 +296,7 @@ class BasicActorTranslator(
     }
       
     for (p <- action.requires) {
-      asgn += B.Assume(transExpr(p)(avs.renamings))
+      asgn += B.Assume(transExpr(p.expr)(avs.renamings))
     }
     
     for ((_,g) <- guards) {
@@ -305,7 +310,9 @@ class BasicActorTranslator(
     }
     
     for (q <- action.ensures) {
-      asgn += B.Assert(transExpr(q)(avs.renamings),q.pos,"Contract action postcondition might not hold")
+      if (!q.free) {
+        asgn += B.Assert(transExpr(q.expr)(avs.renamings),q.pos,"Contract action postcondition might not hold")
+      }
     }
     
     for (op <- avs.entity.outports) {

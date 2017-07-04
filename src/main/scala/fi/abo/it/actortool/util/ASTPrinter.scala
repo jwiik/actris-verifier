@@ -28,7 +28,7 @@ class ASTPrinter(orccCompatible: Boolean) {
   
   def print(decl: TopDecl): String = {
     decl match {
-      case BasicActor(annot,id,parameters,inports,outports,members) => {
+      case BasicActor(id,parameters,inports,outports,members) => {
         indent + "actor " + id +
         "(" + (parameters map { p => printType(p.typ) + " " + p.id }).mkString(",") + ") " +
         (inports map { ip => printType(ip.portType) + " " +ip.id }).mkString(", ") +
@@ -38,7 +38,7 @@ class ASTPrinter(orccCompatible: Boolean) {
         printMembers(members) +
         indentRem + nl + "end"
       }
-      case Network(annot,id,parameters,inports,outports,members) => {
+      case Network(id,parameters,inports,outports,members) => {
         indent + "network " + id +
         "(" + (parameters map { p => printType(p.typ) + " " + p.id }).mkString(",") + ") " +
         (inports map { ip => printType(ip.portType) + " " +ip.id }).mkString(", ") +
@@ -76,8 +76,8 @@ class ASTPrinter(orccCompatible: Boolean) {
         } +
         {
           if (!orccCompatible)
-            (requires map { r => nl +indent + "requires " + printExpr(r) }).mkString("") +
-            (ensures map { q => nl + indent + "ensures " + printExpr(q) }).mkString("")
+            (requires map { r => nl +indent + printIf(r.free,"free ") + "requires " + printExpr(r.expr) }).mkString("") +
+            (ensures map { q => nl + indent + printIf(q.free,"free ") + "ensures " + printExpr(q.expr) }).mkString("")
           else ""
         } + 
         (if (vars.isEmpty) "" else nl + indent + "var " + indentAdd + vars.map(d => nl + indent + printDecl(d)).mkString(",") + indentRem) +
@@ -92,8 +92,8 @@ class ASTPrinter(orccCompatible: Boolean) {
         " ==> " +
         (outpats map { op => op.portId + ":" + op.rate }).mkString(", ") + indentAdd +
         (guards map { g => nl +indent + "guard " + printExpr(g) }).mkString("") + 
-        (requires map { r => nl +indent + "requires " + printExpr(r) }).mkString(nl) +
-        (ensures map { q => nl + indent + "ensures " + printExpr(q) }).mkString(nl) + nl + indentRem +
+        (requires map { r => nl +indent + printIf(r.free,"free ") + "requires " + printExpr(r.expr) }).mkString("") +
+        (ensures map { q => nl + indent + printIf(q.free,"free ") + "ensures " + printExpr(q.expr) }).mkString("") + nl + indentRem +
         indent + "end"
       }
       case d: Declaration => {
@@ -136,6 +136,8 @@ class ASTPrinter(orccCompatible: Boolean) {
         
     }
   }
+  
+  def printIf(cond: Boolean, text: String) = if (cond) text else ""
   
   def printPortRef(c: PortRef) = {
     c.actor match {
@@ -222,7 +224,7 @@ class ASTPrinter(orccCompatible: Boolean) {
       case IndexAccessor(e,idx) => printExpr(e) + "[" + printExpr(idx) + "]"
       case SpecialMarker(s) => s
       case Forall(vars,expr,pat) => "(forall " + (vars map printDecl).mkString(", ") + " :: " + printExpr(expr) + ")"
-      case IfThenElse(cond,thn,els) => "if " + printExpr(cond) + " then " + printExpr(thn) + " else " + printExpr(els) + " end"
+      case IfThenElse(cond,thn,els) => "(if " + printExpr(cond) + " then " + printExpr(thn) + " else " + printExpr(els) + " end)"
       case Range(str,end) => "(" + printExpr(str) + ".." + printExpr(end) + ")"
       case ListLiteral(lst) => "[" + lst.map(printExpr).mkString(",") + "]"
       case MapLiteral(dom,lst) => {
@@ -262,9 +264,9 @@ class ASTPrinter(orccCompatible: Boolean) {
     if (!orccCompatible) name + "(" + (args map printExpr).mkString(",") + ")"
     else {
       name match {
-        case "int2bv" => printExpr(args(0))
-        case "int" => printExpr(args(0))
-        case "bvresize" => printExpr(args(0))
+        case "int2bv" => "(" + printExpr(args(0)) + ")"
+        case "int" => "(" + printExpr(args(0)) + ")"
+        case "bvresize" => "(" + printExpr(args(0))  + ")"
         case _ => name + "(" + (args map printExpr).mkString(",") + ")"
       }
     }

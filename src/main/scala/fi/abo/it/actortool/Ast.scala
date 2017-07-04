@@ -24,8 +24,8 @@ object NoFilePosition extends FilePosition {
 }
 
 trait ASTNode {
-  val annotations: List[Annotation] = Nil
-  def hasAnnotation(name: String) = annotations.exists { a => a.name == name }
+  //val annotations: List[Annotation] = Nil
+  //def hasAnnotation(name: String) = annotations.exists { a => a.name == name }
   private var _pos: FilePosition = NoFilePosition 
   def pos: FilePosition = _pos
   def setPos(newPos: FilePosition): this.type = { _pos = newPos; this }
@@ -41,6 +41,16 @@ trait Typable extends ASTNode {
   def withType(tp: Type): this.type = { this.typ = tp; this }
 }
 
+trait Annotatable extends ASTNode {
+  var annotations: List[Annotation] = List.empty
+  def hasAnnotation(name: String) = annotations.exists { a => a.name == name }
+  def withAnnotationsFrom(a: Annotatable): this.type = {
+    this.annotations = a.annotations; this
+  }
+  def withAnnotations(annots: List[Annotation]): this.type = {
+    this.annotations = annots; this
+  }
+}
 
 sealed abstract class TopDecl(val id: String) extends ASTNode {
   def isNetwork: Boolean = false
@@ -58,10 +68,9 @@ sealed case class DataUnit(override val id: String, val constants: List[Declarat
 }
 
 sealed abstract class DFActor(
-    override val annotations: List[Annotation],
     override val id: String, val parameters: List[Declaration],
     val inports: List[InPort], val outports: List[OutPort], 
-    val members: List[Member]) extends TopDecl(id) {
+    val members: List[Member]) extends TopDecl(id) with Annotatable {
   
   def fullName: String = id
   
@@ -99,22 +108,20 @@ sealed abstract class DFActor(
 }
 
 sealed case class BasicActor(
-    override val annotations: List[Annotation],
     override val id: String, override val parameters: List[Declaration], 
     override val inports: List[InPort], override val outports: List[OutPort], 
     override val members: List[Member]) 
-    extends DFActor(annotations,id,parameters,inports,outports,members) {
+    extends DFActor(id,parameters,inports,outports,members) {
 
   override def isActor = true
 }
 
 sealed case class Network(
-    override val annotations: List[Annotation],
     override val id: String, 
     override val parameters: List[Declaration], 
     override val inports: List[InPort], 
     override val outports: List[OutPort], 
-    override val members: List[Member]) extends DFActor(annotations,id,parameters,inports,outports,members) {
+    override val members: List[Member]) extends DFActor(id,parameters,inports,outports,members) {
   
   override def isNetwork = true
   
@@ -138,7 +145,7 @@ sealed case class Network(
   
 }
 
-sealed abstract class Member extends ASTNode {
+sealed abstract class Member extends ASTNode with Annotatable {
   def isDeclaration = false
   def isAction = false
   def isFSM = false
@@ -165,8 +172,8 @@ sealed abstract class AbstractAction extends Member {
   val label: Option[String]
   val inputPattern: List[Pattern]
   val outputPattern: List[Pattern]
-  val requires: List[Expr]
-  val ensures: List[Expr]
+  val requires: List[Assertion]
+  val ensures: List[Assertion]
   val allPatterns = inputPattern ::: outputPattern
   val guards: List[Expr] = Nil
   val variables: List[Declaration] = List.empty
@@ -189,6 +196,9 @@ sealed abstract class AbstractAction extends Member {
     case Some(i) => i.rate
   }
   
+  lazy val requiresExpr = requires.map(_.expr)
+  lazy val ensuresExpr = ensures.map(_.expr)
+  
   val fullName = label.getOrElse("anon__"+Count.next)
   
 }
@@ -198,8 +208,8 @@ sealed case class ContractAction(
     override val inputPattern: List[NwPattern],
     override val outputPattern: List[NwPattern],
     override val guards: List[Expr], 
-    override val requires: List[Expr], 
-    override val ensures: List[Expr]) extends AbstractAction {
+    override val requires: List[Assertion], 
+    override val ensures: List[Assertion]) extends AbstractAction {
   
   
   override def isContractAction = true
@@ -212,8 +222,8 @@ sealed case class ActorAction(
     override val inputPattern: List[InputPattern], 
     override val outputPattern: List[OutputPattern],
     override val guards: List[Expr], 
-    override val requires: List[Expr], 
-    override val ensures: List[Expr],
+    override val requires: List[Assertion], 
+    override val ensures: List[Assertion],
     override val variables: List[Declaration],
     override val body: List[Stmt]) extends AbstractAction {
   
@@ -232,6 +242,7 @@ sealed case class Assertion(val expr: Expr, val free: Boolean, val msg: Option[S
 
 object Assertion {
   def apply(expr: Expr, free: Boolean) = new Assertion(expr,free,None)
+  def apply(expr: Expr) = new Assertion(expr,false,None)
 }
 
 sealed abstract class Invariant(val assertion: Assertion, val generated: Boolean) extends Member {
@@ -267,21 +278,21 @@ sealed case class Structure(val connections: List[Connection]) extends Member {
   
   def getInputChannel(portId: String) = connections.find {
     x => x match {
-      case Connection(_,PortRef(None,p),_,_) => p == portId
+      case Connection(_,PortRef(None,p),_) => p == portId
       case _ => false
     }
   }
   
   def getOutputChannel(portId: String) = connections.find {
     x => x match {
-      case Connection(_,_,PortRef(None,p),_) => p == portId
+      case Connection(_,_,PortRef(None,p)) => p == portId
       case _ => false
     }
   }
   
   def incomingConnection(entityId: String, portId: String) = connections.find { 
     x => x match {
-      case Connection(_,_,PortRef(Some(e),p),_) => entityId == e && portId == p
+      case Connection(_,_,PortRef(Some(e),p)) => entityId == e && portId == p
       case _ => false
     } 
   }
@@ -289,7 +300,7 @@ sealed case class Structure(val connections: List[Connection]) extends Member {
   def outgoingConnections(entityId: String, portId: String) = {
     val cons = connections.find { 
       x => x match {
-        case Connection(_,PortRef(Some(e),p),_,_) => entityId == e && portId == p
+        case Connection(_,PortRef(Some(e),p),_) => entityId == e && portId == p
         case _ => false
       } 
     }
@@ -313,8 +324,7 @@ sealed case class Schedule(val initState: String, val transitions: List[Transiti
 sealed case class Priority(val orders: List[(Id,Id)]) extends Member
 
 sealed case class Instance(
-    val id: String, val actorId: String, val arguments: List[Expr], 
-    override val annotations: List[Annotation]) extends ASTNode {
+    val id: String, val actorId: String, val arguments: List[Expr]) extends ASTNode with Annotatable {
 
   var actor: DFActor = null
   var parent: Network = null
@@ -345,8 +355,7 @@ sealed case class Instance(
 }
 
 sealed case class Connection(
-    val label: Option[String], val from: PortRef, val to: PortRef, 
-    override val annotations: List[Annotation]) extends ASTNode {
+    val label: Option[String], val from: PortRef, val to: PortRef) extends ASTNode {
   
   var typ: Type = null
   

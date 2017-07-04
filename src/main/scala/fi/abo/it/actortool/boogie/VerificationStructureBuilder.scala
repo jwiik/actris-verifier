@@ -76,12 +76,12 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
     (decls.toList,assumes.toList)
   }
   
-  protected def buildPriorityMap(actor: DFActor, subComponent: Boolean) = 
-    PriorityMapBuilder.buildPriorityMap(actor, subComponent)
+  protected def buildPriorityMap(actor: DFActor, subComponent: Boolean, alwaysUseContracts: Boolean) = 
+    PriorityMapBuilder.buildPriorityMap(actor, subComponent, alwaysUseContracts)
   
 }
 
-class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context) 
+class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context, alwaysUseContracts: Boolean) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
   
          
@@ -117,7 +117,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
       (commonAssumes.toList) :::
       (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }) 
 
-    val priorityList = buildPriorityMap(actor,false)
+    val priorityList = buildPriorityMap(actor,false, alwaysUseContracts)
     
     val funDeclRenamings = (actor.functionDecls map { fd => (fd.name,Id(prefix+fd.name)) }).toMap
     
@@ -152,7 +152,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
   
 }
 
-class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context) 
+class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context, alwaysUseContracts: Boolean) 
          extends VerificationStructureBuilder[Network, NetworkVerificationStructure] {
   
   val tokensFinder = new TokensFinder()
@@ -249,7 +249,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
       }
       
       val actionData = (actor.actorActions map { a => (a,collectEntityData(e,a,connMap)) }).toMap
-      val priorityMap = buildPriorityMap(actor,true)
+      val priorityMap = buildPriorityMap(actor,true,alwaysUseContracts)
 
       
       val entityData = new EntityData(Nil,renameBuffer.toMap,variables.toList, actionData, priorityMap)
@@ -348,13 +348,20 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
     val patternVarRenamings: Map[String,Id] = 
       if (instance.actor.isNetwork) Map.empty
       else {
-        (for (ipat <- action.inputPattern) yield {
+        ((for (ipat <- action.inputPattern) yield {
           for (v <- ipat.vars) yield {
             val inVar = instance.id + B.Sep + ipat.portId + B.Sep + v.id
             vars += BDecl(inVar,B.Local(inVar,B.type2BType(v.typ)))
             (v.id,makeId(inVar,v.typ))
           }
-        }).flatten.toMap
+        }).flatten :::
+        (action.variables.map { 
+          v => {
+            val actionVar = instance.id + B.Sep + action.fullName + B.Sep + v.id
+            vars += BDecl(actionVar,B.Local(actionVar,B.type2BType(v.typ)))
+            (v.id,makeId(actionVar,v.typ))
+          }
+        })).toMap
       }
     
     val assignedVars = AssignedVarsFinder.find(action.body)

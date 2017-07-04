@@ -76,32 +76,32 @@ procedure Net#anon__4()
   assume 0 <= M#[Net#b][I#[Net#b]];
   C#[Net#a] := C#[Net#a] + 1;
   assume 0 <= M#[Net#a][I#[Net#a]];
-  // Instance: add, Action: anon__6
+  // Instance: add, Action: anon__18
   I#sub[Net#a] := R#[Net#a];
   I#sub[Net#b] := R#[Net#b];
   I#sub[Net#c] := C#[Net#c];
-  assert {:msg "Firing rule might not be satisfied for action 'anon__6' of instance 'add' (#0)"} (1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b])) && (0 <= M#[Net#a][R#[Net#a]]);
+  assert {:msg "Firing rule might not be satisfied for action 'anon__18' of instance 'add' (#0)"} (1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b])) && (0 <= M#[Net#a][R#[Net#a]]);
   add#in1#i := M#[Net#a][R#[Net#a]];
   R#[Net#a] := R#[Net#a] + 1;
   add#in2#j := M#[Net#b][R#[Net#b]];
   R#[Net#b] := R#[Net#b] + 1;
   M#[Net#c][C#[Net#c]] := add#in1#i + add#in2#j;
   C#[Net#c] := C#[Net#c] + 1;
-  // Instance: spl, Action: anon__7
+  // Instance: spl, Action: anon__19
   I#sub[Net#c] := R#[Net#c];
   I#sub[Net#d] := C#[Net#d];
   I#sub[Net#e] := C#[Net#e];
-  assert {:msg "Firing rule might not be satisfied for action 'anon__7' of instance 'spl' (#1)"} 1 <= (C#[Net#c] - R#[Net#c]);
+  assert {:msg "Firing rule might not be satisfied for action 'anon__19' of instance 'spl' (#1)"} 1 <= (C#[Net#c] - R#[Net#c]);
   spl#in1#i := M#[Net#c][R#[Net#c]];
   R#[Net#c] := R#[Net#c] + 1;
   M#[Net#d][C#[Net#d]] := spl#in1#i;
   C#[Net#d] := C#[Net#d] + 1;
   M#[Net#e][C#[Net#e]] := spl#in1#i;
   C#[Net#e] := C#[Net#e] + 1;
-  // Instance: del, Action: anon__9
+  // Instance: del, Action: anon__21
   I#sub[Net#e] := R#[Net#e];
   I#sub[Net#b] := C#[Net#b];
-  assert {:msg "Firing rule might not be satisfied for action 'anon__9' of instance 'del' (#2)"} 1 <= (C#[Net#e] - R#[Net#e]);
+  assert {:msg "Firing rule might not be satisfied for action 'anon__21' of instance 'del' (#2)"} 1 <= (C#[Net#e] - R#[Net#e]);
   del#in1#i := M#[Net#e][R#[Net#e]];
   R#[Net#e] := R#[Net#e] + 1;
   M#[Net#b][C#[Net#b]] := del#in1#i;

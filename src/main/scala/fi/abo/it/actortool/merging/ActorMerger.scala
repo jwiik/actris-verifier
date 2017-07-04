@@ -112,12 +112,11 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       }
     
     val actor = BasicActor(
-        entity.annotations,
         entity.id+Sep+"Merged",
         entity.parameters,
         entity.inports,
         entity.outports,
-        members)
+        members).withAnnotationsFrom(entity)
     //println(ASTPrinter.get.print(actor))
     Resolver.resolve(List(actor),constants) match {
       case Resolver.Errors(errs) => {

@@ -4,8 +4,8 @@ import fi.abo.it.actortool._
 
 object PriorityMapBuilder {
   
-  def buildPriorityMap(actor: DFActor, subComponent: Boolean): Map[AbstractAction,List[AbstractAction]] = {
-    if (subComponent && !actor.contractActions.isEmpty) {
+  def buildPriorityMap(actor: DFActor, subComponent: Boolean, alwaysUseContracts: Boolean): Map[AbstractAction,List[AbstractAction]] = {
+    if (subComponent && !actor.contractActions.isEmpty && (actor.isNetwork || alwaysUseContracts || actor.hasAnnotation("schedule")) ) {
       return (actor.contractActions map { a => (a,Nil: List[AbstractAction]) }).toMap
     }
     

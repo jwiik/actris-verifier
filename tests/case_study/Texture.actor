@@ -2,7 +2,7 @@ network Texture
   int(size=12) BTYPE, int(size=13) QFS, int(size=6) QP
   ==>
   int(size=9) F:
-	
+  
   StartMode:
   contract BTYPE:3 ==> 
     guard (BTYPE[@] & NEWVOP) != 0x000

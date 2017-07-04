@@ -57,31 +57,29 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     case (id ~ decls) => DataUnit(id,decls)
   })
   
-  def actorDecl = filePositioned(
-     ((annotation *) ~ 
-         ("actor" ~> ident ~ 
+  def actorDecl = annotatable(filePositioned(
+     (   ("actor" ~> ident ~ 
          ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ 
          repsep(inPortDecl,",") ~ 
          ("==>" ~> repsep(outPortDecl,",")) ~ 
          (":" ~> (actorMember*)) <~ "end")) ^^ {
-       case (a ~ (id ~ Some(params) ~ inports ~ outports ~ members)) => 
-         BasicActor(a, id, params, inports, outports, members)
-       case (a ~ (id ~ None ~ inports ~ outports ~ members)) => 
-         BasicActor(a, id, Nil, inports, outports, members)
-    })
+       case ((id ~ Some(params) ~ inports ~ outports ~ members)) => 
+         BasicActor(id, params, inports, outports, members)
+       case ((id ~ None ~ inports ~ outports ~ members)) => 
+         BasicActor(id, Nil, inports, outports, members)
+    }))
     
-  def networkDecl = filePositioned(
-      ((annotation *) ~
-          ("network" ~> ident ~ 
+  def networkDecl = annotatable(filePositioned(
+      (   ("network" ~> ident ~ 
           ("(" ~> repsep(formalParam,",") <~ ")" ?) ~ 
           repsep(inPortDecl,",") ~ 
           ("==>" ~> repsep(outPortDecl,",")) ~ 
           (":" ~> (networkMember*)) <~ "end")) ^^ {
-      case (a ~ (id ~ Some(params) ~ inports ~ outports ~ members)) => 
-        Network(a, id, params, inports, outports, members)
-      case (a ~ (id ~ None ~ inports ~ outports ~ members)) => 
-        Network(a, id, Nil, inports, outports, members)
-    })
+      case ((id ~ Some(params) ~ inports ~ outports ~ members)) => 
+        Network(id, params, inports, outports, members)
+      case ((id ~ None ~ inports ~ outports ~ members)) => 
+        Network(id, Nil, inports, outports, members)
+    }))
   
   def typeDecl = filePositioned(("type" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")" ?)) ^^ {
     case (id ~ Some(params)) => TypeDecl(RefType(id),params)
@@ -110,11 +108,24 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     case (tName ~ id) => OutPort(id,tName)
   })
   
+  //def annotatable: 
+  def annotatable[T <: Annotatable](p : => Parser[T]) : Parser[T] = {
+    (annotation *) ~
+    (Parser {
+      in => p(in) match {
+        case s@Success(t, in1) => s
+        case ns: NoSuccess => ns
+      }
+    }) ^^ {
+      case (annots ~ anble) => anble.withAnnotations(annots)
+    }
+  }
+  
   def actorMember: Parser[Member] = 
-    filePositioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl | contractActionDecl | procedureDecl)
+    annotatable(filePositioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl | contractActionDecl | procedureDecl))
   
   def networkMember: Parser[Member] = filePositioned(
-      actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl | contractActionDecl)
+    annotatable(actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl | contractActionDecl))
   
   def entitiesBlock: Parser[Entities] = filePositioned(("entities" ~> repsep(entityDecl,Semi) <~ (Semi?) <~ "end") ^^ {
     case entities => Entities(entities)
@@ -148,14 +159,12 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   
   def prioOrder = (actionLabel ~ (">" ~> actionLabel)) ^^ { case s1 ~ s2  => (Id(s1),Id(s2)) }
     
-  def entityDecl = filePositioned(opt(annotation) ~ ident ~ ("=" ~> (ident ~ paramList)) ^^ {
-    case None ~ name ~ (actorId ~ params) => Instance(name,actorId,params,Nil)
-    case Some(annot) ~ name ~ (actorId ~ params) => Instance(name,actorId,params,List(annot))
+  def entityDecl = filePositioned(ident ~ ("=" ~> (ident ~ paramList)) ^^ {
+    case name ~ (actorId ~ params) => Instance(name,actorId,params)
   })
   
-  def connection = filePositioned(opt(annotation) ~ opt(ident <~ ":") ~ (portRef ~ ("-->" ~> portRef)) ^^ {
-    case None ~ id ~ (from ~ to) => Connection(id,from,to,Nil)
-    case Some(annot) ~ id ~ (from ~ to) => Connection(id,from,to,List(annot))
+  def connection = filePositioned(opt(ident <~ ":") ~ (portRef ~ ("-->" ~> portRef)) ^^ {
+    case id ~ (from ~ to) => Connection(id,from,to)
   })
   
   def transition = filePositioned(ident ~ ("(" ~> actionLabel <~ ")") ~ ("-->" ~> ident) ^^ {
@@ -206,7 +215,7 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
               case Some(s) => s
               case None => Nil
             }
-            ActorAction(id,init,inputs,outputs,guard.flatten,requires.flatten,ensures.flatten,vars.getOrElse(Nil),stmt)
+            ActorAction(id,init,inputs,outputs,guard.flatten,requires.flatten.map(Assertion(_)),ensures.flatten.map(Assertion(_)),vars.getOrElse(Nil),stmt)
     }
   )
   
@@ -220,7 +229,13 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
           ("ensures" ~> repsep(expression,",") *)
           <~ "end") ^^ {
             case (id ~ _ ~ inputs ~ outputs  ~ guards ~ requires ~ ensures) => 
-              ContractAction(id, inputs map { ip => toNwPattern(ip) } , outputs map { op => toNwPattern(op) }, guards.flatten,requires.flatten,ensures.flatten)
+              ContractAction(
+                  id, 
+                  inputs map { ip => toNwPattern(ip) } , 
+                  outputs map { op => toNwPattern(op) }, 
+                  guards.flatten,
+                  requires.flatten.map(Assertion(_)),
+                  ensures.flatten.map(Assertion(_)))
     }
   )
    

@@ -54,7 +54,7 @@ actor Algo_IAP ()
 
   // Initialize to the dummy values needed for uncoded blocks (always mapped to index 0)
   // Add 4 address lines  so that we can store the left edge and top edge AC values (14 in all).
-  Map(int(size=11) -> int(size=13), size=984) buf;
+  Map(int(size=11) -> int(size=13), size=15744) buf;
 
   int(size=4) comp;
 

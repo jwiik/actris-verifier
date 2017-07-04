@@ -23,12 +23,12 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     
     val decls = scheduleCtx.entity match {
       case nw: Network => {
-        val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true))
+        val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),false)
         val nwvs = verStructBuilder.buildStructure(nw)
         scheduleCtx.schedules.flatMap(s => translateNetworkSchedule(s, nwvs))
       }
       case ba: BasicActor => {
-        val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true))
+        val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),false)
         val avs = verStructBuilder.buildStructure(ba)
         translateFunctionDecl(avs) ::: scheduleCtx.schedules.flatMap(s => translateActorSchedule(s,avs))
       }
@@ -57,7 +57,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     }
     
     stmts ++= schedule.contract.guards.map { g => B.Assume(transExpr(g)(avs.renamings)) }
-    stmts ++= schedule.contract.requires.map { r => B.Assume(transExpr(r)(avs.renamings)) }
+    stmts ++= schedule.contract.requires.map { r => B.Assume(transExpr(r.expr)(avs.renamings)) }
     
     val renamingsBuffer = collection.mutable.Map[ActorAction,Map[String,Id]]()
     for (action <- schedule.entity.actorActions) {
@@ -97,7 +97,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
         }
       }
       stmts ++= action.guards.map { g => B.Assert(transExpr(g)(actionRenamings),g.pos,"Guard might not be satisfied for action '" + action.fullName + "'" ) }
-      stmts ++= action.requires.map { r => B.Assert(transExpr(r)(actionRenamings),r.pos,"Precondition might not hold for action '" + action.fullName + "'" ) }
+      stmts ++= action.requires.filter(!_.free).map { r => B.Assert(transExpr(r.expr)(actionRenamings),r.pos,"Precondition might not hold for action '" + action.fullName + "'" ) }
       stmts ++= transStmt(action.body)(actionRenamings)
       
       for (opat <- action.outputPattern) {
@@ -108,7 +108,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
         }
 
       }
-      for (q <- action.ensures) stmts += B.Assume(transExpr(q)(actionRenamings))
+      for (q <- action.ensures) stmts += B.Assume(transExpr(q.expr)(actionRenamings))
       for (inv <- avs.invariants) stmts += BAssume(inv, avs.renamings)
     }
     
@@ -146,7 +146,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       stmts += B.Assume(transExpr(guard)(nwvs.renamings))
     }
     for (pre <- schedule.contract.requires) {
-      stmts += B.Assume(transExpr(pre)(nwvs.renamings))
+      stmts += B.Assume(transExpr(pre.expr)(nwvs.renamings))
     }
     
     for ((e,a1) <- schedule.sequence) {
@@ -193,9 +193,9 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       }
       
       for (pre <- action.requires) {
-        stmts += B.Assert(
-          transExprPrecondCheck(pre)(renamings),pre.pos,
-          "Precondition might not hold")
+        if (!pre.free) {
+          stmts += B.Assert(transExprPrecondCheck(pre.expr)(renamings),pre.pos,"Precondition might not hold")
+        }
       }
       
       for (pat <- action.outputPattern) {
@@ -216,7 +216,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       }
       
       for (post <- action.ensures) {
-        stmts += B.Assume(transExprPrecondCheck(post)(renamings))
+        stmts += B.Assume(transExprPrecondCheck(post.expr)(renamings))
       }
       
     }
