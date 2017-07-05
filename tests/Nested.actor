@@ -74,7 +74,7 @@ end
 
 network Nested int in1 ==> int out1, int out2 :
   
-  Main: contract in1:1 ==> out1:1, out2:1
+  Main: contract in1:2 ==> out1:2, out2:2
     requires 0 <= in1[@]
     requires 0 <= in1[@+1]
     ensures out1[0] = in1[0]

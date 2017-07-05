@@ -83,15 +83,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
       }
       case None => throw new RuntimeException("There is no network named " + topNwName)
     }
-//    val translator = new PromelaTranslator(params)
-//    val translations = translator.invoke(programCtx)
-//    translations.flatMap { t =>
-//      val outputParser = new SpinOutputParser(t)
-//      for ((contract,prog) <- t.promelaPrograms) {
-//        verifyForContract(t.network, contract, prog,outputParser)
-//      }
-//      outputParser.allSchedules
-//    }
+    
   }
   
   def verifyForContract[T<:DFActor](entity: T, contract: ContractAction, promelaProg: List[Promela.Decl], outputParser: SpinOutputParser) = {

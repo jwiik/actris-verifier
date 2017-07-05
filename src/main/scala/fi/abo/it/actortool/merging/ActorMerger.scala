@@ -27,7 +27,9 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           val members = new ListBuffer[Member]
           val tokens = TokensDefFinder.find(nw.actorInvariants.map(_.expr))
           val tokenAmounts = tokens.collect { case (ch,IntLiteral(i)) => (ch,i) }
-          var actorVariables: Map[String,Expr] = Map.empty
+          
+          var actorVariablesMap: Map[Instance,Map[String,Expr]] = Map.empty
+          
           
           for ((ch,amount) <- tokenAmounts) {
             val conn = nw.structure.get.connections.find { c => c.id == ch }.get
@@ -37,6 +39,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           }
           
           for (e <- scheduleCtx.entities) yield {
+            var actorVariables: Map[String,Expr] = Map.empty
             val actor = scheduleCtx.mergedActors.getOrElse(e.actorId,e.actor)
             for (v <- actor.variables)  {
               val name = e.id+Sep+v.id
@@ -45,16 +48,10 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
                 Declaration(name,v.typ,v.constant, newVal)
               }
               
-              actorVariables += {
-                val toId = Id(name)
-                toId.typ = v.typ;
-                v.id -> toId
-              }
+              actorVariables += v.id -> Id(name).withType(v.typ)
             }
             for ((param,arg) <- actor.parameters.zip(e.arguments)) {
-              actorVariables += {
-                param.id -> arg
-              }
+              actorVariables += param.id -> arg
             }
             
             for (f <- actor.functionDecls) {
@@ -62,7 +59,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
               members += FunctionDecl(name,f.inputs,f.output,replaceStr(f.expr, actorVariables))
               actorVariables += f.name -> Id(name)
             }
-
+            actorVariablesMap += e -> actorVariables
           }
           
           val initSequence = scheduleCtx.entities.map { e => 
@@ -70,9 +67,9 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             (e, actor.actorActions.find(_.init).get) 
           }
           
-          members += createInitActionForNetwork(nw, initSequence, actorVariables, tokenAmounts)
+          members += createInitActionForNetwork(nw, initSequence, actorVariablesMap, tokenAmounts)
           
-          val actions = for (s <- schedules) yield createActionForNetworkContract(nw, s, tokenAmounts, actorVariables)
+          val actions = for (s <- schedules) yield createActionForNetworkContract(nw, s, tokenAmounts, actorVariablesMap)
           members.toList:::actions
         }
         case ba: BasicActor => {
@@ -87,11 +84,8 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
               Declaration(name,v.typ,v.constant,newVal)
             }
             
-            actorVariables += {
-              val toId = Id(name)
-              toId.typ = v.typ;
-              v.id -> toId
-            }
+            actorVariables += v.id -> Id(name).withType(v.typ)
+            
           }
           for (f <- ba.functionDecls) {
             val name = ba.id+Sep+f.name
@@ -132,7 +126,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       nw: Network, 
       schedule: ContractSchedule, 
       tokenAmounts: List[(String,Int)], 
-      actorVariables: Map[String,Expr]): ActorAction = {
+      actorVariables: Map[Instance,Map[String,Expr]]): ActorAction = {
     
     val contract = schedule.contract
     val connections = nw.structure.get.connections
@@ -169,7 +163,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     for ((e,a) <- schedule.sequence) {
       val (subStmt,subVars,newConsCount,newProdCount,usedVariables) = 
         handleActionExecution(
-          a, Some(e), Some(connectionMap), nw, actorVariables, usedVariableNames, consumeCount, produceCount)
+          a, Some(e), Some(connectionMap), nw, actorVariables(e), usedVariableNames, consumeCount, produceCount)
       stmt ++= subStmt
       variables ++= subVars
       consumeCount = newConsCount
@@ -425,7 +419,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     
   }
   
-  def createInitActionForNetwork(nw: Network, initSequence: List[(Instance,ActorAction)], actorVariables: Map[String,Expr], tokenAmounts: List[(String,Int)]) = {
+  def createInitActionForNetwork(nw: Network, initSequence: List[(Instance,ActorAction)], actorVariables: Map[Instance,Map[String,Expr]], tokenAmounts: List[(String,Int)]) = {
     val connections = nw.structure.get.connections
     val stmt = new ListBuffer[Stmt]
     val connectionMap = ConnectionMap.build(connections,Map.empty)
@@ -436,7 +430,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     
     for ((e,a) <- initSequence) {
       val (subStmt,subVars,newConsCount,newProdCount,usedVariables) = 
-        handleActionExecution(a, Some(e), Some(connectionMap), nw, actorVariables, usedVariableNames, consumeCount, produceCount)
+        handleActionExecution(a, Some(e), Some(connectionMap), nw, actorVariables(e), usedVariableNames, consumeCount, produceCount)
       stmt ++= subStmt
       variables ++= subVars
       consumeCount = newConsCount

@@ -323,7 +323,7 @@ object ActorTool {
     if (program.isEmpty) return // Error message has already been displayed
     if (!params.DoTypecheck) return
 
-    println(ASTPrinter.get.print(program))
+    
     
     var typeCtx = Resolver.resolve(program) match {
       case Resolver.Errors(msgs) =>
@@ -332,7 +332,7 @@ object ActorTool {
         Some(rootCtx)
     }
     
-    program = (RangeExpander | ForEachExpander).process(program)
+    program = (RangeExpander | ForEachExpander | OutputPatternNormaliser).process(program)
 
     typeCtx = Resolver.resolve(program) match {
       case Resolver.Errors(msgs) =>
@@ -340,6 +340,8 @@ object ActorTool {
       case Resolver.Success(rootCtx) =>
         Some(rootCtx)
     }
+    
+    println(ASTPrinter.get.print(program))
     
     //println(ASTPrinter.get.print(program))
     

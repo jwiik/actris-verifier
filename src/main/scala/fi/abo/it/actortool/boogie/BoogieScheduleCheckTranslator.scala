@@ -192,10 +192,16 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       for (pat <- action.inputPattern) {
         val id = nwvs.connectionMap.getDst(PortRef(Some(e.id),pat.portId))
         pat match {
-          case ipat: InputPattern => {
-            for (v <- ipat.vars) {
+          case InputPattern(_,vars,1) => {
+            for (v <- vars) {
               stmts += Boogie.Assign(transExpr(v.id,v.typ)(renamings),B.ChannelIdx(id,v.typ,B.R(id)))
-              stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(1))
+              stmts += Boogie.Assign(B.R(id), B.R(id) plus B.Int(1))
+            }
+          }
+          case InputPattern(_,List(v),repeat) => {
+            for (i <- 0 until repeat) {
+              stmts += Boogie.Assign(transExpr(v)(renamings), B.Fun("Map#Store",transExpr(v)(renamings) , B.Int(i) , B.ChannelIdx(id, v.typ, B.R(id)) )  )
+              stmts += Boogie.Assign(B.R(id), B.R(id) plus B.Int(1))
             }
           }
           case npat: NwPattern => {
@@ -216,10 +222,16 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       for (pat <- action.outputPattern) {
         val id = nwvs.connectionMap.getSrc(PortRef(Some(e.id),pat.portId))
         pat match {
-          case opat: OutputPattern => {
-            for (e <- opat.exps) {
+          case OutputPattern(_,exps,1) => {
+            for (e <- exps) {
               stmts += Boogie.Assign(B.ChannelIdx(id,e.typ,B.C(id)),transExpr(e)(renamings))
-              stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(1))
+              stmts += Boogie.Assign(B.C(id),B.C(id) plus B.Int(1))
+            }
+          }
+          case OutputPattern(_,List(e),repeat) => {
+            for (i <- 0 until repeat) {
+              stmts += Boogie.Assign(B.ChannelIdx(id, e.typ, B.C(id)), B.Fun("Map#Select",transExpr(e)(renamings), B.Int(i)))
+              stmts += Boogie.Assign(B.C(id), B.C(id) plus B.Int(1))
             }
           }
           case npat: NwPattern => {

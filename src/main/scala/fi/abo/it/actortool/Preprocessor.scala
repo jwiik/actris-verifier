@@ -374,6 +374,66 @@ case object EnumLiteralToBvHandler extends BasicActorExprAndStmtReplacer {
   
 }
 
+case object OutputPatternNormaliser extends BasicActorExprAndStmtReplacer {
+  
+  override def replace(ba: BasicActor): BasicActor = {
+    val newMembers = for (m <- ba.members) yield {
+      m match {
+        case a: ActorAction => 
+          val newOpatsAndReplaces = a.outputPattern.map { 
+            o => {
+              val replaces = o.exps.map { e => replaceOutPattern(e) }
+              val (exps,assigns) = replaces.unzip
+              (OutputPattern(o.portId, exps, o.repeat).withType(o.typ) , assigns.flatten)
+            }
+            //OutputPattern(o.portId, o.exps.map(replace), o.repeat).withType(o.typ) 
+          }
+          
+          val (newOpats,replaces) = newOpatsAndReplaces.unzip
+          
+          val assigns = replaces.flatten.map { case (id,exp) => Assign(id,exp) }
+          val declarations = replaces.flatten.map { case (id,_) => Declaration(id.id,id.typ,false,None) }
+          
+          val newVars = a.variables ++ declarations
+          val newBody = a.body ++ assigns
+          
+          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody)
+        case x => x
+      }
+    }
+    
+    val a = BasicActor(ba.id,ba.parameters,ba.inports,ba.outports,newMembers).withAnnotationsFrom(ba)
+    a
+  }
+  
+  def replaceOutPattern(expr: Expr): (Expr,List[(Id,Expr)]) = {
+    val buffer = new ListBuffer[(Id,Expr)]
+    val e = OutputPatternReplacer.visitExpr(expr)(buffer)
+    (e,buffer.toList)
+  }
+  
+  
+  def replace(expr: Expr): Expr = expr
+  override def replace(stmt: List[Stmt]): List[Stmt] = stmt
+  
+  object OutputPatternReplacer extends ASTReplacingVisitor[ListBuffer[(Id,Expr)]] {
+    var counter = 0
+    override def visitExpr(expr: Expr)(implicit map: ListBuffer[(Id,Expr)]): Expr = {
+      expr match {
+        case fa@FunctionApp("int",_) => super.visitExpr(fa)
+        case fa@FunctionApp(name,_) => {
+          val name = "fc"+counter+"#"+fa.name
+          val id = Id(name).withType(fa.typ)
+          map += (id -> fa)
+          id
+        }
+        case x => super.visitExpr(x)
+      }
+    }
+  }
+  
+}
+
 abstract class BasicActorExprAndStmtReplacer extends Preprocessor {
   
   def process(program: List[TopDecl]): List[TopDecl] = {
