@@ -85,8 +85,10 @@ object ActorTool {
     val PrintInvariantStats: Boolean
     val SizedIntsAsBitvectors: Boolean
     val ScheduleFile: Option[File]
-    val Promela: Option[String]
+    val Schedule: Option[String]
+    val MergeActions: Boolean
     val PromelaPrint: Boolean
+    
     final lazy val help = "actortool [option] <filename>+\n"
   }
 
@@ -113,7 +115,8 @@ object ActorTool {
     var aToVerify: List[String] = List.empty
     var aSizedIntsAsBitVectors = true
     var aScheduleFile: Option[File] = None
-    var aPromela: Option[String] = None
+    var aSchedule: Option[String] = None
+    var aMergeActions: Boolean = false
     var aPromelaPrint: Boolean = false
 
     lazy val help = {
@@ -193,10 +196,17 @@ object ActorTool {
         case Param("printInvariantStats") => aPrintInvariantStats = true
         case Param("promela") => {
           value match {
-            case s@Some(nwId) => aPromela = s
+            case s@Some(nwId) => aSchedule = s
             case None => reportCommandLineError("parameter 'promela' takes a string as argument")
           }
         }
+        case Param("schedule") => {
+          value match {
+            case s@Some(nwId) => aSchedule = s
+            case None => reportCommandLineError("parameter 'schedule' takes a string identifying the top network as argument")
+          }
+        }
+        case Param("mergeActions") => aMergeActions = true
         case Param("promelaPrint") => aPromelaPrint = true
         case Param("scheduleFile") => {
           value match {
@@ -262,8 +272,9 @@ object ActorTool {
       val PrintInvariantStats = aPrintInvariantStats
       val SizedIntsAsBitvectors = aSizedIntsAsBitVectors
       val ScheduleFile = aScheduleFile
-      val Promela = aPromela
+      val Schedule = aSchedule
       val PromelaPrint = aPromelaPrint
+      val MergeActions = aMergeActions
     })
   }
 
@@ -350,7 +361,7 @@ object ActorTool {
     
     
     
-    if (params.Promela.isDefined) {
+    if (params.Schedule.isDefined) {
       val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
       val promelaBackend = new PromelaBackend(params)
       val mergedActor = promelaBackend.invoke(programContext)

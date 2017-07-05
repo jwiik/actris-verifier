@@ -62,7 +62,7 @@ procedure Net#anon__4()
   assume 0 <= I#[Net#e];
   assume I#[Net#e] <= R#[Net#e];
   assume R#[Net#e] <= C#[Net#e];
-  assume (B#[Net#a] == 1) && (B#[Net#d] == 1);
+  assume (B#[Net#a] == 2) && (B#[Net#d] == 2);
   assume anon__4 == 0;
   assume Mode#[this#] == anon__4;
   assume Mode#[this#] == anon__4;
@@ -74,37 +74,67 @@ procedure Net#anon__4()
   assume (C#[Net#e] - R#[Net#e]) == 0;
   assume M#[Net#b][0] == 0;
   assume 0 <= M#[Net#b][I#[Net#b]];
-  C#[Net#a] := C#[Net#a] + 1;
+  C#[Net#a] := C#[Net#a] + 2;
   assume 0 <= M#[Net#a][I#[Net#a]];
-  // Instance: add, Action: anon__18
+  // Instance: add, Action: anon__22
   I#sub[Net#a] := R#[Net#a];
   I#sub[Net#b] := R#[Net#b];
   I#sub[Net#c] := C#[Net#c];
-  assert {:msg "Firing rule might not be satisfied for action 'anon__18' of instance 'add' (#0)"} (1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b])) && (0 <= M#[Net#a][R#[Net#a]]);
+  assert {:msg "anon__4: Firing rule might not be satisfied for action 'anon__22' of instance 'add' (#0)"} (1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b]));
   add#in1#i := M#[Net#a][R#[Net#a]];
   R#[Net#a] := R#[Net#a] + 1;
   add#in2#j := M#[Net#b][R#[Net#b]];
   R#[Net#b] := R#[Net#b] + 1;
   M#[Net#c][C#[Net#c]] := add#in1#i + add#in2#j;
   C#[Net#c] := C#[Net#c] + 1;
-  // Instance: spl, Action: anon__19
+  // Instance: spl, Action: anon__23
   I#sub[Net#c] := R#[Net#c];
   I#sub[Net#d] := C#[Net#d];
   I#sub[Net#e] := C#[Net#e];
-  assert {:msg "Firing rule might not be satisfied for action 'anon__19' of instance 'spl' (#1)"} 1 <= (C#[Net#c] - R#[Net#c]);
+  assert {:msg "anon__4: Firing rule might not be satisfied for action 'anon__23' of instance 'spl' (#1)"} 1 <= (C#[Net#c] - R#[Net#c]);
   spl#in1#i := M#[Net#c][R#[Net#c]];
   R#[Net#c] := R#[Net#c] + 1;
   M#[Net#d][C#[Net#d]] := spl#in1#i;
   C#[Net#d] := C#[Net#d] + 1;
   M#[Net#e][C#[Net#e]] := spl#in1#i;
   C#[Net#e] := C#[Net#e] + 1;
-  // Instance: del, Action: anon__21
+  // Instance: del, Action: anon__25
   I#sub[Net#e] := R#[Net#e];
   I#sub[Net#b] := C#[Net#b];
-  assert {:msg "Firing rule might not be satisfied for action 'anon__21' of instance 'del' (#2)"} 1 <= (C#[Net#e] - R#[Net#e]);
+  assert {:msg "anon__4: Firing rule might not be satisfied for action 'anon__25' of instance 'del' (#2)"} 1 <= (C#[Net#e] - R#[Net#e]);
   del#in1#i := M#[Net#e][R#[Net#e]];
   R#[Net#e] := R#[Net#e] + 1;
   M#[Net#b][C#[Net#b]] := del#in1#i;
   C#[Net#b] := C#[Net#b] + 1;
-  assert {:msg "The correct amount of tokens might not be produced on output out (#3)"} (C#[Net#d] - R#[Net#d]) == 1;
+  // Instance: add, Action: anon__22
+  I#sub[Net#a] := R#[Net#a];
+  I#sub[Net#b] := R#[Net#b];
+  I#sub[Net#c] := C#[Net#c];
+  assert {:msg "anon__4: Firing rule might not be satisfied for action 'anon__22' of instance 'add' (#3)"} (1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b]));
+  add#in1#i := M#[Net#a][R#[Net#a]];
+  R#[Net#a] := R#[Net#a] + 1;
+  add#in2#j := M#[Net#b][R#[Net#b]];
+  R#[Net#b] := R#[Net#b] + 1;
+  M#[Net#c][C#[Net#c]] := add#in1#i + add#in2#j;
+  C#[Net#c] := C#[Net#c] + 1;
+  // Instance: spl, Action: anon__23
+  I#sub[Net#c] := R#[Net#c];
+  I#sub[Net#d] := C#[Net#d];
+  I#sub[Net#e] := C#[Net#e];
+  assert {:msg "anon__4: Firing rule might not be satisfied for action 'anon__23' of instance 'spl' (#4)"} 1 <= (C#[Net#c] - R#[Net#c]);
+  spl#in1#i := M#[Net#c][R#[Net#c]];
+  R#[Net#c] := R#[Net#c] + 1;
+  M#[Net#d][C#[Net#d]] := spl#in1#i;
+  C#[Net#d] := C#[Net#d] + 1;
+  M#[Net#e][C#[Net#e]] := spl#in1#i;
+  C#[Net#e] := C#[Net#e] + 1;
+  // Instance: del, Action: anon__25
+  I#sub[Net#e] := R#[Net#e];
+  I#sub[Net#b] := C#[Net#b];
+  assert {:msg "anon__4: Firing rule might not be satisfied for action 'anon__25' of instance 'del' (#5)"} 1 <= (C#[Net#e] - R#[Net#e]);
+  del#in1#i := M#[Net#e][R#[Net#e]];
+  R#[Net#e] := R#[Net#e] + 1;
+  M#[Net#b][C#[Net#b]] := del#in1#i;
+  C#[Net#b] := C#[Net#b] + 1;
+  assert {:msg "The correct amount of tokens might not be produced on output out (#6)"} (C#[Net#d] - R#[Net#d]) == 2;
 }

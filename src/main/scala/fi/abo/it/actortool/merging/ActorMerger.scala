@@ -33,9 +33,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           
           for ((ch,amount) <- tokenAmounts) {
             val conn = nw.structure.get.connections.find { c => c.id == ch }.get
-            for (i <- 0 until amount) {
-              members += Declaration(Sep+"del"+Sep+ch+Sep+i,conn.typ.asInstanceOf[ChanType].contentType,false,None)
-            }
+            members += Declaration(Sep+"del"+Sep+ch,MapType(IntType,conn.typ.asInstanceOf[ChanType].contentType,amount),false,None)
           }
           
           for (e <- scheduleCtx.entities) yield {
@@ -95,8 +93,15 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           val initActions = {
             for (a <- ba.actorActions.find(_.init).toList) yield {
               ActorAction(
-                  a.label,a.init,a.inputPattern,a.outputPattern,a.guards,a.requires,a.ensures,
-                  a.variables,replaceStr(a.body,actorVariables))
+                  a.label,
+                  a.init,
+                  a.inputPattern,
+                  a.outputPattern,
+                  a.guards,
+                  Nil,
+                  Nil,
+                  a.variables,
+                  replaceStr(a.body,actorVariables))
             }
           }
           members ++= initActions
@@ -111,7 +116,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
         entity.inports,
         entity.outports,
         members).withAnnotationsFrom(entity)
-    //println(ASTPrinter.get.print(actor))
+    println(ASTPrinter.get.print(actor))
     Resolver.resolve(List(actor),constants) match {
       case Resolver.Errors(errs) => {
         //println(ASTPrinter.get.print(actor))
@@ -143,20 +148,25 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       contract.inputPattern.map {
         pat => {
           val conn = connectionMap.getIn(pat.portId)
-          InputPattern(pat.portId, ((0 to pat.rate-1).toList.map { 
-            i => {
-              val count = produceCount(conn)
-              produceCount = produceCount + (conn ->  (count+1))
-              Id(conn+Sep+count) 
-            }
-          }),1)
+          val newpat = InputPattern(pat.portId,List(Id(conn)),pat.rate)
+          val count = produceCount(conn)
+          produceCount = produceCount + (conn ->  (count+pat.rate))
+          newpat
+//          InputPattern(pat.portId, ((0 to pat.rate-1).toList.map { 
+//            i => {
+//              val count = produceCount(conn)
+//              produceCount = produceCount + (conn ->  (count+1))
+//              Id(conn+Sep+count) 
+//            }
+//          }),1)
         }
       }
     }
     
     for ((ch,amount) <- tokenAmounts) {
       for (i <- 0 until amount) {
-        stmt += Assign(Id(ch+Sep+i),Id(Sep+"del"+Sep+ch+Sep+i))
+        //stmt += Assign(Id(ch+Sep+i),Id(Sep+"del"+Sep+ch+Sep+i))
+        stmt += MapAssign(IndexAccessor(Id(ch),IntLiteral(i)), IndexAccessor(Id(Sep+"del"+Sep+ch),IntLiteral(i)) )
       }
     }
     
@@ -173,23 +183,51 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     
     for ((ch,amount) <- tokenAmounts) {
       for (i <- 0 until amount) {
-        stmt += Assign(Id(Sep+"del"+Sep+ch+Sep+i),Id(ch+Sep+(consumeCount(ch)-1+i)))
+        //stmt += Assign(Id(Sep+"del"+Sep+ch+Sep+i),Id(ch+Sep+(consumeCount(ch)-1+i)))
+        stmt += MapAssign(IndexAccessor(Id(Sep+"del"+Sep+ch),IntLiteral(i)), IndexAccessor(Id(ch),IntLiteral( consumeCount(ch)-1+i )))
       }
     }
     
-    val outputPatterns = 
+    val outputPatterns = {
       contract.outputPattern.map {
         pat => {
           val conn = connectionMap.getOut(pat.portId)
-          OutputPattern(pat.portId, ((0 to pat.rate-1).toList.map { 
-            i => {
-              val count = consumeCount(conn)
-              consumeCount = consumeCount + (conn ->  (count+1))
-              Id(conn+Sep+count) 
-            }
-          }),1)
+          
+          //val conn = connectionMap.getIn(pat.portId)
+//          val newpat = OutputPattern(pat.portId,List(Id(conn)),pat.rate)
+//          val count = consumeCount(conn)
+//          consumeCount = consumeCount + (conn ->  (count+1))
+//          newpat
+          
+          if (pat.rate > 1) {
+            val newpat = OutputPattern(pat.portId,List(Id(conn)),pat.rate)
+            //variables += Declaration(conn+Sep, MapType(IntType,pat.typ,pat.rate), false, None)
+            newpat
+          }
+          else {
+            val newpat = OutputPattern(pat.portId,List(IndexAccessor(Id(conn),IntLiteral(0))),pat.rate)
+            //variables += Declaration(conn+Sep, MapType(IntType,pat.typ,pat.rate), false, None)
+            newpat
+          }
+          
+          
+//          OutputPattern(pat.portId, ((0 to pat.rate-1).toList.map { 
+//            i => {
+//              val count = consumeCount(conn)
+//              consumeCount = consumeCount + (conn ->  (count+1))
+//              Id(conn+Sep+count) 
+//            }
+//          }),1)
         }
       }
+    }
+    
+    for (c <- connections.filter { !_.isInput }) {
+      if (produceCount(c.id) > 0) {
+        variables += Declaration(c.id,MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,produceCount(c.id)),false,None)
+        usedVariableNames += c.id
+      }
+    }
     
     val action = ActorAction(
         contract.label,
@@ -220,13 +258,18 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     val inputPatterns = 
       contract.inputPattern.map {
         pat => {
-          InputPattern(pat.portId, ((0 to pat.rate-1).toList.map { 
-            i => {
-              val count = produceCount(pat.portId)
-              produceCount = produceCount + (pat.portId ->  (count+1))
-              Id(pat.portId+Sep+count) 
-            }
-          }),1)
+          val conn = pat.portId
+          val newpat = InputPattern(pat.portId,List(Id(conn+Sep)),pat.rate)
+          val count = produceCount(conn)
+          produceCount = produceCount + (conn ->  (count+pat.rate))
+          newpat
+//          InputPattern(pat.portId, ((0 to pat.rate-1).toList.map { 
+//            i => {
+//              val count = produceCount(pat.portId)
+//              produceCount = produceCount + (pat.portId ->  (count+1))
+//              Id(pat.portId+Sep+count) 
+//            }
+//          }),1)
         }
       }
     for ((_,a) <- schedule.sequence) {
@@ -239,18 +282,31 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       usedVariableNames = usedVariables
     }
     
-    val outputPatterns = 
+    val outputPatterns = {
       contract.outputPattern.map {
         pat => {
-          OutputPattern(pat.portId, ((0 to pat.rate-1).toList.map { 
-            i => {
-              val count = consumeCount(pat.portId)
-              consumeCount = consumeCount + (pat.portId ->  (count+1))
-              Id(pat.portId+Sep+count) 
-            }
-          }),1)
+          val conn = pat.portId
+          
+          //val conn = connectionMap.getIn(pat.portId)
+          val count = consumeCount(conn)
+          consumeCount = consumeCount + (conn ->  (count+pat.rate))
+          usedVariableNames += conn+Sep
+          if (pat.rate > 1) {
+            val newpat = OutputPattern(pat.portId,List(Id(conn+Sep)),pat.rate)
+            variables += Declaration(conn+Sep, MapType(IntType,pat.typ,pat.rate), false, None)
+            newpat
+          }
+          else {
+            val newpat = OutputPattern(pat.portId,List(IndexAccessor(Id(conn+Sep),IntLiteral(0))),pat.rate)
+            variables += Declaration(conn+Sep, MapType(IntType,pat.typ,pat.rate), false, None)
+            newpat
+          }
+          
         }
       }
+    }
+    
+    
     
     val action = ActorAction(
         contract.label,
@@ -324,27 +380,42 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             // Network
             val connections = connectionMap.connections
             val conn = connectionMap.getDst(eOpt.get.id,pat.portId)
+
             
             assert(pat.typ != null)
             
             for (i <- 0 until pat.repeat) {
               var count = consumeCount(conn)
               consumeCount = consumeCount + (conn ->  (count+1))
-              val name = conn+Sep+count
+              //val name = conn+Sep+count
+              val name = conn
+              
+//              val c = connections.find { _.id == conn }
+//              if (c.get.from.actor.isDefined) {
+//                // This avoids adding variables that are part of the input pattern
+//                // to action variables
+//                if (!allUsedVariableNames.contains(name)) {
+//                  variables += Declaration(name,pat.typ,false,None)
+//                  allUsedVariableNames += name
+//                }
+//              }
               val c = connections.find { _.id == conn }
-              if (c.get.from.actor.isDefined) {
-                // This avoids adding variables that are part of the input pattern
-                // to action variables
-                if (!allUsedVariableNames.contains(name)) {
-                  variables += Declaration(name,pat.typ,false,None)
-                  allUsedVariableNames += name
+              
+              val acc =
+                if (!c.get.from.actor.isDefined) {
+                  // This is an input, if we only read one token on this input, it will not be a map
+                  if (produceCount(conn) <= 1) Id(conn)
+                  else IndexAccessor(Id(conn),IntLiteral(count))
                 }
-              }
+                else IndexAccessor(Id(conn),IntLiteral(count))
+                
               if (pat.repeat > 1) {
-                stmt += MapAssign(IndexAccessor(replaceStr(v,renames),IntLiteral(i)) ,Id(conn+Sep+count))
+                //stmt += MapAssign(IndexAccessor(replaceStr(v,renames),IntLiteral(i)) ,Id(conn+Sep+count))
+                stmt += MapAssign(IndexAccessor(replaceStr(v,renames),IntLiteral(i)) ,  acc)
               }
               else {
-                stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(conn+Sep+count))
+                //stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(conn+Sep+count))
+                stmt += Assign(replaceStr(v,renames).asInstanceOf[Id], acc)
               }
               
             }
@@ -355,12 +426,20 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             for (i <- 0 until pat.repeat) {
               val count = consumeCount(pat.portId)
               consumeCount = consumeCount + (pat.portId ->  (count+1))
+              
+              val acc =
+                if (produceCount(pat.portId) <= 1) Id(pat.portId+Sep)
+                else IndexAccessor(Id(pat.portId+Sep),IntLiteral(count))
+
+              
               assert(pat.typ != null)
               if (pat.repeat > 1) {
-                stmt += MapAssign(IndexAccessor(replaceStr(v,renames),IntLiteral(i)) ,Id(pat.portId+Sep+count))
+                //stmt += MapAssign(IndexAccessor(replaceStr(v,renames),IntLiteral(i)) ,Id(pat.portId+Sep+count))
+                stmt += MapAssign(IndexAccessor(replaceStr(v,renames),IntLiteral(i)) ,acc)
               }
               else {
-                stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(pat.portId+Sep+count))
+                //stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],Id(pat.portId+Sep+count))
+                stmt += Assign(replaceStr(v,renames).asInstanceOf[Id],acc)
               }
             }
           }
@@ -380,34 +459,43 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             for (i <- 0 until pat.repeat) {
               val count = produceCount(conn)
               produceCount = produceCount + (conn ->  (count+1))
-              val name = conn+Sep+count
-              assert(pat.typ != null)
-              if (!allUsedVariableNames.contains(name)) {
-                variables += Declaration(name,pat.typ,false,None)
-                allUsedVariableNames += name
-              }
+              //val name = conn+Sep+count
+              val name = conn
+//              assert(pat.typ != null)
+//              if (!allUsedVariableNames.contains(name)) {
+//                variables += Declaration(name,pat.typ,false,None)
+//                allUsedVariableNames += name
+//              }
               if (pat.repeat > 1) {
                 //assert(false)
-                stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],IndexAccessor(replaceStr(exp,renames),IntLiteral(i)))
+                //stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],IndexAccessor(replaceStr(exp,renames),IntLiteral(i)))
+                stmt += MapAssign(IndexAccessor(replaceStr(Id(name),renames), IntLiteral(count)) ,IndexAccessor(replaceStr(exp,renames),IntLiteral(i)))
               }
-              else stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
+              else {
+                //stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
+                stmt += MapAssign(IndexAccessor(replaceStr(Id(name),renames), IntLiteral(count)) ,replaceStr(exp,renames))
+              }
             }
           }
           case None => {
             for (i <- 0 until pat.repeat) {
               val count = produceCount(pat.portId)
               produceCount = produceCount + (pat.portId -> (count+1))
-              val name = pat.portId+Sep+count
+              //val name = pat.portId+Sep+count
+              val name = pat.portId+Sep
               assert(pat.typ != null)
-              if (!allUsedVariableNames.contains(name)) {
-                variables += Declaration(name,pat.typ,false,None)
-                allUsedVariableNames += name
-              }
+//              if (!allUsedVariableNames.contains(name)) {
+//                variables += Declaration(name,pat.typ,false,None)
+//                allUsedVariableNames += name
+//              }
               if (pat.repeat > 1) {
                 //assert(false)
-                stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],IndexAccessor(replaceStr(exp,renames),IntLiteral(i)) )
+                //stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],IndexAccessor(replaceStr(exp,renames),IntLiteral(i)) )
+                stmt += MapAssign(IndexAccessor(replaceStr(Id(name),renames), IntLiteral(count)) ,IndexAccessor(replaceStr(exp,renames),IntLiteral(i)) )
               }
-              else stmt += Assign(replaceStr(Id(name),renames).asInstanceOf[Id],replaceStr(exp,renames))
+              else {
+                stmt += MapAssign(IndexAccessor(replaceStr(Id(name),renames), IntLiteral(count)) ,replaceStr(exp,renames))
+              }
             }
           }
         }
@@ -440,9 +528,18 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     
     for ((ch,amount) <- tokenAmounts) {
       for (i <- 0 until amount) {
-        stmt += Assign(Id(Sep+"del"+Sep+ch+Sep+i),Id(ch+Sep+i))
+        //stmt += Assign(Id(Sep+"del"+Sep+ch+Sep+i),Id(ch+Sep+i))
+        stmt += MapAssign( IndexAccessor(Id(Sep+"del"+Sep+ch),IntLiteral(i)),  IndexAccessor(Id(ch), IntLiteral(i)) )
       }
     }
+    
+    for (c <- connections.filter { !_.isInput }) {
+      if (produceCount(c.id) > 0) {
+        variables += Declaration(c.id,MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,produceCount(c.id)),false,None)
+        usedVariableNames += c.id
+      }
+    }
+    
     
     val action = ActorAction(
         Some("Init__"),
@@ -464,6 +561,8 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
   def replace(e: List[Stmt], renamings: Map[Id,Id]) = IdToIdReplacer.visitStmt(e)(renamings)
   
   def replaceStr(e: Expr, renamings: Map[String,Expr]) = IdReplacerString.visitExpr(e)(renamings)
+  def replaceStrAll(exps: List[Expr], renamings: Map[String,Expr]) = exps map {e => IdReplacerString.visitExpr(e)(renamings)}
+  def replaceStrAssertsAll(exps: List[Assertion], renamings: Map[String,Expr]) = exps map {e => Assertion(IdReplacerString.visitExpr(e.expr)(renamings),e.free,e.msg)}
   def replaceStr(e: Stmt, renamings: Map[String,Expr]) = IdReplacerString.visitStmt(e)(renamings)
   //def replaceStr(id: Id, renamings: Map[String,Expr]) = IdReplacerString.visitId(id)(renamings)
   def replaceStr(e: List[Stmt], renamings: Map[String,Expr]) = IdReplacerString.visitStmt(e)(renamings)
@@ -487,7 +586,16 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
   def translateGuardToExecutableFormat(guard: Expr, inputPatterns: List[InputPattern]): Expr = {
     val map =
       (inputPatterns.flatMap {
-        pat => pat.vars.zipWithIndex.map { case (v,i) => ((pat.portId,i) -> v) }
+        pat => pat.vars.zipWithIndex.map { 
+          case (v,i) => {
+            if (pat.repeat > 1) {
+              ((pat.portId,i) -> IndexAccessor(v,IntLiteral(i)))
+            }
+            else{
+              ((pat.portId,i) -> v)
+            }
+          }
+        }
       }).toMap
     ContractGuardToActorGuardTranslator.visitExpr(guard)(map)
   }

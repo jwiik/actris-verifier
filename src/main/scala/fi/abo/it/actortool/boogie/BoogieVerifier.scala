@@ -17,7 +17,7 @@ class BoogieVerifier(val params: CommandLineParameters) extends Backend[Unit] {
 
 class BoogieScheduleVerifier(val params: CommandLineParameters) extends GeneralBackend[ScheduleContext, Unit] {
   def invoke(scheduleCtx: ScheduleContext) {
-    val translator = new BoogieScheduleCheckTranslator
+    val translator = new BoogieScheduleCheckTranslator(params.MergeActions)
     val bplProg = translator.invoke(scheduleCtx)
     BoogieRunner.run(params, bplProg)
   }

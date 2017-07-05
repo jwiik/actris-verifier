@@ -38,7 +38,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val NoBplFile = true
       val BplFile = "out.bpl"
       val Timing = 1
-      val FixedBaseLength = 0
       val InferModules = List("default")
       val AssumeGenInvs = true
       val SmokeTest = false
@@ -48,7 +47,8 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val PrintInvariantStats = false
       val SizedIntsAsBitvectors = true
       val ScheduleFile = None
-      val Promela = None
+      val Schedule = None
       val PromelaPrint = false
+      val MergeActions = false
     } 
 }

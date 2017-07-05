@@ -434,16 +434,18 @@ object Resolver {
         }
         val e = outPat.exps(0)
         val eType = resolveExpr(ctx,e)
-        if (!eType.isList) {
+        if (!eType.isMap) {
           actorCtx.error(outPat.pos, "Output pattern expression with a repeat clause has to be of type List")
         }
-        val lstType = eType.asInstanceOf[MapType]
-        if (!TypeUtil.isCompatible(lstType.rangeType, port.portType)) {
-          ctx.error(e.pos, 
-                  "Output pattern type " + lstType.rangeType.id + " does not match port type " + port.portType.id)
-        }
-        if (lstType.size < outPat.repeat) {
-          actorCtx.error(outPat.pos, "Repeat has to be smaller than or equal to List size")
+        else {
+          val lstType = eType.asInstanceOf[MapType]
+          if (!TypeUtil.isCompatible(lstType.rangeType, port.portType)) {
+            ctx.error(e.pos, 
+                    "Output pattern type " + lstType.rangeType.id + " does not match port type " + port.portType.id)
+          }
+          if (lstType.size < outPat.repeat) {
+            actorCtx.error(outPat.pos, "Repeat has to be smaller than or equal to List size")
+          }
         }
       }
       else {

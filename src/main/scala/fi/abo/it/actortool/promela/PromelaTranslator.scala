@@ -109,7 +109,7 @@ class PromelaTranslator(params: CommandLineParameters) {
   }
   
   def invoke(entity: DFActor, mergedActors: Map[String,BasicActor], alreadyTranslated: Map[String,P.ProcType], constants: List[Declaration]): Translation[DFActor] = {
-    assert(!entity.contractActions.isEmpty)
+    assert(!entity.contractActions.isEmpty, entity.fullName)
     var procs: Map[String,P.ProcType] = Map.empty
     entity match {
       case nw: Network => {

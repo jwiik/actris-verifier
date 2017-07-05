@@ -3,7 +3,7 @@ package fi.abo.it.actortool.boogie
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule._
 
-class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] with GeneralBackend[ScheduleContext,List[Boogie.Decl]] {
+class BoogieScheduleCheckTranslator(mergedActions: Boolean) extends EntityTranslator[ScheduleContext] with GeneralBackend[ScheduleContext,List[Boogie.Decl]] {
 
   
   def invoke(scheduleCtx: ScheduleContext) = translateEntity(scheduleCtx)
@@ -23,12 +23,12 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
     
     val decls = scheduleCtx.entity match {
       case nw: Network => {
-        val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),false)
+        val verStructBuilder = new NetworkVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),mergedActions)
         val nwvs = verStructBuilder.buildStructure(nw)
         scheduleCtx.schedules.flatMap(s => translateNetworkSchedule(scheduleCtx, s, nwvs))
       }
       case ba: BasicActor => {
-        val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),false)
+        val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),mergedActions)
         val avs = verStructBuilder.buildStructure(ba)
         translateFunctionDecl(avs) ::: scheduleCtx.schedules.flatMap(s => translateActorSchedule(scheduleCtx,s,avs))
       }
@@ -187,6 +187,7 @@ class BoogieScheduleCheckTranslator extends EntityTranslator[ScheduleContext] wi
       }
       
       val firingRules = getFiringRules(e, nwvs)
+      //println(firingRules.keys map (_.fullName))
       stmts += B.Assert(firingRules(action),action.pos,schedule.contract.fullName + ": Firing rule might not be satisfied for action '" + action.fullName + "' of instance '" + e.id +"'")
       
       for (pat <- action.inputPattern) {

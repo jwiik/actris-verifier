@@ -1,7 +1,5 @@
 actor Add int in1, int in2 ==> int out :
-  action in1:[i], in2:[j] ==> out:[i+j] 
-    guard 0 <= i
-  end
+  action in1:[i], in2:[j] ==> out:[i+j] end
 end
 
 actor Split int in1 ==> int out1, int out2 :
@@ -15,7 +13,7 @@ end
 
 network Net int in1 ==> int out :
   
-  contract in1:1 ==> out:1
+  contract in1:2 ==> out:2
     guard 0 <= in1[@]
     ensures out[@] >= in1[@]
     ensures 0 < @(out) ==> out[@] = out[@-1]+in1[@]

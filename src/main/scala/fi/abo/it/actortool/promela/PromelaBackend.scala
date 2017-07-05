@@ -18,7 +18,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
     val translator = new PromelaTranslator(params)
     val scheduleVerifier = new BoogieScheduleVerifier(params)
     
-    val topNwName = params.Promela.get
+    val topNwName = params.Schedule.get
     val topnw = programCtx.program.find { x => x.id == topNwName }
     val allSchedules = new collection.mutable.ListBuffer[ContractSchedule]
     
@@ -32,7 +32,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
         for (entity <- evaluationOrder) {
           entity match {
             case ba: BasicActor => {
-              if (!ba.hasAnnotation("schedule")) mergedActorMap += (entity.id -> ba)
+              if (entity.contractActions.isEmpty || (!params.MergeActions && !ba.hasAnnotation("merge"))) mergedActorMap += (entity.id -> ba)
               else {
                 val translation = translator.invoke(ba,mergedActorMap.toMap,Map.empty,constants)
                 val outputParser = new SpinOutputParser(translation)

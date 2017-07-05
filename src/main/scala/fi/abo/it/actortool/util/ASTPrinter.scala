@@ -156,15 +156,15 @@ class ASTPrinter(orccCompatible: Boolean) {
       case MapAssign(id,e) => indent + printExpr(id) + " := " + printExpr(e) + ";"
       case IfElse(cond,thn,elsifs,els) => 
         indent + "if " + printExpr(cond) + " then" + nl +
-        indentAdd + printStmts(thn) + indentRem + nl +
+        indentAdd + printStmts(thn) + indentRem +
         {
           if (!orccCompatible) {
             (for (ei <- elsifs) yield {
-              indent + "else if " + printExpr(ei.cond) + " then" + nl + 
+              indent + nl + "else if " + printExpr(ei.cond) + " then" + nl + 
               indentAdd + indent + printStmts(ei.stmt) + indentRem
             }).mkString + nl +
             (if (!els.isEmpty) {
-              indent + "else" + nl +
+              indent + nl + "else" + nl +
               indentAdd + indent + printStmts(els) + indentRem
             }
             else "")
