@@ -4,7 +4,7 @@ import collection.mutable.ListBuffer
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule.ContractSchedule
 
-class SpinOutputParser(val translation: Translation[_<:DFActor]) {
+class ScheduleParser(val translation: Translation[_<:DFActor]) {
   
   private val schedules = new  ListBuffer[ContractSchedule]()
   private var current: ListBuffer[(Instance,ActorAction)] = null
@@ -44,7 +44,7 @@ class SpinOutputParser(val translation: Translation[_<:DFActor]) {
         case e: Exception =>  {
           if (l == "timeout") {}
           else {
-            println("SPIN: " + l)
+//            println("SPIN: " + l)
           }
         }
       }

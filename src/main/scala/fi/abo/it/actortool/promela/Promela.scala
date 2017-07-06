@@ -19,6 +19,7 @@ object Promela {
   case class Atomic(stmt: List[Stmt]) extends Stmt
   case class If(options: List[OptionStmt]) extends Stmt
   case class Iteration(options: List[OptionStmt]) extends Stmt
+  case class For(ivar: VarExp, start: Expr, end: Expr, body: List[Stmt]) extends Stmt
   case class Assign(trgt: Expr, value: Expr) extends Stmt
   case class Run(procId: String, params: List[Expr]) extends Stmt
   case class Send(ch: String, exp: Expr) extends Stmt
@@ -142,6 +143,12 @@ object Promela {
           indent + "{"+ nl +
           indentAdd +
           printStmts(stmt) + nl +
+          indentRem +
+          indent + "}"
+        case For(ivar,str,end,body) => 
+          indent + "for (" + printExpr(ivar) + " : " + printExpr(str) + " .. " + printExpr(end) + ") {"+ nl +
+          indentAdd +
+          printStmts(body) + nl +
           indentRem +
           indent + "}"
         case OptionStmt(stmt) =>

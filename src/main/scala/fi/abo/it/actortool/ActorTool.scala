@@ -89,6 +89,7 @@ object ActorTool {
     val ScheduleSimulate: Boolean
     val MergeActions: Boolean
     val PromelaPrint: Boolean
+    val PromelaChanSize: Int
     
     final lazy val help = "actortool [option] <filename>+\n"
   }
@@ -119,6 +120,7 @@ object ActorTool {
     var aMergeActions: Boolean = false
     var aPromelaPrint: Boolean = false
     var aScheduleSimulate: Boolean = false
+    var aPromelaChanSize: Int = 512
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -209,6 +211,19 @@ object ActorTool {
         }
         case Param("mergeActions") => aMergeActions = true
         case Param("promelaPrint") => aPromelaPrint = true
+        case Param("promelaChanSize") => {
+          value match {
+            case Some(sz) => {
+              try {
+                aPromelaChanSize = sz.toInt
+              } catch {
+                case e: NumberFormatException =>
+                  reportCommandLineError("parameter promelaChanSize takes an integer as argument.")
+              }
+            }
+            case None => reportCommandLineError("parameter promelaChanSize takes an integer as argument.")
+          }
+        }
         case Param("scheduleSimulate") => aScheduleSimulate = true
         case Param(x) =>
           reportCommandLineError("unknown command line parameter " + x)
@@ -261,6 +276,7 @@ object ActorTool {
       val PromelaPrint = aPromelaPrint
       val MergeActions = aMergeActions
       val ScheduleSimulate = aScheduleSimulate
+      val PromelaChanSize = aPromelaChanSize
     })
   }
 
@@ -355,23 +371,21 @@ object ActorTool {
       val promelaBackend = new PromelaBackend(params)
       val (mergedActor,scheduleCtxs) = promelaBackend.invoke(programContext)
       
-      val scheduleVerifier = new BoogieScheduleVerifier(params)
-      
       timings += (Step.Scheduling -> (System.nanoTime - tmpTime))
       tmpTime = System.nanoTime
       
+      
+      val scheduleVerifier = new BoogieScheduleVerifier(params)
       println
       for (s <- scheduleCtxs) {
         println("Verifying schedules for " + s.entity.fullName + "...")
         scheduleVerifier.invoke(s)
       }
       println
-      //println(fi.abo.it.actortool.util.ASTPrinter.print(mergedActor))
       
       timings += (Step.Verification -> (System.nanoTime - tmpTime))
       tmpTime = System.nanoTime
       
-      //return
     }
     else {
       if (params.DoInfer) {

@@ -51,5 +51,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val ScheduleSimulate = false
       val PromelaPrint = false
       val MergeActions = false
+      val PromelaChanSize = 100
     } 
 }

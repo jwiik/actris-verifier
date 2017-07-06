@@ -8,6 +8,7 @@ import fi.abo.it.actortool.util.ActionPeekAnalyzer
 import fi.abo.it.actortool.util.ActionPeekAnalyzer
 import fi.abo.it.actortool.util.PriorityMapBuilder
 import fi.abo.it.actortool.util.ASTPrinter
+import fi.abo.it.actortool.util.Analysis
 
 case class Translation[+T<:DFActor](
     val entity: T, 
@@ -54,7 +55,7 @@ class PromelaTranslator(params: CommandLineParameters) {
   val inputGenerator = new InputGenerator
   val funCallReplacer = new FunctionCallReplacer
   
-  val renamings = new RootRenamingContext
+  val rootRenamings = new RootRenamingContext
   
   trait RenamingContext {
     val charMapping = Map("$" -> "__", "#" -> "__")
@@ -161,12 +162,12 @@ class PromelaTranslator(params: CommandLineParameters) {
     val channelMapping = Util.buildConnectionMap(connections)
     
     for (c <- constants) {
-      decls(c.id) = P.VarDecl(renamings.R(c.id), translateType(c.typ), Some(translateExpr(c.value.get)(renamings)))
+      decls(c.id) = P.VarDecl(rootRenamings.R(c.id), translateType(c.typ), Some(translateExpr(c.value.get)(rootRenamings)))
     }
     
     for (c <- connections) {
       decls += 
-        c.id -> P.VarDecl(renamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(100,translateType(c.typ.asInstanceOf[ChanType].contentType))))
+        c.id -> P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
     for (e <- List(instance)) {
@@ -183,8 +184,8 @@ class PromelaTranslator(params: CommandLineParameters) {
       for ((id,instance) <- instances.toList) yield {
         val actor = instance.actor
         val chanNames = actor.inports:::actor.outports map { p => instance.connections(p.id) }
-        val chanParams = chanNames map { p => P.VarExp(renamings.R(p.id)) }
-        val givenParams = instance.arguments map { x => translateExpr(x)(renamings) }
+        val chanParams = chanNames map { p => P.VarExp(rootRenamings.R(p.id)) }
+        val givenParams = instance.arguments map { x => translateExpr(x)(rootRenamings) }
         P.Run(actor.id, P.IntLiteral(instance.mapId)::chanParams:::givenParams)
       }
     }
@@ -210,9 +211,9 @@ class PromelaTranslator(params: CommandLineParameters) {
         val tokenAmount =
           if (outputTokens.contains(c.id)) IntLiteral(outputTokens(c.id))
           else IntLiteral(0)
-        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(renamings))
+        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
       }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
-    P.UnaryExpr("[]",P.UnaryExpr("!",channelPredicate))
+    P.UnaryExpr("[]",P.UnaryExpr("!",P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout")) ))
   }
   
   def generateNetworkLTLFormula(nw: Network, contract: ContractAction, channelMap: Map[PortRef,Connection]): P.Expr = {
@@ -223,9 +224,9 @@ class PromelaTranslator(params: CommandLineParameters) {
         val tokenAmount =
           if (outputTokens.contains(c.id)) IntLiteral(outputTokens(c.id))
           else delayTokens.getOrElse(c.id,IntLiteral(0))
-        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(renamings))
+        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
       }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
-    P.UnaryExpr("[]",P.UnaryExpr("!",channelPredicate))
+    P.UnaryExpr("[]",P.UnaryExpr("!",P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout"))))
   }
   
   def translateNetwork(nw: Network, constants: List[Declaration], procs: Map[String,P.ProcType], mergedActors: Map[String,BasicActor]): Translation[Network] = {
@@ -236,12 +237,12 @@ class PromelaTranslator(params: CommandLineParameters) {
      val channelMapping = Util.buildConnectionMap(nw.structure.get.connections)
     
     for (c <- constants) {
-      decls(c.id) = P.VarDecl(renamings.R(c.id), translateType(c.typ), Some(translateExpr(c.value.get)(renamings)))
+      decls(c.id) = P.VarDecl(rootRenamings.R(c.id), translateType(c.typ), Some(translateExpr(c.value.get)(rootRenamings)))
     }
     
     for (c <- nw.structure.get.connections) {
       decls += 
-        c.id -> P.VarDecl(renamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(100,translateType(c.typ.asInstanceOf[ChanType].contentType))))
+        c.id -> P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
     for (e <- nw.entities.get.entities) {
@@ -258,8 +259,8 @@ class PromelaTranslator(params: CommandLineParameters) {
       for ((id,instance) <- instances.toList) yield {
         val actor = instance.actor
         val chanNames = actor.inports:::actor.outports map { p => instance.connections(p.id) }
-        val chanParams = chanNames map { p => P.VarExp(renamings.R(p.id)) }
-        val givenParams = instance.arguments map { x => translateExpr(x)(renamings) }
+        val chanParams = chanNames map { p => P.VarExp(rootRenamings.R(p.id)) }
+        val givenParams = instance.arguments map { x => translateExpr(x)(rootRenamings) }
         P.Run(actor.id, P.IntLiteral(instance.mapId)::chanParams:::givenParams)
       }
     }
@@ -290,7 +291,7 @@ class PromelaTranslator(params: CommandLineParameters) {
         val chan = channelMapping(PortRef(None,pat.portId))
         for (i <- 0 to pat.rate-1) {
           val inputToken = input(pat.portId)(i)
-          initBlock += P.Send(renamings.R(chan), translateExpr(inputToken)(renamings))
+          initBlock += P.Send(rootRenamings.R(chan), translateExpr(inputToken)(rootRenamings))
         }
       }
       
@@ -303,7 +304,7 @@ class PromelaTranslator(params: CommandLineParameters) {
   
   def translateActor(a: BasicActor): P.ProcType = {
     
-    val actorRenamings = renamings.getSubContext
+    val actorRenamings = rootRenamings.getSubContext
     
     val params = new ListBuffer[P.ParamDecl]
     val decls = new ListBuffer[P.Stmt]
@@ -346,11 +347,6 @@ class PromelaTranslator(params: CommandLineParameters) {
     val peekAnalyzer = new ActionPeekAnalyzer
     val priorityMap = PriorityMapBuilder.buildPriorityMap(a, false, true)
     
-    // Get the most tokens consumed on each port by any action
-//    val maxRates = 
-//      a.inports.map {
-//        ip => (ip -> (a.actorActions.filter(!_.init).map { t => t.inportRate(ip.id) }).foldLeft(0)((a,b) => if (a < b) b else a))
-//      }
     val rates = a.inports.map {
       ip => { 
         ip ->
@@ -442,7 +438,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       
       val stmt = new ListBuffer[P.Stmt]
         
-      stmt += P.PrintStmtValue("<action id='%d' actor='"+renamings.R(a.fullName)+ "' action='" + renamings.R(act.fullName) + "' />\\n",List(P.VarExp("__uid")))
+      stmt += P.PrintStmtValue("<action id='%d' actor='"+rootRenamings.R(a.fullName)+ "' action='" + rootRenamings.R(act.fullName) + "' />\\n",List(P.VarExp("__uid")))
       val actionRenamings = beforeInputRenamings.getSubContext
       for (p <- act.inputPattern) {
         if (p.repeat > 1) {
@@ -451,19 +447,19 @@ class PromelaTranslator(params: CommandLineParameters) {
           actionRenamings.add(v.id, name)
           stmt += P.VarDecl(name,P.ArrayType(translateType(p.typ),p.repeat), None)
           for (i <- 0 until p.repeat) {
-            stmt += P.Receive(renamings.R(p.portId), translateExpr(v)(beforeInputRenamings))
+            stmt += P.Receive(rootRenamings.R(p.portId), translateExpr(v)(beforeInputRenamings))
             stmt += P.Assign(P.IndexAccessor(P.VarExp(name),P.IntLiteral(i)), translateExpr(v)(beforeInputRenamings))
           }
         }
         else {
           for (v <- p.vars) {
-            stmt += P.Receive(renamings.R(p.portId), translateExpr(v)(actionRenamings))
+            stmt += P.Receive(rootRenamings.R(p.portId), translateExpr(v)(actionRenamings))
           }
         }
       }
       
       for (v <- act.variables) {
-        stmt ++= translateDeclaration(v, renamings.R(v.id), actionRenamings)
+        stmt ++= translateDeclaration(v, rootRenamings.R(v.id), actionRenamings)
       }
       
       stmt ++= translateStmts(act.body)(actionRenamings)
@@ -472,12 +468,12 @@ class PromelaTranslator(params: CommandLineParameters) {
         if (p.repeat > 1) {
           val e = translateExpr(p.exps(0))(actionRenamings)
           for (i <- 0 until p.repeat) {
-            stmt += P.Send(renamings.R(p.portId), P.IndexAccessor(e,P.IntLiteral(i)))
+            stmt += P.Send(rootRenamings.R(p.portId), P.IndexAccessor(e,P.IntLiteral(i)))
           }
         }
         else {
           for (e <- p.exps) {
-            stmt += P.Send(renamings.R(p.portId), translateExpr(e)(actionRenamings))
+            stmt += P.Send(rootRenamings.R(p.portId), translateExpr(e)(actionRenamings))
           }
         }
       }
@@ -497,21 +493,44 @@ class PromelaTranslator(params: CommandLineParameters) {
       case Some(value) => {
         value match {
           case ListLiteral(lst) => {
+            
             stmt += P.VarDecl(newName,translateType(d.typ), None)
             for ((l,i) <- lst.zipWithIndex) {
               stmt += P.Assign(P.IndexAccessor(P.VarExp(newName),P.IntLiteral(i)) , translateExpr(l)(renamings))
             }
+            
+            //stmt ++= handleCollectionLiteralDecl(lst, newName, P.VarExp(newName), d.typ)
           }
           case MapLiteral(_,lst) => {
+            
             stmt += P.VarDecl(newName,translateType(d.typ), None)
             for ((l,i) <- lst.zipWithIndex) {
               stmt += P.Assign(P.IndexAccessor(P.VarExp(newName),P.IntLiteral(i)) , translateExpr(l)(renamings))
             }
+            
+            //stmt ++= handleCollectionLiteralDecl(lst, newName, P.VarExp(newName), d.typ)
           }
           case x => stmt += P.VarDecl(newName,translateType(d.typ), Some(translateExpr(x)(renamings)))
         }
       }
       case None => stmt += P.VarDecl(newName,translateType(d.typ), None)
+    }
+    stmt.toList
+  }
+  
+  def handleCollectionLiteralDecl(lst: List[Expr], newName: String, assignArray: P.Expr, tp: Type, renamings: RenamingContext): List[P.Stmt] = {
+    val stmt = new ListBuffer[P.Stmt]
+    stmt += P.VarDecl(newName,translateType(tp), None)
+    if (Analysis.allEqual(lst)) {
+      val iterVar = "__idx__"+newName
+      stmt += P.VarDecl(iterVar,P.NamedType("int"),None)
+      val asgn = P.Assign(P.IndexAccessor(assignArray,P.VarExp(iterVar)) , translateExpr(lst(0))(renamings))
+      stmt += P.For(P.VarExp(iterVar), P.IntLiteral(0), P.IntLiteral(lst.size-1),List(asgn))
+    }
+    else {
+      for ((l,i) <- lst.zipWithIndex) {
+        stmt += P.Assign(P.IndexAccessor(assignArray,P.IntLiteral(i)) , translateExpr(l)(renamings))
+      }
     }
     stmt.toList
   }
@@ -532,10 +551,7 @@ class PromelaTranslator(params: CommandLineParameters) {
                 if (!info.isEmpty) {
                   val sequence = new ListBuffer[P.Stmt]
                   for ((s,lit) <- info) {
-                    sequence += P.VarDecl(s,translateType(lit.typ),None)
-                    for ((l,i) <- lit.elements.zipWithIndex) {
-                      sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
-                    }
+                    sequence ++= handleCollectionLiteralDecl(lit.elements, s, translateExpr(id), lit.typ, renamings)
                   }
                   //sequence += P.Assign(translateExpr(id),translateExpr(newThn))
                   P.Sequence(sequence.toList)
@@ -550,10 +566,13 @@ class PromelaTranslator(params: CommandLineParameters) {
                 if (!info.isEmpty) {
                   val sequence = new ListBuffer[P.Stmt]
                   for ((s,lit) <- info) {
-                    sequence += P.VarDecl(s,translateType(lit.typ),None)
-                    for ((l,i) <- lit.elements.zipWithIndex) {
-                      sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
-                    }
+                    
+                    sequence ++= handleCollectionLiteralDecl(lit.elements, s, translateExpr(id), lit.typ, renamings)
+                    
+//                    sequence += P.VarDecl(s,translateType(lit.typ),None)
+//                    for ((l,i) <- lit.elements.zipWithIndex) {
+//                      sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
+//                    }
                   }
                   //sequence += P.Assign(translateExpr(i),translateExpr(newEls))
                   P.Sequence(sequence.toList)
@@ -568,10 +587,11 @@ class PromelaTranslator(params: CommandLineParameters) {
               val (_,info) = ListLiteralReplacer.findAndReplace(e)
               val sequence = new ListBuffer[P.Stmt]
               for ((s,lit) <- info) {
-                sequence += P.VarDecl(s,translateType(lit.typ),None)
-                for ((l,i) <- lit.elements.zipWithIndex) {
-                  sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
-                }
+                sequence ++= handleCollectionLiteralDecl(lit.elements, s, translateExpr(id), lit.typ, renamings)
+//                sequence += P.VarDecl(s,translateType(lit.typ),None)
+//                for ((l,i) <- lit.elements.zipWithIndex) {
+//                  sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
+//                }
               }
               //sequence += P.Assign(translateExpr(id),translateExpr(newThn))
               P.Sequence(sequence.toList)
@@ -580,10 +600,11 @@ class PromelaTranslator(params: CommandLineParameters) {
               val (_,info) = ListLiteralReplacer.findAndReplace(e)
               val sequence = new ListBuffer[P.Stmt]
               for ((s,lit) <- info) {
-                sequence += P.VarDecl(s,translateType(lit.typ),None)
-                for ((l,i) <- lit.elements.zipWithIndex) {
-                  sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
-                }
+                sequence ++= handleCollectionLiteralDecl(lit.elements, s, translateExpr(id), lit.typ, renamings)
+//                sequence += P.VarDecl(s,translateType(lit.typ),None)
+//                for ((l,i) <- lit.elements.zipWithIndex) {
+//                  sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
+//                }
               }
               //sequence += P.Assign(translateExpr(id),translateExpr(newThn))
               P.Sequence(sequence.toList)

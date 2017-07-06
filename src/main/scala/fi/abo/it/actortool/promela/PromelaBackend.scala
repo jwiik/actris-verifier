@@ -34,7 +34,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
               if (entity.contractActions.isEmpty || (!params.MergeActions && !ba.hasAnnotation("merge"))) mergedActorMap += (entity.id -> ba)
               else {
                 val translation = translator.invoke(ba,mergedActorMap.toMap,Map.empty,constants)
-                val outputParser = new SpinOutputParser(translation)
+                val outputParser = new ScheduleParser(translation)
                 for ((contract,prog) <- translation.promelaPrograms) {
                   verifyForContract(translation.entity, contract, prog,outputParser)
                 }
@@ -56,7 +56,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
             }
             case nw: Network => {
               val translation = translator.invoke(nw,mergedActorMap.toMap,Map.empty,constants)
-              val outputParser = new SpinOutputParser(translation)
+              val outputParser = new ScheduleParser(translation)
               for ((contract,prog) <- translation.promelaPrograms) {
                 verifyForContract(translation.entity, contract, prog,outputParser)
               }
@@ -87,7 +87,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
     
   }
   
-  def verifyForContract[T<:DFActor](entity: T, contract: ContractAction, promelaProg: List[Promela.Decl], outputParser: SpinOutputParser) = {
+  def verifyForContract[T<:DFActor](entity: T, contract: ContractAction, promelaProg: List[Promela.Decl], outputParser: ScheduleParser) = {
     val progTxt = PromelaPrelude.get + promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
     if (params.PromelaPrint) {
       println(progTxt)
