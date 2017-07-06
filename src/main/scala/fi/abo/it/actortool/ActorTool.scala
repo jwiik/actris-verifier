@@ -59,6 +59,7 @@ object ActorTool {
     val Resolve = Value("Typecheck")
     val Infer = Value("Inference")
     val Verification = Value("Verification")
+    val Scheduling = Value("Scheduling")
   }
 
   /**
@@ -84,8 +85,8 @@ object ActorTool {
     val ComponentsToVerify: List[String]
     val PrintInvariantStats: Boolean
     val SizedIntsAsBitvectors: Boolean
-    val ScheduleFile: Option[File]
     val Schedule: Option[String]
+    val ScheduleSimulate: Boolean
     val MergeActions: Boolean
     val PromelaPrint: Boolean
     
@@ -114,10 +115,10 @@ object ActorTool {
     var aPrintInvariantStats = false
     var aToVerify: List[String] = List.empty
     var aSizedIntsAsBitVectors = true
-    var aScheduleFile: Option[File] = None
     var aSchedule: Option[String] = None
     var aMergeActions: Boolean = false
     var aPromelaPrint: Boolean = false
+    var aScheduleSimulate: Boolean = false
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -208,22 +209,7 @@ object ActorTool {
         }
         case Param("mergeActions") => aMergeActions = true
         case Param("promelaPrint") => aPromelaPrint = true
-        case Param("scheduleFile") => {
-          value match {
-            case Some(path) => {
-              val file = new File(path)
-              if (!file.exists) {
-                reportCommandLineError("schedule file " + file.getName + " could not be found", help);
-                return None
-              }
-              aScheduleFile = Some(file)
-            }
-            case None => {
-              reportCommandLineError("parameter scheduleFile takes a file path as argument")
-              return None
-            }
-          }
-        }
+        case Param("scheduleSimulate") => aScheduleSimulate = true
         case Param(x) =>
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -271,10 +257,10 @@ object ActorTool {
       val ComponentsToVerify = aToVerify
       val PrintInvariantStats = aPrintInvariantStats
       val SizedIntsAsBitvectors = aSizedIntsAsBitVectors
-      val ScheduleFile = aScheduleFile
       val Schedule = aSchedule
       val PromelaPrint = aPromelaPrint
       val MergeActions = aMergeActions
+      val ScheduleSimulate = aScheduleSimulate
     })
   }
 
@@ -323,17 +309,18 @@ object ActorTool {
       case Some(p) => p
       case None    => return //illegal program, errors have already been displayed
     }
+    
+    timings += (Step.Parse -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
 
     // Create a pipeline of preprocessors
     val preprocessor = InitActionNormaliser | ActionScheduleProcessor | ProcedureExpander | EnumLiteralToBvHandler /*| NetworkFlattener*/
     program = preprocessor.process(program)
     //println(new ASTPrinter().print(program))
     
-    timings += (Step.Parse -> (System.nanoTime - tmpTime))
-    tmpTime = System.nanoTime
+    
     if (program.isEmpty) return // Error message has already been displayed
     if (!params.DoTypecheck) return
-
     
     
     var typeCtx = Resolver.resolve(program) match {
@@ -352,53 +339,68 @@ object ActorTool {
         Some(rootCtx)
     }
     
-    println(ASTPrinter.get.print(program))
+    //println(ASTPrinter.get.print(program))
     
     //println(ASTPrinter.get.print(program))
     
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
-    
+    val componentsToVerify =
+        if (params.ComponentsToVerify.isEmpty) program
+        else program.filter { x => params.ComponentsToVerify.contains(x.id) || x.isUnit || x.isType }
     
     if (params.Schedule.isDefined) {
       val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
       val promelaBackend = new PromelaBackend(params)
-      val mergedActor = promelaBackend.invoke(programContext)
-      //println(fi.abo.it.actortool.util.ASTPrinter.print(mergedActor))
-      return
-    }
-
-    if (params.DoInfer) {
-      Inferencer.infer(program, typeCtx.get, params.InferModules, params.AssumeGenInvs) match {
-        case Inferencer.Errors(msgs) =>
-          msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
-        case Inferencer.Success() =>
+      val (mergedActor,scheduleCtxs) = promelaBackend.invoke(programContext)
+      
+      val scheduleVerifier = new BoogieScheduleVerifier(params)
+      
+      timings += (Step.Scheduling -> (System.nanoTime - tmpTime))
+      tmpTime = System.nanoTime
+      
+      println
+      for (s <- scheduleCtxs) {
+        println("Verifying schedules for " + s.entity.fullName + "...")
+        scheduleVerifier.invoke(s)
       }
+      println
+      //println(fi.abo.it.actortool.util.ASTPrinter.print(mergedActor))
+      
+      timings += (Step.Verification -> (System.nanoTime - tmpTime))
+      tmpTime = System.nanoTime
+      
+      //return
     }
-
-    timings += (Step.Infer -> (System.nanoTime - tmpTime))
-    tmpTime = System.nanoTime
-
-    if (!params.DoTranslate) return
-    
-    val verifier = new BoogieVerifier(params)
-
-    val componentsToVerify =
-      if (params.ComponentsToVerify.isEmpty) program
-      else program.filter { x => params.ComponentsToVerify.contains(x.id) || x.isUnit || x.isType }
-    
-    if (!params.DoVerify) return
-    val programContext = new BasicProgramContext(componentsToVerify,typeCtx.get)
-    verifier.invoke(programContext)
-
-    timings += (Step.Verification -> (System.nanoTime - tmpTime))
-    tmpTime = System.nanoTime
+    else {
+      if (params.DoInfer) {
+        Inferencer.infer(program, typeCtx.get, params.InferModules, params.AssumeGenInvs) match {
+          case Inferencer.Errors(msgs) =>
+            msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
+          case Inferencer.Success() =>
+        }
+      }
+  
+      timings += (Step.Infer -> (System.nanoTime - tmpTime))
+      tmpTime = System.nanoTime
+  
+      if (!params.DoTranslate) return
+      
+      val verifier = new BoogieVerifier(params)
+      
+      if (!params.DoVerify) return
+      val programContext = new BasicProgramContext(componentsToVerify,typeCtx.get)
+      verifier.invoke(programContext)
+  
+      timings += (Step.Verification -> (System.nanoTime - tmpTime))
+      tmpTime = System.nanoTime
+    }
     
     val totalTime = System.nanoTime - startTime
 
     if (0 < params.Timing)
-      println("Verification finished in %1.3f seconds" format (totalTime / 1000000000.0))
+      println("Execution finished in %1.3f seconds" format (totalTime / 1000000000.0))
     if (1 < params.Timing) {
       for (s <- Step.values) {
         println(s + ": %1.3fs".format(timings(s) / 1000000000.0))

@@ -194,7 +194,10 @@ class PromelaTranslator(params: CommandLineParameters) {
     val contractTranslations = 
       for ((contract,init) <- inits) yield {
         val ltl = P.Ltl("",generateActorLTLFormula(actor, contract, channelMapping,connections))
-        val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: List(init/*,ltl*/)
+        
+        val setups = if (params.ScheduleSimulate) List(init) else List(init,ltl)
+        
+        val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: setups
         (contract,program)
       }
     Translation(actor,contractTranslations,idMap,mergedActors)
@@ -266,7 +269,10 @@ class PromelaTranslator(params: CommandLineParameters) {
     val contractTranslations = 
       for ((contract,init) <- inits) yield {
         val ltl = P.Ltl("",generateNetworkLTLFormula(nw, contract, channelMapping))
-        val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: List(init/*,ltl*/)
+        
+        val setups = if (params.ScheduleSimulate) List(init) else List(init,ltl)
+        
+        val program: List[P.Decl] = decls.values.toList ::: procs.values.toList ::: setups
         (contract,program)
       }
     

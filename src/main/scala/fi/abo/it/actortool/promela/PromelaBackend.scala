@@ -9,18 +9,17 @@ import fi.abo.it.actortool.merging.ActorMerger
 import fi.abo.it.actortool.boogie.BoogieScheduleVerifier
 import fi.abo.it.actortool.util.ASTPrinter
 
-class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicActor] {
+class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicActor,List[ScheduleContext])] {
   
   val printer = new Promela.PromelaPrinter
   
   
-  def invoke(programCtx: ProgramContext): BasicActor = {
+  def invoke(programCtx: ProgramContext): (BasicActor,List[ScheduleContext]) = {
     val translator = new PromelaTranslator(params)
-    val scheduleVerifier = new BoogieScheduleVerifier(params)
     
     val topNwName = params.Schedule.get
     val topnw = programCtx.program.find { x => x.id == topNwName }
-    val allSchedules = new collection.mutable.ListBuffer[ContractSchedule]
+    val allSchedules = new collection.mutable.ListBuffer[ScheduleContext]
     
     val constants = (programCtx.program.collect { case DataUnit(_,constants) => constants }).flatten
     val mergerBackend = new ActorMerger(constants)
@@ -44,8 +43,9 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
                 val scheduleCtx = new ScheduleContext(
                     ba, schedules, mergedActorMap.toMap,
                     programCtx.program, programCtx.typeContext)
-                println("Verifying obtained schedules...")
-                scheduleVerifier.invoke(scheduleCtx)
+                allSchedules += scheduleCtx
+//                println("Verifying obtained schedules...")
+//                scheduleVerifier.invoke(scheduleCtx)
                 val actor = mergerBackend.invoke(scheduleCtx)
                 actor match {
                   case Some(a) => mergedActorMap += (entity.id -> a)
@@ -64,8 +64,9 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
               val scheduleCtx = new ScheduleContext(
                     nw, schedules, mergedActorMap.toMap,
                     programCtx.program, programCtx.typeContext)
-              println("Verifying obtained schedules...")
-              scheduleVerifier.invoke(scheduleCtx)
+              allSchedules += scheduleCtx
+//              println("Verifying obtained schedules...")
+//              scheduleVerifier.invoke(scheduleCtx)
               val actor = mergerBackend.invoke(scheduleCtx)
               actor match {
                 case Some(a) => mergedActorMap += (entity.id -> a)
@@ -78,7 +79,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
         println("Merging done")
         val finalActor = mergedActorMap(topNwName)
         writeFile("output/"+finalActor.id+".actor", ASTPrinter.orcc.print(finalActor))
-        finalActor
+        (finalActor,allSchedules.toList)
         
       }
       case None => throw new RuntimeException("There is no network named " + topNwName)
@@ -93,7 +94,10 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[BasicAct
     }
     outputParser.startNewSchedule(contract)
     println("Running spin on contract '" + contract.fullName + "' of network '" + entity.id + "'...")
-    PromelaRunner.run(progTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
+    if (params.ScheduleSimulate)
+      PromelaRunner.simulate(progTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
+    else
+      PromelaRunner.search(progTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
     outputParser.endSchedule
   }
   

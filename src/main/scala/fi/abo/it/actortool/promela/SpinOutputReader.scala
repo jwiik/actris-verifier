@@ -42,12 +42,9 @@ class SpinOutputParser(val translation: Translation[_<:DFActor]) {
       }
       catch {
         case e: Exception =>  {
-          if (l.startsWith("spin:")) {
-            println("Spin message:" + l.substring(5))
-          }
-          else if (l == "timeout") {}
+          if (l == "timeout") {}
           else {
-            println("Error parsing spin output: " + l)
+            println("SPIN: " + l)
           }
         }
       }
