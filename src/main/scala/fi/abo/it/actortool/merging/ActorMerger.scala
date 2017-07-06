@@ -27,12 +27,13 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           val members = new ListBuffer[Member]
           val tokens = TokensDefFinder.find(nw.actorInvariants.map(_.expr))
           val tokenAmounts = tokens.collect { case (ch,IntLiteral(i)) => (ch,i) }
+          val connections = nw.structure.get.connections
           
           var actorVariablesMap: Map[Instance,Map[String,Expr]] = Map.empty
           
           
           for ((ch,amount) <- tokenAmounts) {
-            val conn = nw.structure.get.connections.find { c => c.id == ch }.get
+            val conn = connections.find { c => c.id == ch }.get
             members += Declaration(Sep+"del"+Sep+ch,MapType(IntType,conn.typ.asInstanceOf[ChanType].contentType,amount),false,None)
           }
           
@@ -65,9 +66,28 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             (e, actor.actorActions.find(_.init).get) 
           }
           
+          
+          
+          val schedData = for (s <- schedules) yield createActionForNetworkContract(nw, s, tokenAmounts, actorVariablesMap)
+          val (actions,sizes) = schedData.unzip
+          
+          val maxSizes = (for (c <- connections.filter(!_.isInput)) yield {
+            var maxSize = 0
+            for (s <- sizes) {
+              val sz = s.getOrElse(c.id, 0)
+              if (sz > maxSize) maxSize = sz
+            }
+            (c.id, maxSize)
+          }).toMap
+
+          for (c <- connections.filter { !_.isInput }) {
+            if (maxSizes(c.id) > 0) {
+              members += Declaration(c.id,MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,maxSizes(c.id)),false,None)
+            }
+          }
+          
           members += createInitActionForNetwork(nw, initSequence, actorVariablesMap, tokenAmounts)
           
-          val actions = for (s <- schedules) yield createActionForNetworkContract(nw, s, tokenAmounts, actorVariablesMap)
           members.toList:::actions
         }
         case ba: BasicActor => {
@@ -131,7 +151,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       nw: Network, 
       schedule: ContractSchedule, 
       tokenAmounts: List[(String,Int)], 
-      actorVariables: Map[Instance,Map[String,Expr]]): ActorAction = {
+      actorVariables: Map[Instance,Map[String,Expr]]): (ActorAction,Map[String,Int]) = {
     
     val contract = schedule.contract
     val connections = nw.structure.get.connections
@@ -221,13 +241,13 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
         }
       }
     }
-    
-    for (c <- connections.filter { !_.isInput }) {
-      if (produceCount(c.id) > 0) {
-        variables += Declaration(c.id,MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,produceCount(c.id)),false,None)
-        usedVariableNames += c.id
-      }
-    }
+//    
+//    for (c <- connections.filter { !_.isInput }) {
+//      if (produceCount(c.id) > 0) {
+//        variables += Declaration(c.id,MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,produceCount(c.id)),false,None)
+//        usedVariableNames += c.id
+//      }
+//    }
     
     val action = ActorAction(
         contract.label,
@@ -241,7 +261,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
         stmt.toList)
     //println(ASTPrinter.printMember(action))
     action.refinedContract = Some(contract)
-    action
+    (action,produceCount)
   }
   
   def createActionForActorContract(ba: BasicActor, schedule: ContractSchedule, actorVariables: Map[String,Expr]): ActorAction = {
@@ -533,12 +553,12 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       }
     }
     
-    for (c <- connections.filter { !_.isInput }) {
-      if (produceCount(c.id) > 0) {
-        variables += Declaration(c.id,MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,produceCount(c.id)),false,None)
-        usedVariableNames += c.id
-      }
-    }
+//    for (c <- connections.filter { !_.isInput }) {
+//      if (produceCount(c.id) > 0) {
+//        variables += Declaration(c.id,MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,produceCount(c.id)),false,None)
+//        usedVariableNames += c.id
+//      }
+//    }
     
     
     val action = ActorAction(
