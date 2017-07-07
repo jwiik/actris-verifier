@@ -6,23 +6,22 @@ import fi.abo.it.actortool.schedule.ContractSchedule
 
 class ScheduleParser(val translation: Translation[_<:DFActor]) {
   
-  private val schedules = new  ListBuffer[ContractSchedule]()
   private var current: ListBuffer[(Instance,ActorAction)] = null
   private var currentContract: ContractAction = null
+  private var schedule: ContractSchedule = null
   
-  def startNewSchedule(contract: ContractAction) {
+  def startSchedule(contract: ContractAction) {
     current = new ListBuffer
     currentContract = contract
   }
   
   def endSchedule {
-    val s = new ContractSchedule(translation.entity,currentContract,current.toList)
-    schedules += s
+    schedule = new ContractSchedule(translation.entity,currentContract,current.toList)
     current = null
     currentContract = null
   }
   
-  def allSchedules = schedules.toList
+  def getSchedule = schedule
   
   def read(str: String) {
     val lines = str.split("\n")

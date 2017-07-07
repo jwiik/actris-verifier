@@ -33,12 +33,9 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
             case ba: BasicActor => {
               if (entity.contractActions.isEmpty || (!params.MergeActions && !ba.hasAnnotation("merge"))) mergedActorMap += (entity.id -> ba)
               else {
-                val translation = translator.invoke(ba,mergedActorMap.toMap,Map.empty,constants)
-                val outputParser = new ScheduleParser(translation)
-                for ((contract,prog) <- translation.promelaPrograms) {
-                  verifyForContract(translation.entity, contract, prog,outputParser)
-                }
-                val schedules = outputParser.allSchedules
+                val translations = translator.invoke(ba,mergedActorMap.toMap,Map.empty,constants)
+                
+                val schedules = for (t <- translations) yield verifyForContract(t)
                 
                 val scheduleCtx = new ScheduleContext(
                     ba, schedules, mergedActorMap.toMap,
@@ -55,12 +52,10 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
               }
             }
             case nw: Network => {
-              val translation = translator.invoke(nw,mergedActorMap.toMap,Map.empty,constants)
-              val outputParser = new ScheduleParser(translation)
-              for ((contract,prog) <- translation.promelaPrograms) {
-                verifyForContract(translation.entity, contract, prog,outputParser)
-              }
-              val schedules = outputParser.allSchedules
+              val translations = translator.invoke(nw,mergedActorMap.toMap,Map.empty,constants)
+              
+              val schedules = for (t <- translations) yield verifyForContract(t)
+              
               val scheduleCtx = new ScheduleContext(
                     nw, schedules, mergedActorMap.toMap,
                     programCtx.program, programCtx.typeContext)
@@ -87,18 +82,74 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
     
   }
   
-  def verifyForContract[T<:DFActor](entity: T, contract: ContractAction, promelaProg: List[Promela.Decl], outputParser: ScheduleParser) = {
-    val progTxt = PromelaPrelude.get + promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
-    if (params.PromelaPrint) {
-      println(progTxt)
-    }
-    outputParser.startNewSchedule(contract)
-    println("Running spin on contract '" + contract.fullName + "' of network '" + entity.id + "'...")
-    if (params.ScheduleSimulate)
+  def verifyForContract[T<:DFActor](translation: Translation[T]): ContractSchedule = {
+    
+    val outputParser = new ScheduleParser(translation)
+    
+    val promelaProg = translation.promelaProgram
+    val contract = translation.contract
+    val entity = translation.entity
+    
+    
+    if (params.ScheduleSimulate) {
+      println("Running spin simulation on contract '" + contract.fullName + "' of network '" + entity.id + "'...")
+      val progTxt = PromelaPrelude.get + promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
+      if (params.PromelaPrint) {
+        println(progTxt)
+      }
+      outputParser.startSchedule(contract)
       PromelaRunner.simulate(progTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
-    else
-      PromelaRunner.search(progTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
-    outputParser.endSchedule
+      outputParser.endSchedule
+      outputParser.getSchedule
+    }
+    else {
+      println("Running spin search on contract '" + contract.fullName + "' of network '" + entity.id + "'...")
+      
+      var cost: Option[Int] = None
+      var schedule: Option[ContractSchedule] = None
+      val ltlFormula = translation.ltlFormula
+      
+      val progTxt = PromelaPrelude.get + promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
+      if (params.PromelaPrint) {
+        println(progTxt)
+      }
+      
+      var iters = 0
+      var foundOptimal = false
+      while (!foundOptimal && iters < 2) {
+        val formula = {
+          cost match {
+            case Some(c) => 
+              Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && (Promela.VarExp(Instrumentation.COST) < Promela.IntLiteral(c)))))
+            case None => Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula)))
+          }
+        }
+        val formulaTxt = printer.print(formula)
+        outputParser.startSchedule(contract)
+        val newCost = PromelaRunner.search(progTxt + formulaTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
+        
+        newCost match {
+          case None => {
+            println(">> Found cost-optimal schedule")
+            foundOptimal = true
+            outputParser.endSchedule
+          }
+          case Some(c) => {
+            println(">> Cost: " + c)
+            cost = newCost
+            outputParser.endSchedule
+            schedule = Some(outputParser.getSchedule)
+          }
+        }
+        iters = iters+1
+      }
+      schedule match {
+        case None => throw new RuntimeException("Did not find any schedule")
+        case Some(s) => s
+      }
+    }
+    
+    
   }
   
   def buildDependencyTree(entity: DFActor): DepTree[DFActor] = {

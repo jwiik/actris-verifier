@@ -13,6 +13,8 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
 object PromelaRunner {
   
+
+  
   def simulate(progTxt: String, outputFile: String, scheduleParser: ScheduleParser) = {
     
     writeFile("output/"+outputFile,progTxt)
@@ -25,13 +27,13 @@ object PromelaRunner {
 
   }
   
-  def search(progTxt: String, outputFile: String, scheduleParser: ScheduleParser) = {
+  def search(progTxt: String, outputFile: String, scheduleParser: ScheduleParser): Option[Int] = {
     
     val processes = List(
         Process(Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile), new java.io.File("output")),
-        Process(Seq("gcc","-DVECTORSZ=1000000","-o","pan","pan.c"), new java.io.File("output")),
-        Process(Seq("./pan", "-m1000000", "-a"), new java.io.File("output")),
-        Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T","-B",outputFile), new java.io.File("output"))
+        Process(Seq("gcc","-DVECTORSZ=1000000","-DCOLLAPSE","-DSAFETY","-o","pan","pan.c"), new java.io.File("output")),
+        Process(Seq("./pan", "-m1000000" /*, "-c1000", "-e"*/), new java.io.File("output")),
+        Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T",outputFile), new java.io.File("output"))
       )
 
     
@@ -40,21 +42,42 @@ object PromelaRunner {
     
     writeFile("output/"+outputFile,progTxt)
     
-    val out = new SpinParser(scheduleParser)
-    val logger = ProcessLogger(out append _  , out append _ )
+    val parser = new SpinParser
+    val logger = ProcessLogger(parser append _  , parser append _ )
     
-    for (p <- processes) {
-      var exitCode = p ! logger
-      if (exitCode != 0) {
-        System.err.println(out.mkString)
-        throw new RuntimeException("Non-zero exit code from spin")
+    var cost: Option[Int] = None
+    
+    for ((p,step) <- processes.zipWithIndex) {
+      
+      if (step == Step.Simulate && !parser.foundSchedule) {
+        
+        //assert(false,"Did not find schedule")
       }
-      out.nextStep
+      else {
+        var exitCode = p ! logger
+        if (exitCode != 0) {
+          val output = parser.mkString
+          System.err.println(output)
+          writeFile("output/" + outputFile + "_pml_backend.log", output)
+          throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
+        }
+        if (step == Step.Simulate) {
+          //println(parser.schedule)
+          cost = Some(parser.variables(Instrumentation.COST).toInt)
+          scheduleParser.read(parser.schedule)
+        }
+      }
+      
+      
+      
+      parser.nextStep
     }
     
     //outputParser.read(out.mkString)
     
-    writeFile("output/" + outputFile + "_pml_backend.log", out.mkString)
+    writeFile("output/" + outputFile + "_pml_backend.log", parser.mkString)
+    
+    cost 
   }
   
   def writeFile(filename: String, text: String) {
@@ -64,45 +87,60 @@ object PromelaRunner {
     writer.close
   }
   
-  class SpinParser(scheduleParser: ScheduleParser) {
-    object State {
-      val Generate = 0
-      val Compile = 1
-      val Verify = 2
-      val Simulate = 3
-      val Done = 4
-    }
-    
-    val assertionViolatedRegex = """.*assertion violated.*""".r
-    
-    private var state = 0
-    private var violated = false
-    private val lines = new StringBuilder
-    private val schedule = new StringBuilder
-    
-    def nextStep { state = state + 1 }
-    
-    def append(str: String) = {
-      lines.append(str + "\n")
-      if (state == State.Verify) {
-        if (!violated && assertionViolatedRegex.findFirstIn(str).isDefined) {
-          violated = true
-        }
-        //println("VERIFY: " + str)
-      }
-      if (state == State.Simulate) {
-        if (!violated) {
-          assert(false,"Did not find schedule")
-        }
-        if (str.startsWith("<action")) {
-          scheduleParser.read(str)
-        }
-      }
-    }
-    
-    def mkString = lines.mkString
-    
-  }
+  
   
   
 }
+
+object Step {
+  val Generate = 0
+  val Compile = 1
+  val Verify = 2
+  val Simulate = 3
+  val Done = 4
+}
+
+class SpinParser {
+  
+  val assertionViolatedRegex = """.*assertion violated.*""".r
+  val variable = """\s*([_\w]*)\s=\s(\d*)""".r
+  
+  private var state = 0
+  private var violated = false
+  private var variableMap = Map.empty[String,String]
+  private val lines = new StringBuilder
+  private val scheduleData = new StringBuilder
+  
+  def nextStep { state = state + 1 }
+  
+  def foundSchedule = violated
+  
+  def append(str: String) = {
+    lines.append(str + "\n")
+    if (state == Step.Verify) {
+      if (!violated && assertionViolatedRegex.findFirstIn(str).isDefined) {
+        violated = true
+      }
+      //println("VERIFY: " + str)
+    }
+    if (state == Step.Simulate) {
+      //println(str)
+      if (str.startsWith("<action")) {
+        scheduleData.append(str+ "\n")
+      }
+      else {
+        str match {
+          case variable(name,value) => variableMap += (name -> value)
+          case _ =>
+        }
+      }
+    }
+  }
+  
+  def mkString = lines.mkString
+  def schedule = scheduleData.mkString
+  def variables = variableMap
+  
+}
+
+

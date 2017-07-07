@@ -5,12 +5,22 @@ object Promela {
   trait Decl
   trait Stmt
   trait VarInit
-  trait Expr extends VarInit
+  trait Expr extends VarInit {
+    def +(e: Expr) = BinaryExpr(this,"+",e)
+    def -(e: Expr) = BinaryExpr(this,"-",e)
+    def *(e: Expr) = BinaryExpr(this,"*",e)
+    def /(e: Expr) = BinaryExpr(this,"/",e)
+    def <(e: Expr) = BinaryExpr(this,"<",e)
+    def >(e: Expr) = BinaryExpr(this,">",e)
+    def &&(e: Expr) = BinaryExpr(this,"&&",e)
+    def ||(e: Expr) = BinaryExpr(this,"||",e)
+  }
   trait Type
   
   case class ProcType(name: String, params: List[ParamDecl], decls: List[VarDecl], stmt: List[Stmt]) extends Decl
   case class Init(stmt: List[Stmt]) extends Decl
   case class Ltl(label: String, expr: Expr) extends Decl
+  case class InlineDef(name: String, arguments: List[String], body: List[Stmt]) extends Decl
   
   case class ParamDecl(id: String, tp: Type)
   case class VarDecl(id: String, tp: Type, value: Option[VarInit]) extends Decl with Stmt
@@ -29,6 +39,7 @@ object Promela {
   case class OptionStmt(stmt: List[Stmt]) extends Stmt
   case class PrintStmt(str: String) extends Stmt
   case class PrintStmtValue(str: String, values: List[Expr]) extends Stmt
+  case class Call(name: String, arguments: List[Expr]) extends Stmt
   case class ExprStmt(expr: Expr) extends Stmt
   case object Skip extends Stmt
   case object Else extends Stmt
@@ -83,6 +94,12 @@ object Promela {
         case Ltl(lbl,exp) => 
           "ltl " + lbl + "{" +
           printExpr(exp) +
+          "}" + nl
+        case InlineDef(name,args,body) => 
+          "inline " + name + "(" + args.mkString(",")  + ") {" + nl +
+          indentAdd +
+          printStmts(body) +
+          indentRem + nl +
           "}" + nl
       }
     }
@@ -154,7 +171,7 @@ object Promela {
         case OptionStmt(stmt) =>
           indent + "::" + nl + indentAdd + printStmts(stmt) + indentRem
         case GuardStmt(grd,stmt) =>
-          indent + printStmt(grd) + " -> " + nl + indentAdd + printStmts(stmt) + indentRem
+          printStmt(grd) + " -> " + nl + indentAdd + printStmts(stmt) + indentRem
         case Send(cId, exp) => indent + cId + " ! (" + printExpr(exp) + ");"
         case Receive(cId, exp) => indent + cId + " ? (" + printExpr(exp) + ");"
         case Peek(cId, exp) => indent + cId + " ? <" + printExpr(exp) + ">;"
@@ -163,9 +180,10 @@ object Promela {
         case vd: VarDecl => printVarDecl(vd)
         case PrintStmt(str) => indent + "printf(\"" + str + "\");"
         case PrintStmtValue(str,args) => indent + "printf(\"" + str + "\"," + (args.map { e => printExpr(e) }).mkString(",") + ");"
-        case ExprStmt(expr) => printExpr(expr)
-        case Skip => "skip"
-        case Else => "else"
+        case Call(name,args) => indent + name+"(" + args.map{ e => printExpr(e) }.mkString(",") + ");"
+        case ExprStmt(expr) => indent + printExpr(expr)
+        case Skip => indent + "skip"
+        case Else => indent + "else"
         case Comment(str) => indent + "// " + str 
       }
     }
