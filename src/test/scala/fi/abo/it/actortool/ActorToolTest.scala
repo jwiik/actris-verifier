@@ -52,5 +52,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val PromelaPrint = false
       val MergeActions = false
       val PromelaChanSize = 100
+      val ScheduleWeights = Map.empty[String,Int]
     } 
 }

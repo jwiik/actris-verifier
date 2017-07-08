@@ -192,13 +192,13 @@ object Promela {
       e match {
         case BinaryExpr(l,"&&",r) => "(" + printExpr(l) + " " + "&&\n" + indentAdd + indent + " " + printExpr(r) + ")" + indentRem
         case BinaryExpr(l,o,r) => "(" + printExpr(l) + " " + o + " " + printExpr(r) + ")"
-        case UnaryExpr(o,e) => o + "(" + printExpr(e) + ")"  
+        case UnaryExpr(o,e) => "(" + o + printExpr(e) + ")"  
         case VarExp(id) => id
         case FunCall(name,args) => name + "(" + (args.map { a => printExpr(a) }).mkString(",") + ")"
         case IndexAccessor(exp,idx) => printExpr(exp)+ "[" + printExpr(idx) + "]"
         case ConditionalExpr(cond,thn,els) => "(" + printExpr(cond) + " -> " + printExpr(thn) + " : " + printExpr(els) + ")"
         case ArrayLiteral(lst) => "{" + lst.map(printExpr).mkString(",") + "}"
-        case IntLiteral(i) => i.toString
+        case IntLiteral(i) => if (i < 0) "(-" + (-i).toString + ")" else i.toString
         case BoolLiteral(true) => "true"
         case BoolLiteral(false) => "false"
         

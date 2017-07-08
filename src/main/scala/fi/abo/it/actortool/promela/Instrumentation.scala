@@ -18,7 +18,12 @@ object Instrumentation {
 
   def mkInstrumentationCall(actor: P.Expr, action: P.Expr) = P.Call("__instrument",List(actor,action))
   
-  def mkInstrumentationDef(actor: DFActor, renamings: RenamingContext) = {
+  def mkInstrumentationDef(actor: DFActor, renamings: RenamingContext, weights: Map[String,Int]) = {
+    
+    val buffWeight = P.IntLiteral(weights.getOrElse("B",1))
+    val actorSwWeight = P.IntLiteral(weights.getOrElse("A",1))
+    val actionSwWeight = P.IntLiteral(weights.getOrElse("a",1))
+    
     val instrumentBody = new ListBuffer[P.Stmt]
     actor match {
       case nw: Network => {
@@ -58,7 +63,7 @@ object Instrumentation {
           P.If(opts)
         }
         
-        instrumentBody += P.Assign(P.VarExp(COST),(P.VarExp(ACC_BUFFER_SUM) / P.VarExp(NUM_FIRINGS)) + P.VarExp(ACTION_SWITCHES) + P.VarExp(ACTOR_SWITCHES))
+        instrumentBody += P.Assign(P.VarExp(COST), buffWeight*(P.VarExp(ACC_BUFFER_SUM) / P.VarExp(NUM_FIRINGS)) + (actionSwWeight * P.VarExp(ACTION_SWITCHES)) + (actorSwWeight * P.VarExp(ACTOR_SWITCHES)))
         
         
         instrumentBody += P.Assign(P.VarExp(PREV_ACTOR), P.VarExp("actor"))

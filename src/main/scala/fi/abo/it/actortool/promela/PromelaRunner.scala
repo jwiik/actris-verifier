@@ -31,7 +31,7 @@ object PromelaRunner {
     
     val processes = List(
         Process(Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile), new java.io.File("output")),
-        Process(Seq("gcc","-DVECTORSZ=1000000","-DCOLLAPSE","-DSAFETY","-o","pan","pan.c"), new java.io.File("output")),
+        Process(Seq("gcc","-DVECTORSZ=1000000","-DCOLLAPSE","-DSAFETY","-DMEMLIM=1024","-o","pan","pan.c"), new java.io.File("output")),
         Process(Seq("./pan", "-m1000000" /*, "-c1000", "-e"*/), new java.io.File("output")),
         Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T",outputFile), new java.io.File("output"))
       )
@@ -103,7 +103,7 @@ object Step {
 class SpinParser {
   
   val assertionViolatedRegex = """.*assertion violated.*""".r
-  val variable = """\s*([_\w]*)\s=\s(\d*)""".r
+  val variable = """\s*([_\w]*)\s=\s([\d-]*)""".r
   
   private var state = 0
   private var violated = false

@@ -86,6 +86,7 @@ object ActorTool {
     val PrintInvariantStats: Boolean
     val SizedIntsAsBitvectors: Boolean
     val Schedule: Option[String]
+    val ScheduleWeights: Map[String,Int]
     val ScheduleSimulate: Boolean
     val MergeActions: Boolean
     val PromelaPrint: Boolean
@@ -121,6 +122,7 @@ object ActorTool {
     var aPromelaPrint: Boolean = false
     var aScheduleSimulate: Boolean = false
     var aPromelaChanSize: Int = 512
+    var aScheduleWeights: Map[String,Int] = Map.empty
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -225,6 +227,31 @@ object ActorTool {
           }
         }
         case Param("scheduleSimulate") => aScheduleSimulate = true
+        case Param("scheduleWeights") => {
+          val errMsg = "parameter scheduleWeights takes a comma-separated where each element is of format W=x, wherw W is an identifier and x is an integer"
+
+            
+          value match {
+            case Some(list) => {
+              try {
+                val elems = list.split(",").toList
+                for (e <- elems) {
+                  val v = e.split("=")
+                  val name = v(0)
+                  val value = v(1).toInt
+                  aScheduleWeights += (name -> value)
+                }
+              } catch {
+                case e: Exception =>
+                  reportCommandLineError(errMsg)
+              }
+              
+            }
+            case None =>
+              reportCommandLineError(errMsg)
+              return None
+          }
+        }
         case Param(x) =>
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -277,6 +304,7 @@ object ActorTool {
       val MergeActions = aMergeActions
       val ScheduleSimulate = aScheduleSimulate
       val PromelaChanSize = aPromelaChanSize
+      val ScheduleWeights = aScheduleWeights
     })
   }
 

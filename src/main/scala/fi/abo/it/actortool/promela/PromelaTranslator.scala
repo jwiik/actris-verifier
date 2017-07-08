@@ -173,7 +173,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls += P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
-    decls += Instrumentation.mkInstrumentationDef(actor, rootRenamings)
+    decls += Instrumentation.mkInstrumentationDef(actor, rootRenamings, params.ScheduleWeights)
     
     for (e <- List(instance)) {
       val connections = {
@@ -258,7 +258,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls +=  P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
-    decls += Instrumentation.mkInstrumentationDef(nw, rootRenamings)
+    decls += Instrumentation.mkInstrumentationDef(nw, rootRenamings, params.ScheduleWeights)
     
     for (e <- nw.entities.get.entities) {
       val connections = {

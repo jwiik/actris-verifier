@@ -116,11 +116,12 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
       
       var iters = 0
       var foundOptimal = false
-      while (!foundOptimal && iters < 2) {
+      while (!foundOptimal && iters < 20) {
         val formula = {
           cost match {
             case Some(c) => 
-              Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && (Promela.VarExp(Instrumentation.COST) < Promela.IntLiteral(c)))))
+              val prevCost = if (c < 0) Promela.UnaryExpr("-",Promela.IntLiteral(-c)) else Promela.IntLiteral(c)
+              Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && (prevCost > Promela.VarExp(Instrumentation.COST)))))
             case None => Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula)))
           }
         }
