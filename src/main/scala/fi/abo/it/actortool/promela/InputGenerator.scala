@@ -47,7 +47,7 @@ class InputGenerator {
       }
     }.toMap
     val input =
-      for (pat <- contract.inputPattern) yield {
+      for (pat <- contract.inputPattern ::: contract.outputPattern) yield {
         val iPos = iMap(pat.portId)
         val func = result.getFunctionInterpretation("M#"+pat.portId)
         if (func.isDefined) {

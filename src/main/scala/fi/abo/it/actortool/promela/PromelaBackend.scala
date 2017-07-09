@@ -34,7 +34,6 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
               if (entity.contractActions.isEmpty || (!params.MergeActions && !ba.hasAnnotation("merge"))) mergedActorMap += (entity.id -> ba)
               else {
                 val translations = translator.invoke(ba,mergedActorMap.toMap,Map.empty,constants)
-                
                 val schedules = for (t <- translations) yield verifyForContract(t)
                 
                 val scheduleCtx = new ScheduleContext(
@@ -116,14 +115,14 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
       
       var iters = 0
       var foundOptimal = false
-      while (!foundOptimal && iters < 20) {
+      while (!foundOptimal && iters < 2) {
         val formula = {
-          cost match {
-            case Some(c) => 
-              val prevCost = if (c < 0) Promela.UnaryExpr("-",Promela.IntLiteral(-c)) else Promela.IntLiteral(c)
-              Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && (prevCost > Promela.VarExp(Instrumentation.COST)))))
-            case None => Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula)))
-          }
+          //cost match {
+            //case Some(c) => 
+              //val prevCost = if (c < 0) Promela.UnaryExpr("-",Promela.IntLiteral(-c)) else Promela.IntLiteral(c)
+              Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && Promela.VarExp("best_cost"))))
+            //case None => Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula)))
+          //}
         }
         val formulaTxt = printer.print(formula)
         outputParser.startSchedule(contract)
@@ -134,6 +133,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
             println(">> Found cost-optimal schedule")
             foundOptimal = true
             outputParser.endSchedule
+            schedule = Some(outputParser.getSchedule)
           }
           case Some(c) => {
             println(">> Cost: " + c)

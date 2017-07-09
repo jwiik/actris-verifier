@@ -33,7 +33,8 @@ object PromelaRunner {
         Process(Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile), new java.io.File("output")),
         Process(Seq("gcc","-DVECTORSZ=1000000","-DCOLLAPSE","-DSAFETY","-DMEMLIM=1024","-o","pan","pan.c"), new java.io.File("output")),
         Process(Seq("./pan", "-m1000000" /*, "-c1000", "-e"*/), new java.io.File("output")),
-        Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T",outputFile), new java.io.File("output"))
+        Process(Seq("./pan", "-r", "-n" /*, "-c1000", "-e"*/), new java.io.File("output"))
+        //Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T",outputFile), new java.io.File("output"))
       )
 
     
@@ -49,11 +50,11 @@ object PromelaRunner {
     
     for ((p,step) <- processes.zipWithIndex) {
       
-      if (step == Step.Simulate && !parser.foundSchedule) {
-        
-        //assert(false,"Did not find schedule")
-      }
-      else {
+//      if (step == Step.Simulate && !parser.foundSchedule) {
+//        
+//        //assert(false,"Did not find schedule")
+//      }
+//      else {
         var exitCode = p ! logger
         if (exitCode != 0) {
           val output = parser.mkString
@@ -62,11 +63,9 @@ object PromelaRunner {
           throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
         }
         if (step == Step.Simulate) {
-          //println(parser.schedule)
-          cost = Some(parser.variables(Instrumentation.COST).toInt)
           scheduleParser.read(parser.schedule)
         }
-      }
+//      }
       
       
       
@@ -116,6 +115,10 @@ class SpinParser {
   def foundSchedule = violated
   
   def append(str: String) = {
+    //println(str)
+    if (str.startsWith(">>")) {
+      println(str)
+    }
     lines.append(str + "\n")
     if (state == Step.Verify) {
       if (!violated && assertionViolatedRegex.findFirstIn(str).isDefined) {
@@ -124,7 +127,7 @@ class SpinParser {
       //println("VERIFY: " + str)
     }
     if (state == Step.Simulate) {
-      //println(str)
+      
       if (str.startsWith("<action")) {
         scheduleData.append(str+ "\n")
       }

@@ -21,6 +21,7 @@ object Promela {
   case class Init(stmt: List[Stmt]) extends Decl
   case class Ltl(label: String, expr: Expr) extends Decl
   case class InlineDef(name: String, arguments: List[String], body: List[Stmt]) extends Decl
+  case class CCode(code: String) extends Decl with Stmt
   
   case class ParamDecl(id: String, tp: Type)
   case class VarDecl(id: String, tp: Type, value: Option[VarInit]) extends Decl with Stmt
@@ -45,6 +46,9 @@ object Promela {
   case object Else extends Stmt
   case class Comment(str: String) extends Stmt
   case class Sequence(stmt: List[Stmt]) extends Stmt
+  case class Label(lbl: String, stmt: Stmt) extends Stmt
+  case class Goto(lbl: String) extends Stmt
+
   
   case class BinaryExpr(left: Expr, op: String, right: Expr) extends Expr
   case class UnaryExpr(op:String, exp: Expr) extends Expr
@@ -55,6 +59,7 @@ object Promela {
   case class IntLiteral(i: Int) extends Expr
   case class BoolLiteral(b: Boolean) extends Expr
   case class ArrayLiteral(values: List[Expr]) extends Expr
+  case class CExpr(code: String) extends Expr
   
   
   case class NamedType(s: String) extends Type
@@ -101,7 +106,16 @@ object Promela {
           printStmts(body) +
           indentRem + nl +
           "}" + nl
+        case CCode(code) => printCCode(code) + nl
       }
+    }
+    
+    def printCCode(code: String) = {
+      indent + "c_code {" + code  + "}"
+    }
+    
+    def printCExpr(code: String) = {
+      indent + "c_expr { " + code + " }"
     }
     
     def printParamDecls(varDecls: List[ParamDecl]): String = {
@@ -185,6 +199,9 @@ object Promela {
         case Skip => indent + "skip"
         case Else => indent + "else"
         case Comment(str) => indent + "// " + str 
+        case CCode(code) => printCCode(code)
+        case Label(lbl, stmt) => lbl + ": " + printStmt(stmt)
+        case Goto(lbl: String) => indent + "goto " + lbl
       }
     }
     
@@ -201,7 +218,7 @@ object Promela {
         case IntLiteral(i) => if (i < 0) "(-" + (-i).toString + ")" else i.toString
         case BoolLiteral(true) => "true"
         case BoolLiteral(false) => "false"
-        
+        case CExpr(code) => printCExpr(code)
       }
     }
     

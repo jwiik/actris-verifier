@@ -121,11 +121,12 @@ class PromelaTranslator(params: CommandLineParameters) {
         val entities = nw.entities.get.entities
         for (e <- entities) {
           if (alreadyTranslated.contains(e.actor.id)) {
+            assert(false)
             procs += (e.actor.id -> alreadyTranslated(e.actor.id))
           }
           else if (mergedActors.contains(e.actor.id)) {
             val mergedActor = mergedActors(e.actor.id)
-            val proc = translateActor(mergedActor)
+            val proc = translateActor(mergedActor, constants)
             procs += (e.actor.id -> proc)
           }
           else {
@@ -139,7 +140,7 @@ class PromelaTranslator(params: CommandLineParameters) {
           procs += (ba.id -> alreadyTranslated(ba.id))
         }
         else {
-          procs += (ba.id -> translateActor(ba))
+          procs += (ba.id -> translateActor(ba,constants))
         }
         translateBasicActor(ba, constants, procs, mergedActors)
       }
@@ -173,7 +174,9 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls += P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
-    decls += Instrumentation.mkInstrumentationDef(actor, rootRenamings, params.ScheduleWeights)
+    //decls += Instrumentation.mkInstrumentationDef(actor, rootRenamings, params.ScheduleWeights)
+    
+    decls += P.CCode(InstrCTemplate(actor,rootRenamings,params.ScheduleWeights))
     
     for (e <- List(instance)) {
       val connections = {
@@ -220,10 +223,7 @@ class PromelaTranslator(params: CommandLineParameters) {
           else IntLiteral(0)
         P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
       }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
-    //P.UnaryExpr("[]",P.UnaryExpr("!",
-        P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout")) 
-        
-    //))
+    P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout")) 
   }
   
   def generateNetworkLTLFormula(nw: Network, contract: ContractAction, channelMap: Map[PortRef,Connection]): P.Expr = {
@@ -236,11 +236,8 @@ class PromelaTranslator(params: CommandLineParameters) {
           else delayTokens.getOrElse(c.id,IntLiteral(0))
         P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
       }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
-    //P.UnaryExpr("[]",P.UnaryExpr("!",
-        //P.BinaryExpr( 
-            P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout")) //,"&&", P.BinaryExpr(P.VarExp("__INSTR_ACC_BUFFER_SUM"),"<",P.IntLiteral(9000)))
-            //)
-    //)
+
+    P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout"))
   }
   
   def translateNetwork(nw: Network, constants: List[Declaration], procs: Map[String,P.ProcType], mergedActors: Map[String,BasicActor]): List[Translation[Network]] = {
@@ -258,7 +255,9 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls +=  P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
-    decls += Instrumentation.mkInstrumentationDef(nw, rootRenamings, params.ScheduleWeights)
+    // decls += Instrumentation.mkInstrumentationDef(nw, rootRenamings, params.ScheduleWeights)
+    
+    decls += P.CCode(InstrCTemplate(nw,rootRenamings,params.ScheduleWeights))
     
     for (e <- nw.entities.get.entities) {
       val connections = {
@@ -319,7 +318,7 @@ class PromelaTranslator(params: CommandLineParameters) {
 
   case class PromelaInstance(id: String, arguments: List[Expr], actor: BasicActor, mapId: Int, connections: Map[String,Connection])
   
-  def translateActor(a: BasicActor): P.ProcType = {
+  def translateActor(a: BasicActor, constants: List[Declaration]): P.ProcType = {
     
     val actorRenamings = rootRenamings.getSubContext
     
@@ -440,7 +439,6 @@ class PromelaTranslator(params: CommandLineParameters) {
     }
     
     for ((act,idx) <- a.actorActions.filter{ !_.init }.zipWithIndex) {
-      
       val allFiringRules = firingRules(act) :: priorityMap(act).map { a => P.UnaryExpr("!",firingRules(a)) }
       val firingRule = allFiringRules.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
       
@@ -454,7 +452,13 @@ class PromelaTranslator(params: CommandLineParameters) {
         }
       
       val stmt = new ListBuffer[P.Stmt]
-        
+      
+      stmt += 
+        P.If(List(
+          P.GuardStmt(P.ExprStmt(P.VarExp("more_expensive")), List(P.Goto("term"))),
+          P.GuardStmt(P.Else, List(P.Skip))).
+          map { g => P.OptionStmt(List(g)) })
+      
       stmt += P.PrintStmtValue("<action id='%d' actor='"+rootRenamings.R(a.fullName)+ "' action='" + rootRenamings.R(act.fullName) + "' />\\n",List(P.VarExp("__uid")))
       val actionRenamings = beforeInputRenamings.getSubContext
       for (p <- act.inputPattern) {
@@ -475,26 +479,43 @@ class PromelaTranslator(params: CommandLineParameters) {
         }
       }
       
-      for (v <- act.variables) {
-        stmt ++= translateDeclaration(v, rootRenamings.R(v.id), actionRenamings)
-      }
-      
-      stmt ++= translateStmts(act.body)(actionRenamings)
-      
-      for (p <- act.outputPattern) {
-        if (p.repeat > 1) {
-          val e = translateExpr(p.exps(0))(actionRenamings)
-          for (i <- 0 until p.repeat) {
-            stmt += P.Send(rootRenamings.R(p.portId), P.IndexAccessor(e,P.IntLiteral(i)))
+      act.refinedContract match {
+        // No refined contract (unmerged basic actor without contract)
+        case None => {
+          for (v <- act.variables) {
+            stmt ++= translateDeclaration(v, rootRenamings.R(v.id), actionRenamings)
+          }
+          
+          stmt ++= translateStmts(act.body)(actionRenamings)
+          
+          for (p <- act.outputPattern) {
+            if (p.repeat > 1) {
+              val e = translateExpr(p.exps(0))(actionRenamings)
+              for (i <- 0 until p.repeat) {
+                stmt += P.Send(rootRenamings.R(p.portId), P.IndexAccessor(e,P.IntLiteral(i)))
+              }
+            }
+            else {
+              for (e <- p.exps) {
+                stmt += P.Send(rootRenamings.R(p.portId), translateExpr(e)(actionRenamings))
+              }
+            }
           }
         }
-        else {
-          for (e <- p.exps) {
-            stmt += P.Send(rootRenamings.R(p.portId), translateExpr(e)(actionRenamings))
+        // Use contract abstraction
+        case Some(contract) => {
+          val data = inputGenerator.generateInput(contract, constants)
+          for (p <- contract.outputPattern) {
+            for (i <- 0 until p.rate) {
+              stmt += P.Send(rootRenamings.R(p.portId), translateExpr(data(p.portId)(i))(actionRenamings))
+            }
           }
         }
       }
-      stmt += Instrumentation.mkInstrumentationCall(P.VarExp("__uid"), P.IntLiteral(idx)) 
+      
+      
+      //stmt += Instrumentation.mkInstrumentationCall(P.VarExp("__uid"), P.IntLiteral(idx))
+      stmt += P.CCode( InstrumentationCall(a.id,"__uid",idx.toString) )
       stmt ++= peekResets
       actions += P.Atomic(P.Comment("Action: " + act.fullName)::List(P.GuardStmt(P.ExprStmt(firingRule), stmt.toList)))
     }
@@ -502,7 +523,7 @@ class PromelaTranslator(params: CommandLineParameters) {
 
     
     val opts = actions.toList map { a => P.OptionStmt(List(a)) }
-    P.ProcType(a.id, params.toList, Nil, decls.toList ::: initBody ::: List(P.Iteration(opts)))
+    P.ProcType(a.id, params.toList, Nil, decls.toList ::: initBody ::: List(P.Iteration(opts), P.Label("term",P.Skip) ))
   }
   
   def translateDeclaration(d: Declaration, newName: String, renamings: RenamingContext): List[P.Stmt] = {

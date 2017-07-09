@@ -77,3 +77,76 @@ object Instrumentation {
     P.InlineDef("__instrument",List("actor","action"), instrumentBody.toList)
   }
 }
+
+object InstrumentationCall extends Function3[String,String,String,String] {
+  def apply(actor: String, instanceId: String, actionId: String) = {
+    "__instrument(P"+actor+"->"+instanceId+","+actionId+");"
+  }
+}
+
+object InstrCTemplate extends Function3[DFActor,RenamingContext,Map[String,Int],String] {
+  def apply(actor: DFActor, renamings: RenamingContext, weights: Map[String,Int]) = {
+    val buffWeight = weights.getOrElse("B",1)
+    val actorSwWeight = weights.getOrElse("A",1)
+    val actionSwWeight = weights.getOrElse("a",1)
+    
+    val chanSum = actor match {
+      case nw: Network => {
+        val chans = nw.structure.get.connections.filter{ c => !c.isInput && !c.isOutput }.map{ c => "q_len(now." + renamings.R(c.id) + ")" }
+        chans.reduceLeft((a,b) => "(" + a + "+" + b + ")")
+      }
+      case ba: BasicActor => "0"
+    }
+ 
+    val code = template
+      .replaceAll("@ChanSum@", chanSum)
+      .replaceAll("@BuffW@",buffWeight.toString)
+      .replaceAll("@ActorSwW@",actorSwWeight.toString)
+      .replaceAll("@ActionSwW@",actionSwWeight.toString)
+      
+    code
+  }
+  
+  val template = 
+""" 
+  int __BEST_COST = 1000000;
+  
+  int best() {
+    if (now.__INSTR_COST < __BEST_COST) {
+      __BEST_COST = now.__INSTR_COST;
+      printf(">> New best: %d\n", __BEST_COST);
+      putrail();
+    }
+    else {
+      //printf(">> Found: %d\n", now.__INSTR_COST);
+    }
+    return 0;
+  }
+  int more_exp() {
+    if (now.__INSTR_COST >= __BEST_COST) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  
+  int __instrument(int actor, int action) {
+    now.__C_INSTR_ACC_BUFFER_SUM = (now.__C_INSTR_ACC_BUFFER_SUM + @ChanSum@);
+    now.__C_INSTR_NUM_FIRINGS = (now.__C_INSTR_NUM_FIRINGS + 1);
+    if (actor != now.__C_INSTR_PREV_ACTOR) {
+      now.__C_INSTR_ACTOR_SWITCHES = (now.__C_INSTR_ACTOR_SWITCHES + 1);
+      now.__C_INSTR_ACTION_SWITCHES = (now.__C_INSTR_ACTION_SWITCHES + 1);
+    }
+    else {
+      if (action != now.__C_INSTR_PREV_ACTION) {
+        now.__C_INSTR_ACTION_SWITCHES = (now.__C_INSTR_ACTION_SWITCHES + 1);
+      }
+    }
+    now.__INSTR_COST = (((@BuffW@ * (now.__C_INSTR_ACC_BUFFER_SUM / now.__C_INSTR_NUM_FIRINGS)) + (@ActionSwW@ * now.__C_INSTR_ACTION_SWITCHES)) + (@ActorSwW@ * now.__C_INSTR_ACTOR_SWITCHES));
+    now.__C_INSTR_PREV_ACTOR = actor;
+    now.__C_INSTR_PREV_ACTION = action;
+    return 0;
+  }
+"""
+}
