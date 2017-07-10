@@ -21,12 +21,12 @@ object InstrumentationPrelude extends PromelaPreludeComponent {
 #define best_cost c_expr { best() }
 #define more_expensive c_expr { more_exp() }
 int __INSTR_COST = 100000;
-  int __C_INSTR_PREV_ACTOR = -1;
-  int __C_INSTR_PREV_ACTION = -1;
-  int __C_INSTR_ACC_BUFFER_SUM = 0;
-  int __C_INSTR_NUM_FIRINGS = 0;
-  int __C_INSTR_ACTOR_SWITCHES = 0;
-  int __C_INSTR_ACTION_SWITCHES = 0;
+  int __INSTR_PREV_ACTOR = -1;
+  int __INSTR_PREV_ACTION = -1;
+  int __INSTR_ACC_BUFFER_SUM = 0;
+  int __INSTR_NUM_FIRINGS = 0;
+  int __INSTR_ACTOR_SWITCHES = 0;
+  int __INSTR_ACTION_SWITCHES = 0;
 
 """
 /*

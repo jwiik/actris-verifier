@@ -174,7 +174,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls += P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
-    //decls += Instrumentation.mkInstrumentationDef(actor, rootRenamings, params.ScheduleWeights)
+    decls += Instrumentation.mkInstrumentationDef(actor, rootRenamings, params.ScheduleWeights)
     
     decls += P.CCode(InstrCTemplate(actor,rootRenamings,params.ScheduleWeights))
     
@@ -223,7 +223,9 @@ class PromelaTranslator(params: CommandLineParameters) {
           else IntLiteral(0)
         P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
       }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
-    P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout")) 
+    //P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout"))
+    //P.VarExp("timeout")
+      P.BinaryExpr(P.VarExp("timeout"),"&&",channelPredicate)
   }
   
   def generateNetworkLTLFormula(nw: Network, contract: ContractAction, channelMap: Map[PortRef,Connection]): P.Expr = {
@@ -237,7 +239,9 @@ class PromelaTranslator(params: CommandLineParameters) {
         P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
       }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
 
-    P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout"))
+    //P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout"))
+    //P.VarExp("timeout")
+    P.BinaryExpr(P.VarExp("timeout"),"&&",channelPredicate)
   }
   
   def translateNetwork(nw: Network, constants: List[Declaration], procs: Map[String,P.ProcType], mergedActors: Map[String,BasicActor]): List[Translation[Network]] = {
@@ -255,7 +259,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls +=  P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
-    // decls += Instrumentation.mkInstrumentationDef(nw, rootRenamings, params.ScheduleWeights)
+    decls += Instrumentation.mkInstrumentationDef(nw, rootRenamings, params.ScheduleWeights)
     
     decls += P.CCode(InstrCTemplate(nw,rootRenamings,params.ScheduleWeights))
     
@@ -453,11 +457,11 @@ class PromelaTranslator(params: CommandLineParameters) {
       
       val stmt = new ListBuffer[P.Stmt]
       
-      stmt += 
-        P.If(List(
-          P.GuardStmt(P.ExprStmt(P.VarExp("more_expensive")), List(P.Goto("term"))),
-          P.GuardStmt(P.Else, List(P.Skip))).
-          map { g => P.OptionStmt(List(g)) })
+//      stmt += 
+//        P.If(List(
+//          P.GuardStmt(P.ExprStmt(P.VarExp("more_expensive")), List(P.Goto("term"))),
+//          P.GuardStmt(P.Else, List(P.Skip))).
+//          map { g => P.OptionStmt(List(g)) })
       
       stmt += P.PrintStmtValue("<action id='%d' actor='"+rootRenamings.R(a.fullName)+ "' action='" + rootRenamings.R(act.fullName) + "' />\\n",List(P.VarExp("__uid")))
       val actionRenamings = beforeInputRenamings.getSubContext
@@ -514,8 +518,8 @@ class PromelaTranslator(params: CommandLineParameters) {
       }
       
       
-      //stmt += Instrumentation.mkInstrumentationCall(P.VarExp("__uid"), P.IntLiteral(idx))
-      stmt += P.CCode( InstrumentationCall(a.id,"__uid",idx.toString) )
+      stmt += Instrumentation.mkInstrumentationCall(P.VarExp("__uid"), P.IntLiteral(idx))
+      //stmt += P.CCode( InstrumentationCall(a.id,"__uid",idx.toString) )
       stmt ++= peekResets
       actions += P.Atomic(P.Comment("Action: " + act.fullName)::List(P.GuardStmt(P.ExprStmt(firingRule), stmt.toList)))
     }
@@ -523,7 +527,7 @@ class PromelaTranslator(params: CommandLineParameters) {
 
     
     val opts = actions.toList map { a => P.OptionStmt(List(a)) }
-    P.ProcType(a.id, params.toList, Nil, decls.toList ::: initBody ::: List(P.Iteration(opts), P.Label("term",P.Skip) ))
+    P.ProcType(a.id, params.toList, Nil, decls.toList ::: initBody ::: List(P.Iteration(opts)))
   }
   
   def translateDeclaration(d: Declaration, newName: String, renamings: RenamingContext): List[P.Stmt] = {
