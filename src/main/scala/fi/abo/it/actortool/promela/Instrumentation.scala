@@ -18,63 +18,72 @@ object Instrumentation {
 
   def mkInstrumentationCall(actor: P.Expr, action: P.Expr) = P.Call("__instrument",List(actor,action))
   
-  def mkInstrumentationDef(actor: DFActor, renamings: RenamingContext, weights: Map[String,Int]) = {
+  def mkInstrumentationDef(chansWithMax: List[(Connection,Int)] , renamings: RenamingContext, weights: Map[String,Int]) = {
     
     val buffWeight = P.IntLiteral(weights.getOrElse("B",1))
     val actorSwWeight = P.IntLiteral(weights.getOrElse("A",1))
     val actionSwWeight = P.IntLiteral(weights.getOrElse("a",1))
     
     val instrumentBody = new ListBuffer[P.Stmt]
-    actor match {
-      case nw: Network => {
-        val chans = nw.structure.get.connections.filter{ c => !c.isInput && !c.isOutput }.map{ c => P.FunCall("len",List(P.VarExp(renamings.R(c.id))) ): P.Expr }
- 
-        instrumentBody += P.Assign(P.VarExp(ACC_BUFFER_SUM), P.BinaryExpr(P.VarExp(ACC_BUFFER_SUM), "+", chans.reduceLeft((a,b) => P.BinaryExpr(a,"+",b))))
-        instrumentBody += P.Assign(P.VarExp(NUM_FIRINGS), P.BinaryExpr(P.VarExp(NUM_FIRINGS), "+", P.IntLiteral(1)))
+//    actor match {
+//      case nw: Network => {
+    
         
-        instrumentBody += {
-          val thn = P.GuardStmt( 
-              P.ExprStmt(P.BinaryExpr(P.VarExp("actor"), "!=", P.VarExp(PREV_ACTOR))),
-              List(
-                  P.Assign(P.VarExp(ACTOR_SWITCHES), P.BinaryExpr(P.VarExp(ACTOR_SWITCHES), "+", P.IntLiteral(1))),
-                  P.Assign(P.VarExp(ACTION_SWITCHES), P.BinaryExpr(P.VarExp(ACTION_SWITCHES), "+", P.IntLiteral(1)))
-              )
-            )
-          val els = P.GuardStmt( 
-              P.Else,
-              {
-                val nestedThn = P.GuardStmt( 
-                  P.ExprStmt(P.BinaryExpr(P.VarExp("action"), "!=", P.VarExp(PREV_ACTION))),
-                  List(
-                      P.Assign(P.VarExp(ACTION_SWITCHES), P.BinaryExpr(P.VarExp(ACTION_SWITCHES), "+", P.IntLiteral(1)))
-                  )
-                )
-                val nestedEls = P.GuardStmt( 
-                  P.Else,
-                  List(P.Skip)
-                )
-                List(P.If( List( P.OptionStmt(List(nestedThn)), P.OptionStmt(List(nestedEls)) ) ))
-              }
-              
-            )
+        //val chans = nw.structure.get.connections.filter{ c => !c.isInput && !c.isOutput }.map{ c => P.FunCall("len",List(P.VarExp(renamings.R(c.id))) ): P.Expr }
+        
+        val chans = chansWithMax.map {case (ch,max) => P.FunCall("len",List(P.VarExp(renamings.R(ch.id)))) / P.IntLiteral(max) : P.Expr }
           
-          val opts = List(P.OptionStmt(List(thn)), P.OptionStmt(List(els)))
-          
-          P.If(opts)
+        if (!chans.isEmpty) {
+          instrumentBody += P.Assign(P.VarExp(ACC_BUFFER_SUM), P.BinaryExpr(P.VarExp(ACC_BUFFER_SUM), "+", chans.reduceLeft((a,b) => P.BinaryExpr(a,"+",b))))
         }
         
-        instrumentBody += P.Assign(P.VarExp(COST), buffWeight*(P.VarExp(ACC_BUFFER_SUM) / P.VarExp(NUM_FIRINGS)) + (actionSwWeight * P.VarExp(ACTION_SWITCHES)) + (actorSwWeight * P.VarExp(ACTOR_SWITCHES)))
+        instrumentBody += P.Assign(P.VarExp(COST), P.VarExp(ACC_BUFFER_SUM))
+//        
+//        instrumentBody += P.Assign(P.VarExp(NUM_FIRINGS), P.BinaryExpr(P.VarExp(NUM_FIRINGS), "+", P.IntLiteral(1)))
+//        
+//        instrumentBody += {
+//          val thn = P.GuardStmt( 
+//              P.ExprStmt(P.BinaryExpr(P.VarExp("actor"), "!=", P.VarExp(PREV_ACTOR))),
+//              List(
+//                  P.Assign(P.VarExp(ACTOR_SWITCHES), P.BinaryExpr(P.VarExp(ACTOR_SWITCHES), "+", P.IntLiteral(1))),
+//                  P.Assign(P.VarExp(ACTION_SWITCHES), P.BinaryExpr(P.VarExp(ACTION_SWITCHES), "+", P.IntLiteral(1)))
+//              )
+//            )
+//          val els = P.GuardStmt( 
+//              P.Else,
+//              {
+//                val nestedThn = P.GuardStmt( 
+//                  P.ExprStmt(P.BinaryExpr(P.VarExp("action"), "!=", P.VarExp(PREV_ACTION))),
+//                  List(
+//                      P.Assign(P.VarExp(ACTION_SWITCHES), P.BinaryExpr(P.VarExp(ACTION_SWITCHES), "+", P.IntLiteral(1)))
+//                  )
+//                )
+//                val nestedEls = P.GuardStmt( 
+//                  P.Else,
+//                  List(P.Skip)
+//                )
+//                List(P.If( List( P.OptionStmt(List(nestedThn)), P.OptionStmt(List(nestedEls)) ) ))
+//              }
+//              
+//            )
+//          
+//          val opts = List(P.OptionStmt(List(thn)), P.OptionStmt(List(els)))
+//          
+//          P.If(opts)
+//        }
+//        
+//        instrumentBody += P.Assign(P.VarExp(COST), buffWeight*(P.VarExp(ACC_BUFFER_SUM) /*/ P.VarExp(NUM_FIRINGS)*/) + (actionSwWeight * P.VarExp(ACTION_SWITCHES)) + (actorSwWeight * P.VarExp(ACTOR_SWITCHES)))
+//        
+//        
+//        instrumentBody += P.Assign(P.VarExp(PREV_ACTOR), P.VarExp("actor"))
+//        instrumentBody += P.Assign(P.VarExp(PREV_ACTION), P.VarExp("action"))
         
-        
-        instrumentBody += P.Assign(P.VarExp(PREV_ACTOR), P.VarExp("actor"))
-        instrumentBody += P.Assign(P.VarExp(PREV_ACTION), P.VarExp("action"))
-        
-      }
-      case ba: BasicActor => {
-        instrumentBody += P.Skip
-      }
-    }
-    P.InlineDef("__instrument",List("actor","action"), instrumentBody.toList)
+//      }
+//      case ba: BasicActor => {
+//        instrumentBody += P.Skip
+//      }
+//    }
+    P.InlineDef("__instrument",List("actor","action"), List(P.DStep( instrumentBody.toList )))
   }
 }
 
@@ -110,6 +119,15 @@ object InstrCTemplate extends Function3[DFActor,RenamingContext,Map[String,Int],
   val template = 
 """ 
   int __BEST_COST = 1000000;
+  
+  int best_c() {
+    if (now.__INSTR_COST < __BEST_COST) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
   
   int best() {
     if (now.__INSTR_COST < __BEST_COST) {

@@ -120,7 +120,8 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
           //cost match {
             //case Some(c) => 
               //val prevCost = if (c < 0) Promela.UnaryExpr("-",Promela.IntLiteral(-c)) else Promela.IntLiteral(c)
-              Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && Promela.VarExp("best_cost"))))
+          //Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && (Promela.VarExp("__INSTR_COST") < Promela.VarExp("best_cost")  ))))
+          Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && Promela.VarExp("best_cost")  )))
               //Promela.Ltl("", Promela.UnaryExpr("<>",ltlFormula && Promela.VarExp("best_cost")))
             //case None => Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula)))
           //}

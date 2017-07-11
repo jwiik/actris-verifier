@@ -28,6 +28,7 @@ object Promela {
   case class ChInit(size: Int, tp: Type) extends VarInit
   
   case class Atomic(stmt: List[Stmt]) extends Stmt
+  case class DStep(stmt: List[Stmt]) extends Stmt
   case class If(options: List[OptionStmt]) extends Stmt
   case class Iteration(options: List[OptionStmt]) extends Stmt
   case class For(ivar: VarExp, start: Expr, end: Expr, body: List[Stmt]) extends Stmt
@@ -166,6 +167,12 @@ object Promela {
           indent + printExpr(t) + " = " + printExpr(exp) + ";"
         case Atomic(stmt) => 
           indent + "atomic {"+ nl +
+          indentAdd +
+          printStmts(stmt) + nl +
+          indentRem +
+          indent + "}"
+        case DStep(stmt) => 
+          indent + "d_step {"+ nl +
           indentAdd +
           printStmts(stmt) + nl +
           indentRem +

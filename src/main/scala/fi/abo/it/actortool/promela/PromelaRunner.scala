@@ -31,7 +31,7 @@ object PromelaRunner {
     
     val processes = List(
         Process(Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile), new java.io.File("output")),
-        Process(Seq("gcc","-DVECTORSZ=1000000","-DCOLLAPSE","-DSAFETY","-DMEMLIM=1024","-o","pan","pan.c"), new java.io.File("output")),
+        Process(Seq("gcc","-DVECTORSZ=1000000", "-DCOLLAPSE", "-DSAFETY","-DMEMLIM=6144" ,"-o","pan","pan.c"), new java.io.File("output")),
         Process(Seq("./pan", "-m1000000" /*, "-c1000", "-e"*/), new java.io.File("output")),
         Process(Seq("./pan", "-r", "-n" /*, "-c1000", "-e"*/), new java.io.File("output"))
         //Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T",outputFile), new java.io.File("output"))

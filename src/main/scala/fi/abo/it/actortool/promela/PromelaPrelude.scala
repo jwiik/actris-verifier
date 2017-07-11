@@ -18,23 +18,40 @@ object MaskPrelude extends PromelaPreludeComponent {
 object InstrumentationPrelude extends PromelaPreludeComponent {
   override def text = 
 """
-#define best_cost c_expr { best() }
+#define best_cost c_expr { best_c() }
 #define more_expensive c_expr { more_exp() }
 int __INSTR_COST = 100000;
-  int __INSTR_PREV_ACTOR = -1;
-  int __INSTR_PREV_ACTION = -1;
-  int __INSTR_ACC_BUFFER_SUM = 0;
-  int __INSTR_NUM_FIRINGS = 0;
-  int __INSTR_ACTOR_SWITCHES = 0;
-  int __INSTR_ACTION_SWITCHES = 0;
+int __INSTR_ACC_BUFFER_SUM = 0;
+
+c_code {
+  int __BEST_COST = 1000000;
+  
+  int best_c() {
+    if (now.__INSTR_COST < __BEST_COST) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  
+  int best() {
+    if (now.__INSTR_COST < __BEST_COST) {
+      __BEST_COST = now.__INSTR_COST;
+      printf(">> New best: %d\n", __BEST_COST);
+      putrail();
+      //Nr_Trails--;
+    }
+    return 0;
+  }
+}
 
 """
 /*
 int __INSTR_PREV_ACTOR = -1;
 int __INSTR_PREV_ACTION = -1;
-int __INSTR_ACC_BUFFER_SUM = 0;
 int __INSTR_NUM_FIRINGS = 0;
 int __INSTR_ACTOR_SWITCHES = 0;
-int __INSTR_ACTION_SWITCHES = 0;
- */
+int __INSTR_ACTION_SWITCHES = 0; 
+*/
 }
