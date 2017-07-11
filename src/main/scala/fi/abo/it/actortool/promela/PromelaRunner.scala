@@ -13,61 +13,61 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
 object PromelaRunner {
   
-
-  
   def simulate(progTxt: String, outputFile: String, scheduleParser: ScheduleParser) = {
-    
+    val process = Process(Seq("/Users/jonatan/Tools/bin/spin","-T",outputFile), new java.io.File("output"))
     writeFile("output/"+outputFile,progTxt)
+    val parser = new SpinParser(Step.Simulate)
+    val logger = ProcessLogger(parser append _  , parser append _ )
+    var exitCode = process ! logger
     
-    val outputLog = new ListBuffer[String]
-    outputLog += "spin ##########################################\n"
-    var output = Process(Seq("/Users/jonatan/Tools/bin/spin","-T","-B",outputFile), new java.io.File("output")).!!
-    scheduleParser.read(output)
-    writeFile("output/pml_backend.log",outputLog.toString)
+    if (exitCode != 0) {
+      val output = parser.mkString
+      System.err.println(output)
+      writeFile("output/" + outputFile + "_pml_backend_sim.log", output)
+      throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
+    }
+    
+    val cost = parser.variables("__INSTR_COST").toInt
+    
+    scheduleParser.setCost(cost)
+    scheduleParser.read(parser.schedule)
+    
+    
+    
+    writeFile("output/" + outputFile + "_backend_sim.log", parser.mkString)
 
   }
   
   def search(progTxt: String, outputFile: String, scheduleParser: ScheduleParser): Option[Int] = {
-    
-    val processes = List(
-        Process(Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile), new java.io.File("output")),
-        Process(Seq("gcc","-DVECTORSZ=1000000", "-DCOLLAPSE", "-DSAFETY","-DMEMLIM=6144" ,"-o","pan","pan.c"), new java.io.File("output")),
-        Process(Seq("./pan", "-m1000000" /*, "-c1000", "-e"*/), new java.io.File("output")),
-        Process(Seq("./pan", "-r", "-n" /*, "-c1000", "-e"*/), new java.io.File("output"))
-        //Process(Seq("/Users/jonatan/Tools/bin/spin","-t", "-T",outputFile), new java.io.File("output"))
+    val commands = List(
+        Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile),
+        Seq("gcc","-DVECTORSZ=1000000", "-DCOLLAPSE", "-DSAFETY","-DMEMLIM=6144" ,"-o","pan","pan.c"),
+        Seq("./pan", "-m1000000"),
+        Seq("./pan", "-r", "-n")
       )
+        
+    val processes = commands.map { cmd => Process(cmd, new java.io.File("output")) }
 
-    
-    
-    //val pipeline = pGenerate ### pCompile ### pVerify ### pSimulate
     
     writeFile("output/"+outputFile,progTxt)
     
-    val parser = new SpinParser
+    val parser = new SpinParser(Step.Generate)
     val logger = ProcessLogger(parser append _  , parser append _ )
     
     var cost: Option[Int] = None
     
     for ((p,step) <- processes.zipWithIndex) {
-      
-//      if (step == Step.Simulate && !parser.foundSchedule) {
-//        
-//        //assert(false,"Did not find schedule")
-//      }
-//      else {
-        var exitCode = p ! logger
-        if (exitCode != 0) {
-          val output = parser.mkString
-          System.err.println(output)
-          writeFile("output/" + outputFile + "_pml_backend.log", output)
-          throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
-        }
-        if (step == Step.Simulate) {
-          scheduleParser.read(parser.schedule)
-        }
-//      }
-      
-      
+      parser.append(">> " + commands(step).mkString(" "))
+      var exitCode = p ! logger
+      if (exitCode != 0) {
+        val output = parser.mkString
+        System.err.println(output)
+        writeFile("output/" + outputFile + "_pml_backend.log", output)
+        throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
+      }
+      if (step == Step.Simulate) {
+        scheduleParser.read(parser.schedule)
+      }
       
       parser.nextStep
     }
@@ -99,12 +99,12 @@ object Step {
   val Done = 4
 }
 
-class SpinParser {
+class SpinParser(startStep: Int) {
   
   val assertionViolatedRegex = """.*assertion violated.*""".r
   val variable = """\s*([_\w]*)\s=\s([\d-]*)""".r
   
-  private var state = 0
+  private var state = startStep
   private var violated = false
   private var variableMap = Map.empty[String,String]
   private val lines = new StringBuilder
@@ -126,14 +126,16 @@ class SpinParser {
       }
       //println("VERIFY: " + str)
     }
+    
     if (state == Step.Simulate) {
-      
       if (str.startsWith("<action")) {
         scheduleData.append(str+ "\n")
       }
       else {
         str match {
-          case variable(name,value) => variableMap += (name -> value)
+          case variable(name,value) => {
+            variableMap += (name -> value)
+          }
           case _ =>
         }
       }

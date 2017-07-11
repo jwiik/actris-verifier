@@ -148,6 +148,47 @@ class PromelaTranslator(params: CommandLineParameters) {
     
   }
   
+  def generateEndStatePredicate(actor: DFActor, contract: ContractAction, channelMap: Map[PortRef,Connection], connections: List[Connection]): P.Expr = {
+    actor match {
+      case nw: Network => 
+        generateEndStatePredicate(
+            nw, 
+            TokensDefFinder.find(nw.actorInvariants map (_.expr)).toMap, 
+            contract, 
+            channelMap, 
+            nw.structure.get.connections)
+      case ba: BasicActor => {
+        generateEndStatePredicate(
+            ba, 
+            Map.empty, 
+            contract, 
+            channelMap, 
+            connections)
+      }
+    }
+  }
+  
+  def generateEndStatePredicate(
+      actor: DFActor, 
+      delayTokens: Map[String,Expr], 
+      contract: ContractAction, 
+      channelMap: Map[PortRef,Connection],
+      connections: List[Connection]): P.Expr = {
+    
+    val outputTokens = actor.outports.map( p => (channelMap(PortRef(None,p.id)).id, contract.outportRate(p.id)) ).toMap
+    
+    val channelPredicate = {
+      connections.map { c =>
+        val tokenAmount =
+          if (outputTokens.contains(c.id)) IntLiteral(outputTokens(c.id))
+          else delayTokens.getOrElse(c.id,IntLiteral(0))
+        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
+      }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
+    }
+    P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout"))
+    //P.BinaryExpr(channelPredicate,"&&",P.VarExp("teerp"))
+  }
+  
   def translateBasicActor(
       actor: BasicActor, 
       constants: List[Declaration], 
@@ -174,9 +215,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls += P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
-    decls += Instrumentation.mkInstrumentationDef(List.empty, rootRenamings, params.ScheduleWeights)
     
-    //decls += P.CCode(InstrCTemplate(actor,rootRenamings,params.ScheduleWeights))
     
     for (e <- List(instance)) {
       val connections = {
@@ -202,46 +241,17 @@ class PromelaTranslator(params: CommandLineParameters) {
     
     val contractTranslations = 
       for ((contract,init) <- inits) yield {
-        val formula = generateActorLTLFormula(actor, contract, channelMapping,connections)
-        //val ltl = P.Ltl("",formula)
+        val formula = generateEndStatePredicate(actor, contract, channelMapping, connections)
+        
+        val instr = Instrumentation.mkInstrumentationDef(List.empty, rootRenamings, params.ScheduleWeights, formula)
         
         val setups = List(init)
         
-        val program: List[P.Decl] = decls.toList ::: procs ::: setups
+        val program: List[P.Decl] = decls.toList ::: List(instr) ::: procs ::: setups
         //(contract,program)
         Translation(actor,contract,program,formula,idMap,mergedActors)
       }
     contractTranslations.toList
-  }
-  
-  def generateActorLTLFormula(ba: BasicActor, contract: ContractAction, channelMap: Map[PortRef,Connection], connections: List[Connection]): P.Expr = {
-    val outputTokens = ba.outports.map( p => (channelMap(PortRef(None,p.id)).id, contract.outportRate(p.id)) ).toMap
-    val channelPredicate =
-      connections.map { c =>
-        val tokenAmount =
-          if (outputTokens.contains(c.id)) IntLiteral(outputTokens(c.id))
-          else IntLiteral(0)
-        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
-      }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
-    P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout"))
-    //P.VarExp("timeout")
-      //P.BinaryExpr(P.VarExp("timeout"),"&&",channelPredicate)
-  }
-  
-  def generateNetworkLTLFormula(nw: Network, contract: ContractAction, channelMap: Map[PortRef,Connection]): P.Expr = {
-    val delayTokens = TokensDefFinder.find(nw.actorInvariants map (_.expr)).toMap
-    val outputTokens = nw.outports.map( p => (channelMap(PortRef(None,p.id)).id, contract.outportRate(p.id)) ).toMap
-    val channelPredicate =
-      nw.structure.get.connections.map { c =>
-        val tokenAmount =
-          if (outputTokens.contains(c.id)) IntLiteral(outputTokens(c.id))
-          else delayTokens.getOrElse(c.id,IntLiteral(0))
-        P.BinaryExpr(P.FunCall("len",List(P.VarExp(c.id))), "==" , translateExpr(tokenAmount)(rootRenamings))
-      }.reduceLeft((a,b) => P.BinaryExpr(a,"&&",b))
-
-    P.BinaryExpr(channelPredicate,"&&",P.VarExp("timeout"))
-    //P.VarExp("timeout")
-    //P.BinaryExpr(P.VarExp("timeout"),"&&",channelPredicate)
   }
   
   def translateNetwork(nw: Network, constants: List[Declaration], procs: List[P.ProcType], mergedActors: Map[String,BasicActor]): List[Translation[Network]] = {
@@ -274,9 +284,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       }
     }}
     
-    decls += Instrumentation.mkInstrumentationDef(chansWithMax, rootRenamings, params.ScheduleWeights)
     
-    //decls += P.CCode(InstrCTemplate(nw,rootRenamings,params.ScheduleWeights))
     
     for (e <- nw.entities.get.entities) {
       val connections = {
@@ -302,12 +310,13 @@ class PromelaTranslator(params: CommandLineParameters) {
     
     val contractTranslations = 
       for ((contract,init) <- inits) yield {
-        val formula = generateNetworkLTLFormula(nw, contract, channelMapping)
-        //val ltl = P.Ltl("",formula)
+        val formula = generateEndStatePredicate(nw, contract, channelMapping, List.empty)
+        
+        val instr = Instrumentation.mkInstrumentationDef(chansWithMax, rootRenamings, params.ScheduleWeights, formula)
         
         val setups = List(init) 
         
-        val program: List[P.Decl] = decls.toList ::: procs ::: setups
+        val program: List[P.Decl] = decls.toList ::: List(instr) ::: procs ::: setups
         //(contract,program)
         Translation(nw,contract,program,formula,idMap,mergedActors)
       }

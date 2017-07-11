@@ -11,9 +11,6 @@ import fi.abo.it.actortool.util.ASTPrinter
 
 class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicActor,List[ScheduleContext])] {
   
-  val printer = new Promela.PromelaPrinter
-  
-  
   def invoke(programCtx: ProgramContext): (BasicActor,List[ScheduleContext]) = {
     val translator = new PromelaTranslator(params)
     
@@ -83,35 +80,54 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
   
   def verifyForContract[T<:DFActor](translation: Translation[T]): ContractSchedule = {
     
+    val printerNoC = new Promela.PromelaPrinter(false)
+    val printerC = new Promela.PromelaPrinter(true)
     val outputParser = new ScheduleParser(translation)
     
     val promelaProg = translation.promelaProgram
     val contract = translation.contract
     val entity = translation.entity
     
+    val defines = "#define __INIT_COST %d\n#define __RUNS %d\n"
+    val initCost = 100000
+    val initRuns = 100000
     
+    val initCostDef = defines.format(initCost,initRuns) 
+    
+    InstrumentationPrelude.setSize(initCost)
+    PromelaPrelude.addComponent(InstrumentationPrelude)
+    
+    val progTxtNoC = initCostDef + PromelaPrelude.get + promelaProg.map(printerNoC.print).foldLeft("")((a,b) => a + b)
+    
+    println("Running spin simulation on contract '" + contract.fullName + "' of '" + entity.id + "'...")
+      
+    outputParser.startSchedule(contract)
+    PromelaRunner.simulate(progTxtNoC, entity.id + "__" + contract.fullName+"_sim.pml", outputParser)
+    outputParser.endSchedule
+    val simulatedSchedule = outputParser.getSchedule
     if (params.ScheduleSimulate) {
-      println("Running spin simulation on contract '" + contract.fullName + "' of network '" + entity.id + "'...")
-      val progTxt = PromelaPrelude.get + promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
+      simulatedSchedule
+    }
+    else {
+      val schedLength = simulatedSchedule.length
+      val schedCost = simulatedSchedule.cost
+      
+      InstrumentationPrelude.setSize(schedCost)
+      val initCostDef = defines.format(schedCost,schedLength) 
+      
+      val progTxt = initCostDef + PromelaPrelude.get + promelaProg.map(printerC.print).foldLeft("")((a,b) => a + b)
+      
       if (params.PromelaPrint) {
         println(progTxt)
       }
-      outputParser.startSchedule(contract)
-      PromelaRunner.simulate(progTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
-      outputParser.endSchedule
-      outputParser.getSchedule
-    }
-    else {
-      println("Running spin search on contract '" + contract.fullName + "' of network '" + entity.id + "'...")
+      
+      println("Simulation returned schedule with length " + schedLength + " and cost " + schedCost)
+      
+      println("Running spin search on contract '" + contract.fullName + "' of '" + entity.id + "'...")
       
       var cost: Option[Int] = None
       var schedule: Option[ContractSchedule] = None
       val ltlFormula = translation.ltlFormula
-      
-      val progTxt = PromelaPrelude.get + promelaProg.map(printer.print).foldLeft("")((a,b) => a + b)
-      if (params.PromelaPrint) {
-        println(progTxt)
-      }
       
       var iters = 0
       var foundOptimal = false
@@ -121,12 +137,13 @@ class PromelaBackend(val params: CommandLineParameters) extends Backend[(BasicAc
             //case Some(c) => 
               //val prevCost = if (c < 0) Promela.UnaryExpr("-",Promela.IntLiteral(-c)) else Promela.IntLiteral(c)
           //Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && (Promela.VarExp("__INSTR_COST") < Promela.VarExp("best_cost")  ))))
-          Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && Promela.VarExp("best_cost")  )))
+          //Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula && Promela.VarExp("best_cost")  )))
+          Promela.Ltl("", Promela.UnaryExpr("<>", Promela.CExpr("now.__INSTR_COST > BEST_COST")  ))
               //Promela.Ltl("", Promela.UnaryExpr("<>",ltlFormula && Promela.VarExp("best_cost")))
             //case None => Promela.Ltl("", Promela.UnaryExpr("[]",Promela.UnaryExpr("!",ltlFormula)))
           //}
         }
-        val formulaTxt = printer.print(formula)
+        val formulaTxt = printerC.print(formula)
         outputParser.startSchedule(contract)
         val newCost = PromelaRunner.search(progTxt + formulaTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
         

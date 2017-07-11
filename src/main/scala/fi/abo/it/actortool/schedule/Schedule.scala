@@ -9,7 +9,7 @@ abstract class Schedule[U](val entity: DFActor, val sequence: List[U]) {
 class ContractSchedule(
     override val entity: DFActor, 
     val contract: ContractAction,
-    override val sequence: List[(Instance,ActorAction)]) extends Schedule(entity,sequence) {
+    override val sequence: List[(Instance,ActorAction)], val cost: Int) extends Schedule(entity,sequence) {
   
   override def toString = sequence.foldLeft("")((a,b) => a + "\n" + string(b)  )
   

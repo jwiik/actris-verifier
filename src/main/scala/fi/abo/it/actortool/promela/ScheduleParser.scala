@@ -9,6 +9,7 @@ class ScheduleParser(val translation: Translation[_<:DFActor]) {
   private var current: ListBuffer[(Instance,ActorAction)] = null
   private var currentContract: ContractAction = null
   private var schedule: ContractSchedule = null
+  private var cost = -1
   
   def startSchedule(contract: ContractAction) {
     current = new ListBuffer
@@ -16,10 +17,12 @@ class ScheduleParser(val translation: Translation[_<:DFActor]) {
   }
   
   def endSchedule {
-    schedule = new ContractSchedule(translation.entity,currentContract,current.toList)
+    schedule = new ContractSchedule(translation.entity,currentContract,current.toList, cost)
     current = null
     currentContract = null
   }
+  
+  def setCost(cost: Int) { this.cost = cost }
   
   def getSchedule = schedule
   

@@ -14,6 +14,7 @@ object Promela {
     def >(e: Expr) = BinaryExpr(this,">",e)
     def &&(e: Expr) = BinaryExpr(this,"&&",e)
     def ||(e: Expr) = BinaryExpr(this,"||",e)
+    def ==@(e: Expr) = BinaryExpr(this,"==",e)
   }
   trait Type
   
@@ -69,7 +70,7 @@ object Promela {
   
   private val nl = System.getProperty("line.separator");
   
-  class PromelaPrinter {
+  class PromelaPrinter(ccode: Boolean) {
     
     var indentLvl = 0
     
@@ -112,11 +113,13 @@ object Promela {
     }
     
     def printCCode(code: String) = {
-      indent + "c_code {" + code  + "}"
+      if (ccode) indent + "c_code {" + code  + "}"
+      else ""
     }
     
     def printCExpr(code: String) = {
-      indent + "c_expr { " + code + " }"
+      if (ccode) indent + "c_expr { " + code + " }"
+      else ""
     }
     
     def printParamDecls(varDecls: List[ParamDecl]): String = {

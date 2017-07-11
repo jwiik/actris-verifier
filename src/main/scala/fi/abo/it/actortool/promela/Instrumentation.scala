@@ -4,7 +4,15 @@ import scala.collection.mutable.ListBuffer
 import fi.abo.it.actortool._
 
 object Instrumentation {
-  
+val cCode = 
+"""
+  if (now.__INSTR_COST <= BEST_COST) {
+    BEST_COST = now.__INSTR_COST;
+    printf(">> New best: %d\n", BEST_COST);
+    putrail();
+    //Nr_Trails--;
+  }
+"""
   val P = Promela
   
   val ACC_BUFFER_SUM = "__INSTR_ACC_BUFFER_SUM"
@@ -18,7 +26,7 @@ object Instrumentation {
 
   def mkInstrumentationCall(actor: P.Expr, action: P.Expr) = P.Call("__instrument",List(actor,action))
   
-  def mkInstrumentationDef(chansWithMax: List[(Connection,Int)] , renamings: RenamingContext, weights: Map[String,Int]) = {
+  def mkInstrumentationDef(chansWithMax: List[(Connection,Int)] , renamings: RenamingContext, weights: Map[String,Int], endState: P.Expr) = {
     
     val buffWeight = P.IntLiteral(weights.getOrElse("B",1))
     val actorSwWeight = P.IntLiteral(weights.getOrElse("A",1))
@@ -31,13 +39,24 @@ object Instrumentation {
         
         //val chans = nw.structure.get.connections.filter{ c => !c.isInput && !c.isOutput }.map{ c => P.FunCall("len",List(P.VarExp(renamings.R(c.id))) ): P.Expr }
         
-        val chans = chansWithMax.map {case (ch,max) => P.FunCall("len",List(P.VarExp(renamings.R(ch.id)))) / P.IntLiteral(max) : P.Expr }
-          
-        if (!chans.isEmpty) {
-          instrumentBody += P.Assign(P.VarExp(ACC_BUFFER_SUM), P.BinaryExpr(P.VarExp(ACC_BUFFER_SUM), "+", chans.reduceLeft((a,b) => P.BinaryExpr(a,"+",b))))
-        }
-        
-        instrumentBody += P.Assign(P.VarExp(COST), P.VarExp(ACC_BUFFER_SUM))
+    val chans = chansWithMax.map {case (ch,max) => P.FunCall("len",List(P.VarExp(renamings.R(ch.id)))) / P.IntLiteral(max) : P.Expr }
+      
+    if (!chans.isEmpty) {
+      instrumentBody += P.Assign(P.VarExp(ACC_BUFFER_SUM), P.BinaryExpr(P.VarExp(ACC_BUFFER_SUM), "+", chans.reduceLeft((a,b) => P.BinaryExpr(a,"+",b))))
+    }
+    
+    instrumentBody += P.Assign(P.VarExp(NUM_FIRINGS),P.VarExp(NUM_FIRINGS) + P.IntLiteral(1))
+    
+    instrumentBody += P.Assign(P.VarExp(COST), P.VarExp(ACC_BUFFER_SUM))
+     instrumentBody += P.If(List(
+       P.OptionStmt(List(P.GuardStmt(P.ExprStmt(P.VarExp(NUM_FIRINGS) ==@ P.VarExp("__RUNS")),List(P.CCode(cCode),P.PrintStmt("hej\\n"))))),
+       P.OptionStmt(List(P.GuardStmt(P.Else,List(P.Skip)))) 
+    ))
+      
+//    instrumentBody += P.If(List(
+//       P.OptionStmt(List(P.GuardStmt(P.ExprStmt(endState),List(P.CCode("printf(\">> Best cost: %d \\n\",BEST_COST);"))))),
+//       P.OptionStmt(List(P.GuardStmt(P.Else,List(P.Skip)))) 
+//    ))
 //        
 //        instrumentBody += P.Assign(P.VarExp(NUM_FIRINGS), P.BinaryExpr(P.VarExp(NUM_FIRINGS), "+", P.IntLiteral(1)))
 //        
