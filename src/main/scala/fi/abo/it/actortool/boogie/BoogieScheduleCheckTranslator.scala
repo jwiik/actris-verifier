@@ -84,7 +84,8 @@ class BoogieScheduleCheckTranslator(mergedActions: Boolean) extends EntityTransl
     
     val renamings = renamingsBuffer.toMap
     
-    for ((_,action) <- schedule.sequence) {
+    for (firing <- schedule.sequence) {
+      val action = firing.action
       val actionRenamings = avs.renamings ++ renamings(action)
       val actionData = avs.actionData(action)
       
@@ -157,8 +158,9 @@ class BoogieScheduleCheckTranslator(mergedActions: Boolean) extends EntityTransl
     
 
     
-    for ((e,a1) <- schedule.sequence) {
-      
+    for (firing <- schedule.sequence) {
+      val a1 = firing.action
+      val e = firing.instance
       val action = a1.refinedContract.getOrElse(a1)
       //decls+ ++= nwvs.getEntityActionData(e, action).declarations  map { _.decl }
       

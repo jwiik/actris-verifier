@@ -2,11 +2,11 @@ package fi.abo.it.actortool.promela
 
 import collection.mutable.ListBuffer
 import fi.abo.it.actortool._
-import fi.abo.it.actortool.schedule.ContractSchedule
+import fi.abo.it.actortool.schedule._
 
 class ScheduleParser(val translation: Translation[_<:DFActor]) {
   
-  private var current: ListBuffer[(Instance,ActorAction)] = null
+  private var current: ListBuffer[Firing] = null
   private var currentContract: ContractAction = null
   private var schedule: ContractSchedule = null
   private var cost = -1
@@ -14,6 +14,8 @@ class ScheduleParser(val translation: Translation[_<:DFActor]) {
   def startSchedule(contract: ContractAction) {
     current = new ListBuffer
     currentContract = contract
+    schedule = null
+    cost = -1
   }
   
   def endSchedule {
@@ -38,7 +40,7 @@ class ScheduleParser(val translation: Translation[_<:DFActor]) {
         val actor = translation.mergedActors.get(instance.actorId).getOrElse(instance.actor)
         val action = actor.actorActions.find { a => a.fullName == actionLbl.text }
         action match {
-          case Some(a) => current += ((instance,a))
+          case Some(a) => current += Firing(instance,a)
           case None => throw new RuntimeException(elem.toString)
         }
       }

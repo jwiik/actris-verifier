@@ -8,9 +8,9 @@ val cCode =
 """
   if (now.__INSTR_COST <= BEST_COST) {
     BEST_COST = now.__INSTR_COST;
-    printf(">> New best: %d\n", BEST_COST);
+    printf(">> New best: %d\n\n", BEST_COST);
     putrail();
-    //Nr_Trails--;
+    Nr_Trails--;
   }
 """
   val P = Promela

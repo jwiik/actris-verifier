@@ -46,12 +46,12 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val ComponentsToVerify = List.empty
       val PrintInvariantStats = false
       val SizedIntsAsBitvectors = true
-      val ScheduleFile = None
       val Schedule = None
       val ScheduleSimulate = false
       val PromelaPrint = false
       val MergeActions = false
       val PromelaChanSize = 100
       val ScheduleWeights = Map.empty[String,Int]
+      val ScheduleXML = None
     } 
 }

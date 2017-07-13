@@ -190,7 +190,9 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       }
     }
     
-    for ((e,a) <- schedule.sequence) {
+    for (firing <- schedule.sequence) {
+      val a = firing.action
+      val e = firing.instance
       val (subStmt,subVars,newConsCount,newProdCount,usedVariables) = 
         handleActionExecution(
           a, Some(e), Some(connectionMap), nw, actorVariables(e), usedVariableNames, consumeCount, produceCount)
@@ -292,7 +294,8 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
 //          }),1)
         }
       }
-    for ((_,a) <- schedule.sequence) {
+    for (firing <- schedule.sequence) {
+      val a = firing.action
       val (subStmt,subVars,newConsCount,newProdCount,usedVariables) = 
         handleActionExecution(a, None, None, ba, actorVariables, usedVariableNames, consumeCount, produceCount)
       stmt ++= subStmt

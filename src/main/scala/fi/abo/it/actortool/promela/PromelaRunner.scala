@@ -17,8 +17,7 @@ object PromelaRunner {
     val process = Process(Seq("/Users/jonatan/Tools/bin/spin","-T",outputFile), new java.io.File("output"))
     writeFile("output/"+outputFile,progTxt)
     val parser = new SpinParser(Step.Simulate)
-    val logger = ProcessLogger(parser append _  , parser append _ )
-    var exitCode = process ! logger
+    var exitCode = process ! parser
     
     if (exitCode != 0) {
       val output = parser.mkString
@@ -38,27 +37,60 @@ object PromelaRunner {
 
   }
   
-  def search(progTxt: String, outputFile: String, scheduleParser: ScheduleParser): Option[Int] = {
+  def search(progTxt: String, outputFile: String, scheduleParser: ScheduleParser): Int = {
     val commands = List(
         Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile),
-        Seq("gcc","-DVECTORSZ=1000000", "-DCOLLAPSE", "-DSAFETY","-DMEMLIM=6144" ,"-o","pan","pan.c"),
+        Seq("gcc", "-O2" ,"-DVECTORSZ=1000000", "-DCOLLAPSE", "-DSAFETY","-DMEMLIM=6144" ,"-o","pan","pan.c"),
         Seq("./pan", "-m1000000"),
         Seq("./pan", "-r", "-n")
       )
         
-    val processes = commands.map { cmd => Process(cmd, new java.io.File("output")) }
+    //val processes = commands.map { cmd => Process(cmd, new java.io.File("output")) }
 
     
     writeFile("output/"+outputFile,progTxt)
     
     val parser = new SpinParser(Step.Generate)
-    val logger = ProcessLogger(parser append _  , parser append _ )
     
     var cost: Option[Int] = None
     
-    for ((p,step) <- processes.zipWithIndex) {
+    for ((cmd,step) <- commands.zipWithIndex) {
       parser.append(">> " + commands(step).mkString(" "))
-      var exitCode = p ! logger
+      //val process = Process(cmd, new java.io.File("output"))
+      
+      val proc = Runtime.getRuntime.exec(cmd.toArray, Array.empty[String], new java.io.File("output"))
+      
+      Runtime.getRuntime.addShutdownHook(new Thread(new Runnable() {
+        def run {
+          proc.destroy
+        }
+      }))
+      // the process blocks until we exhaust input and error streams 
+      // (this extra thread reads all from error stream, and buffers it)
+      val errorReadingThread = new Thread(new Runnable() {
+        def run {
+          val err = new BufferedReader(new InputStreamReader(proc.getErrorStream))
+          var line = err.readLine;
+          while (line!=null) { parser.append(line); line = err.readLine }
+        }
+      });
+      errorReadingThread.start()
+      val input = new BufferedReader(new InputStreamReader(proc.getInputStream))
+      var line = input.readLine()
+      var previousLine = null: String
+      val procOutput: ListBuffer[String] = new ListBuffer()
+      while (line != null) {
+        //println(line)
+        parser.append(line)
+        procOutput += line
+        previousLine = line
+        line = input.readLine()
+      }
+      
+      proc.waitFor
+      input.close
+      
+      var exitCode = proc.exitValue
       if (exitCode != 0) {
         val output = parser.mkString
         System.err.println(output)
@@ -66,6 +98,7 @@ object PromelaRunner {
         throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
       }
       if (step == Step.Simulate) {
+        scheduleParser.setCost(parser.cost)
         scheduleParser.read(parser.schedule)
       }
       
@@ -76,7 +109,7 @@ object PromelaRunner {
     
     writeFile("output/" + outputFile + "_pml_backend.log", parser.mkString)
     
-    cost 
+    parser.cost
   }
   
   def writeFile(filename: String, text: String) {
@@ -99,20 +132,24 @@ object Step {
   val Done = 4
 }
 
-class SpinParser(startStep: Int) {
+class SpinParser(startStep: Int) extends ProcessLogger {
   
   val assertionViolatedRegex = """.*assertion violated.*""".r
   val variable = """\s*([_\w]*)\s=\s([\d-]*)""".r
+  val newBest = """>>\sNew best:\s([\d]*)""".r
   
   private var state = startStep
-  private var violated = false
   private var variableMap = Map.empty[String,String]
+  private var bestCost: Int = -1
   private val lines = new StringBuilder
   private val scheduleData = new StringBuilder
   
-  def nextStep { state = state + 1 }
+  def buffer[T](f: => T): T = f
   
-  def foundSchedule = violated
+  def err(s: => String) = append(s)
+  def out(s: => String) = append(s)
+  
+  def nextStep { state = state + 1 }
   
   def append(str: String) = {
     //println(str)
@@ -121,10 +158,12 @@ class SpinParser(startStep: Int) {
     }
     lines.append(str + "\n")
     if (state == Step.Verify) {
-      if (!violated && assertionViolatedRegex.findFirstIn(str).isDefined) {
-        violated = true
-      }
-      //println("VERIFY: " + str)
+      str match {
+          case newBest(value) => {
+            bestCost = value.toInt
+          }
+          case _ =>
+        }
     }
     
     if (state == Step.Simulate) {
@@ -145,6 +184,7 @@ class SpinParser(startStep: Int) {
   def mkString = lines.mkString
   def schedule = scheduleData.mkString
   def variables = variableMap
+  def cost = bestCost
   
 }
 

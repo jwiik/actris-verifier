@@ -14,6 +14,8 @@ import fi.abo.it.actortool.util.ASTPrinter
 import fi.abo.it.actortool.boogie.BoogieScheduleVerifier
 import fi.abo.it.actortool.schedule.ContractSchedule
 import fi.abo.it.actortool.merging.ActorMerger
+import fi.abo.it.actortool.schedule.XMLScheduler
+import fi.abo.it.actortool.schedule.SchedulingBackend
 
 trait ProgramContext {
   def program: List[TopDecl]
@@ -88,6 +90,7 @@ object ActorTool {
     val Schedule: Option[String]
     val ScheduleWeights: Map[String,Int]
     val ScheduleSimulate: Boolean
+    val ScheduleXML: Option[File]
     val MergeActions: Boolean
     val PromelaPrint: Boolean
     val PromelaChanSize: Int
@@ -123,6 +126,7 @@ object ActorTool {
     var aScheduleSimulate: Boolean = false
     var aPromelaChanSize: Int = 512
     var aScheduleWeights: Map[String,Int] = Map.empty
+    var aScheduleXML: Option[File] = None
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -252,6 +256,23 @@ object ActorTool {
               return None
           }
         }
+        case Param("scheduleXML") => {
+          value match {
+            case Some(fp) => {
+              val file = new File(fp)
+              if (!file.exists) {
+                reportCommandLineError("schedule file " + file.getName + " could not be found");
+                return None
+              }
+              aScheduleXML = Some(file)
+            }
+            case None => {
+              reportCommandLineError("parameter scheduleXML takes a file path as argument");
+            }
+          }
+        }
+          
+            
         case Param(x) =>
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -305,6 +326,7 @@ object ActorTool {
       val ScheduleSimulate = aScheduleSimulate
       val PromelaChanSize = aPromelaChanSize
       val ScheduleWeights = aScheduleWeights
+      val ScheduleXML = aScheduleXML
     })
   }
 
@@ -383,10 +405,6 @@ object ActorTool {
         Some(rootCtx)
     }
     
-    //println(ASTPrinter.get.print(program))
-    
-    //println(ASTPrinter.get.print(program))
-    
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
@@ -395,9 +413,20 @@ object ActorTool {
         else program.filter { x => params.ComponentsToVerify.contains(x.id) || x.isUnit || x.isType }
     
     if (params.Schedule.isDefined) {
+      // Scheduling
+      
+      val schedulingBackend = params.ScheduleXML match {
+        case Some(file) => 
+          //ScheduleBuilder.fromFile(params.ScheduleXML.get, program)
+          new SchedulingBackend(new XMLScheduler(file),params)
+        case None =>
+          new SchedulingBackend(new PromelaBackend(params),params)
+      }
+      
+      
       val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
       val promelaBackend = new PromelaBackend(params)
-      val (mergedActor,scheduleCtxs) = promelaBackend.invoke(programContext)
+      val (mergedActor,scheduleCtxs) = schedulingBackend.invoke(programContext)
       
       timings += (Step.Scheduling -> (System.nanoTime - tmpTime))
       tmpTime = System.nanoTime
@@ -416,6 +445,8 @@ object ActorTool {
       
     }
     else {
+      // Verification
+      
       if (params.DoInfer) {
         Inferencer.infer(program, typeCtx.get, params.InferModules, params.AssumeGenInvs) match {
           case Inferencer.Errors(msgs) =>
@@ -492,7 +523,7 @@ object ActorTool {
   def reportCommandLineError(msg: String, help: Option[String]) {
     println("Error: " + msg + (help match {
       case Some(h) => " Usage: " + h
-      case None    =>
+      case None    => ""
     }))
   }
 
