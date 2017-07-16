@@ -94,6 +94,7 @@ object ActorTool {
     val MergeActions: Boolean
     val PromelaPrint: Boolean
     val PromelaChanSize: Int
+    val PrintXMLDescription: Boolean
     
     final lazy val help = "actortool [option] <filename>+\n"
   }
@@ -127,6 +128,7 @@ object ActorTool {
     var aPromelaChanSize: Int = 512
     var aScheduleWeights: Map[String,Int] = Map.empty
     var aScheduleXML: Option[File] = None
+    var aPrintXMLDescription: Boolean = false
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -271,7 +273,9 @@ object ActorTool {
             }
           }
         }
-          
+        case Param("printXMLDescription") => {
+          aPrintXMLDescription = true
+        }
             
         case Param(x) =>
           reportCommandLineError("unknown command line parameter " + x)
@@ -327,6 +331,7 @@ object ActorTool {
       val PromelaChanSize = aPromelaChanSize
       val ScheduleWeights = aScheduleWeights
       val ScheduleXML = aScheduleXML
+      val PrintXMLDescription = aPrintXMLDescription
     })
   }
 
@@ -412,6 +417,19 @@ object ActorTool {
         if (params.ComponentsToVerify.isEmpty) program
         else program.filter { x => params.ComponentsToVerify.contains(x.id) || x.isUnit || x.isType }
     
+    if (params.DoInfer) {
+      Inferencer.infer(program, typeCtx.get, params.InferModules, params.AssumeGenInvs) match {
+        case Inferencer.Errors(msgs) =>
+          msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
+        case Inferencer.Success() =>
+      }
+    }
+    
+    if (params.PrintXMLDescription) {
+      println(util.XMLPrinter.printPretty(program))
+      return
+    }
+    
     if (params.Schedule.isDefined) {
       // Scheduling
       
@@ -426,7 +444,13 @@ object ActorTool {
       
       val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
       val promelaBackend = new PromelaBackend(params)
-      val (mergedActor,scheduleCtxs) = schedulingBackend.invoke(programContext)
+      val (ba,scheduleCtxs) = schedulingBackend.invoke(programContext) match {
+        case schedule.Success(ba,scheduleCtxs) => (ba,scheduleCtxs)
+        case schedule.Failure(errs) => {
+          errs.map { case (pos,msg) => reportError(pos, msg) }
+          return
+        }
+      }
       
       timings += (Step.Scheduling -> (System.nanoTime - tmpTime))
       tmpTime = System.nanoTime
@@ -447,14 +471,6 @@ object ActorTool {
     else {
       // Verification
       
-      if (params.DoInfer) {
-        Inferencer.infer(program, typeCtx.get, params.InferModules, params.AssumeGenInvs) match {
-          case Inferencer.Errors(msgs) =>
-            msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
-          case Inferencer.Success() =>
-        }
-      }
-  
       timings += (Step.Infer -> (System.nanoTime - tmpTime))
       tmpTime = System.nanoTime
   

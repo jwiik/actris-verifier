@@ -3,19 +3,18 @@ package fi.abo.it.actortool.boogie
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule._
 
-class BoogieScheduleCheckTranslator(mergedActions: Boolean) extends EntityTranslator[ScheduleContext] with GeneralBackend[ScheduleContext,List[Boogie.Decl]] {
+class BoogieScheduleCheckTranslator(mergedActions: Boolean, actionTranslator: BasicActorTranslator) extends EntityTranslator[ScheduleContext] with GeneralBackend[ScheduleContext,List[Boogie.Decl]] {
 
   
   def invoke(scheduleCtx: ScheduleContext) = translateEntity(scheduleCtx)
   
   def translateEntity(scheduleCtx: ScheduleContext): List[Boogie.Decl] = {
     
-    
     val constDecls =
       (scheduleCtx.program.collect{ 
         case u: DataUnit => {
           u.constants flatMap { d =>
-            val (axiom,_) = stmtTranslator.transExpr(d.value.get,Map.empty,false)
+            val axiom = stmtTranslator.transExpr(d.value.get,false)
             List(Boogie.Const(d.id,false,B.type2BType(d.typ)),Boogie.Axiom(Boogie.VarExpr(d.id) ==@ axiom))
           }
         }
@@ -30,7 +29,10 @@ class BoogieScheduleCheckTranslator(mergedActions: Boolean) extends EntityTransl
       case ba: BasicActor => {
         val verStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,new Resolver.EmptyContext(true),mergedActions)
         val avs = verStructBuilder.buildStructure(ba)
-        translateFunctionDecl(avs) ::: scheduleCtx.schedules.flatMap(s => translateActorSchedule(scheduleCtx,s,avs))
+        
+        val actionChecks = actionTranslator.translateActor(avs)
+        
+        translateFunctionDecl(avs) ::: actionChecks ::: scheduleCtx.schedules.flatMap(s => translateActorSchedule(scheduleCtx,s,avs))
       }
     }
       
@@ -92,20 +94,49 @@ class BoogieScheduleCheckTranslator(mergedActions: Boolean) extends EntityTransl
       for (ipat <- action.inputPattern) {
         val id = ipat.portId
         stmts += B.Assert(B.Int(ipat.rate) <= B.Urd(id),ipat.pos,"Input pattern might not be satisfied for action '" + action.fullName + "'")
-        for (v <- ipat.vars) {
-          stmts += Boogie.Assign(transExpr(v.id,v.typ)(actionRenamings),B.ChannelIdx(id,v.typ,B.R(id)))
-          stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(1))
+        
+        ipat match {
+          case InputPattern(_,vars,1) => {
+            for (v <- vars) {
+              stmts += Boogie.Assign(transExpr(v.id,v.typ)(actionRenamings),B.ChannelIdx(id,v.typ,B.R(id)))
+              stmts += Boogie.Assign(B.R(id), B.R(id) + B.Int(1))
+            }
+          }
+          case InputPattern(_,List(v),repeat) => {
+            for (i <- 0 until repeat) {
+              stmts += Boogie.Assign(
+                  transExpr(v)(actionRenamings), 
+                  B.Fun("Map#Store",transExpr(v)(actionRenamings) , B.Int(i) , B.ChannelIdx(id, v.typ, B.R(id)) )  )
+              stmts += Boogie.Assign(B.R(id), B.R(id) plus B.Int(1))
+            }
+          }
+          
         }
+        
       }
       stmts ++= action.guards.map { g => B.Assert(transExpr(g)(actionRenamings),g.pos,"Guard might not be satisfied for action '" + action.fullName + "'" ) }
       stmts ++= action.requires.filter(!_.free).map { r => B.Assert(transExpr(r.expr)(actionRenamings),r.pos,"Precondition might not hold for action '" + action.fullName + "'" ) }
-      stmts ++= transStmt(action.body)(actionRenamings)
+      
+      stmts ++= generateHavoc(actionData.assignedVariables, actionRenamings)
+      
+      //stmts ++= transStmt(action.body)(actionRenamings)
       
       for (opat <- action.outputPattern) {
         val id = opat.portId
-        for (e <- opat.exps) {
-          stmts += Boogie.Assign(B.ChannelIdx(id,e.typ,B.C(id)),transExpr(e)(actionRenamings))
-          stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(1))
+        
+        opat match {
+          case OutputPattern(_,exps,1) => {
+            for (e <- exps) {
+              stmts += Boogie.Assign(B.ChannelIdx(id,e.typ,B.C(id)),transExpr(e)(actionRenamings))
+              stmts += Boogie.Assign(B.C(id), B.C(id) + B.Int(1))
+            }
+          }
+          case OutputPattern(_,List(e),repeat) => {
+            for (i <- 0 until repeat) {
+              stmts += Boogie.Assign(B.ChannelIdx(id, e.typ, B.C(id)), B.Fun("Map#Select",transExpr(e)(actionRenamings), B.Int(i)))
+              stmts += Boogie.Assign(B.C(id), B.C(id) plus B.Int(1))
+            }
+          }
         }
 
       }
@@ -155,9 +186,6 @@ class BoogieScheduleCheckTranslator(mergedActions: Boolean) extends EntityTransl
       stmts += B.Assume(transExpr(pre.expr)(nwvs.renamings))
     }
     
-    
-
-    
     for (firing <- schedule.sequence) {
       val a1 = firing.action
       val e = firing.instance
@@ -183,14 +211,12 @@ class BoogieScheduleCheckTranslator(mergedActions: Boolean) extends EntityTransl
         stmts += Boogie.Assign(B.Isub(cId), B.C(cId))
       }
       
-      for (d <- nwvs.getEntityActionData(e, action).oldDeclarations) {
-        val renamed = renamings(d.id).asInstanceOf[Id].id
-        stmts += Boogie.Assign(Boogie.VarExpr(renamed+B.Sep+"old"),transExpr(d)(renamings))
-      }
-      
       val firingRules = getFiringRules(e, nwvs)
       //println(firingRules.keys map (_.fullName))
-      stmts += B.Assert(firingRules(action),action.pos,schedule.contract.fullName + ": Firing rule might not be satisfied for action '" + action.fullName + "' of instance '" + e.id +"'")
+      stmts += B.Assert(
+          firingRules(action),
+          action.pos,
+          schedule.contract.fullName + ": Firing rule might not be satisfied for action '" + action.fullName + "' of instance '" + e.id +"'")
       
       for (pat <- action.inputPattern) {
         val id = nwvs.connectionMap.getDst(PortRef(Some(e.id),pat.portId))

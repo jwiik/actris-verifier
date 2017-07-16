@@ -4,23 +4,6 @@ import fi.abo.it.actortool._
 import java.io.File
 import xml.PrettyPrinter
 
-object ScheduleBuilder {
-  def fromFile(file: File, program: List[TopDecl]) = {
-    val data = xml.XML.loadFile(file)
-    
-    
-    for (a <- data \ "actor") yield {
-      for (s <- a \ "schedule") yield {
-        for (f <- s \ "firing") yield {
-          println(f)
-        }
-      }
-    }
-    
-    
-  }
-}
-
 trait ScheduleElement {
   def toXML: xml.Elem
   def print = { new PrettyPrinter(150,2).format(toXML) }

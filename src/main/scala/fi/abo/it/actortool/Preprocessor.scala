@@ -93,7 +93,7 @@ case object ActionScheduleProcessor extends Preprocessor {
                 for (t <- s.transitions.filter { t => t.action == labelOpt.get }) yield {
                    val guard = Eq(Id("St#"),Id(t.from))
                    val stUpdate = (guard, List(Assign(Id("St#"),Id(t.to))))
-                   val stFromTo = (Eq(FunctionApp("old",List(Id("St#"))),Id(t.from)), Eq(Id("St#"),Id(t.to)))
+                   val stFromTo = (Eq(FunctionApp("prev",List(Id("St#"))),Id(t.from)), Eq(Id("St#"),Id(t.to)))
                    (guard,stUpdate,stFromTo)
                 }
               }

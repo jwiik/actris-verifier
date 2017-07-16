@@ -54,7 +54,7 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
     val assumes = new ListBuffer[Boogie.Expr]
     for (d <- varDecls) {
       decls += BDecl(d.id,d.typ)
-      if (d.constant) assumes += Boogie.VarExpr(d.id) ==@ translator.transExpr(d.value.get, renamings, false)._1
+      if (d.constant) assumes += Boogie.VarExpr(d.id) ==@ translator.transExpr(d.value.get, TranslatorContext(renamings, false))
     }
     (decls.toList,assumes.toList)
   }
@@ -78,8 +78,6 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   
   protected def buildPriorityMap(actor: DFActor, subComponent: Boolean, alwaysUseContracts: Boolean) = 
     PriorityMapBuilder.buildPriorityMap(actor, subComponent, alwaysUseContracts)
-    
-  def getNeededOldVariables(action: AbstractAction) = NeededOldFinder.find(action.ensuresExpr)
   
 }
 
@@ -115,15 +113,21 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
     val decls = new ListBuffer[BDecl]
     val commonAssumes = new ListBuffer[Boogie.Assume]
     
-    //val stateChanRenamings = (actor.variables map { p => (p.id, Id("Ch" + B.Sep + p.id)) } ).toMap
+    
     
     val portChans = (actor.inports ::: actor.outports) map { p => BDecl(p.id, ChanType(p.portType)) }
-    //val stateChans = (actor.variables map { p => BDecl(stateChanRenamings(p.id).id, ChanType(p.typ)) } )
-    //val chans = portChans //::: stateChans
-    
     decls ++= portChans
     
-    val uniquenessConiditions = createUniquenessCondition(portChans)
+    val stateChanRenamings = actor.variables.map{ p => (p.id, Id(p.id + B.Sep + "ch").withType(p.typ) ) }.toMap
+    val stateChans = actor.variables map { 
+      p => BDecl(stateChanRenamings(p.id).id, ChanType(p.typ)) 
+      
+    }
+    decls ++= stateChans
+    
+    //val chans = portChans //::: stateChans
+    
+    val uniquenessConiditions = createUniquenessCondition(portChans ::: stateChans)
     val uniquenessCondition = 
       if (!uniquenessConiditions.isEmpty) uniquenessConiditions.reduceLeft((a,b) => (a && b))
       else B.Bool(true)
@@ -136,11 +140,13 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
     
     val basicAssumes =
       (commonAssumes.toList) :::
-      (actor.inports:::actor.outports map { p => B.Assume(B.Int(0) <= B.I(p.id) && B.I(p.id) <= B.R(p.id) && B.R(p.id) <= B.C(p.id)) }) 
+      (actor.inports:::actor.outports map { p => B.Assume(B.Int(0) <= B.I(p.id) && B.I(p.id) <= B.R(p.id) && B.R(p.id) <= B.C(p.id)) }):::
+      (stateChans map { bd => B.Assume(B.Int(0) <= B.I(bd.name) && B.I(bd.name) <= B.R(bd.name) && (B.R(bd.name) + B.Int(1)) ==@ B.C(bd.name)) })
         
     val initAssumes = 
       (commonAssumes.toList) :::
-      (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }) 
+      (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }):::
+      (stateChans map { bd => B.Assume(B.I(bd.name) ==@ B.Int(0) && B.R(bd.name) ==@ B.Int(0) && B.C(bd.name) ==@ B.Int(0)) })
 
     val priorityList = buildPriorityMap(actor,false, alwaysUseContracts)
     
@@ -150,8 +156,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
       (for (a <- actor.actorActions) yield {
         val (decls,initialValues) = createVariableDeclarationsNoTranslate(a.variables,typeCtx)
         val assignedVars = AssignedVarsFinder.find(a.body)
-        val (oldVars,_) = getNeededOldVariables(a).unzip
-        (a,new ActionData(decls,Map.empty,Map.empty,assignedVars,initialValues,oldVars.toSet))
+        (a,new ActionData(decls,Map.empty,Map.empty,assignedVars,initialValues))
       }).toMap
     
     return new ActorVerificationStructure(
@@ -169,7 +174,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
         basicAssumes,
         initAssumes,
         funDeclRenamings,
-        Map.empty, // state chan renamings
+        stateChanRenamings, // state chan renamings
         aData,
         prefix)
   }
@@ -265,16 +270,6 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
         //val newName = "AP"+B.Sep+e.id+B.Sep+p.id
         //subactorVarDecls += BDecl(newName,p.typ)
         renameBuffer += ((p.id,parameterArguments(p.id)))
-      }
-      
-      val (_,neededOldVariables) = ((actor.actorActions ::: actor.contractActions) map getNeededOldVariables).flatten.unzip
-      val neededOldVariablesSet = neededOldVariables.toSet
-      
-      for (v <- actor.variables ++ neededOldVariablesSet) {
-        val newName = e.id+B.Sep+v.id
-        subactorVarDecls += BDecl(newName,v.typ)
-        variables += newName
-        renameBuffer += ((v.id,makeId(newName,v.typ)))
       }
       
       
@@ -396,8 +391,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
       }
     
     val assignedVars = AssignedVarsFinder.find(action.body)
-    val (oldVariables,_) = getNeededOldVariables(action).unzip
-    new ActionData(vars.toList, patternVarRenamings, replacements.toMap, assignedVars.toSet,List.empty, oldVariables.toSet)
+    new ActionData(vars.toList, patternVarRenamings, replacements.toMap, assignedVars.toSet,List.empty)
 
   }
   

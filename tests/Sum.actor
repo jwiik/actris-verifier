@@ -14,7 +14,8 @@ actor Sum int x ==> int y:
   end
   action x:[i] ==> y:[sum]
     requires 0 <= i
-    ensures i <= sum 
+    ensures i <= sum
+    ensures sum = prev(sum)+i
   do
     sum := sum+i;
   end 

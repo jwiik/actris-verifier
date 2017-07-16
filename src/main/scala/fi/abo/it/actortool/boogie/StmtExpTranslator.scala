@@ -9,12 +9,18 @@ import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool.ActorTool.TranslationException
+import fi.abo.it.actortool.ActorTool.TranslationException
 
-class TranslatorContext(val renamings: Map[String,Expr], val subBullet: Boolean) {
+object TranslatorContext {
+  def apply(renamings: Map[String,Expr], subBullet: Boolean) = new TranslatorContext(renamings,subBullet,Map.empty)
+  def apply(renamings: Map[String,Expr], subBullet: Boolean, stateChannels: Map[String,Expr]) = new TranslatorContext(renamings,subBullet,stateChannels)
+}
+
+class TranslatorContext(val renamings: Map[String,Expr], val subBullet: Boolean, val stateChannels: Map[String,Expr]) {
   
   private val childContexts = new ListBuffer[TranslatorContext]
   def newChildContext = {
-    val ctx = new TranslatorContext(renamings,subBullet)
+    val ctx = new TranslatorContext(renamings,subBullet,stateChannels)
     childContexts += ctx
     ctx
   }
@@ -25,25 +31,31 @@ class StmtExpTranslator() {
    * Translation of statements and expressions
    */
   
-  
-  def transStmt(stmts: List[Stmt], renamings: Map[String,Expr], subBullet: Boolean): (List[Boogie.Stmt],TranslatorContext) = {
-    val ctx = new TranslatorContext(renamings,subBullet)
-    (transStmtI(stmts)(ctx), ctx)
+  def transStmt(stmts: List[Stmt], subBullet: Boolean): List[Boogie.Stmt] = {
+    val ctx = TranslatorContext(Map.empty,subBullet)
+    transStmtI(stmts)(ctx)
   }
   
-  def transExpr(exp: Expr, renamings: Map[String,Expr], subBullet: Boolean): (Boogie.Expr,TranslatorContext) = {
-    val ctx = new TranslatorContext(renamings,subBullet)
-    (transExprI(exp)(ctx),ctx)
+  def transExpr(exp: Expr, subBullet: Boolean): Boogie.Expr = {
+    val ctx = TranslatorContext(Map.empty,subBullet)
+    transExprI(exp)(ctx)
+  }
+  
+  def transStmt(stmts: List[Stmt], ctx: TranslatorContext): List[Boogie.Stmt] = {
+    transStmtI(stmts)(ctx)
+  }
+  
+  def transExpr(exp: Expr, ctx: TranslatorContext): Boogie.Expr = {
+    transExprI(exp)(ctx)
   }
 
   def transStmtI(stmts: List[Stmt])(implicit context: TranslatorContext): List[Boogie.Stmt] = {
     val bStmts = new ListBuffer[Boogie.Stmt]()
     for (s <- stmts) {
       val ctx = context.newChildContext
-      bStmts ++= (s match {
+      s match {
         case Assign(id,exp) => {
-          val stmt = List(Boogie.Assign(transExprI(id),transExprI(exp)))
-          stmt
+          bStmts += Boogie.Assign(transExprI(id),transExprI(exp))
         }
         case MapAssign(e1,e2) => {
           BoogiePrelude.addComponent(MapPL)
@@ -51,17 +63,13 @@ class StmtExpTranslator() {
           val acc = e1.asInstanceOf[IndexAccessor]
           val map = acc.exp
           val index = acc.suffix
-          val stmt = 
-            List(Boogie.Assign(transExprI(map)(ctx),B.Fun("Map#Store",transExprI(map)(ctx),transExprI(index)(ctx),elem)))
-          stmt
+          bStmts += Boogie.Assign(transExprI(map)(ctx),B.Fun("Map#Store",transExprI(map)(ctx),transExprI(index)(ctx),elem))
         }
         case Assert(e) => {
-          val stmt = List(B.Assert(transExprI(e)(ctx), e.pos, "Condition might not hold"))
-          stmt
+          bStmts += B.Assert(transExprI(e)(ctx), e.pos, "Condition might not hold")
         }
         case Assume(e) => {
-          val stmt = List(B.Assume(transExprI(e)(ctx)))
-          stmt
+          bStmts += B.Assume(transExprI(e)(ctx))
         }
         case Havoc(ids) => {
           val s = (for (i <- ids) yield {
@@ -73,16 +81,15 @@ class StmtExpTranslator() {
               Boogie.Havoc(transExprI(i)(ctx)) 
             }
           })
-          s
+          bStmts ++= s
         }
         case IfElse(ifCond,ifStmt,elseIfs,elseStmt) => {
-          val stmt = List(Boogie.If(transExprI(ifCond)(ctx),transStmtI(ifStmt)(ctx), buildElseIfStmt(elseIfs, elseStmt) ))
-          stmt
+          bStmts += Boogie.If(transExprI(ifCond)(ctx),transStmtI(ifStmt)(ctx), buildElseIfStmt(elseIfs, elseStmt) )
         }
-        case While(_,_,_) =>
-          throw new RuntimeException("Loops not supported yet")
-          
-      })
+        case While(_,_,_) => throw new RuntimeException("Loops not supported yet")
+        case fe: ForEach => throw new RuntimeException("Loops not supported yet")
+        case pd: ProcCall => throw new RuntimeException("Procedure calls has not been inlined")
+      }
     }
     bStmts.toList
   }
@@ -217,18 +224,7 @@ class StmtExpTranslator() {
           case "str" => getBullet(transExprI(params(0)),context.subBullet)
           case "@" => getBullet(transExprI(params(0)),context.subBullet)
           case "rate" => B.B(transExprI(params(0)))
-          case "next" => 
-            val ch = transExprI(params(0))
-            if (fa.parameters.size > 1) B.R(ch) minus transExprI(params(1))
-            else B.R(ch)
-          case "prev" => 
-            val ch = transExprI(params(0))
-            if (fa.parameters.size > 1) B.ChannelIdx(ch,B.R(ch) - transExprI(params(1)))
-            else B.ChannelIdx(ch,B.R(ch) - B.Int(1))
-          case "last" => 
-            val ch = transExprI(params(0))
-            if (fa.parameters.size > 1) B.ChannelIdx(ch, B.C(ch) - transExprI(params(1)))
-            else B.ChannelIdx(ch, B.C(ch) - B.Int(1))
+          case "next" | "last" | "prev" => getNextPrevLast(fa.name, params)
           case "history" => 
             val ch = transExprI(params(0))
             generateRangePredicate(params, B.Int(0), getBullet(ch,context.subBullet))
@@ -336,7 +332,7 @@ class StmtExpTranslator() {
           case "old" => {
             val id = params(0).asInstanceOf[Id]
             val nId = context.renamings.getOrElse(id.id,id).asInstanceOf[Id]
-            Boogie.VarExpr(nId.id+B.Sep+"old")
+            Boogie.VarExpr("old"+B.Sep+nId.id)
           }
           case x => {
             // User-defined function
@@ -360,7 +356,20 @@ class StmtExpTranslator() {
           BoogiePrelude.addComponent(MapPL)
           B.Fun("Map#Select", tExpr,index)
         }
-        else tExpr apply index
+        else {
+          e match {
+            case Id(id) => {
+              context.stateChannels.get(id) match {
+                case Some(ch) => {
+                  B.ChannelIdx(transExprI(ch),index)
+                }
+                case None => throw new RuntimeException()
+              }
+            }
+            case _ => throw new RuntimeException()
+          }
+          
+        }
       }
       case FieldAccessor(e,f) => {
         val tExpr = transExprI(e)
@@ -407,8 +416,8 @@ class StmtExpTranslator() {
       case FloatLiteral(f) => Boogie.RealLiteral(f.toDouble)
       case sm@SpecialMarker(mark) => {
         val name = sm.extraData("accessor").asInstanceOf[String]
-        val rename = context.renamings.getOrElse(name, {val i = Id(name); i.typ = sm.typ; i})
-        val accessorName = transExprI(rename)
+
+        val accessorName = getVirtualChannel(name, sm.typ)
         mark match {
           case "@" => getBullet(accessorName,context.subBullet)
           case "next" => B.R(accessorName)
@@ -428,7 +437,38 @@ class StmtExpTranslator() {
           }
         }
       }
+      case c: Comprehension => throw new TranslationException(c.pos,"Comprehensions should be replaced before translating to Boogie")
+      case r: Range => throw new TranslationException(r.pos,"Range expressions should be replaced before translating to Boogie")
     }
+  }
+  
+  def getNextPrevLast(fn: String, params: List[Expr])(implicit context: TranslatorContext) = {
+    
+    val ch = {
+      if (!params(0).typ.isChannel) {
+        params(0) match {
+          case Id(id) => getVirtualChannel(id, params(0).typ)
+          case _ => throw new RuntimeException()
+        }
+      }
+      else {
+        transExprI(params(0))
+      }
+    }
+    
+    val idx = fn match {
+      case "next" => B.R(ch)
+      case "last" => B.C(ch)
+      case "prev" => B.R(ch) - B.Int(1)
+    }
+    if (params.size > 1) B.ChannelIdx(ch, idx - transExprI(params(1)))
+    else B.ChannelIdx(ch,idx)
+  }
+  
+  def getVirtualChannel(name: String, tp: Type)(implicit context: TranslatorContext) = {
+    val rename = context.renamings.getOrElse(name, { Id(name).withType(tp) })
+    val virtualName = context.stateChannels.getOrElse(name, rename)
+    transExprI(virtualName)
   }
   
   def getDummyValue(tp: Type) = tp match {

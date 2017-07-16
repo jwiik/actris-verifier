@@ -68,12 +68,36 @@ procedure Net#anon__4()
   assume Mode#[this#] == anon__4;
   assume R# == I#;
   assume (C#[Net#b] - R#[Net#b]) == 1;
+  assume (2 * R#[Net#a]) == (2 * C#[Net#d]);
   assume (C#[Net#a] - R#[Net#a]) == 0;
   assume (C#[Net#c] - R#[Net#c]) == 0;
   assume (C#[Net#d] - R#[Net#d]) == 0;
   assume (C#[Net#e] - R#[Net#e]) == 0;
   assume M#[Net#b][0] == 0;
   assume 0 <= M#[Net#b][I#[Net#b]];
+  assume I#[Net#c] == I#[Net#a];
+  assume I#[Net#c] == I#[Net#b];
+  assume I#[Net#b] == I#[Net#e];
+  assume I#[Net#d] == I#[Net#c];
+  assume I#[Net#e] == I#[Net#c];
+  assume (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 2);
+  assume R#[Net#a] == C#[Net#c];
+  assume R#[Net#b] == C#[Net#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#c]) ==> (M#[Net#c][idx$] == (M#[Net#a][idx$] + M#[Net#b][idx$]))
+  );
+  assume R#[Net#e] == (C#[Net#b] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C#[Net#b]) ==> (M#[Net#b][idx$] == M#[Net#e][idx$ - 1])
+  );
+  assume R#[Net#c] == C#[Net#d];
+  assume R#[Net#c] == C#[Net#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#d]) ==> (M#[Net#d][idx$] == M#[Net#c][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#e]) ==> (M#[Net#e][idx$] == M#[Net#c][idx$])
+  );
   C#[Net#a] := C#[Net#a] + 2;
   assume 0 <= M#[Net#a][I#[Net#a]];
   // Instance: add, Action: anon__22
@@ -87,6 +111,11 @@ procedure Net#anon__4()
   R#[Net#b] := R#[Net#b] + 1;
   M#[Net#c][C#[Net#c]] := add#in1#i + add#in2#j;
   C#[Net#c] := C#[Net#c] + 1;
+  assume R#[Net#a] == C#[Net#c];
+  assume R#[Net#b] == C#[Net#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#c]) ==> (M#[Net#c][idx$] == (M#[Net#a][idx$] + M#[Net#b][idx$]))
+  );
   // Instance: spl, Action: anon__23
   I#sub[Net#c] := R#[Net#c];
   I#sub[Net#d] := C#[Net#d];
@@ -98,6 +127,14 @@ procedure Net#anon__4()
   C#[Net#d] := C#[Net#d] + 1;
   M#[Net#e][C#[Net#e]] := spl#in1#i;
   C#[Net#e] := C#[Net#e] + 1;
+  assume R#[Net#c] == C#[Net#d];
+  assume R#[Net#c] == C#[Net#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#d]) ==> (M#[Net#d][idx$] == M#[Net#c][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#e]) ==> (M#[Net#e][idx$] == M#[Net#c][idx$])
+  );
   // Instance: del, Action: anon__25
   I#sub[Net#e] := R#[Net#e];
   I#sub[Net#b] := C#[Net#b];
@@ -106,6 +143,10 @@ procedure Net#anon__4()
   R#[Net#e] := R#[Net#e] + 1;
   M#[Net#b][C#[Net#b]] := del#in1#i;
   C#[Net#b] := C#[Net#b] + 1;
+  assume R#[Net#e] == (C#[Net#b] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C#[Net#b]) ==> (M#[Net#b][idx$] == M#[Net#e][idx$ - 1])
+  );
   // Instance: add, Action: anon__22
   I#sub[Net#a] := R#[Net#a];
   I#sub[Net#b] := R#[Net#b];
@@ -117,6 +158,11 @@ procedure Net#anon__4()
   R#[Net#b] := R#[Net#b] + 1;
   M#[Net#c][C#[Net#c]] := add#in1#i + add#in2#j;
   C#[Net#c] := C#[Net#c] + 1;
+  assume R#[Net#a] == C#[Net#c];
+  assume R#[Net#b] == C#[Net#c];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#c]) ==> (M#[Net#c][idx$] == (M#[Net#a][idx$] + M#[Net#b][idx$]))
+  );
   // Instance: spl, Action: anon__23
   I#sub[Net#c] := R#[Net#c];
   I#sub[Net#d] := C#[Net#d];
@@ -128,6 +174,14 @@ procedure Net#anon__4()
   C#[Net#d] := C#[Net#d] + 1;
   M#[Net#e][C#[Net#e]] := spl#in1#i;
   C#[Net#e] := C#[Net#e] + 1;
+  assume R#[Net#c] == C#[Net#d];
+  assume R#[Net#c] == C#[Net#e];
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#d]) ==> (M#[Net#d][idx$] == M#[Net#c][idx$])
+  );
+  assume (forall idx$: int :: 
+    (0 <= idx$) && (idx$ < C#[Net#e]) ==> (M#[Net#e][idx$] == M#[Net#c][idx$])
+  );
   // Instance: del, Action: anon__25
   I#sub[Net#e] := R#[Net#e];
   I#sub[Net#b] := C#[Net#b];
@@ -136,5 +190,9 @@ procedure Net#anon__4()
   R#[Net#e] := R#[Net#e] + 1;
   M#[Net#b][C#[Net#b]] := del#in1#i;
   C#[Net#b] := C#[Net#b] + 1;
+  assume R#[Net#e] == (C#[Net#b] - 1);
+  assume (forall idx$: int :: 
+    (1 <= idx$) && (idx$ < C#[Net#b]) ==> (M#[Net#b][idx$] == M#[Net#e][idx$ - 1])
+  );
   assert {:msg "The correct amount of tokens might not be produced on output out (#6)"} (C#[Net#d] - R#[Net#d]) == 2;
 }

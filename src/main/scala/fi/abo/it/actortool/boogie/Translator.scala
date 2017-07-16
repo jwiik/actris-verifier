@@ -70,7 +70,7 @@ abstract class EntityTranslator[T] {
           renamingsBuffer += ((v.id, Id(name).withType(v.typ) ))
           replacementBuffer += (( 
               v.id, 
-              Elements.chAcc(Elements.ch(ipat.portId,v.typ), Elements.next(ipat.portId, ChanType(v.typ), i)).withType(v.typ) 
+              Elements.next(ipat.portId, ChanType(v.typ), i).withType(v.typ) 
           ))
           val lVar = B.Local(name, v.typ)
           inpatDeclBuffer += BDecl(name,lVar)
@@ -156,8 +156,8 @@ abstract class EntityTranslator[T] {
   }
   
   def transExprPrecondCheck(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
-    val (expr,ctx) = stmtTranslator.transExpr(exp,renamings,true)
-    expr
+    val ctx = TranslatorContext(renamings,true)
+    stmtTranslator.transExpr(exp,ctx)
   }
   
   def transExpr(id: String, t: Type)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
@@ -167,13 +167,13 @@ abstract class EntityTranslator[T] {
   }
   
   def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
-    val (expr,ctx) = stmtTranslator.transExpr(exp,renamings,false)
-    expr
+    val ctx = TranslatorContext(renamings,false)
+    stmtTranslator.transExpr(exp,ctx)
   }
   
   def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = {
-    val (bStmt,ctx) = stmtTranslator.transStmt(stmts,renamings,false)
-    bStmt
+    val ctx = TranslatorContext(renamings,false)
+    stmtTranslator.transStmt(stmts,ctx)
   }
   
   def BAssume(chi: Invariant, renamings: Map[String,Expr]) = B.Assume(transExpr(chi.expr)(renamings))
@@ -200,7 +200,7 @@ class Translator(
     
     val stmtTranslator = new StmtExpTranslator();
     
-    lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
+    lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,true)
     lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
     
     val bProgram = programCtx.program flatMap {
@@ -208,7 +208,7 @@ class Translator(
       case n: Network => networkTranslator.translateEntity(n)
       case u: DataUnit => {
         u.constants flatMap { d =>
-          val (axiom,_) = stmtTranslator.transExpr(d.value.get,Map.empty,false)
+          val axiom = stmtTranslator.transExpr(d.value.get,false)
           List(Boogie.Const(d.id,false,B.type2BType(d.typ)),Boogie.Axiom(Boogie.VarExpr(d.id) ==@ axiom))
         }
       }

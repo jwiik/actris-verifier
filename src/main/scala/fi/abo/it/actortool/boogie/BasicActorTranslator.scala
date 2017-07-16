@@ -6,7 +6,8 @@ import scala.collection.mutable.ListBuffer
 class BasicActorTranslator(
     val smokeTest: Boolean,
     val skipMutualExclusivenessCheck: Boolean,
-    val typeCtx: Resolver.Context) extends EntityTranslator[BasicActor] {
+    val typeCtx: Resolver.Context,
+    val checkContractActions: Boolean) extends EntityTranslator[BasicActor] {
 
   val actorVerStructBuilder = new ActorVerificationStructureBuilder(stmtTranslator,typeCtx,true)
   
@@ -23,8 +24,10 @@ class BasicActorTranslator(
     val actionRenamings = collection.mutable.Map[AbstractAction,Map[String,Id]]()
     var allInpatDecls = Set.empty[BDecl]
     
-    val bFunDecls = translateFunctionDecl(avs)
-    decls ++= bFunDecls
+    if (checkContractActions) {
+      // Ugly hack
+      decls ++= translateFunctionDecl(avs)
+    }
     
     decls += translateActorInit(avs)
     
@@ -67,26 +70,27 @@ class BasicActorTranslator(
       }
     }
     
-    val contractActionFiringRules = new ListBuffer[(AbstractAction,Boogie.Expr)]
-    for (a <- avs.contractActions) {
-      val firingRule = new ListBuffer[Boogie.Expr]
-      for (p <- a.inputPattern) {
-        firingRule += B.Int(p.rate) <= B.Urd(p.portId)
-        decls += translateContractActionInput(avs, p, a)
+    if (checkContractActions) {
+      val contractActionFiringRules = new ListBuffer[(AbstractAction,Boogie.Expr)]
+      for (a <- avs.contractActions) {
+        val firingRule = new ListBuffer[Boogie.Expr]
+        for (p <- a.inputPattern) {
+          firingRule += B.Int(p.rate) <= B.Urd(p.portId)
+          decls += translateContractActionInput(avs, p, a)
+        }
+        firingRule ++= a.guards map { p => transExpr(p)(avs.renamings) }
+        decls ++= translateContractActionExit(avs, a, allGuards.toList)
+        
+        contractActionFiringRules += (( a, firingRule.foldLeft(B.Bool(true): Boogie.Expr)((a,b) => a && b) ))
       }
-      firingRule ++= a.guards map { p => transExpr(p)(avs.renamings) }
-      decls ++= translateContractActionExit(avs, a, allGuards.toList)
       
-      contractActionFiringRules += (( a, firingRule.foldLeft(B.Bool(true): Boogie.Expr)((a,b) => a && b) ))
-    }
-    
-    if (!skipMutualExclusivenessCheck) {
-      createMutualExclusivenessCheck(avs,contractActionFiringRules.toList,Set.empty) match {
-        case Some(proc) => decls += proc
-        case None =>
+      if (!skipMutualExclusivenessCheck) {
+        createMutualExclusivenessCheck(avs,contractActionFiringRules.toList,Set.empty) match {
+          case Some(proc) => decls += proc
+          case None =>
+        }
       }
     }
-    
     decls.toList
   }
   
@@ -112,6 +116,8 @@ class BasicActorTranslator(
   }
   
   def translateActorInit(avs: ActorVerificationStructure) = {
+    val renamings = avs.renamings
+    
     val asgn = new ListBuffer[Boogie.Stmt]
     //asgn ++= avs.channelDecls map { _.decl }
     asgn ++= avs.actorVarDecls map { _.decl }
@@ -122,7 +128,9 @@ class BasicActorTranslator(
     val initAction = avs.actorActions.find { x => x.init } 
     initAction match {
       case Some(a) => {
-        asgn ++= transStmt( a.body )(avs.renamings)
+        asgn ++= stmtTranslator.transStmt(a.body, TranslatorContext(avs.renamings,false,avs.stateChanRenamings))
+        
+        //asgn ++= transStmt( a.body )(avs.renamings)
         for (q <- a.ensures) {
           if (!q.free) {
             asgn += B.Assert(transExpr(q.expr)(avs.renamings), q.pos, "Action postcondition might not hold")
@@ -137,6 +145,11 @@ class BasicActorTranslator(
         }
       }
       case None =>
+    }
+    
+    for ((id,ch) <- avs.stateChanRenamings) {
+      asgn += Boogie.Assign(B.ChannelIdx(transExpr(ch)(renamings),B.C(transExpr(ch)(renamings))), transExpr(Id(id).withType(ch.typ))(renamings) )
+      asgn += Boogie.Assign(B.C(transExpr(ch)(renamings)),B.C(transExpr(ch)(renamings)) + B.Int(1))
     }
     
     for (inv <- avs.invariants) {
@@ -175,9 +188,14 @@ class BasicActorTranslator(
       asgn ++= (for (i <- avs.invariants) yield B.Assume(transExpr(i.expr)(avs.renamings)))
     }
 
+    for ((id,ch) <- avs.stateChanRenamings) {
+      asgn += B.Assume(B.ChannelIdx(transExpr(ch)(renamings),B.R(transExpr(ch)(renamings))) ==@ transExpr(Id(id).withType(ch.typ))(renamings))
+      asgn += Boogie.Assign(B.R(transExpr(ch)(renamings)),B.R(transExpr(ch)(renamings)) + B.Int(1))
+    }
+    
     // Assume input pattern
     asgn ++= ( guard1 match { case (pat,_) => List(B.Assume(pat)) } )
-     
+    
     for (ipat <- a.inputPattern) {
       val cId = ipat.portId
       if (ipat.repeat == 1) {
@@ -203,11 +221,14 @@ class BasicActorTranslator(
     
     asgn ++= ( guard1 match { case (_,guard) => List(B.Assume(guard)) } )
     asgn ++= actionData.variableInitialValues map { a => B.Assume(transExpr(a)(renamings) ) }
-    asgn ++= transStmt( a.body )(renamings)
+    //asgn ++= transStmt( a.body )(renamings)
+    asgn ++= stmtTranslator.transStmt(a.body, TranslatorContext(renamings,false,avs.stateChanRenamings))
+    
+    val transCtx = TranslatorContext(renamings,false,avs.stateChanRenamings)
     
     for (q <- a.ensures) {
       if (!q.free) {
-        asgn += B.Assert(transExpr(q.expr)(renamings), q.pos, "Action postcondition might not hold")
+        asgn += B.Assert(stmtTranslator.transExpr(q.expr, transCtx), q.pos, "Action postcondition might not hold")
       }
     }
      
@@ -226,6 +247,11 @@ class BasicActorTranslator(
           asgn += Boogie.Assign(B.C(cId), B.C(cId) plus B.Int(1))
         }
       }
+    }
+    
+    for ((id,ch) <- avs.stateChanRenamings) {
+      asgn += Boogie.Assign(B.ChannelIdx(transExpr(ch)(renamings),B.C(transExpr(ch)(renamings))), transExpr(Id(id).withType(ch.typ))(renamings) )
+      asgn += Boogie.Assign(B.C(transExpr(ch)(renamings)),B.C(transExpr(ch)(renamings)) + B.Int(1))
     }
      
     for (inv <- avs.invariants) {

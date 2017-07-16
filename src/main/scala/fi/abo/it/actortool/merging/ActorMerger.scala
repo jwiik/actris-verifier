@@ -5,20 +5,25 @@ import fi.abo.it.actortool.schedule._
 import fi.abo.it.actortool.util.ASTPrinter
 import fi.abo.it.actortool.util.ConnectionMap
 import collection.mutable.ListBuffer
+import scala.util.parsing.input.Position
 
 object Constants {
   val Sep = "__"
 }
 
+trait MergingOutcome
+case class Success(actor: BasicActor) extends MergingOutcome
+case class Failure(errors: List[(Position,String)]) extends MergingOutcome
+
 /**
  * This class implements merging of networks and actors into composite actors. The composite
  * actors should have a (concrete) action for each contract.
  */
-class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleContext,Option[BasicActor]] {
+class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleContext,MergingOutcome] {
   
   val Sep = Constants.Sep
   
-  def invoke(scheduleCtx: ScheduleContext): Option[BasicActor] = {
+  def invoke(scheduleCtx: ScheduleContext): MergingOutcome = {
     val entity = scheduleCtx.entity
     val schedules = scheduleCtx.schedules
     val members: List[Member] =
@@ -139,10 +144,9 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
     //println(ASTPrinter.get.print(actor))
     Resolver.resolve(List(actor),constants) match {
       case Resolver.Errors(errs) => {
-        //println(ASTPrinter.get.print(actor))
-        println(errs); None
+        Failure(errs)
       }
-      case Resolver.Success(ctx) => Some(actor)
+      case Resolver.Success(ctx) => Success(actor)
     }
     
   }

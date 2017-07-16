@@ -27,6 +27,7 @@ object Resolver {
     def lookupOutport(id: String): Option[OutPort] = None
     def lookupRefTypeDecl(id: String): Option[TypeDecl] = None 
     def variables: List[Declaration]
+    def isActorVariable(id: String) = false
   }
   
   sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor], val constants: Map[String,Declaration], val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
@@ -57,6 +58,7 @@ object Resolver {
     override def lookupRefTypeDecl(id: String) = parentCtx.lookupRefTypeDecl(id)
     override def variables = vars.values.toList
     override def useTypeOfIds = parentCtx.useTypeOfIds
+    override def isActorVariable(id: String) = parentCtx.isActorVariable(id)
   }
   
   sealed class ActorContext[T<:DFActor](val actor: T,
@@ -105,6 +107,7 @@ object Resolver {
     }
     
     override def containerActor = Some(actor)
+    override def isActorVariable(id: String) = vars.contains(id)
   }
   
   sealed class ActionContext(val action: AbstractAction, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
@@ -657,7 +660,7 @@ object Resolver {
   
   def resolveExpr(ctx: Context, exp: Expr, t: Type): ResolverOutcome = {
     val rType = resolveExpr(ctx,exp)
-    if (t != rType) {
+    if (!TypeUtil.isCompatible(t, rType)) {
       ctx.error(exp.pos, "Expected type '" + t.id + "', found '" + rType.id  + "'")
     }
     //assert(exp.typ != null, exp)
@@ -713,20 +716,41 @@ object Resolver {
         if (tThen != tElse) ctx.error(exp.pos, "Illegal argument types: " + tThen.id + " and " + tElse.id)
         ite.typ = tThen
         tThen
-      case ac@IndexAccessor(e1,e2) =>
+      case ac@IndexAccessor(e1,e2) => {
         val tExp = resolveExpr(ctx,e1)
-        if (!tExp.isIndexed) {
-          ctx.error(e1.pos, "Expected indexed type, found: " + tExp.id)
-          UnknownType
-        } 
-        else {
-          val indexedType = tExp.asInstanceOf[IndexedType]
-          val tInd = resolveExpr(ctx,e2)
-          if (!TypeUtil.isCompatible(tInd,indexedType.indexType)) 
-            ctx.error(e2.pos, "Expected " + indexedType.indexType.id + ", found: " + tInd.id)
-          ac.typ = indexedType.resultType
-          indexedType.resultType
+        val tInd = resolveExpr(ctx,e2)
+        val resultType = {
+          if (!tExp.isIndexed) {
+            e1 match {
+              case Id(id) => {
+                if (ctx.isActorVariable(id)) {
+                  ctx.lookUp(id).get.typ
+                }
+                else {
+                  ctx.error(e1.pos, "Expected indexed type, found: " + tExp.id)
+                  assert(false)
+                  return UnknownType
+                }
+              }
+              case _ => {
+                ctx.error(e1.pos, "Expected indexed type, found: " + tExp.id)
+              return UnknownType
+              }
+            }
+          } 
+          else {
+            val indexedType = tExp.asInstanceOf[IndexedType]
+            if (!TypeUtil.isCompatible(tInd,indexedType.indexType)) {
+              ctx.error(e2.pos, "Expected " + indexedType.indexType.id + ", found: " + tInd.id)
+            }
+            indexedType.resultType
+          }
         }
+        
+        
+        ac.typ = resultType
+        resultType
+      }
       case fa@FieldAccessor(e,f) => {
         val tExp = resolveExpr(ctx,e)
         if (!tExp.isRef) {
@@ -1274,10 +1298,25 @@ object Resolver {
       return UnknownType
     }
     val paramType = resolveExpr(ctx,fa.parameters(0))
-    if (!paramType.isChannel) {
-      ctx.error(fa.pos,"The first argument to function " + fa.name + " must be a channel")
-      return UnknownType
-    }
+    val tp = 
+      if (!paramType.isChannel) {
+        fa.parameters(0) match {
+          case Id(id) => {
+            if (ctx.isActorVariable(id)) ctx.lookUp(id).get.typ
+            else {
+              ctx.error(fa.pos,"The first argument to function " + fa.name + " must be a channel")
+              UnknownType
+            }
+          }
+          case _ => {
+            ctx.error(fa.pos,"The first argument to function " + fa.name + " must be a channel")
+            UnknownType
+          }
+        }
+      }
+      else {
+        paramType.asInstanceOf[ChanType].contentType
+      }
     if (fa.parameters.size == 2) {
       val offsetType = resolveExpr(ctx,fa.parameters(1))
       if (!offsetType.isInt) {
@@ -1285,8 +1324,8 @@ object Resolver {
         return UnknownType
       }
     }
-    fa.typ = paramType.asInstanceOf[ChanType].contentType
-    fa.typ
+    fa.typ = tp
+    return tp
   }
   
   def resolveDelayFunction(ctx: Context, fa: FunctionApp): Type = {

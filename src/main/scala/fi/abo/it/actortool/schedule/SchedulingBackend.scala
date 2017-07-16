@@ -2,22 +2,27 @@ package fi.abo.it.actortool.schedule
 
 import java.io.File
 import java.io.FileWriter
+import scala.util.parsing.input.Position
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.merging.ActorMerger
 import fi.abo.it.actortool.ActorTool.CommandLineParameters
 import fi.abo.it.actortool.util.ASTPrinter
 
-class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParameters) extends Backend[(BasicActor,List[ScheduleContext])] {
+trait SchedulingOutcome
+case class Success(actor: BasicActor, scheduleCtxs: List[ScheduleContext]) extends SchedulingOutcome
+case class Failure(errors: List[(Position,String)]) extends SchedulingOutcome
+
+class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParameters) extends Backend[SchedulingOutcome] {
   
-  def invoke(programCtx: ProgramContext): (BasicActor,List[ScheduleContext]) = {
+  def invoke(programCtx: ProgramContext): SchedulingOutcome = {
     val topNwName = params.Schedule.get
     
     val topnw = programCtx.program.find { x => x.id == topNwName } match {
       case Some(a) => a match {
-        case nw: Network => nw
-        case _ => throw new RuntimeException("Enitity named " + topNwName + " is not a network")
+        case actor: DFActor => actor
+        case _ => throw new RuntimeException("Enitity named " + topNwName + " is not an actor or network")
       }
-      case _ => throw new RuntimeException("There is no network named " + topNwName)
+      case _ => throw new RuntimeException("There is no actor or network named " + topNwName)
     }
     
     val allSchedules = new collection.mutable.ListBuffer[ScheduleContext]
@@ -30,7 +35,6 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
     
     val mergedActorMap = collection.mutable.Map[String,BasicActor]()
     for (entity <- evaluationOrder) {
-
       
       val doSchedule = entity match {
         case ba: BasicActor => {
@@ -47,7 +51,6 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
       
       if (doSchedule) {
         val schedules = scheduler.schedule(entity, mergedActorMap.toMap, constants)
-            
         actorScheduleInfo += ActorInformation(entity, schedules)
         val scheduleCtx = new ScheduleContext(
               entity, schedules, mergedActorMap.toMap,
@@ -56,8 +59,11 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
         
         val actor = mergerBackend.invoke(scheduleCtx)
         actor match {
-          case Some(a) => mergedActorMap += (entity.id -> a)
-          case None => assert(false)
+          case merging.Success(a) => mergedActorMap += (entity.id -> a)
+          case merging.Failure(errs) => {
+            return Failure(errs)
+            //assert(false)
+          }
         }
       }
       
@@ -73,7 +79,7 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
       writeFile("output/"+finalActor.id+"_schedules.xml", appInfo.print)
     }
     
-    (finalActor,allSchedules.toList)
+    return Success(finalActor,allSchedules.toList)
     
   }
   

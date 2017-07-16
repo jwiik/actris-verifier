@@ -36,7 +36,9 @@ class XMLScheduler(file: File) extends Scheduler {
           val actionName =  f \@ "action"
           
           val inst = instances(instName)
-          val actor = mergedActors(actorName)
+          
+          val actor = mergedActors.getOrElse(actorName,entity)
+          
           val actionLookup = actor.actorActions.find { a => a.fullName == actionName }
           
           val action = actionLookup match {
