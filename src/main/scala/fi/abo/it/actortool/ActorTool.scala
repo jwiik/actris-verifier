@@ -385,7 +385,12 @@ object ActorTool {
     tmpTime = System.nanoTime
 
     // Create a pipeline of preprocessors
-    val preprocessor = InitActionNormaliser | ActionScheduleProcessor | ProcedureExpander | EnumLiteralToBvHandler /*| NetworkFlattener*/
+    val preprocessor = 
+      ImplicitNwInvariantHandler | 
+      InitActionNormaliser | 
+      ActionScheduleProcessor | 
+      ProcedureExpander | 
+      EnumLiteralToBvHandler 
     program = preprocessor.process(program)
     //println(new ASTPrinter().print(program))
     

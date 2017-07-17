@@ -20,6 +20,8 @@ trait RootVerStruct[T<:DFActor] extends VerStruct[T] {
 trait ChildVerStruct[T,P] extends VerStruct[T] {
   def parent: VerStruct[P]
   override def renamings = parent.renamings
+  override def declarations = parent.declarations
+  override def assumes = parent.assumes
 }
 
 class ActorVerStruct(
@@ -36,11 +38,12 @@ class ActorVerStruct(
   
 }
 
-class NwVerStruct(
+class NetworkVerStruct(
     override val entity: Network,
     override val declarations: List[BDecl],
     override val assumes: List[Boogie.Assume],
-    val stateChannelNames: Map[String,Id]
+    val stateChannelNames: Map[String,Id],
+    override val renamings: Map[String,Id]
     ) extends RootVerStruct[Network] {
   
   override def contracts = entity.contractActions
@@ -59,6 +62,24 @@ class ActionVerStruct(
   override def declarations = parent.declarations ::: actionDeclarations
   override def assumes = parent.assumes ::: actionAssumes
   def assignedVariables = AssignedVarsFinder.find(entity.body)
+  
+}
+
+class InstanceVerStruct(
+    override val parent: NetworkVerStruct,
+    override val entity: Instance
+    ) extends ChildVerStruct[Instance,Network] {
+  
+  override def namePrefix = parent.namePrefix + B.Sep + entity.id
+  
+}
+
+class SubActionVerStruct(
+    override val parent: InstanceVerStruct,
+    override val entity: AbstractAction
+    ) extends ChildVerStruct[AbstractAction,Instance] {
+  
+  override def namePrefix = parent.namePrefix + B.Sep + entity.fullName
   
 }
 
@@ -147,7 +168,7 @@ object VerStruct {
   }
   
   
-  def apply(network: Network, useContracts: Boolean, typeCtx: Resolver.Context) = {
+  def apply(network: Network, useContracts: Boolean) = {
     
     val decls = new ListBuffer[BDecl]
     val assumes = new ListBuffer[Boogie.Assume]
@@ -161,13 +182,7 @@ object VerStruct {
     decls ++= contractModeDecls
     assumes ++= contractModeAssumes
     
-    val nwInvariants = 
-      createTokenInvariants(
-          network.actorInvariants, 
-          network.channelInvariants, 
-          connections, 
-          typeCtx)
-    
+    // Add input/output port names as synonyms to the connected channels
     for (ip <- network.inports) {
       val ch = network.structure.get.getInputChannel(ip.id)
       ch match {
@@ -175,7 +190,6 @@ object VerStruct {
         case None =>
       }
     }
-    
     for (op <- network.outports) {
       val ch = network.structure.get.getOutputChannel(op.id)
       ch match {
@@ -183,8 +197,23 @@ object VerStruct {
         case None =>
       }
     }
+    
+    new NetworkVerStruct(
+        network,
+        decls.toList,
+        assumes.toList,
+        Map.empty, // State channels
+        renamings.toMap
+        )
           
-          
+  }
+  
+  def apply(parent: NetworkVerStruct, instance: Instance) = {
+    new InstanceVerStruct(parent,instance)
+  }
+  
+  def apply(parent: InstanceVerStruct, action: AbstractAction) = {
+    new SubActionVerStruct(parent,action)
   }
   
   protected def createUniquenessCondition(names: List[BDecl]): Boogie.Expr = {
@@ -241,39 +270,6 @@ object VerStruct {
       }
     }
     (decls.toList,assumes.toList)
-  }
-  
-  def createTokenInvariants(
-      nwInvariants: List[ActorInvariant], 
-      chInvariants: List[Invariant], 
-      connections: List[Connection],
-      typeCtx: Resolver.Context)  = {
-    val explicitTokensAsserts: Set[String] = (TokensFinder.visit(nwInvariants) ::: TokensFinder.visit(chInvariants)).toSet
-    val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
-    val implicitTokensAsserts = implicitTokensChs map { c =>
-      val predicate = FunctionApp("tokens",List(Id(c.id).withType(c.typ),IntLiteral(0)))
-      Resolver.resolveExpr(predicate, typeCtx) match {
-        case Resolver.Success(_) =>
-        case Resolver.Errors(errs) => assert(false,errs)
-      }
-      assert(predicate.typ != null)
-      ActorInvariant(Assertion(predicate,false,Some("Unread tokens might be left on channel " + c.id)),true,false)
-    }
-    nwInvariants ::: implicitTokensAsserts
-  }
-  
-  
-  object TokensFinder {
-    
-    def visit(invs: List[Invariant]): List[String] = invs.flatMap { x => visit(x.expr) }
-    
-    def visit(expr: Expr): List[String] =
-      expr match {
-        case And(left,right) => visit(left) ::: visit(right)
-        case FunctionApp("tokens",params) => List(params(0).asInstanceOf[Id].id)
-        case _ => Nil
-      }
-    
   }
   
 }

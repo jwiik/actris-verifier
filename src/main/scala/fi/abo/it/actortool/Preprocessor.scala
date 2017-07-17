@@ -339,6 +339,47 @@ case object RangeExpander extends BasicActorExprAndStmtReplacer {
   
 }
 
+case object ImplicitNwInvariantHandler extends Preprocessor {
+  
+  def process(program: List[TopDecl]): List[TopDecl] = {
+    for (unit <- program) yield {
+      unit match {
+        case nw: Network => generateInvariants(nw)
+        case _ => unit
+      }
+    }
+  }
+  
+  def generateInvariants(nw: Network): Network = {
+    
+    val connections = nw.structure.get.connections
+    
+    val explicitTokensAsserts: Set[String] = (TokensFinder.visit(nw.actorInvariants) ::: TokensFinder.visit(nw.channelInvariants)).toSet
+    val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
+    val implicitTokensAsserts = implicitTokensChs map { c =>
+      val predicate = FunctionApp("tokens",List(Id(c.id).withType(c.typ),IntLiteral(0)))
+      assert(predicate.typ != null)
+      ActorInvariant(Assertion(predicate,false,Some("Unread tokens might be left on channel " + c.id)),true,false)
+    }
+    
+    Network(nw.id, nw.parameters, nw.inports, nw.outports, nw.members ::: implicitTokensAsserts)
+  }
+  
+  object TokensFinder {
+    
+    def visit(invs: List[Invariant]): List[String] = invs.flatMap { x => visit(x.expr) }
+    
+    def visit(expr: Expr): List[String] =
+      expr match {
+        case And(left,right) => visit(left) ::: visit(right)
+        case FunctionApp("tokens",params) => List(params(0).asInstanceOf[Id].id)
+        case _ => Nil
+      }
+    
+  }
+  
+}
+
 case object EnumLiteralToBvHandler extends BasicActorExprAndStmtReplacer {
   
   def replace(stmt: List[Stmt]): List[Stmt] = EnumLiteralHandler.visitStmt(stmt)(Map.empty)
