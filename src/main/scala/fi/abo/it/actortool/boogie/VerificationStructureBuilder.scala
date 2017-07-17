@@ -81,28 +81,6 @@ trait VerificationStructureBuilder[T <: DFActor, V <: VerificationStructure[T]] 
   
 }
 
-object NeededOldFinder extends ASTVisitor[ListBuffer[(Id,Declaration)]] {
-  
-  def find(exps: List[Expr]) = {
-    val buffer = new ListBuffer[(Id,Declaration)]
-    for (e <- exps) visitExpr(e)(buffer)
-    buffer.toList
-  }
-  
-  def find(e: Expr) = {
-    val buffer = new ListBuffer[(Id,Declaration)]
-    visitExpr(e)(buffer)
-    buffer.toList
-  }
-  
-  override def visitExpr(expr: Expr)(implicit info: ListBuffer[(Id,Declaration)]) {
-    expr match {
-      case FunctionApp("old",List(id@Id(i))) => info += id -> Declaration(i+B.Sep+"old",id.typ,false,None)
-      case _ => super.visitExpr(expr)
-    }
-  }
-}
-
 
 class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val typeCtx: Resolver.Context, alwaysUseContracts: Boolean) 
          extends VerificationStructureBuilder[BasicActor, ActorVerificationStructure] {
@@ -148,7 +126,7 @@ class ActorVerificationStructureBuilder(val translator: StmtExpTranslator, val t
       (actor.inports:::actor.outports map { p => B.Assume(B.I(p.id) ==@ B.Int(0) && B.R(p.id) ==@ B.Int(0) && B.C(p.id) ==@ B.Int(0)) }):::
       (stateChans map { bd => B.Assume(B.I(bd.name) ==@ B.Int(0) && B.R(bd.name) ==@ B.Int(0) && B.C(bd.name) ==@ B.Int(0)) })
 
-    val priorityList = buildPriorityMap(actor,false, alwaysUseContracts)
+    val priorityList = buildPriorityMap(actor, false, alwaysUseContracts)
     
     val funDeclRenamings = (actor.functionDecls map { fd => (fd.name,Id(prefix+fd.name)) }).toMap
     
@@ -215,7 +193,7 @@ class NetworkVerificationStructureBuilder(val translator: StmtExpTranslator, val
     val explicitTokensAsserts = (tokensFinder.visit(userNwInvariants) ::: tokensFinder.visit(chInvariants)).toSet
     val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
     val implicitTokensAsserts = implicitTokensChs map { c =>
-      val predicate = FunctionApp("tokens",List(makeId(c.id,c.typ),IntLiteral(0)))
+      val predicate = FunctionApp("tokens",List(Id(c.id).withType(c.typ) ,IntLiteral(0)))
       Resolver.resolveExpr(predicate, typeCtx) match {
         case Resolver.Success(_) =>
         case Resolver.Errors(errs) => assert(false,errs)
