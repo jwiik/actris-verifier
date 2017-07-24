@@ -13,6 +13,14 @@ import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool._ 
 
 
+case class GuardTranslation(
+    val action: ActorAction,
+    val declarations: Seq[BDecl],
+    val renamings: Map[String,Id],
+    val pattern: Boogie.Expr,
+    val localGuard: Boogie.Expr,
+    val nonLocalGuard: Boogie.Expr)
+
 abstract class EntityTranslator[T] {
   
   val stmtTranslator = new StmtExpTranslator();
@@ -36,27 +44,28 @@ abstract class EntityTranslator[T] {
   def transSubActionFiringRules(
       instance: Instance, 
       action: AbstractAction, 
-      nwvs: NetworkVerificationStructure) = {
+      acvs: SubActionVerStruct) = {
     
     val firingCondsBuffer = new ListBuffer[Boogie.Expr]() // Gather firing conditions from each pattern
-    val renamings = nwvs.subActionRenamings(instance, action)
-    val replacementMap = nwvs.getEntityActionData(instance,action).replacements
+    //val renamings = nwvs.subActionRenamings(instance, action)
+    val renamings = acvs.renamings
+    val replacementMap = acvs.replacements
     
     for (ipat <- action.inputPattern) {
-      val cId = nwvs.connectionMap.getDst(instance.id,ipat.portId)
+      val cId = acvs.connectionMap.getDst(instance.id,ipat.portId)
       firingCondsBuffer += B.Int(ipat.rate) <= B.Urd(cId)
     }
     
     for (g <- action.guards) {
       val renamedGuard = IdReplacer.visitExpr(g)(replacementMap)
-      val transGuard = transExpr(renamedGuard)(renamings)
+      val transGuard = transExpr(renamedGuard,acvs)
       firingCondsBuffer += transGuard
     }
     
     firingCondsBuffer.reduceLeft((a,b) => a && b)
   }
   
-  def translateActorGuards(a: ActorAction, avs: ActorVerificationStructure): (Boogie.Expr,Boogie.Expr,Boogie.Expr,List[BDecl],Map[String,Id]) = {
+  def translateActorGuards(a: ActorAction, avs: RootVerStruct[BasicActor]): GuardTranslation = {
     val renamingsBuffer = new ListBuffer[(String,Id)]
     
     val replacementBuffer = new ListBuffer[(String,Expr)]
@@ -92,31 +101,34 @@ abstract class EntityTranslator[T] {
     
     val renamings = avs.renamings ++ renamingsBuffer.toMap
 
+    val transCtx = TranslatorContext(avs.renamings ++ renamingsBuffer.toMap, false)
+    
     val guards =
-       a.guards map { e => transExpr(e)(avs.renamings ++ renamingsBuffer.toMap) }
+       a.guards map { e =>  stmtTranslator.transExpr(e, TranslatorContext(avs.renamings ++ renamingsBuffer.toMap, false))  }
     // This version does not use variables local to the actions (input pattern variables)
     // It is used (at least) as assumptions in contract action checking
     val nonLocalGuards =
-       a.guards map { e => transExpr(e)(avs.renamings ++ replacementBuffer.toMap) }
+       a.guards map { e => stmtTranslator.transExpr(e, TranslatorContext(avs.renamings ++ replacementBuffer.toMap,false)) }
     
     val pattern = if (patterns.isEmpty) B.Bool(true) else patterns.reduceLeft((a,b) => a && b)
     val guard = if (guards.isEmpty) B.Bool(true) else guards.reduceLeft((a,b) => a && b)
     val nonLocalGuard = if (nonLocalGuards.isEmpty) B.Bool(true) else nonLocalGuards.reduceLeft((a,b) => a && b)
-    (pattern, guard, nonLocalGuard, inpatDeclBuffer.toList, renamings)
+    
+    GuardTranslation(a,inpatDeclBuffer.toSeq,renamingsBuffer.toMap,pattern,guard,nonLocalGuard)
   }
   
-  def translateFunctionDecl(avs: ActorVerificationStructure): List[Boogie.Function] = {
-    avs.functionDecls map {
+  def translateFunctionDecl(vs: ActorVerStruct): List[Boogie.Function] = {
+    vs.entity.functionDecls map {
       fd => {
         Boogie.Function(
-            avs.renamings(fd.name).id,
+            vs.renamings(fd.name).id,
             fd.inputs map { i => Boogie.BVar(i.id, B.type2BType(i.typ)) },
             Boogie.BVar("out", B.type2BType(fd.output)))
       }
     }
   }
   
-  def generateHavoc(assignables: Set[Assignable], renamings: Map[String,Expr]) = {
+  def generateHavoc(assignables: Set[Assignable], vs: VerStruct[_]) = {
     val asgn = new ListBuffer[Boogie.Stmt]
     for (ev <- assignables) {
       val hVar = Boogie.VarExpr(BMap.H)
@@ -130,24 +142,24 @@ abstract class EntityTranslator[T] {
       ev match {
         case fa@FieldAccessor(r,f) => {
           val fieldName = B.FieldName(r.typ.asInstanceOf[RefType].name, f);
-          val qExp2 = ((qR ==@ transExpr(r)(renamings)) && (qF ==@ Boogie.VarExpr(fieldName)))
+          val qExp2 = ((qR ==@ transExpr(r,vs)) && (qF ==@ Boogie.VarExpr(fieldName)))
           val frameCond = Boogie.Forall(List(Boogie.TVar("a")),qVars,Nil, (qExp1 || qExp2) )
           asgn += Boogie.Havoc(hVar)
           asgn += B.Assume(frameCond)
         }
         case id: Id => {
           if (id.typ.isRef) {
-            val qExp2 = qR ==@ transExpr(id)(renamings)
+            val qExp2 = qR ==@ transExpr(id,vs)
             val frameCond = Boogie.Forall(List(Boogie.TVar("a")),qVars,Nil,qExp1 || qExp2)
             asgn += Boogie.Havoc(hVar)
             asgn += B.Assume(frameCond)
           }
           else {
-            asgn += Boogie.Havoc(transExpr(ev)(renamings)) 
+            asgn += Boogie.Havoc(transExpr(ev,vs)) 
           }
         }
         case IndexAccessor(v,_) => {
-          asgn += Boogie.Havoc(transExpr(v)(renamings)) 
+          asgn += Boogie.Havoc(transExpr(v,vs)) 
           //throw new TranslationException(ev.pos, "")
         }
       }
@@ -155,35 +167,35 @@ abstract class EntityTranslator[T] {
     asgn.toList
   }
   
-  def transExprPrecondCheck(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
-    val ctx = TranslatorContext(renamings,true)
+  def transExprPrecondCheck(exp: Expr, vs: VerStruct[_]): Boogie.Expr = {
+    val ctx = TranslatorContext(vs.renamings,true,vs.stateChannelNames)
     stmtTranslator.transExpr(exp,ctx)
   }
   
-  def transExpr(id: String, t: Type)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
+  def transExpr(id: String, tp: Type, vs: VerStruct[_]): Boogie.Expr = {
     val i = Id(id)
-    i.typ = t
-    transExpr(i)
+    i.typ = tp
+    transExpr(i,vs)
   }
   
-  def transExpr(exp: Expr)(implicit renamings: Map[String,Expr]): Boogie.Expr = {
-    val ctx = TranslatorContext(renamings,false)
+  def transExpr(exp: Expr, vs: VerStruct[_]): Boogie.Expr = {
+    val ctx = TranslatorContext(vs.renamings,false,vs.stateChannelNames)
     stmtTranslator.transExpr(exp,ctx)
   }
   
-  def transStmt(stmts: List[Stmt])(implicit renamings: Map[String,Expr]): List[Boogie.Stmt] = {
-    val ctx = TranslatorContext(renamings,false)
+  def transStmt(stmts: List[Stmt], vs: VerStruct[_]): List[Boogie.Stmt] = {
+    val ctx = TranslatorContext(vs.renamings,false,vs.stateChannelNames)
     stmtTranslator.transStmt(stmts,ctx)
   }
   
-  def BAssume(chi: Invariant, renamings: Map[String,Expr]) = B.Assume(transExpr(chi.expr)(renamings))
+  def BAssume(chi: Invariant, vs: VerStruct[_]) = B.Assume(transExpr(chi.expr,vs))
   
-  def BAssert(chi: Invariant, msg: String, renamings: Map[String,Expr]) = {
+  def BAssert(chi: Invariant, msg: String, vs: VerStruct[_]) = {
     val completeMsg = chi.assertion.msg match {
       case None => msg
       case Some(m) => msg + ": " + m
     }
-    B.Assert(transExpr(chi.expr)(renamings), chi.expr.pos, completeMsg)
+    B.Assert(transExpr(chi.expr,vs), chi.expr.pos, completeMsg)
   }
   
   
@@ -201,7 +213,7 @@ class Translator(
     val stmtTranslator = new StmtExpTranslator();
     
     lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,true)
-    lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx)
+    lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,true)
     
     val bProgram = programCtx.program flatMap {
       case a: BasicActor => actorTranslator.translateEntity(a)

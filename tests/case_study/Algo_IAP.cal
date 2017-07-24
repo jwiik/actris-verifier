@@ -19,7 +19,8 @@ actor Algo_IAP ()
     guard AC_PRED_DIR[@] >= int(0,3)
   end
   
-  stream invariant rd@(AC_PRED_DIR) = 0 ==> state(start)
+  //stream 
+  invariant rd@(AC_PRED_DIR) = 0 ==> state(start)
   
   invariant state(pred) ==> int(1,8) <= count && count <= int(64,8)
   

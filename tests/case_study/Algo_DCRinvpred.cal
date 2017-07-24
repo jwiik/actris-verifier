@@ -80,7 +80,8 @@ actor Algo_DCRinvpred ()
 		ensures int(0,3) <= MODE[@] && MODE[@] <= int(2,3)
 	end
 	
-	stream invariant rd@(BTYPE) = 0 ==> state(read)
+	// stream
+	invariant rd@(BTYPE) = 0 ==> state(read)
 	
 	invariant mode(StartMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) != 0x000
 	invariant mode(InterMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTER) != 0x000 && (BTYPE[@] & ACCODED) != 0x000

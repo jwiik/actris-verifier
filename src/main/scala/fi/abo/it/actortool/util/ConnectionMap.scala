@@ -38,4 +38,6 @@ object ConnectionMap {
     }
     new ConnectionMapImpl(source.toMap,target.toMap, connections)
   }
+  
+  def empty = new ConnectionMapImpl(Map.empty,Map.empty,List.empty)
 }

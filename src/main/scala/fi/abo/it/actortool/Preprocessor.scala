@@ -83,7 +83,7 @@ case object ActionScheduleProcessor extends Preprocessor {
     var newMembers = {
       for (m <- members) yield {
         m match {
-          case ActorAction(labelOpt,init,inputPattern,outputPattern,guard,requires,ensures,variables,body) => {
+          case act@ActorAction(labelOpt,init,inputPattern,outputPattern,guard,requires,ensures,variables,body) => {
             var newBody = body
             var newGuards = guard
             var newEnsures = ensures
@@ -128,7 +128,7 @@ case object ActionScheduleProcessor extends Preprocessor {
               newEnsures = newEnsures :+ Assertion(Eq(Id("St#"),Id(s.initState)),true) 
             }
             
-            val action = ActorAction(labelOpt,init,inputPattern,outputPattern,newGuards,requires,newEnsures,variables,newBody)
+            val action = ActorAction(labelOpt,init,inputPattern,outputPattern,newGuards,requires,newEnsures,variables,newBody).setPos(act.pos)
             action.setPos(m.pos)
           }
           case _ => m
@@ -180,7 +180,7 @@ case object ProcedureExpander extends Preprocessor {
         case a: ActorAction => 
           val newDecls = collection.mutable.Set[Declaration]()
           val newBody = expandProcedureCalls(procedureDecls,newDecls,a.body)
-          List(ActorAction(a.label, a.init, a.inputPattern, a.outputPattern, a.guards, a.requires, a.ensures, a.variables ++ newDecls , newBody))
+          List(ActorAction(a.label, a.init, a.inputPattern, a.outputPattern, a.guards, a.requires, a.ensures, a.variables ++ newDecls , newBody).setPos(a.pos))
         case pd: ProcedureDecl => Nil 
         case x => List(x)
       }
@@ -243,7 +243,7 @@ case object ForEachExpander extends Preprocessor {
         case a: ActorAction => 
           val newDecls = collection.mutable.Set[Declaration]()
           val newBody = unrollLoops(newDecls, a.body)
-          ActorAction(a.label, a.init, a.inputPattern, a.outputPattern, a.guards, a.requires, a.ensures, a.variables ++ newDecls , newBody)
+          ActorAction(a.label, a.init, a.inputPattern, a.outputPattern, a.guards, a.requires, a.ensures, a.variables ++ newDecls , newBody).setPos(a.pos)
         case x => x
       }
     }
@@ -358,7 +358,6 @@ case object ImplicitNwInvariantHandler extends Preprocessor {
     val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
     val implicitTokensAsserts = implicitTokensChs map { c =>
       val predicate = FunctionApp("tokens",List(Id(c.id).withType(c.typ),IntLiteral(0)))
-      assert(predicate.typ != null)
       ActorInvariant(Assertion(predicate,false,Some("Unread tokens might be left on channel " + c.id)),true,false)
     }
     
@@ -438,7 +437,7 @@ case object OutputPatternNormaliser extends BasicActorExprAndStmtReplacer {
           val newVars = a.variables ++ declarations
           val newBody = a.body ++ assigns
           
-          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody)
+          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody).setPos(a.pos)
         case x => x
       }
     }
@@ -502,7 +501,7 @@ abstract class BasicActorExprAndStmtReplacer extends Preprocessor {
               }
               Declaration(d.id,d.typ,d.constant,value) 
           }
-          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody)
+          ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody).setPos(a.pos)
         case d: Declaration => {
           val value = d.value match {
             case Some(v) => Some(replace(v))

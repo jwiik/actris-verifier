@@ -53,7 +53,7 @@ object Inferencer {
     def generatePreconditionDisjunction(n: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
       val disjuncts: List[Expr] = n.contractActions flatMap { action => {
         val preconds: List[Expr] =
-          action.requiresExpr.flatMap { r =>
+          (action.requiresExpr ++ action.guards).flatMap { r =>
             getRequiredTokens(n.inports, r) match {
               case Some(tokens) => {
                 val antecedents: Iterable[Expr] = 

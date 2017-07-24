@@ -64,7 +64,8 @@ actor Addressing_simple ()
 		guard (BTYPE[@] & INTRA) = 0x000
 	end
 	
-	stream invariant rd@(BTYPE) = 0 ==> state(read)
+	//stream
+	invariant rd@(BTYPE) = 0 ==> state(read)
 	
 	invariant mode(StartMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) != 0x000
 	invariant mode(IntraMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTRA) != 0x000

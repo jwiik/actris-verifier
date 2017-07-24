@@ -12,8 +12,13 @@ import fi.abo.it.actortool.ActorTool.TranslationException
 import fi.abo.it.actortool.ActorTool.TranslationException
 
 object TranslatorContext {
-  def apply(renamings: Map[String,Expr], subBullet: Boolean) = new TranslatorContext(renamings,subBullet,Map.empty)
-  def apply(renamings: Map[String,Expr], subBullet: Boolean, stateChannels: Map[String,Expr]) = new TranslatorContext(renamings,subBullet,stateChannels)
+  
+  def apply(renamings: Map[String,Expr], subBullet: Boolean) = 
+    new TranslatorContext(renamings,subBullet,Map.empty)
+  
+  def apply(renamings: Map[String,Expr], subBullet: Boolean, stateChannels: Map[String,Expr]) = 
+    new TranslatorContext(renamings,subBullet,stateChannels)
+  
 }
 
 class TranslatorContext(val renamings: Map[String,Expr], val subBullet: Boolean, val stateChannels: Map[String,Expr]) {
@@ -26,7 +31,7 @@ class TranslatorContext(val renamings: Map[String,Expr], val subBullet: Boolean,
   }
 }
 
-class StmtExpTranslator() {
+class StmtExpTranslator {
   /*
    * Translation of statements and expressions
    */
@@ -361,6 +366,7 @@ class StmtExpTranslator() {
             case Id(id) => {
               context.stateChannels.get(id) match {
                 case Some(ch) => {
+                  assert(ch.typ.isChannel)
                   B.ChannelIdx(transExprI(ch),index)
                 }
                 case None => throw new RuntimeException()
@@ -447,11 +453,14 @@ class StmtExpTranslator() {
     val ch = {
       if (!params(0).typ.isChannel) {
         params(0) match {
-          case Id(id) => getVirtualChannel(id, params(0).typ)
+          case Id(id) => {
+            getVirtualChannel(id, params(0).typ)
+          }
           case _ => throw new RuntimeException()
         }
       }
       else {
+        assert(params(0).typ.isChannel)
         transExprI(params(0))
       }
     }
