@@ -10,7 +10,7 @@ class BasicActorTranslator(
     val checkContractActions: Boolean) extends EntityTranslator[BasicActor] {
   
   def translateEntity(actor: BasicActor): List[Boogie.Decl] = {
-    val avs = VerStruct(actor, checkContractActions)
+    val avs = VerStruct.forActor(actor, checkContractActions)
     translateActor(avs)
   }
   
@@ -45,9 +45,9 @@ class BasicActorTranslator(
     
     for (a <- avs.entity.actorActions) {
       if (!a.init) {
-        val higherPrioActions = avs.priorities(checkContractActions)(a)
+        val higherPrioActions = avs.priorities(a)
         val higherPrioGuards = higherPrioActions map { h => actionFiringRules(h) }
-        val vs = VerStruct(avs,a,gts(a))
+        val vs = VerStruct.forActorAction(avs,a,gts(a))
         decls ++= translateActorAction(a, vs, higherPrioGuards)
       }
     }
@@ -55,7 +55,7 @@ class BasicActorTranslator(
     val allGuards = new ListBuffer[(AbstractAction,Boogie.Expr)]()
     //val supersetTests = new ListBuffer[Boogie.Expr]()
     
-    for ((action,higherPrioActions) <- avs.priorities(checkContractActions)) {
+    for ((action,higherPrioActions) <- avs.priorities) {
       val (ownPattern,ownGuard) = nonLocalActionFiringRules(action)
       val negHigherPrioGuards = higherPrioActions map { a => { val (p,g) = nonLocalActionFiringRules(a); Boogie.UnaryExpr("!",p && g) } }
 
@@ -122,7 +122,7 @@ class BasicActorTranslator(
     
     val initAction = avs1.entity.actorActions.find( x => x.init ).get
     
-    val vs = VerStruct(
+    val vs = VerStruct.forActorAction(
         avs1,
         initAction,
         GuardTranslation(initAction,Seq.empty,Map.empty,B.Bool(true),B.Bool(true),B.Bool(true)))

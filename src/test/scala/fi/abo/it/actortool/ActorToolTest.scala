@@ -54,5 +54,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val ScheduleWeights = Map.empty[String,Int]
       val ScheduleXML = None
       val PrintXMLDescription = false
+      val ContractsToVerify = List.empty
     } 
 }

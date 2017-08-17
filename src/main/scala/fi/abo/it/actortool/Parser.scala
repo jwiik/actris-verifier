@@ -143,8 +143,14 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     })
   
   def functionDecl: Parser[FunctionDecl] =
-    filePositioned(("function" ~> ident ~ ("(" ~> repsep(formalParam,",") <~ ")") ~ ("-->" ~> typeName) ~ (":" ~> expression) <~ "end") ^^ {
-      case (name ~ inputs ~ output ~ body) => FunctionDecl(name,inputs,output,body)
+    filePositioned(
+        ("function" ~> ident ~ 
+            ("(" ~> repsep(formalParam,",") <~ ")") ~ 
+            ("-->" ~> typeName) ~ 
+            opt("var" ~> repsep(varDecl,",")) ~ 
+            (":" ~> expression) <~ "end") ^^ {
+      case (name ~ inputs ~ output ~ Some(varDecls) ~ body) => FunctionDecl(name,inputs,output,varDecls,body)
+      case (name ~ inputs ~ output ~ None ~ body) => FunctionDecl(name,inputs,output,Nil,body)
     })
   
   def procedureDecl: Parser[ProcedureDecl] =
@@ -203,13 +209,13 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
         ("action" | "initialize") ~ 
         repsep(inputPattern,",") ~ 
         ("==>" ~> repsep(outputPattern,",")) ~
+        ("guard" ~> repsep(expression,",") *) ~
         ("requires" ~> repsep(expression,",") *) ~
         ("ensures" ~> repsep(expression,",") *) ~
-        ("guard" ~> repsep(expression,",") *) ~
         opt("var" ~> repsep(varDecl,",")) ~
         ("do" ~> statementBody ?)
         <~ "end") ^^ {
-          case (id ~ label ~ inputs ~ outputs ~ requires ~ ensures ~ guard ~ vars  ~ stmtOpt) => 
+          case (id ~ label ~ inputs ~ outputs ~ guard ~ requires ~ ensures  ~ vars  ~ stmtOpt) => 
             val init = label == "initialize"
             val stmt = stmtOpt match {
               case Some(s) => s

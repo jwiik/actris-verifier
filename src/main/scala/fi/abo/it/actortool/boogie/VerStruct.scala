@@ -5,6 +5,7 @@ import fi.abo.it.actortool.schedule._
 import fi.abo.it.actortool.util.ConnectionMap
 import fi.abo.it.actortool.util.PriorityMapBuilder
 import collection.mutable.ListBuffer
+import fi.abo.it.actortool.util.GuardStateAnalyzer
 
 trait VerStruct[T] {
   def entity: T
@@ -19,13 +20,18 @@ trait VerStruct[T] {
   def chInvariants: Seq[ChannelInvariant] = Seq.empty
   def connectionMap: ConnectionMap = ConnectionMap.empty
   def translatedIoInvariants(t: StmtExpTranslator): Seq[Boogie.Expr] = Seq.empty
+  def guardStateVariables: Set[String] = Set.empty
+  def useContracts: Boolean
 }
 
 
 trait RootVerStruct[T<:DFActor] extends VerStruct[T] {
   def contracts: Seq[ContractAction]
-  def priorities(useContracts: Boolean) = 
-    PriorityMapBuilder.buildPriorityMap(entity, false, useContracts)
+  def priorities = PriorityMapBuilder.buildPriorityMap(entity, false, useContracts)
+  override def guardStateVariables = {
+    if (useContracts) GuardStateAnalyzer.analyze(entity.contractActions, entity.variables.filter(!_.constant))
+    else GuardStateAnalyzer.analyze(entity.actorActions, entity.variables.filter(!_.constant))
+  }
 }
 
 trait ChildVerStruct[T,P] extends VerStruct[T] {
@@ -38,17 +44,23 @@ trait ChildVerStruct[T,P] extends VerStruct[T] {
   override def nwInvariants: Seq[ActorInvariant] = parent.nwInvariants
   override def chInvariants: Seq[ChannelInvariant] = parent.chInvariants
   override def connectionMap: ConnectionMap = parent.connectionMap
-  override def translatedIoInvariants(t: StmtExpTranslator): Seq[Boogie.Expr] = parent.translatedIoInvariants(t)
+  
+  override def translatedIoInvariants(t: StmtExpTranslator): Seq[Boogie.Expr] = 
+    parent.translatedIoInvariants(t)
+    
+  override def guardStateVariables = parent.guardStateVariables
+  override def useContracts = parent.useContracts
 }
 
 trait ActionExecVerStruct[T,P] extends ChildVerStruct[T,P] {
-  def assignedVariables: Set[Assignable]
+  def assignedVariables: Set[Id]
 }
 
 class ActorVerStruct(
     override val entity: BasicActor,
     override val declarations: List[BDecl],
     override val assumes: List[Boogie.Assume],
+    override val useContracts: Boolean,
     val functionNames: Map[String,Id],
     override val stateChannelNames: Map[String,Id]
     ) extends RootVerStruct[BasicActor] {
@@ -65,7 +77,8 @@ class NetworkVerStruct(
     override val assumes: List[Boogie.Assume],
     override val stateChannelNames: Map[String,Id],
     override val renamings: Map[String,Id],
-    val ioInvariants: List[(Instance,List[Invariant])]
+    val ioInvariants: List[(Instance,List[Invariant])],
+    override val useContracts: Boolean
     ) extends RootVerStruct[Network] {
   
   override def contracts = entity.contractActions
@@ -79,7 +92,7 @@ class NetworkVerStruct(
   
   override def translatedIoInvariants(translator: StmtExpTranslator) = {
     (for ((e,invs) <- ioInvariants) yield {
-      val ivs = VerStruct(this, e)
+      val ivs = VerStruct.forInstance(this, e, useContracts)
       val ctx = TranslatorContext(ivs.renamings,false)
       for (i <- invs) yield {
         translator.transExpr(i.expr,ctx)
@@ -106,10 +119,31 @@ class ActionVerStruct(
   
 }
 
+class ScheduleVerStruct[P<:DFActor](
+    override val parent: VerStruct[P],
+    override val entity: ContractSchedule,
+    val actionDeclarations: Seq[BDecl],
+    val actionAssumes: Seq[Boogie.Assume],
+    val actionVariableInits: Seq[Expr],
+    val guard: GuardTranslation
+    ) extends ActionExecVerStruct[ContractSchedule,P] {
+  
+  override def namePrefix = parent.namePrefix + B.Sep + entity.contract.fullName
+  override def declarations = parent.declarations ++ actionDeclarations
+  override def assumes = parent.assumes ++ actionAssumes
+  override def assignedVariables = Set.empty
+  override def renamings = parent.renamings //++ guard.renamings
+  
+}
+
 class InstanceVerStruct(
-    override val parent: RootVerStruct[Network],
+    override val parent: VerStruct[Network],
     override val entity: Instance,
-    val paramRenamings: Map[String,Expr]) extends ChildVerStruct[Instance,Network] {
+    override val useContracts: Boolean,
+    val instanceDecls: Seq[BDecl],
+    val paramRenamings: Map[String,Expr],
+    override val guardStateVariables: Set[String],
+    override val stateChannelNames: Map[String,Id]) extends ChildVerStruct[Instance,Network] {
   
   override def namePrefix = parent.namePrefix + B.Sep + entity.id
   
@@ -117,6 +151,7 @@ class InstanceVerStruct(
     PriorityMapBuilder.buildPriorityMap(entity.actor, true, useContracts)
   
   override def renamings = parent.renamings ++ paramRenamings
+  override def declarations = parent.declarations ++ instanceDecls
   
 }
 
@@ -125,8 +160,8 @@ class SubActionVerStruct(
     override val entity: AbstractAction,
     val actionDecls: List[BDecl],
     val replacements: Map[Id,Expr],
-    val subactionRenamings: Map[String,Id]
-    ) extends ActionExecVerStruct[AbstractAction,Instance] {
+    val subactionRenamings: Map[String,Id],
+    override val assignedVariables: Set[Id]) extends ActionExecVerStruct[AbstractAction,Instance] {
   
   override def namePrefix = parent.namePrefix + B.Sep + entity.fullName
   override def connectionMap = parent.connectionMap
@@ -135,8 +170,6 @@ class SubActionVerStruct(
     parent.priorities(useContracts)
   }
   
-  override def assignedVariables = AssignedVarsFinder.find(entity.body)
-  
   override def renamings = parent.renamings ++ subactionRenamings
   override def declarations = parent.declarations ++ actionDecls
   
@@ -144,11 +177,11 @@ class SubActionVerStruct(
 
 object VerStruct {
   
-  def apply(actor: BasicActor, useContracts: Boolean) = {
+  def forActor(actor: BasicActor, useContracts: Boolean) = {
     val stmtTranslator = new StmtExpTranslator
     val decls = new ListBuffer[BDecl]
     val assumes = new ListBuffer[Boogie.Assume]
-    val stateChannelNames = collection.mutable.Map[String,Id]()
+    //val stateChannelNames = collection.mutable.Map[String,Id]()
     
     
     // Declaration of ports
@@ -160,11 +193,15 @@ object VerStruct {
       decls += BDecl(p.id,p.typ)
     }
     
+    val (stateDcls,stateChannelNames) = getStateChannels(actor)
+    
     // Declaration of virtual channels for actor variables
-    for (v <- actor.variables) {
-      stateChannelNames += v.id -> Id(v.id + B.Sep + "ch").withType(v.typ)
-      decls += BDecl(stateChannelNames(v.id).id, ChanType(v.typ))
-    }
+//    for (v <- actor.variables) {
+//      stateChannelNames += v.id -> Id(v.id + B.Sep + "ch").withType(v.typ)
+//      decls += BDecl(stateChannelNames(v.id).id, ChanType(v.typ))
+//    }
+    
+    decls ++= stateDcls
     
     assumes += B.Assume(createUniquenessCondition(decls.toList))
     
@@ -193,13 +230,14 @@ object VerStruct {
         actor,
         decls.toList,
         assumes.toList,
+        useContracts,
         funDeclRenamings.toMap,
         stateChannelNames.toMap
         )
   }
   
   
-  def apply(network: Network, useContracts: Boolean): RootVerStruct[Network] = {
+  def forNetwork(network: Network, useContracts: Boolean): RootVerStruct[Network] = {
     
     val stmtTranslator = new StmtExpTranslator
     
@@ -266,15 +304,17 @@ object VerStruct {
         assumes.toList,
         Map.empty, // State channels
         renamings.toMap,
-        ioInvariants.toList
-        )
+        ioInvariants.toList,
+        useContracts)
           
   }
   
-  def apply(parent: RootVerStruct[BasicActor], action: ActorAction, guard: GuardTranslation): ActionVerStruct = 
-    apply(parent,action,guard,false)
+  def forActorAction(
+      parent: RootVerStruct[BasicActor], 
+      action: ActorAction, 
+      guard: GuardTranslation): ActionVerStruct = forActorAction(parent,action,guard,false)
   
-  def apply(
+  def forActorAction(
       parent: RootVerStruct[BasicActor], 
       action: ActorAction, 
       guard: GuardTranslation,
@@ -317,10 +357,41 @@ object VerStruct {
   }
   
   
-  
-  
-  def apply(parent: RootVerStruct[Network], instance: Instance) = {
+  def forSchedule[P<:DFActor](
+      parent: VerStruct[P], 
+      schedule: ContractSchedule,
+      stateChannels: Seq[Id]): ScheduleVerStruct[P] = {
     
+    val decls = new ListBuffer[BDecl]
+    val assumes = new ListBuffer[Boogie.Assume]
+    
+    decls ++= stateChannels.map(s => BDecl(s.id,ChanType(s.typ)))
+    
+    if (schedule.entity.isActor) {
+      assumes ++= 
+        (parent.entity.inports ++ parent.entity.outports) map { 
+          p => B.Assume(B.I(p.id) ==@ B.R(p.id) && B.R(p.id) ==@ B.C(p.id)) 
+        }
+    }
+    assumes ++= stateChannels.map { case ch => B.Assume(B.C(ch.id) ==@ B.R(ch.id) + B.Int(1)) }
+    
+    val parentChannels = parent.declarations.filter { d => 
+      d.decl.x.t match {
+        case Boogie.IndexedType("Chan",_) => true
+        case _ => false
+      }
+    }
+    
+    assumes += B.Assume(createUniquenessCondition( parentChannels.toList ++ stateChannels.map{ x => BDecl(x.id,x.typ) }.toList ))
+    
+    new ScheduleVerStruct(parent,schedule,decls.toSeq,assumes.toList,Nil,null)
+  }
+  
+  
+  
+  def forInstance(parent: VerStruct[Network], instance: Instance, useContracts: Boolean) = {
+    
+    val decls = new ListBuffer[BDecl]
     val renamings = new ListBuffer[(String,Expr)]
     
     renamings ++= instance.actor.parameters.map(_.id).zip(instance.arguments)
@@ -335,19 +406,53 @@ object VerStruct {
       renamings += p.id -> Id(newName).withType(ChanType(p.portType))
     }
     
-//    for (v <- instance.actor.variables) {
-//      println(instance.actor.fullName, v.id)
-//    }
+    for (v <- instance.actor.variables) {
+      val vName = instance.id + B.Sep + v.id
+      decls += BDecl(vName,v.typ)
+      renamings += v.id -> Id(vName).withType(v.typ)
+    }
     
-    new InstanceVerStruct(parent, instance, renamings.toMap)
+    val guardVariables = {
+      if (useContracts) {
+        GuardStateAnalyzer.analyze(
+            instance.actor.contractActions, 
+            instance.actor.variables)
+      }
+      else { 
+        GuardStateAnalyzer.analyze(
+            instance.actor.actorActions, 
+            instance.actor.variables)
+      }
+    }
+    
+    val (stateDcls,stateChannelNames) = getStateChannels(instance.actor, instance.id)
+    decls ++= stateDcls
+    
+    
+    for (v <- instance.actor.variables) {
+      if (guardVariables.contains(v.id)) {
+        val newName = instance.id + B.Sep + v.id
+        decls += BDecl(newName,v.typ)
+        renamings +=  v.id -> Id(newName).withType(v.typ)
+      }  
+    }
+    
+    val assignedVariables = 
+      instance.actor.variables
+        .filter { v => !v.constant && guardVariables.contains(v.id) }
+        .map { v => Id(v.id).withType(v.typ) }
+    
+    new InstanceVerStruct(
+        parent, instance, useContracts, decls.toSeq, renamings.toMap, guardVariables,stateChannelNames)
   }
   
-  def apply(parent: InstanceVerStruct, action: AbstractAction) = {
+  def forSubAction(parent: InstanceVerStruct, action: AbstractAction) = {
     
     val instance = parent.entity
     
     val actor = instance.actor
     val vars = new ListBuffer[BDecl]()
+    val renamings = new ListBuffer[(String,Id)]
     
     val replacements = scala.collection.mutable.HashMap.empty[Id,Expr]
     
@@ -365,31 +470,32 @@ object VerStruct {
           }
         }
         
-        val patternVarRenamings: Map[String,Id] = {
-          if (instance.actor.isNetwork) Map.empty
-          else {
-            ((for (ipat <- ac.inputPattern) yield {
-              for (v <- ipat.vars) yield {
-                val inVar = instance.id + B.Sep + ipat.portId + B.Sep + v.id
-                vars += BDecl(inVar,B.Local(inVar,B.type2BType(v.typ)))
-                (v.id, Id(inVar).withType(v.typ))
-              }
-            }).flatten :::
-            (action.variables.map { 
-              v => {
-                val actionVar = instance.id + B.Sep + action.fullName + B.Sep + v.id
-                vars += BDecl(actionVar,B.Local(actionVar,B.type2BType(v.typ)))
-                (v.id,Id(actionVar).withType(v.typ))
-              }
-            })
-            ).toMap
+        if (!instance.actor.isNetwork) {
+          for (ipat <- ac.inputPattern) {
+            for (v <- ipat.vars) {
+              val inVar = instance.id + B.Sep + ipat.portId + B.Sep + v.id
+              vars += BDecl(inVar,B.Local(inVar,B.type2BType(v.typ)))
+              renamings += v.id -> Id(inVar).withType(v.typ)
+            }
+          }
+          for (v <- ac.variables) {
+            val actionVar = instance.id + B.Sep + action.fullName + B.Sep + v.id
+            vars += BDecl(actionVar,B.Local(actionVar,B.type2BType(v.typ)))
+            renamings += v.id -> Id(actionVar).withType(v.typ)
           }
         }
         
-        new SubActionVerStruct(parent, action, vars.toList, replacements.toMap, patternVarRenamings.toMap)
+        val assignedVars = AssignedVarsFinder.find(ac.body).map(_.id)
+        
+        val assignedVariables = 
+          instance.actor.variables
+          .filter { v => !v.constant && parent.guardStateVariables.contains(v.id) && assignedVars.contains(v.id) }
+          .map { v => Id(v.id).withType(v.typ) }
+        
+        new SubActionVerStruct(parent, action, vars.toList, replacements.toMap, renamings.toMap, assignedVariables.toSet)
       }
       case c: ContractAction => {
-        new SubActionVerStruct(parent, action, List.empty, Map.empty, Map.empty)
+        new SubActionVerStruct(parent, action, List.empty, Map.empty, Map.empty, Set.empty)
       }
     }
     
@@ -411,6 +517,20 @@ object VerStruct {
       }
       case Nil => Nil
     }
+  }
+  
+  protected def getStateChannels(actor: DFActor, prefix: String = "") = {
+    val stateChannelNames = collection.mutable.Map[String,Id]()
+    val decls = new ListBuffer[BDecl]();
+    
+    // Declaration of virtual channels for actor variables
+    for (v <- actor.variables.filter(!_.constant)) {
+      val name = if (prefix != "") prefix + B.Sep + v.id + B.Sep + "ch" else v.id + B.Sep + "ch"
+      stateChannelNames += v.id -> Id(name).withType(v.typ)
+      decls += BDecl(stateChannelNames(v.id).id, ChanType(v.typ))
+    }
+    
+    (decls,stateChannelNames.toMap)
   }
   
   protected def createContractModeDeclsAndAssumes(entity: DFActor) = {

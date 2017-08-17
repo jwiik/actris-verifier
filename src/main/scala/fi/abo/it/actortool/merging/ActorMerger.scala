@@ -60,7 +60,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             
             for (f <- actor.functionDecls) {
               val name = e.id+Sep+f.name
-              members += FunctionDecl(name,f.inputs,f.output,replaceStr(f.expr, actorVariables))
+              members += FunctionDecl(name,f.inputs,f.output,f.variables,replaceStr(f.expr, actorVariables))
               actorVariables += f.name -> Id(name)
             }
             actorVariablesMap += e -> actorVariables
@@ -112,7 +112,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           }
           for (f <- ba.functionDecls) {
             val name = ba.id+Sep+f.name
-            members += FunctionDecl(name,f.inputs,f.output,replaceStr(f.expr, actorVariables))
+            members += FunctionDecl(name,f.inputs,f.output,f.variables,replaceStr(f.expr, actorVariables))
             actorVariables += f.name -> Id(name)
           }
           val initActions = {

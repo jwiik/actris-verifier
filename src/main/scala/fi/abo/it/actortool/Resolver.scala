@@ -113,7 +113,12 @@ object Resolver {
   sealed class ActionContext(val action: AbstractAction, override val parentCtx: Context, override val vars: Map[String,Declaration]) extends ChildContext(action, parentCtx,vars)
   
   sealed class BasicContext(val action: ASTNode, override val parentCtx: Context) extends ChildContext(action, parentCtx, Map.empty)
-  sealed class FunctionBodyContext(val node: ASTNode, val inputs: Map[String,Declaration], override val parentCtx: Context) extends ChildContext(node,parentCtx,inputs)
+  
+  sealed class FunctionBodyContext(
+      val node: ASTNode, 
+      val inputs: Map[String,Declaration], 
+      val funVariables: Map[String,Declaration], 
+      override val parentCtx: Context) extends ChildContext(node,parentCtx,inputs++funVariables)
   
   sealed class QuantifierContext(val quantifier: Quantifier, override val parentCtx: Context, 
       override val vars: Map[String,Declaration]) extends ChildContext(quantifier,parentCtx,vars)
@@ -246,13 +251,14 @@ object Resolver {
             case pr: Priority => priority = Some(pr)
             case fd: FunctionDecl => {
               val inputs = (fd.inputs map { p => (p.id, p) }).toMap
-              val funCtx = new FunctionBodyContext(fd,inputs,ctx)
+              val vars = (fd.variables map { p => (p.id, p) }).toMap
+              val funCtx = new FunctionBodyContext(fd,inputs,vars,ctx)
               resolveExpr(funCtx, fd.expr, fd.output)
             }
             case pd: ProcedureDecl => {
               val inputs = (pd.inputs map { p => (p.id, p) }).toMap
               val vars = (pd.variables map { p => (p.id, p) }).toMap
-              val procCtx = new FunctionBodyContext(pd,inputs ++ vars,ctx)
+              val procCtx = new FunctionBodyContext(pd,inputs,vars,ctx)
               resolveStmt(procCtx, pd.body)
             }
           }
@@ -1009,7 +1015,7 @@ object Resolver {
           if (!v.typ.isInt && !v.typ.isBv) {
             ctx.error(v.pos, "Illegal comprehension variable type: " + v.typ.id)
           }
-          val cmprCtx = new FunctionBodyContext(cmpr,Map(v.id -> v),ctx)
+          val cmprCtx = new FunctionBodyContext(cmpr,Map(v.id -> v),Map.empty,ctx)
           val tExp = resolveExpr(cmprCtx, exp)
           cmpr.typ = MapType(v.typ,tExp,lstType.size)
         }
@@ -1422,7 +1428,7 @@ object Resolver {
             ctx.error(iterand.pos, "Foreach loops has to iterate over lists, found: " + iterT.id)
           }
         }
-        val loopCtx = new FunctionBodyContext(loop,Map(v.id -> v),ctx)
+        val loopCtx = new FunctionBodyContext(loop,Map(v.id -> v),Map.empty,ctx)
         for (i <- invs) resolveExpr(loopCtx,i,BoolType)
         resolveStmt(loopCtx,body)
       case IfElse(ifCond,ifStmt,elseIfs,elseStmt) =>

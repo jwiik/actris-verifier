@@ -14,7 +14,7 @@ import fi.abo.it.actortool._
 
 
 case class GuardTranslation(
-    val action: ActorAction,
+    val action: AbstractAction,
     val declarations: Seq[BDecl],
     val renamings: Map[String,Id],
     val pattern: Boogie.Expr,
@@ -128,7 +128,7 @@ abstract class EntityTranslator[T] {
     }
   }
   
-  def generateHavoc(assignables: Set[Assignable], vs: VerStruct[_]) = {
+  def generateHavoc[T<:Assignable](assignables: Set[T], vs: VerStruct[_]) = {
     val asgn = new ListBuffer[Boogie.Stmt]
     for (ev <- assignables) {
       val hVar = Boogie.VarExpr(BMap.H)

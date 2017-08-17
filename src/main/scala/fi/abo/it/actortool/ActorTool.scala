@@ -95,6 +95,7 @@ object ActorTool {
     val PromelaPrint: Boolean
     val PromelaChanSize: Int
     val PrintXMLDescription: Boolean
+    val ContractsToVerify: List[(String,String)]
     
     final lazy val help = "actortool [option] <filename>+\n"
   }
@@ -116,7 +117,7 @@ object ActorTool {
     var aSoundnessChecks = false
     var aSmokeTest = false
     var aReplaceMaps = false
-    var aBoogieTimeout = 300
+    var aBoogieTimeout = if (DEBUG) 1000000 else 300
     var aAssumeInvs = if (DEBUG) false else true
     var aPrintInvariantStats = false
     var aToVerify: List[String] = List.empty
@@ -129,6 +130,7 @@ object ActorTool {
     var aScheduleWeights: Map[String,Int] = Map.empty
     var aScheduleXML: Option[File] = None
     var aPrintXMLDescription: Boolean = false
+    var aContractsToVerify: List[(String,String)] = List.empty
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -201,6 +203,26 @@ object ActorTool {
             }
             case None =>
               reportCommandLineError("parameter toVerify takes a comma-separated list of components to verify.")
+              return None
+          }
+        }
+        case Param("contractsToVerify") => {
+          value match {
+            case Some(list) => {
+              val strings = list.split(",").toList
+              for (s <- strings) {
+                val componentName = s.split("\\.")
+                if (componentName.size != 2) {
+                  reportCommandLineError("parameter contractsToVerify takes contracts in the format <Component>.<Contract>")
+                  return None
+                }
+                else {
+                  aContractsToVerify = aContractsToVerify :+ (componentName(0), componentName(1))
+                }
+              }
+            }
+            case None =>
+              reportCommandLineError("parameter contractsToVerify takes a comma-separated list of components to verify.")
               return None
           }
         }
@@ -303,7 +325,6 @@ object ActorTool {
       }
       file
     }
-
     Some(new CommandLineParameters {
       val BoogiePath = aBoogiePath
       val Files = aFiles
@@ -332,6 +353,7 @@ object ActorTool {
       val ScheduleWeights = aScheduleWeights
       val ScheduleXML = aScheduleXML
       val PrintXMLDescription = aPrintXMLDescription
+      val ContractsToVerify = aContractsToVerify
     })
   }
 

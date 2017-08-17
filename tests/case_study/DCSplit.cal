@@ -48,21 +48,23 @@ actor DCSplit()
 	  ensures DC[@] = IN[@]
 	end
 	
-	invariant int(0,8) <= count && count < int(64,8)
-	invariant (rd@(IN) % 64) = bv2int(count)
-	invariant rd@(IN) = 0 ==> tot@(DC) = 0
-	invariant rd@(IN) < 2 ==> tot@(AC) = 0
-	invariant rd@(IN) > 0 ==> tot@(DC) = 1 && DC[@] = IN[@]
-	invariant rd@(IN) > 0 ==> tot@(AC) = rd@(IN)-1
+	stream invariant int(0,8) <= count && count < int(64,8)
+	stream invariant (rd@(IN) % 64) = bv2int(count)
+	stream invariant rd@(IN) = 0 ==> tot@(DC) = 0
+	stream invariant rd@(IN) < 2 ==> tot@(AC) = 0
+	stream invariant rd@(IN) > 0 ==> tot@(DC) = 1 && DC[@] = IN[@]
+	stream invariant rd@(IN) > 0 ==> tot@(AC) = rd@(IN)-1
 
 	dc: action IN:[ x ] ==> DC:[ x ]
 	guard
 		count = int(0,8)
+	ensures count = int(1,8)
 	do
 		count := int(1,8);
 	end
 
 	ac: action IN:[ x ] ==> AC:[ x ]
+	ensures count = (prev(count) + int(1,8)) & int(63,8)
 	do
 		// This actually limits count to 63, equivalent to '(count+1) mod 64' it seems ...
 		count := (count + int(1,8)) & int(63,8);

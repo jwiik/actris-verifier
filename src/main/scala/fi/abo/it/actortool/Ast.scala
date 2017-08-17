@@ -261,7 +261,7 @@ sealed case class ChannelInvariant(override val assertion: Assertion, override v
   override def isChannelInvariant = true
 }
 
-sealed case class FunctionDecl(val name: String, val inputs: List[Declaration], val output: Type, val expr: Expr) extends Member {
+sealed case class FunctionDecl(val name: String, val inputs: List[Declaration], val output: Type, val variables: List[Declaration], val expr: Expr) extends Member {
   override def isFunctionDecl = true
 }
 

@@ -12,7 +12,7 @@ class NetworkTranslator(
 
   
   def translateEntity(network: Network): List[Boogie.Decl] = {
-    val nwvs = VerStruct(network,false)
+    val nwvs = VerStruct.forNetwork(network,false)
     translateNetwork(nwvs)
   }
   
@@ -82,7 +82,7 @@ class NetworkTranslator(
     }
     
     for (inst <- entities) {
-      val ivs = VerStruct(nwvs, inst)
+      val ivs = VerStruct.forInstance(nwvs, inst, useContracts)
       
       val actor = inst.actor
       
@@ -128,7 +128,7 @@ class NetworkTranslator(
     val nwFiringRules = new ListBuffer[Boogie.Expr]()
     
     for (inst <- nwvs.entities) {
-      val ivs = VerStruct(nwvs, inst)
+      val ivs = VerStruct.forInstance(nwvs, inst, useContracts)
       val actor = inst.actor
       
       /// This list includes contract actions if the entity has such, otherwise basic actions
@@ -136,7 +136,7 @@ class NetworkTranslator(
       
       val firingRules = (priorityList.keys map { 
         ca => 
-          val acvs = VerStruct(ivs, ca)
+          val acvs = VerStruct.forSubAction(ivs, ca)
           (ca, transSubActionFiringRules(inst, ca, acvs)) 
       }).toMap
       
@@ -146,7 +146,7 @@ class NetworkTranslator(
           
           val higherPrioFiringRules = higherPrioActions map {a => firingRules(a) }
           
-          val acvs = VerStruct(ivs, ca)
+          val acvs = VerStruct.forSubAction(ivs, ca)
           val subActorStmt = transSubActionExecution(inst, ca, acvs, firingRules(ca))
           boogieProcs += B.createProc(Uniquifier.get(procName),subActorStmt,smokeTest)
         }

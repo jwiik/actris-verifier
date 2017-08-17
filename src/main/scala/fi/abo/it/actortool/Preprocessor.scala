@@ -93,7 +93,12 @@ case object ActionScheduleProcessor extends Preprocessor {
                 for (t <- s.transitions.filter { t => t.action == labelOpt.get }) yield {
                    val guard = Eq(Id("St#"),Id(t.from))
                    val stUpdate = (guard, List(Assign(Id("St#"),Id(t.to))))
-                   val stFromTo = (Eq(FunctionApp("prev",List(Id("St#"))),Id(t.from)), Eq(Id("St#"),Id(t.to)))
+                   val stFromTo = 
+                     (
+                         Eq(FunctionApp("prev",List(Id("St#"))),Id(t.from)), 
+                         //Eq(FunctionApp("next",List(Id("St#"))),Id(t.to))
+                         Eq(Id("St#"),Id(t.to))
+                     )
                    (guard,stUpdate,stFromTo)
                 }
               }
@@ -118,7 +123,11 @@ case object ActionScheduleProcessor extends Preprocessor {
                 newEnsures = newEnsures :+ Assertion(to,true) 
               }
               else {
-                newEnsures = newEnsures :+ Assertion(stFromTo.map{ case (from,to) => Implies(from,to): Expr }.reduceLeft((a,b) => And(a,b)),true)
+                newEnsures = newEnsures :+ Assertion(
+                    stFromTo
+                      .map{ case (from,to) => Implies(from,to): Expr }
+                      .reduceLeft((a,b) => And(a,b)),
+                    true)
               }
               
             }

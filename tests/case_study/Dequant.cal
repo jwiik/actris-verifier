@@ -49,6 +49,8 @@ actor Dequant()
 	
 	contract QP:1, DC:1, AC:63 ==> OUT:64 end
 	
+	stream invariant rd@(QP) = 0 ==> state(start)
+	
 	invariant tot@(OUT) = rd@(DC) + rd@(AC)
 	invariant state(start) ==> ( 
 		(rd@(QP) = 0 && rd@(DC) = 0 && rd@(AC) = 0 && tot@(OUT) = 0) || 
@@ -74,6 +76,7 @@ actor Dequant()
 	int(size=2) round;
 
 	get_qp: action QP:[ q ], DC:[ i ] ==> OUT:[ i ]
+	ensures count = int(0,7)
 	do
 		quant := q;
 		round := bvresize((q & int(1,6)) ^ int(1,6), 2);
@@ -83,6 +86,7 @@ actor Dequant()
 	done: action ==>
 	guard
 		count = int(63,7)
+	ensures count = int(63,7)
 	end
 
 	function abs(int(size=13) x) --> int(size=13) :
@@ -94,6 +98,7 @@ actor Dequant()
 	end
 
 	ac: action AC:[ i ] ==> OUT:[ saturate(o) ]
+	ensures count = prev(count) + int(1,7)
 	var
 		int(size=13) v = bvresize(quant,13) * ((abs(i) << int(1,13)) + int(1,13)) - bvresize(round,13),
 		int(size=13) o =

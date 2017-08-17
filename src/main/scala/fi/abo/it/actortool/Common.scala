@@ -271,18 +271,18 @@ object TokensDefFinder extends ASTVisitor[ListBuffer[(String, Expr)]] {
   }
 }
 
-object AssignedVarsFinder extends ASTVisitor[collection.mutable.Set[Assignable]] {
+object AssignedVarsFinder extends ASTVisitor[collection.mutable.Set[Id]] {
   
-  def find(stmt: List[Stmt]): Set[Assignable] = {
-    val set = collection.mutable.Set[Assignable]()
+  def find(stmt: List[Stmt]): Set[Id] = {
+    val set = collection.mutable.Set[Id]()
     visitStmt(stmt)(set)
     set.toSet
   }
   
-  override def visitStmt(stmt: Stmt)(implicit info: collection.mutable.Set[Assignable]) {
+  override def visitStmt(stmt: Stmt)(implicit info: collection.mutable.Set[Id]) {
     stmt match {
       case Assign(id, exp) => info += id
-      case MapAssign(id, exp) => info += id
+      case MapAssign(id, exp) => info += id.exp.asInstanceOf[Id]
       case x => super.visitStmt(x)
     }
   }

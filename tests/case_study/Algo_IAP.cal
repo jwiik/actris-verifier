@@ -19,7 +19,7 @@ actor Algo_IAP ()
     guard AC_PRED_DIR[@] >= int(0,3)
   end
   
-  //stream 
+  stream 
   invariant rd@(AC_PRED_DIR) = 0 ==> state(start)
   
   invariant state(pred) ==> int(1,8) <= count && count <= int(64,8)
@@ -76,13 +76,14 @@ actor Algo_IAP ()
   end
 
   skip: action AC_PRED_DIR:[ s ] ==>
-  guard
-    s < int(0,3)
+  guard s < int(0,3)
+  ensures count = int(64,8)
   do
     count := int(64,8);
   end
 
   start: action AC_PRED_DIR:[ s ], PTR:[ p ] ==>
+  ensures count = int(1,8)
   do
     count := int(1,8);
     pred_ptr := p;
@@ -91,8 +92,8 @@ actor Algo_IAP ()
   end
 
   advance: action ==>
-  guard
-    count = int(64,8)
+  guard count = int(64,8)
+  ensures count = int(64,8)
   do
     comp := comp + int(1,4);
     if comp = int(6,4) then
@@ -106,6 +107,7 @@ actor Algo_IAP ()
   end
 
   copy: action PQF_AC:[ ac ] ==> QF_AC:[ pred_ ]
+  ensures count = prev(count) + int(1,8)
   var
     int(size=13) pred_ := ac , 
     int(size=4) v = bvresize (count & int(7,8), 4) ,
