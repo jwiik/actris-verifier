@@ -1,0 +1,16 @@
+actor ForEach int x ==> int y:
+  
+  List(type: int, size=5) list;
+  
+  action x:[i] ==> y:[i]
+  var 
+    int sum;
+  do
+    sum := 0;
+    foreach int s in (0 .. 5)
+    do
+      sum := sum + s*i;
+    end
+  end
+
+end

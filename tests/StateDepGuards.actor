@@ -1,0 +1,33 @@
+actor Alternate int x ==> int y:
+  
+  stream invariant rd(x) % 3 = 0 ==> state(a)
+  stream invariant rd(x) % 3 = 1 ==> state(b)
+  stream invariant rd(x) % 3 = 2 ==> state(c)
+  
+  plus: 
+  action x:[i] ==> y:[i+i] end
+  
+  minus:
+  action x:[i] ==> y:[i-i] end
+  
+  schedule fsm a:
+    a ( plus ) --> b;
+    b ( plus ) --> c;
+    c ( minus ) --> a;
+  end
+  
+end
+
+network A int x ==> int y:
+
+  contract x:3 ==> y:3 end
+  
+  invariant rd(x) % 3 = 0
+  
+  entities
+    a = Alternate();
+  end
+  
+  structure x --> a.x; a.y --> y end
+
+end

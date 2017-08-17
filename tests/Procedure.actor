@@ -1,0 +1,19 @@
+actor Procedure int x ==> int y:
+  
+  int m;
+  
+  action x:[i] ==> y:[m]
+  do
+    m := i
+    proc(m)
+  end
+  
+  procedure proc(int x)
+  var
+    int m
+  begin
+    m := 2*x;
+    x := m+2;
+  end
+
+end
