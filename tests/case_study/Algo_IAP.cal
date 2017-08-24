@@ -1,3 +1,5 @@
+
+@merge
 actor Algo_IAP () 
   int(size=13) PQF_AC, int(size=11) PTR, int(size=3) AC_PRED_DIR 
   ==> 

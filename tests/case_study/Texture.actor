@@ -6,8 +6,6 @@ network Texture
   StartMode:
   contract BTYPE:3 ==> 
     guard (BTYPE[@] & NEWVOP) != 0x000
-    requires BTYPE[@+1] = 0x000
-    requires BTYPE[@+2] = 0x000
   end
   
   OtherMode:

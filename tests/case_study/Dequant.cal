@@ -41,7 +41,7 @@ ENDCOPYRIGHT
 //
 // MPEG-4 inverse quantization function
 
-
+@merge
 actor Dequant()
 	int(size=13) DC, int(size=13) AC, int(size=6) QP
 		==>

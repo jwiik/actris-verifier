@@ -1,0 +1,11 @@
+actor Broadcast int(size=12) X ==> int(size=12) Y1, int(size=12) Y2:
+  main: action X:[t] ==> Y1:[t], Y2:[t] end
+end
+
+actor Broadcast3 int(size=12) X ==> int(size=12) Y1, int(size=12) Y2, int(size=12) Y3:
+  main: action X:[t] ==> Y1:[t], Y2:[t], Y3:[t] end
+end
+
+actor Broadcast2_9 int(size=9) X ==> int(size=9) Y1, int(size=9) Y2:
+  main: action X:[t] ==> Y1:[t], Y2:[t] end
+end

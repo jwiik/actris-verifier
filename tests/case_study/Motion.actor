@@ -1,0 +1,71 @@
+network Motion 
+  int(size=12) BTYPE, int(size=9) TEX, int(size=9) MV ==> int(size=9) VID:
+  
+  NewVop: contract BTYPE:3 ==>
+    guard (BTYPE[@] & NEWVOP) != int(0,12)
+  end
+  
+  TexOnly: contract BTYPE:1, TEX:64 ==> VID:64
+    guard (BTYPE[@] & NEWVOP) = int(0,12)
+    guard (BTYPE[@] & INTRA) != int(0,12)
+  end
+  
+  MotionOnlyVec: contract BTYPE:1, MV:2 ==> VID:64
+    guard (BTYPE[@] & NEWVOP) = int(0,12)
+    guard (BTYPE[@] & INTRA) = int(0,12)
+    guard (BTYPE[@] & ACCODED) = int(0,12)
+    guard (BTYPE[@] & MOTION) != int(0,12)
+  end
+  
+  MotionTexVec: contract BTYPE:1, MV:2, TEX:64 ==> VID:64
+    guard (BTYPE[@] & NEWVOP) = int(0,12)
+    guard (BTYPE[@] & INTRA) = int(0,12)
+    guard (BTYPE[@] & ACCODED) != int(0,12)
+    guard (BTYPE[@] & MOTION) != int(0,12)
+  end
+  
+  MotionOnlyNoVec: contract BTYPE:1 ==> VID:64
+    guard (BTYPE[@] & NEWVOP) = int(0,12)
+    guard (BTYPE[@] & INTRA) = int(0,12)
+    guard (BTYPE[@] & ACCODED) = int(0,12)
+    guard (BTYPE[@] & MOTION) = int(0,12)
+  end
+  
+  MotionTexNoVec: contract BTYPE:1, TEX:64 ==> VID:64
+    guard (BTYPE[@] & NEWVOP) = int(0,12)
+    guard (BTYPE[@] & INTRA) = int(0,12)
+    guard (BTYPE[@] & ACCODED) != int(0,12)
+    guard (BTYPE[@] & MOTION) = int(0,12)
+  end
+  
+  entities
+    btype_bc = Broadcast3();
+    vid_bc = Broadcast2_9();
+    add = Algo_Add();
+    address = Mgnt_Address();
+    buffer = Mgnt_Framebuf();
+    interpolation = Algo_Interp_HalfpelBilinearRoundingControl();
+  end
+
+  structure
+    cBTYPE: BTYPE --> btype_bc.X;
+    cBTYPE_add: btype_bc.Y1 --> add.BTYPE;
+    cBTYPE_address: btype_bc.Y2 --> address.BTYPE;
+    cBTYPE_buffer: btype_bc.Y3 --> buffer.BTYPE;
+    
+    cTEX: TEX --> add.TEX;
+    cMV: MV --> address.MV;
+    
+    cVID: add.VID --> vid_bc.X;
+    cVID_VID: vid_bc.Y1 --> VID;
+    cVID_buffer: vid_bc.Y2 --> buffer.WD;
+    
+    cRA: address.RA --> buffer.RA;
+    cWA: address.WA --> buffer.WA;
+    cHalfpel: address.halfpel --> interpolation.halfpel;
+    
+    cRD: buffer.RD --> interpolation.RD;
+    cMOT: interpolation.MOT --> add.MOT
+  end
+
+end

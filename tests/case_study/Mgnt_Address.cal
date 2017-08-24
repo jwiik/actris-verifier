@@ -11,6 +11,7 @@
 //              A PARTICULAR PURPOSE, OR AGAINST INFRINGEMENT.
 // Frame buffer address generation for motion compensation
 
+@merge
 actor Mgnt_Address ()
 	int(size=9) MV, 
 	int(size=12) BTYPE 
@@ -19,6 +20,28 @@ actor Mgnt_Address ()
 	int(size=24) WA, 
 	int(size=4) halfpel :
 
+
+	NewVop: contract BTYPE:3 ==>
+      guard (BTYPE[@] & NEWVOP) != int(0,12)
+    end
+	
+	NoMotion: contract BTYPE:1 ==> WA:64
+      guard (BTYPE[@] & NEWVOP) = int(0,12)
+      guard (BTYPE[@] & INTRA) != int(0,12)
+    end
+
+    Motion: contract BTYPE:1, MV:2 ==> WA:64, RA:81, halfpel:1
+      guard (BTYPE[@] & NEWVOP) = int(0,12)
+      guard (BTYPE[@] & INTRA) = int(0,12)
+      guard (BTYPE[@] & MOTION) != int(0,12)
+    end
+    
+    Neither: contract BTYPE:1 ==> WA:64, RA:81, halfpel:1
+      guard (BTYPE[@] & NEWVOP) = int(0,12)
+      guard (BTYPE[@] & INTRA) = int(0,12)
+      guard (BTYPE[@] & MOTION) = int(0,12)
+    end
+    
 	// Frame buffer
 	//  * sized for max width, max height + half the search window.
 	//  * pixels are written/read ring-buffer fashion
@@ -26,30 +49,30 @@ actor Mgnt_Address ()
 	//    over-writing motion comp pixels from the last frame
 	//  * luma, chroma_u, chroma_v components are separated
 	//  * addressing is pixel-based [x + w * y]
-	int maxw_in_pixels = MAXW_IN_MB * 16;
+	int(size=32) maxw_in_pixels = bvresize(MAXW_IN_MB,32) * int(16,32);
 
-	int maxh_in_pixels = MAXH_IN_MB * 16;
+	int(size=32) maxh_in_pixels = bvresize(MAXH_IN_MB,32) * int(16,32);
 
-	int half_search_in_pixels = SEARCHWIN_IN_MB * 8 + 16;
+	int(size=32) half_search_in_pixels = SEARCHWIN_IN_MB * int(8,32) + int(16,32);
 
-	int luma_pixel_offset = maxw_in_pixels * half_search_in_pixels;
+	int(size=32) luma_pixel_offset = maxw_in_pixels * half_search_in_pixels;
 
-	int chroma_pixel_offset = luma_pixel_offset / 4;
+	int(size=32) chroma_pixel_offset = luma_pixel_offset / int(4,32);
 
-	int max_luma_pixels = maxw_in_pixels * maxh_in_pixels + luma_pixel_offset;
+	int(size=32) max_luma_pixels = maxw_in_pixels * maxh_in_pixels + luma_pixel_offset;
 
-	int max_chroma_pixels = max_luma_pixels / 4;
+	int(size=32) max_chroma_pixels = max_luma_pixels / int(4,32);
 
-	int luma_base = 0;
+	int(size=32) luma_base = int(0,32);
 
-	int chroma_u_base = max_luma_pixels;
+	int(size=32) chroma_u_base = max_luma_pixels;
 
-	int chroma_v_base = chroma_u_base + max_chroma_pixels;
+	int(size=32) chroma_v_base = chroma_u_base + max_chroma_pixels;
 
 	// Pointers to the start of the ring buffers
-	int(size=24) luma_write_ring_start := 0;
+	int(size=24) luma_write_ring_start := int(0,24);
 
-	int(size=24) chroma_write_ring_start := 0;
+	int(size=24) chroma_write_ring_start := int(0,24);
 
 	int(size=24) luma_read_ring_start;
 
@@ -86,29 +109,29 @@ actor Mgnt_Address ()
 	// Set up for next vop - start reading from the prior write location.
 	procedure advance_vop()
 	begin
-		vop_luma_width := (vop_width << 4);
-		vop_luma_height := (vop_height << 4);
-		vop_chroma_width := (vop_width << 3);
-		vop_chroma_height := (vop_height << 3);
+		vop_luma_width := (bvresize(vop_width,9) << int(4,9));
+		vop_luma_height := (bvresize(vop_height,9) << int(4,9));
+		vop_chroma_width := (bvresize(vop_width,9) << int(3,9));
+		vop_chroma_height := (bvresize(vop_height,9) << int(3,9));
 		// Read ring buffers now start from previous write location.
 		// Move write location ahead by the offset value.
 		luma_read_ring_start := luma_write_ring_start;
-		luma_write_ring_start := luma_write_ring_start - luma_pixel_offset;
-		if luma_write_ring_start < 0 then
-			luma_write_ring_start := luma_write_ring_start + max_luma_pixels;
+		luma_write_ring_start := bvresize(bvresize(luma_write_ring_start,32) - luma_pixel_offset,24);
+		if luma_write_ring_start < int(0,24) then
+			luma_write_ring_start := bvresize(bvresize(luma_write_ring_start,32) + max_luma_pixels, 24);
 		end
 		chroma_read_ring_start := chroma_write_ring_start;
-		chroma_write_ring_start := chroma_write_ring_start - chroma_pixel_offset;
-		if chroma_write_ring_start < 0 then
-			chroma_write_ring_start := chroma_write_ring_start + max_chroma_pixels;
+		chroma_write_ring_start := bvresize(bvresize(chroma_write_ring_start,32) - chroma_pixel_offset,24);
+		if chroma_write_ring_start < int(0,24) then
+			chroma_write_ring_start := bvresize(bvresize(chroma_write_ring_start,32) + max_chroma_pixels,24);
 		end
-		next_mbx := 0;
-		next_mby := 0;
-		next_comp := 0;
-		next_luma_x := 0;
-		next_luma_y := 0;
-		next_chroma_x := 0;
-		next_chroma_y := 0;
+		next_mbx := int(0,9);
+		next_mby := int(0,9);
+		next_comp := int(0,9);
+		next_luma_x := int(0,24);
+		next_luma_y := int(0,24);
+		next_chroma_x := int(0,24);
+		next_chroma_y := int(0,24);
 	end
 
 	// Values used to form motion-compensation addresses
@@ -140,48 +163,48 @@ actor Mgnt_Address ()
 	procedure advance_block()
 	begin
 	// Parameters for buffer addressing
-		current_w := if next_comp < 4 then
-			vop_luma_width
+		current_w := if next_comp < int(4,9) then
+			bvresize(vop_luma_width,24)
 		else
-			vop_chroma_width
+			bvresize(vop_chroma_width,24)
 		end;
-		current_h := if next_comp < 4 then
-			vop_luma_height
+		current_h := if next_comp < int(4,9) then
+			bvresize(vop_luma_height,24)
 		else
-			vop_chroma_height
+			bvresize(vop_chroma_height,24)
 		end;
-		current_size := if next_comp < 4 then
-			max_luma_pixels
+		current_size := if next_comp < int(4,9) then
+			bvresize(max_luma_pixels,24)
 		else
-			max_chroma_pixels
+			bvresize(max_chroma_pixels,24)
 		end;
-		current_x := if next_comp < 4 then
+		current_x := if next_comp < int(4,9) then
 			next_luma_x
 		else
 			next_chroma_x
 		end;
-		current_y := if next_comp < 4 then
+		current_y := if next_comp < int(4,9) then
 			next_luma_y
 		else
 			next_chroma_y
 		end;
-		current_read_ring_start := if next_comp < 4 then
+		current_read_ring_start := if next_comp < int(4,9) then
 			luma_read_ring_start
 		else
 			chroma_read_ring_start
 		end;
-		current_write_ring_start := if next_comp < 4 then
+		current_write_ring_start := if next_comp < int(4,9) then
 			luma_write_ring_start
 		else
 			chroma_write_ring_start
 		end;
-		current_base := if next_comp < 4 then
-			luma_base
+		current_base := if next_comp < int(4,9) then
+			bvresize(luma_base,24)
 		else
-			if next_comp = 4 then
-				chroma_u_base
+			if next_comp = int(4,9) then
+				bvresize(chroma_u_base,24)
 			else
-				chroma_v_base
+				bvresize(chroma_v_base,24)
 			end
 		end;
 		// Advance the MB coordinates
@@ -192,66 +215,66 @@ actor Mgnt_Address ()
 		//  +---+---+   +---+   +---+
 		//  | 2 | 3 | 
 		//  +---+---+
-		next_comp := next_comp + 1;
+		next_comp := next_comp + int(1,9);
 		// Move right one block on 0->1 or 2->3 transition  
-		if next_comp = 1 or next_comp = 3 then
-			next_luma_x := next_luma_x + 8;
+		if next_comp = int(1,9) or next_comp = int(3,9) then
+			next_luma_x := next_luma_x + int(8,24);
 		end
 		// Move left and down one block on 1->2 transition
 		// Note: 'down' is increasing y
-		if next_comp = 2 then
-			next_luma_x := next_luma_x - 8;
-			next_luma_y := next_luma_y + 8;
+		if next_comp = int(2,9) then
+			next_luma_x := next_luma_x - int(8,24);
+			next_luma_y := next_luma_y + int(8,24);
 		end
 		// When comp wraps, look for end of row
-		if next_comp > 5 then
-			next_comp := 0;
-			next_mbx := next_mbx + 1;
+		if next_comp > int(5,9) then
+			next_comp := int(0,9);
+			next_mbx := next_mbx + int(1,9);
 			// Move chroma x one block to right (value is used both by U and V)
-			next_chroma_x := next_chroma_x + 8;
-			if next_mbx >= vop_width then
+			next_chroma_x := next_chroma_x + int(8,24);
+			if next_mbx >= bvresize(vop_width,9) then
 			// reset to start of line
-				next_mbx := 0;
-				next_luma_x := 0;
-				next_chroma_x := 0;
+				next_mbx := int(0,9);
+				next_luma_x := int(0,24);
+				next_chroma_x := int(0,24);
 				// Move one block down - no handling for VOP height overflow.
-				next_mby := next_mby + 1;
-				next_luma_y := next_luma_y + 8;
-				next_chroma_y := next_chroma_y + 8;
+				next_mby := next_mby + int(1,9);
+				next_luma_y := next_luma_y + int(8,24);
+				next_chroma_y := next_chroma_y + int(8,24);
 			else
 			// No line wrap, so move luma (x,y) up and right one block
-				next_luma_x := next_luma_x + 8;
-				next_luma_y := next_luma_y - 8;
+				next_luma_x := next_luma_x + int(8,24);
+				next_luma_y := next_luma_y - int(8,24);
 			end
 		end
 	end
 
 	// Buffer read address. Saturates (x,y) to the size (w,h) and wraps the pointer in either direction
 	// (dx, dy) is an arbitrary offset from the upper left corner of the current block.
-	function generate_read_addr(int dx, int dy) --> int
+	function generate_read_addr(int(size=9) dx, int(size=9) dy) --> int(size=24)
 	var
-		int(size=ADDR_SZ) x = current_x + dx,
-		int(size=ADDR_SZ) x_sat = if x < 0 then
-			0
+		int(size=24) x = current_x + bvresize(dx,24),
+		int(size=24) x_sat = if x < int(0,24) then
+			int(0,24)
 		else
 			if x >= current_w then
-				(current_w - 1)
+				(current_w - int(1,24))
 			else
 				x
 			end
 		end,
-		int(size=ADDR_SZ) y = current_y + dy,
-		int(size=ADDR_SZ) y_sat = if y < 0 then
-			0
+		int(size=24) y = current_y + bvresize(dy,24),
+		int(size=24) y_sat = if y < int(0,24) then
+			int(0,24)
 		else
 			if y >= current_h then
-				(current_h - 1)
+				(current_h - int(1,24))
 			else
 				y
 			end
 		end,
-		int(size=ADDR_SZ) i = current_read_ring_start + x_sat + y_sat * current_w,
-		int(size=ADDR_SZ) i_wrap = if i < 0 then
+		int(size=24) i = current_read_ring_start + x_sat + y_sat * current_w,
+		int(size=24) i_wrap = if i < int(0,24) then
 			i + current_size
 		else
 			if i >= current_size then
@@ -265,12 +288,12 @@ actor Mgnt_Address ()
 
 	// Buffer write address. Does not saturate, only wraps the pointer at the top end
 	// (dx, dy) are offsets from the upper left corner of the current block and must lie in the block
-	function generate_write_addr(int dx, int dy) --> int
+	function generate_write_addr(int(size=8) dx, int(size=8) dy) --> int(size=24)
 	var
-		int(size=ADDR_SZ) x = current_x + dx,
-		int(size=ADDR_SZ) y = current_y + dy,
-		int(size=ADDR_SZ) i = current_write_ring_start + x + y * current_w,
-		int(size=ADDR_SZ) i_wrap = if i >= current_size then
+		int(size=24) x = current_x + bvresize(dx,24),
+		int(size=24) y = current_y + bvresize(dy,24),
+		int(size=24) i = current_write_ring_start + x + y * current_w,
+		int(size=24) i_wrap = if i >= current_size then
 			i - current_size
 		else
 			i
@@ -282,35 +305,35 @@ actor Mgnt_Address ()
 
 	cmd.newVop: action BTYPE:[ cmd ] ==>
 	guard
-		(cmd & NEWVOP) != 0
+		(cmd & NEWVOP) != int(0,12)
 	do
-		round := (cmd & ROUND_TYPE) != 0;
+		round := (cmd & ROUND_TYPE) != int(0,12);
 	end
 	
 	getw: action BTYPE:[ w ] ==>
 	do
-		vop_width := w;
+		vop_width := bvresize(w,8);
 	end
 	
 	geth: action BTYPE:[ h ] ==>
 	do
-		vop_height := h;
+		vop_height := bvresize(h,8);
 		advance_vop();
 	end
 
 	// Pure texture
 	cmd.noMotion: action BTYPE:[ cmd ] ==>
 	guard
-		(cmd & INTRA) != 0
+		(cmd & INTRA) != int(0,12)
 	do
 	// Disable motion comp addressing
-		read_count := 81;
-		write_count := 0;
+		read_count := int(81,8);
+		write_count := int(0,8);
 	end
 
-	int(size=MV_SZ) mvx;
+	int(size=9) mvx;
 
-	int(size=MV_SZ) mvy;
+	int(size=9) mvy;
 
 	bool interp_x;
 
@@ -320,47 +343,47 @@ actor Mgnt_Address ()
 	//                          bit0 = round
 	cmd.motion: action BTYPE:[ cmd ] ==>
 	guard
-		(cmd & MOTION) != 0
+		(cmd & MOTION) != int(0,12)
 	end
 
 	getmvx: action MV:[ x ] ==>
 	do
-		interp_x := (x & 1) = 1;
-		mvx := (x >> 1);
+		interp_x := (x & int(1,9)) = int(1,9);
+		mvx := (x >> int(1,9));
 	end
 
 	getmvy: action MV:[ y ] ==> halfpel:[ if interp_x then
-			4
+			int(4,4)
 		else
-			0
+			int(0,4)
 		end + if interp_y then
-			2
+			int(2,4)
 		else
-			0
+			int(0,4)
 		end + if round then
-			1
+			int(1,4)
 		else
-			0
+			int(0,4)
 		end ]
 	var
-		bool interp_y = ((y & 1) = 1)
+		bool interp_y = ((y & int(1,9)) = int(1,9))
 	do
-		mvy := (y >> 1);
-		read_count := 0;
-		read_row := 0;
-		read_col := 0;
-		write_count := 0;
+		mvy := (y >> int(1,9));
+		read_count := int(0,8);
+		read_row := int(0,5);
+		read_col := int(0,5);
+		write_count := int(0,8);
 	end
 
 	// No change in the block
-	cmd.neither: action BTYPE:[ cmd ] ==> halfpel:[ 0 ]
+	cmd.neither: action BTYPE:[ cmd ] ==> halfpel:[ int(0,4) ]
 	do
-		mvx := 0;
-		mvy := 0;
-		read_count := 0;
-		read_row := 0;
-		read_col := 0;
-		write_count := 0;
+		mvx := int(0,9);
+		mvy := int(0,9);
+		read_count := int(0,8);
+		read_row := int(0,5);
+		read_col := int(0,5);
+		write_count := int(0,8);
 	end
 
 	// First set up the buffer pointers for the latest block
@@ -371,55 +394,63 @@ actor Mgnt_Address ()
 
 	done: action ==>
 	guard
-		write_count = 64 and read_count = 81
+		write_count = int(64,8) and read_count = int(81,8)
 	end
 
 	// Generate write addresses. Priorities are use to make this alternate
 	// with the read address generation action (to keep the queues balanced).
 	write_addr: action ==> WA:[ a ]
 	guard
-		write_count < 64,
+		write_count < int(64,8),
 		write_count < read_count // this makes these two actions alternate
 
 	var
-		int a = generate_write_addr((write_count & 7), (write_count >> 3))
+		int(size=24) a = generate_write_addr((write_count & int(7,8)), (write_count >> int(3,8)))
 	do
-		write_count := write_count + 1;
+		write_count := write_count + int(1,8);
 	end
 
 	read_addr: action ==> RA:[ a ]
 	guard
-		read_count < 81
+		read_count < int(81,8)
 	var
-		int a = generate_read_addr(mvx + read_col, mvy + read_row)
+		int(size=24) a = generate_read_addr(mvx + bvresize(read_col,9), mvy + bvresize(read_row,9))
 	do
-		read_count := read_count + 1;
-		read_col := read_col + 1;
-		if read_col >= 9 then
-			read_col := 0;
-			read_row := read_row + 1;
+		read_count := read_count + int(1,8);
+		read_col := read_col + int(1,5);
+		if read_col >= int(9,5) then
+			read_col := int(0,5);
+			read_row := read_row + int(1,5);
 		end
 	end
 
-	schedule fsm cmd :
-		cmd ( cmd.newVop ) --> getw;
-		cmd ( cmd.noMotion ) --> init;
-		cmd ( cmd.motion ) --> getmvx;
-		//    cmd          ( cmd.both        ) --> init;
-		cmd ( cmd.neither ) --> init;
-		init ( init ) --> generate;
-		generate ( done ) --> cmd;
+	schedule fsm s_cmd :
+		s_cmd ( cmd.newVop ) --> s_getw;
+		s_cmd ( cmd.noMotion ) --> s_init;
+		s_cmd ( cmd.motion ) --> getmvx;
+		//    cmd          ( cmd.both        ) --> s_init;
+		s_cmd ( cmd.neither ) --> s_init;
+		s_init ( init ) --> generate;
+		generate ( done ) --> s_cmd;
 		generate ( write_addr ) --> generate;
 		generate ( read_addr ) --> generate;
-		getw ( getw ) --> geth;
-		geth ( geth ) --> cmd;
+		s_getw ( getw ) --> s_geth;
+		s_geth ( geth ) --> s_cmd;
 		getmvx ( getmvx ) --> getmvy;
-		getmvy ( getmvy ) --> init;
+		getmvy ( getmvy ) --> s_init;
 	end
 
 	priority
-		cmd.newVop > cmd.noMotion > cmd.motion > cmd.neither;
-		done > write_addr > read_addr;
+		cmd.newVop > cmd.noMotion;
+		cmd.newVop > cmd.motion;
+		cmd.newVop > cmd.neither;
+		cmd.noMotion > cmd.motion;
+		cmd.noMotion > cmd.neither;
+		cmd.motion > cmd.neither;
+		done > write_addr;
+		done > read_addr;
+		write_addr > read_addr;
+		
 	end
 
 end
