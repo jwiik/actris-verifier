@@ -6,8 +6,14 @@ unit Constants:
   int(size=12) ACCODED = int(2,12);
   int(size=12) ACPRED = int(1,12);
   
+  int(size=12) ROUND_TYPE = int(32,12);
+  
   int(size=11) MAXW_IN_MB = int(121,11);
   int(size=11) MAXH_IN_MB = int(69,11);
   
-  int(size=13) DCVAL = int(1024,13)
+  int(size=13) DCVAL = int(1024,13);
+  
+  int(size=32) SEARCHWIN_IN_MB = int(3,32);
+  
+  int BLOCK_SIZE = 64;
 end

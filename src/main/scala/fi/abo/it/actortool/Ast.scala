@@ -257,16 +257,33 @@ sealed case class ActorInvariant(
   override def isActorInvariant = true
 }
 
-sealed case class ChannelInvariant(override val assertion: Assertion, override val generated: Boolean) extends Invariant(assertion,generated) {
+sealed case class ChannelInvariant(
+    override val assertion: Assertion, 
+    override val generated: Boolean) extends Invariant(assertion,generated) {
+  
   override def isChannelInvariant = true
+  
 }
 
-sealed case class FunctionDecl(val name: String, val inputs: List[Declaration], val output: Type, val variables: List[Declaration], val expr: Expr) extends Member {
+sealed case class FunctionDecl(
+    val name: String, 
+    val inputs: List[Declaration], 
+    val output: Type, 
+    val variables: List[Declaration], 
+    val expr: Expr) extends Member {
+  
   override def isFunctionDecl = true
+  
 }
 
-sealed case class ProcedureDecl(val name: String, val inputs: List[Declaration], val variables: List[Declaration], val body: List[Stmt]) extends Member {
+sealed case class ProcedureDecl(
+    val name: String, 
+    val inputs: List[Declaration], 
+    val variables: List[Declaration], 
+    val body: List[Stmt]) extends Member {
+  
   override def isProcedureDecl = true
+  
 }
 
 sealed case class Entities(val entities: List[Instance]) extends Member {
@@ -543,10 +560,22 @@ sealed case class SpecialMarker(val value: String) extends Expr {
 sealed abstract class Stmt extends ASTNode
 sealed case class Assign(val id: Id, val expr: Expr) extends Stmt
 sealed case class MapAssign(val id: IndexAccessor, val expr: Expr) extends Stmt
-sealed case class IfElse(val ifCond: Expr, val ifStmt: List[Stmt], val elseIfs: List[ElseIf], val elseStmt: List[Stmt]) extends Stmt
+
+sealed case class IfElse(
+    val ifCond: Expr, 
+    val ifStmt: List[Stmt], 
+    val elseIfs: List[ElseIf], 
+    val elseStmt: List[Stmt]) extends Stmt
+    
 sealed case class ElseIf(val cond: Expr, val stmt: List[Stmt])
 sealed case class While(val cond: Expr, val invariants: List[Expr], val stmt: List[Stmt]) extends Stmt
-sealed case class ForEach(val variable: Declaration, iterand: Expr, val invariants: List[Expr], val stmt: List[Stmt]) extends Stmt
+
+sealed case class ForEach(
+    val variable: Declaration, 
+    val iterand: Expr, 
+    val invariants: List[Expr], 
+    val stmt: List[Stmt]) extends Stmt
+
 sealed case class Assert(val cond: Expr) extends Stmt
 sealed case class Assume(val cond: Expr) extends Stmt
 sealed case class Havoc(val vars: List[Id]) extends Stmt

@@ -192,14 +192,14 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     case Some(_) ~ _ ~ expr => ChannelInvariant(Assertion(expr,true),false)
   })
   
-  def varDecl = filePositioned((typeName ~ ident ~ opt("[" ~> numericLit <~ "]" ) ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {
+  def varDecl = annotatable(filePositioned((typeName ~ ident ~ opt("[" ~> numericLit <~ "]" ) ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {
     case (typ ~ id ~ None ~ None) => Declaration(id,typ,false,None)
     case (typ ~ id ~ None ~ Some("=" ~ value)) => Declaration(id,typ,true,Some(value))
     case (typ ~ id ~ None ~ Some(":=" ~ value)) => Declaration(id,typ,false,Some(value))
     case (typ ~ id ~ Some(n) ~ None) => Declaration(id,MapType(IntType,typ,n.toInt),false,None)
     case (typ ~ id ~ Some(n) ~ Some("=" ~ value)) => Declaration(id,MapType(IntType,typ,n.toInt),true,Some(value))
     case (typ ~ id ~ Some(n) ~ Some(":=" ~ value)) => Declaration(id,MapType(IntType,typ,n.toInt),false,Some(value))
-  })
+  }))
   
   def actionLabel: Parser[String] = repsep(ident,".") ^^ { case list => list.mkString(".") }
 

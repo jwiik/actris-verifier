@@ -34,6 +34,9 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
     val evaluationOrder = DepTree(topnw).postOrder
     
     val mergedActorMap = collection.mutable.Map[String,BasicActor]()
+    
+    var errors = List.empty[(Position,String)]
+    
     for (entity <- evaluationOrder) {
       
       val doSchedule = entity match {
@@ -60,8 +63,9 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
         val actor = mergerBackend.invoke(scheduleCtx)
         actor match {
           case merging.Success(a) => mergedActorMap += (entity.id -> a)
-          case merging.Failure(errs) => {
-            return Failure(errs)
+          case merging.Failure(a,errs) => {
+            errors = errors ++ errs
+            
             //assert(false)
           }
         }
@@ -79,7 +83,7 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
       writeFile("output/"+finalActor.id+"_schedules.xml", appInfo.print)
     }
     
-    return Success(finalActor,allSchedules.toList)
+    if (errors.isEmpty) Success(finalActor,allSchedules.toList) else Failure(errors)
     
   }
   

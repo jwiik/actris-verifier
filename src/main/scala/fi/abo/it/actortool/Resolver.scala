@@ -251,6 +251,15 @@ object Resolver {
             case pr: Priority => priority = Some(pr)
             case fd: FunctionDecl => {
               val inputs = (fd.inputs map { p => (p.id, p) }).toMap
+              
+              var decls = inputs
+              
+              for (v <- fd.variables) {
+                val tmpCtx = new FunctionBodyContext(fd,inputs,decls,ctx)
+                resolveExpr(tmpCtx, v.value.get, v.typ)
+                decls = decls + (v.id -> v)
+              }
+              
               val vars = (fd.variables map { p => (p.id, p) }).toMap
               val funCtx = new FunctionBodyContext(fd,inputs,vars,ctx)
               resolveExpr(funCtx, fd.expr, fd.output)
@@ -719,7 +728,7 @@ object Resolver {
         if (!tCond.isBool) ctx.error(cond.pos, "Expected bool, found: " + tCond.id)
         val tThen = resolveExpr(ctx, the)
         val tElse = resolveExpr(ctx, els)
-        if (tThen != tElse) ctx.error(exp.pos, "Illegal argument types: " + tThen.id + " and " + tElse.id)
+        if (tThen != tElse) ctx.error(exp.pos, "Illegal argument types: " + tThen.id + " and " + tElse.id + " in if-expression")
         ite.typ = tThen
         tThen
       case ac@IndexAccessor(e1,e2) => {
@@ -734,13 +743,13 @@ object Resolver {
                 }
                 else {
                   ctx.error(e1.pos, "Expected indexed type, found: " + tExp.id)
-                  assert(false)
+                  //assert(false)
                   return UnknownType
                 }
               }
               case _ => {
                 ctx.error(e1.pos, "Expected indexed type, found: " + tExp.id)
-              return UnknownType
+                return UnknownType
               }
             }
           } 
@@ -1139,7 +1148,7 @@ object Resolver {
     val t2 = resolveExpr(ctx, exp.right)
     if (!t1.isNumeric && !t1.isBv) ctx.error(exp.left.pos, "Expected numeric type: " + exp.left)
     if (!t2.isNumeric && !t2.isBv) ctx.error(exp.right.pos, "Expected numeric type: " + exp.right)
-    if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
+    if (!TypeUtil.isCompatible(t1, t2)) ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id + " to operator " + exp.operator)
     exp.typ = BoolType
     exp.typ
   }
@@ -1148,7 +1157,8 @@ object Resolver {
     val t1 = resolveExpr(ctx, exp.left)
     val t2 = resolveExpr(ctx, exp.right)
     if (!TypeUtil.isCompatible(t1, t2)) {
-      ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id)
+      //println(exp)
+      ctx.error(exp.pos, "Illegal argument types: " + t1.id + " and " + t2.id + " to operator " + exp.operator)
     }
     exp.typ = BoolType
     exp.typ

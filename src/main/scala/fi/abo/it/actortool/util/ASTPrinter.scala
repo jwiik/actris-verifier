@@ -100,7 +100,9 @@ class ASTPrinter(orccCompatible: Boolean) {
         indent + printDecl(d) + ";"
       }
       case fd: FunctionDecl => {
-        indent + "function " + fd.name + "(" + (fd.inputs map printDecl).mkString(",") + ") --> " + printType(fd.output) + ":" + nl +
+        indent + "function " + fd.name + "(" + (fd.inputs map printDecl).mkString(",") + ") --> " + printType(fd.output) + 
+        (if (fd.variables.isEmpty) "" else nl + indent + "var " + indentAdd + fd.variables.map(d => nl + indent + printDecl(d)).mkString(",") + indentRem) +
+        ":" + nl +
         indentAdd + indent + printExpr(fd.expr) + indentRem + nl +
         indent + "end"
       }

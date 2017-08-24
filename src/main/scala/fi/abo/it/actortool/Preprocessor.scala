@@ -91,13 +91,13 @@ case object ActionScheduleProcessor extends Preprocessor {
             if (!init && labelOpt.isDefined) {
               val transitionData: List[(Expr,(Expr,List[Stmt]),(Expr,Expr))] = {
                 for (t <- s.transitions.filter { t => t.action == labelOpt.get }) yield {
-                   val guard = Eq(Id("St#"),Id(t.from))
+                   val guard = Eq(Id("St#"),Id(t.from)).setPos(t.pos)
                    val stUpdate = (guard, List(Assign(Id("St#"),Id(t.to))))
                    val stFromTo = 
                      (
-                         Eq(FunctionApp("prev",List(Id("St#"))),Id(t.from)), 
+                         Eq(FunctionApp("prev",List(Id("St#"))),Id(t.from)).setPos(t.pos) , 
                          //Eq(FunctionApp("next",List(Id("St#"))),Id(t.to))
-                         Eq(Id("St#"),Id(t.to))
+                         Eq(Id("St#"),Id(t.to)).setPos(t.pos)
                      )
                    (guard,stUpdate,stFromTo)
                 }
@@ -508,7 +508,7 @@ abstract class BasicActorExprAndStmtReplacer extends Preprocessor {
                 case Some(v) => Some(replace(v))
                 case None => None
               }
-              Declaration(d.id,d.typ,d.constant,value) 
+              Declaration(d.id,d.typ,d.constant,value).withAnnotationsFrom(d)
           }
           ActorAction(a.label, a.init, a.inputPattern, newOpats, a.guards, a.requires, a.ensures, newVars , newBody).setPos(a.pos)
         case d: Declaration => {
@@ -516,7 +516,7 @@ abstract class BasicActorExprAndStmtReplacer extends Preprocessor {
             case Some(v) => Some(replace(v))
             case None => None
           }
-          Declaration(d.id,d.typ,d.constant,value) 
+          Declaration(d.id,d.typ,d.constant,value).withAnnotationsFrom(d)
         }
         case x => x
       }

@@ -13,11 +13,11 @@ object Constants {
 
 trait MergingOutcome
 case class Success(actor: BasicActor) extends MergingOutcome
-case class Failure(errors: List[(Position,String)]) extends MergingOutcome
+case class Failure(actor: BasicActor, errors: List[(Position,String)]) extends MergingOutcome
 
 /**
  * This class implements merging of networks and actors into composite actors. The composite
- * actors should have a (concrete) action for each contract.
+ * actor will have a (concrete) action for each contract.
  */
 class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleContext,MergingOutcome] {
   
@@ -38,8 +38,10 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           
           
           for ((ch,amount) <- tokenAmounts) {
-            val conn = connections.find { c => c.id == ch }.get
-            members += Declaration(Sep+"del"+Sep+ch,MapType(IntType,conn.typ.asInstanceOf[ChanType].contentType,amount),false,None)
+            if (amount > 0) {
+              val conn = connections.find { c => c.id == ch }.get
+              members += Declaration(Sep+"del"+Sep+ch,MapType(IntType,conn.typ.asInstanceOf[ChanType].contentType,amount),false,None)
+            }
           }
           
           for (e <- scheduleCtx.entities) yield {
@@ -60,7 +62,10 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
             
             for (f <- actor.functionDecls) {
               val name = e.id+Sep+f.name
-              members += FunctionDecl(name,f.inputs,f.output,f.variables,replaceStr(f.expr, actorVariables))
+              val newVars = f.variables.map {
+                d => Declaration(d.id,d.typ,d.constant,Some(replaceStr(d.value.get,actorVariables)))
+              }
+              members += FunctionDecl(name,f.inputs,f.output,newVars,replaceStr(f.expr, actorVariables))
               actorVariables += f.name -> Id(name)
             }
             actorVariablesMap += e -> actorVariables
@@ -112,7 +117,10 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
           }
           for (f <- ba.functionDecls) {
             val name = ba.id+Sep+f.name
-            members += FunctionDecl(name,f.inputs,f.output,f.variables,replaceStr(f.expr, actorVariables))
+            val newVars = f.variables.map {
+              d => Declaration(d.id,d.typ,d.constant,Some(replaceStr(d.value.get,actorVariables)))
+            }
+            members += FunctionDecl(name,f.inputs,f.output,newVars,replaceStr(f.expr, actorVariables))
             actorVariables += f.name -> Id(name)
           }
           val initActions = {
@@ -141,10 +149,11 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
         entity.inports,
         entity.outports,
         members).withAnnotationsFrom(entity)
-    //println(ASTPrinter.get.print(actor))
+    println(ASTPrinter.get.print(actor))
     Resolver.resolve(List(actor),constants) match {
       case Resolver.Errors(errs) => {
-        Failure(errs)
+        val nerrs = errs.map { case (p,s) => p -> ("[" + actor.fullName  + "] " + s) }
+        Failure(actor,nerrs)
       }
       case Resolver.Success(ctx) => Success(actor)
     }

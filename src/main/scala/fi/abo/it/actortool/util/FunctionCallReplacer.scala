@@ -24,7 +24,16 @@ class FunctionCallReplacer extends ASTReplacingVisitor[Map[String,FunctionDecl]]
         val newArgs = args map visitExpr
         map.get(name) match {
           case Some(fd) => {
-            val replacements = (for ((param,arg)  <- fd.inputs.zip(newArgs)) yield (param.id,arg)).toMap
+            val argReplacements = 
+              (for ((param,arg)  <- fd.inputs.zip(newArgs)) yield (param.id,arg)).toMap
+            
+            var replacements = argReplacements
+            
+            for (v <- fd.variables) {
+              val replaced = argReplacer.visitExpr(v.value.get)(replacements)
+              replacements += (v.id -> replaced)
+            }
+            
             argReplacer.visitExpr(fd.expr)(replacements)
           }
           case None => {

@@ -39,6 +39,7 @@ ENDCOPYRIGHT
 //
 // Author: David B. Parlour (dave.parlour@xilinx.com)
 
+@merge
 actor DCSplit()
 	int(size=13) IN ==> int(size=13) DC, int(size=13) AC :
 
