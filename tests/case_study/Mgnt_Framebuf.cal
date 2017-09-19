@@ -31,6 +31,8 @@ actor Mgnt_Framebuf () int(size=12) BTYPE, int(size=24) RA, int(size=24) WA, int
 	  guard (BTYPE[@] & INTRA) = int(0,12)
 	end
 	
+	stream invariant rd@(BTYPE) = 0 ==> state(s_cmd)
+	
 	@Uninterpreted
 	Map(int(size=24) -> int(size=9), size=3322176) buf;
 	
@@ -48,11 +50,13 @@ actor Mgnt_Framebuf () int(size=12) BTYPE, int(size=24) RA, int(size=24) WA, int
 	cmd.intra: action BTYPE:[ cmd ] ==>
 	guard
 		(cmd & INTRA) != int(0,12)
+	ensures count = 64
 	do
 		count := 64;
 	end
 
 	cmd.inter: action BTYPE:[ cmd ] ==>
+	ensures count = 81
 	do
 		count := 81;
 	end
@@ -60,6 +64,7 @@ actor Mgnt_Framebuf () int(size=12) BTYPE, int(size=24) RA, int(size=24) WA, int
 	done: action ==>
 	guard
 		count = 0
+	ensures count = 64
 	do
 		count := 64;
 	end
@@ -88,18 +93,19 @@ actor Mgnt_Framebuf () int(size=12) BTYPE, int(size=24) RA, int(size=24) WA, int
 		//if a = 25344 + 115456 + 24 then
 		//  println("buf["+a+"] contains "+buf[a]);
 		//end
+	ensures count = prev(count)-1
 	do
 		count := count-1;
 	end
 
 	write: action WA:[ a ], WD:[ d ] ==>
+	ensures count = prev(count)-1
 	do
 		buf[a] := d;
 		//if a = 25344 + 115456 + 24 then
 		//  println("setting buf["+a+"] to "+d);
 		//end
 		
-		// Mamma
 		count := count-1;
 	end
 

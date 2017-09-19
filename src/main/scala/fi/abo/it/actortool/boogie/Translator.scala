@@ -21,11 +21,13 @@ case class GuardTranslation(
     val localGuard: Boogie.Expr,
     val nonLocalGuard: Boogie.Expr)
 
-abstract class EntityTranslator[T] {
+case class BoogieTranslation[T](val entity: T, program: Seq[Boogie.Decl])
+    
+abstract class EntityTranslator[T,U] {
   
   val stmtTranslator = new StmtExpTranslator();
   
-  def translateEntity(entity: T): List[Boogie.Decl]
+  def translateEntity(entity: T): Seq[BoogieTranslation[U]]
   
   def createMEAssertionsRec(a: DFActor, guards: List[(AbstractAction,Boogie.Expr)]): List[Boogie.Assert] = {
     guards match {
@@ -203,10 +205,10 @@ abstract class EntityTranslator[T] {
 
 class Translator( 
     val smokeTest: Boolean,
-    val skipMutualExclusivenessCheck: Boolean) extends Backend[List[Boogie.Decl]] {  
+    val skipMutualExclusivenessCheck: Boolean) extends Backend[Seq[BoogieTranslation[_<:TopDecl]]] {  
   
   
-  def invoke(programCtx: ProgramContext): List[Boogie.Decl] = {
+  def invoke(programCtx: ProgramContext): Seq[BoogieTranslation[_<:TopDecl]] = {
     val typeCtx = programCtx.typeContext
     assert(typeCtx.getErrors.isEmpty)
     
@@ -219,16 +221,20 @@ class Translator(
       case a: BasicActor => actorTranslator.translateEntity(a)
       case n: Network => networkTranslator.translateEntity(n)
       case u: DataUnit => {
-        u.constants flatMap { d =>
-          val axiom = stmtTranslator.transExpr(d.value.get,false)
-          List(Boogie.Const(d.id,false,B.type2BType(d.typ)),Boogie.Axiom(Boogie.VarExpr(d.id) ==@ axiom))
-        }
+        Seq(BoogieTranslation(
+            u,
+            u.constants flatMap { d =>
+              val axiom = stmtTranslator.transExpr(d.value.get,false)
+              List(Boogie.Const(d.id,false,B.type2BType(d.typ)),Boogie.Axiom(Boogie.VarExpr(d.id) ==@ axiom))
+            }))
       }
       case td: TypeDecl => {
         //userTypes += (td.tp.id -> NamedType(td.tp.id))
-        for (f <- td.fields) yield {
-          Boogie.Const(td.tp.id+"."+f.id,true,BType.Field(B.type2BType(f.typ)))
-        }
+        Seq(BoogieTranslation(
+            td,
+            for (f <- td.fields) yield {
+              Boogie.Const(td.tp.id+"."+f.id,true,BType.Field(B.type2BType(f.typ)))
+            }))
       }
     }
     

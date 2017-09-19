@@ -80,10 +80,7 @@ object Inferencer {
         //val invariant = disjuncts reduceLeft { (a,b) => And(a,b) }
         for (d <- disjuncts) Resolver.resolveExpr(d, typeCtx)
         //Resolver.resolveExpr(invariant, typeCtx)
-        n match {
-          case ba: BasicActor => ba.addInvariants(disjuncts, assumeInvs,false)
-          case nw: Network => nw.addChannelInvariant(disjuncts, assumeInvs)
-        }
+        n.addActionInvariants(disjuncts, assumeInvs,false)
       }
     }
     
@@ -110,10 +107,7 @@ object Inferencer {
       if (!disjuncts.isEmpty) {
         //val invariant =  disjuncts reduceLeft { (a,b) => And(a,b) }
         for (d <- disjuncts) Resolver.resolveExpr(d, typeCtx)
-        n match {
-          case ba: BasicActor => ba.addInvariants(disjuncts, assumeInvs,false)
-          case nw: Network => nw.addChannelInvariant(disjuncts, assumeInvs)
-        }
+        n.addActionInvariants(disjuncts, assumeInvs,false)
       }
     }
     
@@ -241,7 +235,7 @@ object Inferencer {
         }
       }
       countInvariants.foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
-      actor.addInvariants(countInvariants.toList, assumeInvs,true)
+      actor.addActionInvariants(countInvariants.toList, assumeInvs,true)
     }
     
     def generateValueInvariants(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
@@ -325,7 +319,7 @@ object Inferencer {
       } // for
       
       valueInvariants.foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
-      actor.addInvariants(valueInvariants.toList, assumeInvs,true)
+      actor.addActionInvariants(valueInvariants.toList, assumeInvs,true)
     }
     
     
@@ -352,7 +346,7 @@ object Inferencer {
       
       val delayedChannels =  {
         val buffer = new ListBuffer[(String,Expr)]
-        TokensDefFinder.visitExpr(n.actorInvariants map {nwi => nwi.expr})(buffer);
+        TokensDefFinder.visitExpr(n.contractInvariants map {nwi => nwi.expr})(buffer);
         buffer.toMap
       }
 
@@ -385,7 +379,7 @@ object Inferencer {
         } // if
       } // for
       countInvariants foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
-      n.addChannelInvariant(countInvariants.toList, assumeInvs)
+      n.addActionInvariants(countInvariants.toList, assumeInvs, false)
     } // def network
   }
   

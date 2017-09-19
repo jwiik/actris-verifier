@@ -66,6 +66,8 @@ actor Algo_Interp_HalfpelBilinearRoundingControl ()
 		
 	Main: contract RD:81, halfpel:1 ==> MOT:17 end
 
+	stream invariant rd@(halfpel) = 0 ==> state(start)
+
 	// Compensation function
 	function compensate(int(size=9) p00, int(size=9) p10, int(size=9) p01, int(size=9) p11) --> int(size=9) :
 		if flags = int(0,3) then
@@ -95,6 +97,7 @@ actor Algo_Interp_HalfpelBilinearRoundingControl ()
 	int(size=2) round;
 
 	start: action halfpel:[ f ] ==>
+	ensures x = int(0,5) && y = int(0,5)
 	do
 		x := int(0,5);
 		y := int(0,5);
@@ -130,6 +133,8 @@ actor Algo_Interp_HalfpelBilinearRoundingControl ()
 	row_col_0: action RD:[ d ] ==>
 	guard
 		(x = int(0,5)) or (y = int(0,5))
+	ensures prev(x) >= int(8,5) ==> y = prev(y)+int(1,5) && x = int(0,5)
+	ensures prev(x) < int(8,5) ==> x = prev(x)+int(1,5) && y = prev(y) 
 	do
 		d9 := d8;
 		d8 := d7;
@@ -153,6 +158,8 @@ actor Algo_Interp_HalfpelBilinearRoundingControl ()
 		(x != int(0,5)),
 		(y != int(0,5)),
 		y != int(9,5)
+	ensures prev(x) >= int(8,5) ==> y = prev(y)+int(1,5) && x = int(0,5)
+	ensures prev(x) < int(8,5) ==> x = prev(x)+int(1,5) && y = prev(y) 
 	var
 		int(size=9) p = compensate(d9, d8, d0, d)
 	do

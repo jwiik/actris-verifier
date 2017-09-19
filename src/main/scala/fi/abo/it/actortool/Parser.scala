@@ -122,10 +122,10 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   }
   
   def actorMember: Parser[Member] = 
-    annotatable(filePositioned(actorInvDecl | chInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl | contractActionDecl | procedureDecl))
+    annotatable(filePositioned(baInvDecl | contractInvDecl | actionInvDecl | actionDecl | varDecl | scheduleBlock | priorityBlock | functionDecl | contractActionDecl | procedureDecl))
   
   def networkMember: Parser[Member] = filePositioned(
-    annotatable(actorInvDecl | chInvDecl | entitiesBlock | structureBlock | actionDecl | contractActionDecl))
+    annotatable(nwInvDecl | contractInvDecl | actionInvDecl | entitiesBlock | structureBlock | actionDecl | contractActionDecl))
   
   def entitiesBlock: Parser[Entities] = filePositioned(("entities" ~> repsep(entityDecl,Semi) <~ (Semi?) <~ "end") ^^ {
     case entities => Entities(entities)
@@ -181,15 +181,36 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     case exps => exps
   })
   
-  def actorInvDecl = filePositioned((opt("free") ~ opt("stream") ~ "invariant" ~ expression) ^^ {
-    case free ~ stream ~ _ ~ expr => {
-      ActorInvariant(Assertion(expr, free.isDefined),false, stream.isDefined)
+  def contractInvDecl = filePositioned((
+      opt("free") ~ 
+      opt("stream") ~ 
+      (("contract" ~ "invariant") ~> expression)) ^^ {
+    case free ~ stream ~ expr => {
+      ContractInvariant(Assertion(expr, free.isDefined),false, stream.isDefined)
     }
   })
   
-  def chInvDecl = filePositioned(( opt("free") ~ "chinvariant" ~ expression) ^^ {
-    case None ~ _ ~ expr => ChannelInvariant(Assertion(expr,false),false)
-    case Some(_) ~ _ ~ expr => ChannelInvariant(Assertion(expr,true),false)
+  // These two are for backward compatibility 
+  def baInvDecl = filePositioned(( 
+      opt("free") ~ 
+      opt("stream") ~ 
+      ("invariant" ~> expression)) ^^ {
+    case free ~ stream ~ expr => ActionInvariant(Assertion(expr,free.isDefined),false,stream.isDefined)
+  })
+  
+  def nwInvDecl = filePositioned(( 
+      opt("free") ~ 
+      opt("stream") ~ 
+      ("invariant" ~> expression)) ^^ {
+    case free ~ stream ~ expr => ContractInvariant(Assertion(expr,free.isDefined),false,stream.isDefined)
+  })
+  //
+  
+  def actionInvDecl = filePositioned(( 
+      opt("free") ~ 
+      opt("stream") ~ 
+      (("chinvariant" | ("action" ~ "invariant")) ~> expression)) ^^ {
+    case free ~ stream ~ expr => ActionInvariant(Assertion(expr,free.isDefined),false,stream.isDefined)
   })
   
   def varDecl = annotatable(filePositioned((typeName ~ ident ~ opt("[" ~> numericLit <~ "]" ) ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {

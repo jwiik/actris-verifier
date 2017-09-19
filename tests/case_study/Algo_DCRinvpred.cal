@@ -1,5 +1,5 @@
 
-@merge
+//@merge
 actor Algo_DCRinvpred () 
 	int(size=12) BTYPE, 
 	int(size=11) A, 

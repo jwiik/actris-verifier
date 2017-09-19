@@ -74,15 +74,31 @@ sealed abstract class DFActor(
   
   def fullName: String = id
   
-  private var _invariants: List[ActorInvariant] = members.collect { case inv: ActorInvariant => inv }
+  // ********
+  private var _invariants: List[ContractInvariant] = members.collect { case inv: ContractInvariant => inv }
       
-  def actorInvariants = _invariants
+  //def actorInvariants = _invariants
+  def contractInvariants = _invariants
   
-  def addInvariant(invs: Expr, free: Boolean, stream: Boolean) { addInvariants(List(invs), free, stream) }
+  def addContractInvariant(invs: Expr, free: Boolean, stream: Boolean) { addContractInvariants(List(invs), free, stream) }
   
-  def addInvariants(invs: List[Expr], free: Boolean, stream: Boolean) {
-    val newInvariants = invs map { x => ActorInvariant(Assertion(x,free),true,stream) }
+  def addContractInvariants(invs: List[Expr], free: Boolean, stream: Boolean) {
+    val newInvariants = invs map { x => ContractInvariant(Assertion(x,free),true,stream) }
     _invariants = _invariants:::newInvariants
+  }
+  
+  // *********
+  
+  
+  private var _actionInvariants: List[ActionInvariant] = members.collect { case chi: ActionInvariant => chi }
+  
+  def actionInvariants = _actionInvariants
+  
+  def addActionInvariant(chi: Expr, free: Boolean, stream: Boolean) { addActionInvariants(List(chi), free, stream) }
+  
+  def addActionInvariants(chis: List[Expr], free: Boolean, stream: Boolean) {
+    val newInvariants = chis map { x => ActionInvariant(Assertion(x,free),true,stream) }
+    _actionInvariants = _actionInvariants ++ newInvariants
   }
   
   //lazy val actions: List[AbstractAction] = members.collect { case a: AbstractAction => a }
@@ -95,7 +111,13 @@ sealed abstract class DFActor(
   lazy val functionDecls = members.collect { case fd: FunctionDecl => fd }
   lazy val procedureDecls = members.collect { case pd: ProcedureDecl => pd }
   
-  lazy val streamInvariants = actorInvariants.filter { x => x.stream }
+  def streamInvariants(contractLevel: Boolean) = 
+    if (contractLevel) {
+      (contractInvariants ++ actionInvariants).filter { x => x.stream } 
+    }
+    else {
+      actionInvariants.filter { x => x.stream } 
+    }
   
   lazy val schedule = members.collectFirst { case s: Schedule => s }
   
@@ -125,22 +147,7 @@ sealed case class Network(
   
   override def isNetwork = true
   
-  private var _channelInvariants: List[ChannelInvariant] = members.collect { case chi: ChannelInvariant => chi }
-  
-  def channelInvariants = {
-    _channelInvariants
-  }
-  
-  def addChannelInvariant(chi: Expr, free: Boolean) { addChannelInvariant(List(chi), free) }
-  
-  def addChannelInvariant(chis: List[Expr], free: Boolean) {
-    val newInvariants = chis map { x => ChannelInvariant(Assertion(x,free),true) }
-    _channelInvariants = _channelInvariants:::newInvariants
-  }
-  
   lazy val entities: Option[Entities] = members.collectFirst { case ent: Entities => ent }
-
-  
   lazy val structure: Option[Structure] = members.collectFirst { case str: Structure => str }
   
 }
@@ -245,21 +252,25 @@ object Assertion {
   def apply(expr: Expr) = new Assertion(expr,false,None)
 }
 
-sealed abstract class Invariant(val assertion: Assertion, val generated: Boolean) extends Member {
+sealed abstract class Invariant extends Member {
+  def assertion: Assertion
+  def generated: Boolean
+  def stream: Boolean
   def expr = assertion.expr
 }
 
-sealed case class ActorInvariant(
+sealed case class ContractInvariant(
     override val assertion: Assertion, 
     override val generated: Boolean, 
-    val stream: Boolean) extends Invariant(assertion,generated) {
+    override val stream: Boolean) extends Invariant {
   
   override def isActorInvariant = true
 }
 
-sealed case class ChannelInvariant(
+sealed case class ActionInvariant(
     override val assertion: Assertion, 
-    override val generated: Boolean) extends Invariant(assertion,generated) {
+    override val generated: Boolean,
+    override val stream: Boolean) extends Invariant {
   
   override def isChannelInvariant = true
   

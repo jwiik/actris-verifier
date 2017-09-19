@@ -42,6 +42,9 @@ actor Mgnt_Address ()
       guard (BTYPE[@] & MOTION) = int(0,12)
     end
     
+    
+    contract invariant state(s_cmd)
+    
 	// Frame buffer
 	//  * sized for max width, max height + half the search window.
 	//  * pixels are written/read ring-buffer fashion
@@ -325,6 +328,7 @@ actor Mgnt_Address ()
 	cmd.noMotion: action BTYPE:[ cmd ] ==>
 	guard
 		(cmd & INTRA) != int(0,12)
+	ensures write_count = int(0,8) && read_count = int(81,8)
 	do
 	// Disable motion comp addressing
 		read_count := int(81,8);
@@ -365,6 +369,7 @@ actor Mgnt_Address ()
 		else
 			int(0,4)
 		end ]
+	ensures write_count = int(0,8) && read_count = int(0,8)
 	var
 		bool interp_y = ((y & int(1,9)) = int(1,9))
 	do
@@ -377,6 +382,7 @@ actor Mgnt_Address ()
 
 	// No change in the block
 	cmd.neither: action BTYPE:[ cmd ] ==> halfpel:[ int(0,4) ]
+	ensures write_count = int(0,8) && read_count = int(0,8)
 	do
 		mvx := int(0,9);
 		mvy := int(0,9);
@@ -403,7 +409,7 @@ actor Mgnt_Address ()
 	guard
 		write_count < int(64,8),
 		write_count < read_count // this makes these two actions alternate
-
+	ensures write_count = prev(write_count) + int(1,8)
 	var
 		int(size=24) a = generate_write_addr((write_count & int(7,8)), (write_count >> int(3,8)))
 	do
@@ -413,6 +419,7 @@ actor Mgnt_Address ()
 	read_addr: action ==> RA:[ a ]
 	guard
 		read_count < int(81,8)
+	ensures read_count = prev(read_count) + int(1,8)
 	var
 		int(size=24) a = generate_read_addr(mvx + bvresize(read_col,9), mvy + bvresize(read_row,9))
 	do

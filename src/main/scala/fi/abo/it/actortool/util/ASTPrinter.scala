@@ -114,10 +114,10 @@ class ASTPrinter(orccCompatible: Boolean) {
         printStmts(pd.body) + indentRem + nl +
         indent + "end"
       }
-      case ActorInvariant(Assertion(exp,free,msg),gen,stream) => {
+      case ContractInvariant(Assertion(exp,free,msg),gen,stream) => {
         indent + "invariant " + (if (stream) "stream " else "") + printExpr(exp)
       }
-      case ChannelInvariant(Assertion(exp,free,msg),gen) => {
+      case ActionInvariant(Assertion(exp,free,msg),gen,stream) => {
         indent + "chinvariant " + printExpr(exp)
       }
       case Entities(instances) =>

@@ -30,7 +30,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
       entity match {
         case nw: Network => {
           val members = new ListBuffer[Member]
-          val tokens = TokensDefFinder.find(nw.actorInvariants.map(_.expr))
+          val tokens = TokensDefFinder.find(nw.contractInvariants.map(_.expr))
           val tokenAmounts = tokens.collect { case (ch,IntLiteral(i)) => (ch,i) }
           val connections = nw.structure.get.connections
           

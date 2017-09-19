@@ -4,13 +4,15 @@ import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule._
 
 class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToVerify: List[(String,String)]) 
-    extends EntityTranslator[ScheduleContext] 
-    with GeneralBackend[ScheduleContext,List[Boogie.Decl]] {
+    extends EntityTranslator[ScheduleContext,ContractSchedule] 
+    with GeneralBackend[ScheduleContext,Seq[BoogieTranslation[ContractSchedule]]] {
 
   
-  def invoke(scheduleCtx: ScheduleContext) = translateEntity(scheduleCtx)
+  def invoke(scheduleCtx: ScheduleContext) = {
+    translateEntity(scheduleCtx)
+  }
   
-  def translateEntity(scheduleCtx: ScheduleContext): List[Boogie.Decl] = {
+  def translateEntity(scheduleCtx: ScheduleContext): Seq[BoogieTranslation[ContractSchedule]] = {
     
     val constDecls =
       (scheduleCtx.program.collect{ 
@@ -26,22 +28,25 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
     val decls = {
       scheduleCtx.entity match {
         case ba: BasicActor => {
-          val vs = VerStruct.forActor(ba,mergedActions)
+          val vs = VerStruct.forActor(ba,false)
           
-          translateFunctionDecl(vs) ++ 
+          //translateFunctionDecl(vs) ++ 
           //actionChecks ++ 
-          scheduleCtx.schedules.flatMap { s => translateActorSchedule(scheduleCtx,s,vs) }
+          scheduleCtx.schedules.map { s => 
+            BoogieTranslation(s, constDecls ++ translateFunctionDecl(vs) ++ translateActorSchedule(scheduleCtx,s,vs))
+          }
         }
         case nw: Network => {
           val vs = VerStruct.forNetwork(nw,mergedActions)
-          scheduleCtx.schedules.flatMap {
-            s => translateNetworkSchedule(scheduleCtx, s, vs)
+          scheduleCtx.schedules.map {
+            s => BoogieTranslation(s, constDecls ++ translateNetworkSchedule(scheduleCtx, s, vs))
           }
         }
       }
     }
     
-    constDecls ++ decls
+    decls
+    //List(constDecls ++ decls)
   }
   
   def translateActorSchedule(
@@ -71,7 +76,8 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
     stmts += B.Assume(Boogie.VarExpr(BMap.R) ==@ Boogie.VarExpr(BMap.I))
     //stmts += B.Assume(Boogie.VarExpr(BMap.C) ==@ Boogie.VarExpr(BMap.R))
     
-    for (inv <- avs.entity.actorInvariants) stmts += BAssume(inv, vs)
+    for (inv <- avs.entity.contractInvariants) stmts += BAssume(inv, vs)
+    for (inv <- avs.entity.actionInvariants) stmts += BAssume(inv, vs)
     
     for (ipat <- schedule.contract.inputPattern) {
       stmts += Boogie.Assign(
@@ -104,9 +110,14 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
       
       //stmts ++= tvs.assumes
       
+//      for ((id,ch) <- stateChannels ) {
+//        //stmts += B.Assume(B.ChannelIdx(transExpr(ch,tvs),B.R(transExpr(ch,tvs))) ==@ transExpr(Id(id).withType(ch.typ),tvs))
+//        stmts += Boogie.Assign(B.R(transExpr(ch,tvs)),B.R(transExpr(ch,tvs)) + B.Int(1))
+//      }
+      
       for ((id,ch) <- stateChannels ) {
-        //stmts += B.Assume(B.ChannelIdx(transExpr(ch,tvs),B.R(transExpr(ch,tvs))) ==@ transExpr(Id(id).withType(ch.typ),tvs))
-        stmts += Boogie.Assign(B.R(transExpr(ch,tvs)),B.R(transExpr(ch,tvs)) + B.Int(1))
+        stmts += B.Assume(B.C(transExpr(ch,tvs)) ==@ B.R(transExpr(ch,tvs)) + B.Int(1))
+        stmts += B.Assume(B.ChannelIdx(transExpr(ch,tvs),B.R(transExpr(ch,tvs))) ==@ transExpr(Id(id).withType(ch.typ),tvs))
       }
       
       for (ipat <- action.inputPattern) {
@@ -179,7 +190,7 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
       
       for (q <- action.ensures) stmts += B.Assume(transExpr(q.expr,tvs))
 
-      for (inv <- avs.entity.actorInvariants) stmts += BAssume(inv,avs)
+      for (inv <- avs.entity.actionInvariants) stmts += BAssume(inv,avs)
     }
     
     for (opat <- schedule.contract.outputPattern) {
@@ -188,6 +199,8 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
           opat.pos,
           "The correct amount of tokens might not be produced on output " + opat.portId)
     }
+    
+    for (inv <- avs.entity.contractInvariants) stmts += BAssert(inv, "Contract invariant might not be preserved", vs)
     
     return List(B.createProc(schedule.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))
   }
@@ -236,8 +249,8 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
     
     stmts += B.Assume(B.Mode(B.This) ==@ Boogie.VarExpr(schedule.contract.fullName))
     stmts += B.Assume(Boogie.VarExpr(BMap.R) ==@ Boogie.VarExpr(BMap.I))
-    for (nwi <- svs.nwInvariants) stmts += BAssume(nwi, svs)
-    for (chi <- svs.chInvariants) stmts += BAssume(chi, svs)
+    for (nwi <- svs.contractInvariants) stmts += BAssume(nwi, svs)
+    for (chi <- svs.actionInvariants) stmts += BAssume(chi, svs)
     
     for (ioi <- svs.translatedIoInvariants(stmtTranslator)) stmts += B.Assume(ioi)
     
@@ -363,7 +376,7 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
         stmts += B.Assume(transExprPrecondCheck(post.expr,acvs))
       }
       
-      for (inv <- e.actor.streamInvariants) stmts += B.Assume(transExpr(inv.expr,acvs))
+      for (inv <- e.actor.streamInvariants(nwvs.useContracts)) stmts += B.Assume(transExpr(inv.expr,acvs))
       
     }
     

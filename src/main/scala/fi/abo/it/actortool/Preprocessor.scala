@@ -155,7 +155,7 @@ case object ActionScheduleProcessor extends Preprocessor {
     newMembers = Declaration("St#",StateType(a,s.states),false,None) :: newMembers
     val statePreds: List[Expr] = s.states map {st => Eq(Id("St#"),Id(st)).setPos(s.pos) }
     val predicate = statePreds.reduceLeft((a,b) => Or(a,b)).setPos(s.pos)
-    newMembers = ActorInvariant(Assertion(predicate,false,None),true,false) :: newMembers
+    newMembers = ActionInvariant(Assertion(predicate,false,None),true,false) :: newMembers
     val actor = 
       BasicActor(
         a.id,
@@ -363,11 +363,11 @@ case object ImplicitNwInvariantHandler extends Preprocessor {
     
     val connections = nw.structure.get.connections
     
-    val explicitTokensAsserts: Set[String] = (TokensFinder.visit(nw.actorInvariants) ::: TokensFinder.visit(nw.channelInvariants)).toSet
+    val explicitTokensAsserts: Set[String] = (TokensFinder.visit(nw.contractInvariants) ::: TokensFinder.visit(nw.actionInvariants)).toSet
     val implicitTokensChs = connections.filter { c => !explicitTokensAsserts.contains(c.id)  }
     val implicitTokensAsserts = implicitTokensChs map { c =>
       val predicate = FunctionApp("tokens",List(Id(c.id).withType(c.typ),IntLiteral(0)))
-      ActorInvariant(Assertion(predicate,false,Some("Unread tokens might be left on channel " + c.id)),true,false)
+      ContractInvariant(Assertion(predicate,false,Some("Unread tokens might be left on channel " + c.id)),true,false)
     }
     
     Network(nw.id, nw.parameters, nw.inports, nw.outports, nw.members ::: implicitTokensAsserts)

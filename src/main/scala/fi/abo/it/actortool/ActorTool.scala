@@ -529,18 +529,12 @@ object ActorTool {
       componentsToVerify map {
         c =>
           c match {
-            case ba: BasicActor =>
-              val generated = (ba.actorInvariants.count { inv => inv.generated })
-              val userProvided = ba.actorInvariants.size - generated
+            case a: DFActor =>
+              val generated = (a.contractInvariants.count { inv => inv.generated }) + (a.actionInvariants.count { inv => inv.generated })
+              val userProvided = (a.contractInvariants.size + a.actionInvariants.size) - generated
               totUserProvided += userProvided
               totGenerated += generated
-              println(ba.fullName + " U:" + userProvided + " G:" + generated)
-            case nw: Network =>
-              val generated = (nw.actorInvariants.count { inv => inv.generated }) + (nw.channelInvariants.count { inv => inv.generated })
-              val userProvided = (nw.actorInvariants.size + nw.channelInvariants.size) - generated
-              totUserProvided += userProvided
-              totGenerated += generated
-              println(nw.fullName + " U:" + userProvided + " G:" + generated)
+              println(a.fullName + " U:" + userProvided + " G:" + generated)
             case _ =>
           }
       }

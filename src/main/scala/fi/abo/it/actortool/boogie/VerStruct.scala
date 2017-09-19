@@ -16,8 +16,8 @@ trait VerStruct[T] {
   def stateChannelNames: Map[String,Id] = Map.empty
   def entities: Seq[Instance] = Seq.empty
   def connections: Seq[Connection] = Seq.empty
-  def nwInvariants: Seq[ActorInvariant] = Seq.empty
-  def chInvariants: Seq[ChannelInvariant] = Seq.empty
+  def contractInvariants: Seq[Invariant] = Seq.empty
+  def actionInvariants: Seq[Invariant] = Seq.empty
   def connectionMap: ConnectionMap = ConnectionMap.empty
   def translatedIoInvariants(t: StmtExpTranslator): Seq[Boogie.Expr] = Seq.empty
   def guardStateVariables: Set[String] = Set.empty
@@ -41,8 +41,8 @@ trait ChildVerStruct[T,P] extends VerStruct[T] {
   override def assumes = parent.assumes
   override def stateChannelNames = parent.stateChannelNames
   override def connections: Seq[Connection] = parent.connections
-  override def nwInvariants: Seq[ActorInvariant] = parent.nwInvariants
-  override def chInvariants: Seq[ChannelInvariant] = parent.chInvariants
+  override def contractInvariants: Seq[Invariant] = parent.contractInvariants
+  override def actionInvariants: Seq[Invariant] = parent.actionInvariants
   override def connectionMap: ConnectionMap = parent.connectionMap
   
   override def translatedIoInvariants(t: StmtExpTranslator): Seq[Boogie.Expr] = 
@@ -87,8 +87,8 @@ class NetworkVerStruct(
   
   override def entities = entity.entities.get.entities
   override def connections = entity.structure.get.connections
-  override def nwInvariants = entity.actorInvariants
-  override def chInvariants = entity.channelInvariants
+  override def contractInvariants = entity.contractInvariants
+  override def actionInvariants = entity.actionInvariants
   
   override def translatedIoInvariants(translator: StmtExpTranslator) = {
     (for ((e,invs) <- ioInvariants) yield {
@@ -195,13 +195,8 @@ object VerStruct {
     
     val (stateDcls,stateChannelNames) = getStateChannels(actor)
     
-    // Declaration of virtual channels for actor variables
-//    for (v <- actor.variables) {
-//      stateChannelNames += v.id -> Id(v.id + B.Sep + "ch").withType(v.typ)
-//      decls += BDecl(stateChannelNames(v.id).id, ChanType(v.typ))
-//    }
     
-    decls ++= stateDcls
+    //decls ++= stateDcls
     
     assumes += B.Assume(createUniquenessCondition(decls.toList))
     
@@ -209,10 +204,10 @@ object VerStruct {
       actor.inports:::actor.outports map { 
         p => B.Assume(B.Int(0) <= B.I(p.id) && B.I(p.id) <= B.R(p.id) && B.R(p.id) <= B.C(p.id)) 
       }
-    assumes ++=
-      stateChannelNames.values map { 
-        k => B.Assume(B.Int(0) <= B.I(k.id) && B.I(k.id) <= B.R(k.id) && B.R(k.id) <= B.C(k.id)) 
-      }
+//    assumes ++=
+//      stateChannelNames.values map { 
+//        k => B.Assume(B.Int(0) <= B.I(k.id) && B.I(k.id) <= B.R(k.id) && B.R(k.id) <= B.C(k.id)) 
+//      }
     
     val (contractModeDecls, contractModeAssumes) = createContractModeDeclsAndAssumes(actor)
     decls ++= contractModeDecls
@@ -232,6 +227,7 @@ object VerStruct {
         assumes.toList,
         useContracts,
         funDeclRenamings.toMap,
+        //Map.empty
         stateChannelNames.toMap
         )
   }
@@ -264,7 +260,7 @@ object VerStruct {
     
     val ioInvariants = new ListBuffer[(Instance,List[Invariant])]
     for (e <- entities) {
-      ioInvariants += e -> e.actor.streamInvariants
+      ioInvariants += e -> e.actor.streamInvariants(useContracts)
     }
     
     decls ++= channels
@@ -365,7 +361,7 @@ object VerStruct {
     val decls = new ListBuffer[BDecl]
     val assumes = new ListBuffer[Boogie.Assume]
     
-    //decls ++= stateChannels.map(s => BDecl(s.id,ChanType(s.typ)))
+    decls ++= stateChannels.map(s => BDecl(s.id,ChanType(s.typ)))
     
     if (schedule.entity.isActor) {
       assumes ++= 

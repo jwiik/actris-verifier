@@ -174,7 +174,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       case nw: Network => 
         generateEndStatePredicate(
             nw, 
-            TokensDefFinder.find(nw.actorInvariants map (_.expr)).toMap, 
+            TokensDefFinder.find(nw.contractInvariants map (_.expr)).toMap, 
             contract, 
             channelMap, 
             nw.structure.get.connections)

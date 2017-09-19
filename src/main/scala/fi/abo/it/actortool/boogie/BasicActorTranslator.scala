@@ -7,11 +7,11 @@ class BasicActorTranslator(
     val smokeTest: Boolean,
     val skipMutualExclusivenessCheck: Boolean,
     val typeCtx: Resolver.Context,
-    val checkContractActions: Boolean) extends EntityTranslator[BasicActor] {
+    val checkContractActions: Boolean) extends EntityTranslator[BasicActor,BasicActor] {
   
-  def translateEntity(actor: BasicActor): List[Boogie.Decl] = {
+  def translateEntity(actor: BasicActor): Seq[BoogieTranslation[BasicActor]] = {
     val avs = VerStruct.forActor(actor, checkContractActions)
-    translateActor(avs)
+    Seq(BoogieTranslation(actor,translateActor(avs)))
   }
   
   def translateActor(avs: ActorVerStruct): List[Boogie.Decl] = {    
@@ -107,7 +107,7 @@ class BasicActorTranslator(
         (avs.declarations map { _.decl }) ++ 
         (inpatDecls map { _.decl }).toList ++
         avs.assumes ++ 
-        avs.entity.actorInvariants.map { inv => B.Assume(transExpr(inv.expr,avs)) } 
+        avs.entity.actionInvariants.map { inv => B.Assume(transExpr(inv.expr,avs)) } 
       
       val stmt = decls ::: createMEAssertionsRec(avs.entity,guards)
       Some(B.createProc(Uniquifier.get(avs.namePrefix+B.Sep+"GuardWD"), stmt, smokeTest))
@@ -156,7 +156,7 @@ class BasicActorTranslator(
       asgn += Boogie.Assign(B.C(transExpr(ch,vs)),B.C(transExpr(ch,vs)) + B.Int(1))
     }
     
-    for (inv <- vs.parent.entity.actorInvariants) {
+    for (inv <- vs.parent.entity.actionInvariants) {
       if (!inv.assertion.free) 
         asgn += B.Assert(transExpr(inv.expr,vs),inv.expr.pos, "Initialization might not establish the invariant")
     }
@@ -173,7 +173,7 @@ class BasicActorTranslator(
      
     val asgn = new ListBuffer[Boogie.Stmt]
     
-    val invariants = vs.parent.entity.actorInvariants
+    val invariants = vs.parent.entity.actionInvariants
 
     asgn ++= vs.declarations map { _.decl }
     //asgn ++= vs.de map { _.decl }
@@ -275,7 +275,7 @@ class BasicActorTranslator(
       asgn += B.Assume(B.R(op.id) ==@ B.I(op.id))
     }
     
-    asgn ++= { for (i <- avs.entity.actorInvariants) yield B.Assume(transExpr(i.expr,avs)) }
+    asgn ++= { for (i <- avs.entity.actionInvariants) yield B.Assume(transExpr(i.expr,avs)) }
     
     asgn.toList
   }
@@ -299,7 +299,7 @@ class BasicActorTranslator(
       asgn += B.Assume(transExpr(r,avs))
     }
     
-    for (chi <- avs.entity.actorInvariants) {
+    for (chi <- avs.entity.actionInvariants) {
       if (!chi.assertion.free) {
         asgn += BAssert(chi, "Invariant might be falsified by actor input", avs)
       }
@@ -342,7 +342,7 @@ class BasicActorTranslator(
     }
     asgn += Boogie.Assign(Boogie.VarExpr(BMap.I), Boogie.VarExpr(BMap.R))
     
-    for (inv <- avs.entity.actorInvariants) {
+    for (inv <- avs.entity.actionInvariants) {
       if (!inv.assertion.free) {
         asgn += BAssert(inv,"The actor might not preserve the invariant with contract '" + action.fullName + "' at " + action.pos,avs)
       }

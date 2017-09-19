@@ -34,6 +34,8 @@ actor Algo_Add () int(size=9) MOT, int(size=9) TEX, int(size=12) BTYPE ==> int(s
 		guard (BTYPE[@] & INTRA) = int(0,12)
 		guard (BTYPE[@] & ACCODED) != int(0,12)
 	end
+	
+	stream invariant rd@(BTYPE) = 0 ==> state(s_cmd)
 
 	//_CAL_tokenMonitor := true;
 	// Ignore new VOP command

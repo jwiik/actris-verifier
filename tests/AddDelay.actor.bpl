@@ -212,20 +212,20 @@ procedure Netinit#6()
   C#[Net#b] := C#[Net#b] + 1;
   assert {:msg "AddDelay.actor(23.15): Initialization of network 'Net' might not establish the channel invariant (#18)"} M#[Net#b][0] == 0;
   assert {:msg "AddDelay.actor(24.15): Initialization of network 'Net' might not establish the channel invariant (#19)"} 0 <= M#[Net#b][I#[Net#b]];
-  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#20)"} I#[Net#c] == I#[Net#a];
-  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#21)"} I#[Net#c] == I#[Net#b];
-  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#22)"} I#[Net#b] == I#[Net#e];
-  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#23)"} I#[Net#d] == I#[Net#c];
-  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#24)"} I#[Net#e] == I#[Net#c];
-  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#25)"} (Mode#[this#] == anon__4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
-  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#26)"} (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
+  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#20)"} R#[Net#a] == C#[Net#d];
+  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#21)"} I#[Net#c] == I#[Net#a];
+  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#22)"} I#[Net#c] == I#[Net#b];
+  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#23)"} I#[Net#b] == I#[Net#e];
+  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#24)"} I#[Net#d] == I#[Net#c];
+  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#25)"} I#[Net#e] == I#[Net#c];
+  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#26)"} (Mode#[this#] == anon__4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
+  assert {:msg "Initialization of network 'Net' might not establish the channel invariant (#27)"} (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
   I# := R#;
-  assert {:msg "AddDelay.actor(22.13): Initialization of network 'Net' might not establish the network invariant (#27)"} (C#[Net#b] - R#[Net#b]) == 1;
-  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel a (#28)"} (C#[Net#a] - R#[Net#a]) == 0;
-  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel c (#29)"} (C#[Net#c] - R#[Net#c]) == 0;
-  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel d (#30)"} (C#[Net#d] - R#[Net#d]) == 0;
-  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel e (#31)"} (C#[Net#e] - R#[Net#e]) == 0;
-  assert {:msg "Initialization of network 'Net' might not establish the network invariant (#32)"} R#[Net#a] == C#[Net#d];
+  assert {:msg "AddDelay.actor(22.13): Initialization of network 'Net' might not establish the network invariant (#28)"} (C#[Net#b] - R#[Net#b]) == 1;
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel a (#29)"} (C#[Net#a] - R#[Net#a]) == 0;
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel c (#30)"} (C#[Net#c] - R#[Net#c]) == 0;
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel d (#31)"} (C#[Net#d] - R#[Net#d]) == 0;
+  assert {:msg "Initialization of network 'Net' might not establish the network invariant: Unread tokens might be left on channel e (#32)"} (C#[Net#e] - R#[Net#e]) == 0;
 }
 procedure Net#Add#anon__22#7()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -252,6 +252,7 @@ procedure Net#Add#anon__22#7()
   I#sub[Net#c] := C#[Net#c];
   assume M#[Net#b][0] == 0;
   assume 0 <= M#[Net#b][I#[Net#b]];
+  assume R#[Net#a] == C#[Net#c];
   assume I#[Net#c] == I#[Net#a];
   assume I#[Net#c] == I#[Net#b];
   assume I#[Net#b] == I#[Net#e];
@@ -285,13 +286,14 @@ procedure Net#Add#anon__22#7()
   C#[Net#c] := C#[Net#c] + 1;
   assert {:msg "AddDelay.actor(23.15): Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#33)"} M#[Net#b][0] == 0;
   assert {:msg "AddDelay.actor(24.15): Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#34)"} 0 <= M#[Net#b][I#[Net#b]];
-  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#35)"} I#[Net#c] == I#[Net#a];
-  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#36)"} I#[Net#c] == I#[Net#b];
-  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#37)"} I#[Net#b] == I#[Net#e];
-  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#38)"} I#[Net#d] == I#[Net#c];
-  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#39)"} I#[Net#e] == I#[Net#c];
-  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#40)"} (Mode#[this#] == anon__4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
-  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#41)"} (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
+  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#35)"} R#[Net#a] == C#[Net#c];
+  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#36)"} I#[Net#c] == I#[Net#a];
+  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#37)"} I#[Net#c] == I#[Net#b];
+  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#38)"} I#[Net#b] == I#[Net#e];
+  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#39)"} I#[Net#d] == I#[Net#c];
+  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#40)"} I#[Net#e] == I#[Net#c];
+  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#41)"} (Mode#[this#] == anon__4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
+  assert {:msg "Action at AddDelay.actor(2.3) ('anon__22') for actor instance 'add' might not preserve the channel invariant (#42)"} (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
 }
 procedure Net#Delay#anon__25#8()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -316,6 +318,7 @@ procedure Net#Delay#anon__25#8()
   I#sub[Net#b] := C#[Net#b];
   assume M#[Net#b][0] == 0;
   assume 0 <= M#[Net#b][I#[Net#b]];
+  assume R#[Net#e] == C#[Net#b];
   assume I#[Net#c] == I#[Net#a];
   assume I#[Net#c] == I#[Net#b];
   assume I#[Net#b] == I#[Net#e];
@@ -345,15 +348,16 @@ procedure Net#Delay#anon__25#8()
   R#[Net#e] := R#[Net#e] + 1;
   M#[Net#b][C#[Net#b]] := del#in1#i;
   C#[Net#b] := C#[Net#b] + 1;
-  assert {:msg "AddDelay.actor(23.15): Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#42)"} M#[Net#b][0] == 0;
-  assert {:msg "AddDelay.actor(24.15): Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#43)"} 0 <= M#[Net#b][I#[Net#b]];
-  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#44)"} I#[Net#c] == I#[Net#a];
-  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#45)"} I#[Net#c] == I#[Net#b];
-  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#46)"} I#[Net#b] == I#[Net#e];
-  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#47)"} I#[Net#d] == I#[Net#c];
-  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#48)"} I#[Net#e] == I#[Net#c];
-  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#49)"} (Mode#[this#] == anon__4) ==> (((C#[Net#e] - I#[Net#e]) >= 1) ==> (0 <= M#[Net#e][I#[Net#e]]));
-  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#50)"} (Mode#[this#] == anon__4) ==> ((C#[Net#e] - I#[Net#e]) <= 1);
+  assert {:msg "AddDelay.actor(23.15): Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#43)"} M#[Net#b][0] == 0;
+  assert {:msg "AddDelay.actor(24.15): Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#44)"} 0 <= M#[Net#b][I#[Net#b]];
+  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#45)"} R#[Net#e] == C#[Net#b];
+  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#46)"} I#[Net#c] == I#[Net#a];
+  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#47)"} I#[Net#c] == I#[Net#b];
+  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#48)"} I#[Net#b] == I#[Net#e];
+  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#49)"} I#[Net#d] == I#[Net#c];
+  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#50)"} I#[Net#e] == I#[Net#c];
+  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#51)"} (Mode#[this#] == anon__4) ==> (((C#[Net#e] - I#[Net#e]) >= 1) ==> (0 <= M#[Net#e][I#[Net#e]]));
+  assert {:msg "Action at AddDelay.actor(11.3) ('anon__25') for actor instance 'del' might not preserve the channel invariant (#52)"} (Mode#[this#] == anon__4) ==> ((C#[Net#e] - I#[Net#e]) <= 1);
 }
 procedure Net#Split#anon__23#9()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -379,6 +383,7 @@ procedure Net#Split#anon__23#9()
   I#sub[Net#e] := C#[Net#e];
   assume M#[Net#b][0] == 0;
   assume 0 <= M#[Net#b][I#[Net#b]];
+  assume R#[Net#c] == C#[Net#d];
   assume I#[Net#c] == I#[Net#a];
   assume I#[Net#c] == I#[Net#b];
   assume I#[Net#b] == I#[Net#e];
@@ -410,15 +415,16 @@ procedure Net#Split#anon__23#9()
   C#[Net#d] := C#[Net#d] + 1;
   M#[Net#e][C#[Net#e]] := spl#in1#i;
   C#[Net#e] := C#[Net#e] + 1;
-  assert {:msg "AddDelay.actor(23.15): Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#51)"} M#[Net#b][0] == 0;
-  assert {:msg "AddDelay.actor(24.15): Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#52)"} 0 <= M#[Net#b][I#[Net#b]];
-  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#53)"} I#[Net#c] == I#[Net#a];
-  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#54)"} I#[Net#c] == I#[Net#b];
-  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#55)"} I#[Net#b] == I#[Net#e];
-  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#56)"} I#[Net#d] == I#[Net#c];
-  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#57)"} I#[Net#e] == I#[Net#c];
-  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#58)"} (Mode#[this#] == anon__4) ==> (((C#[Net#c] - I#[Net#c]) >= 1) ==> (0 <= M#[Net#c][I#[Net#c]]));
-  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#59)"} (Mode#[this#] == anon__4) ==> ((C#[Net#c] - I#[Net#c]) <= 1);
+  assert {:msg "AddDelay.actor(23.15): Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#53)"} M#[Net#b][0] == 0;
+  assert {:msg "AddDelay.actor(24.15): Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#54)"} 0 <= M#[Net#b][I#[Net#b]];
+  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#55)"} R#[Net#c] == C#[Net#d];
+  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#56)"} I#[Net#c] == I#[Net#a];
+  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#57)"} I#[Net#c] == I#[Net#b];
+  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#58)"} I#[Net#b] == I#[Net#e];
+  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#59)"} I#[Net#d] == I#[Net#c];
+  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#60)"} I#[Net#e] == I#[Net#c];
+  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#61)"} (Mode#[this#] == anon__4) ==> (((C#[Net#c] - I#[Net#c]) >= 1) ==> (0 <= M#[Net#c][I#[Net#c]]));
+  assert {:msg "Action at AddDelay.actor(6.3) ('anon__23') for actor instance 'spl' might not preserve the channel invariant (#62)"} (Mode#[this#] == anon__4) ==> ((C#[Net#c] - I#[Net#c]) <= 1);
 }
 procedure Netanon__4#input#in1#10()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -442,6 +448,7 @@ procedure Netanon__4#input#in1#10()
   assume (C#[Net#a] - I#[Net#a]) < 1;
   assume M#[Net#b][0] == 0;
   assume 0 <= M#[Net#b][I#[Net#b]];
+  assume R#[Net#a] == C#[Net#d];
   assume I#[Net#c] == I#[Net#a];
   assume I#[Net#c] == I#[Net#b];
   assume I#[Net#b] == I#[Net#e];
@@ -468,15 +475,16 @@ procedure Netanon__4#input#in1#10()
   );
   C#[Net#a] := C#[Net#a] + 1;
   assume 0 <= M#[Net#a][I#[Net#a]];
-  assert {:msg "AddDelay.actor(23.15): Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#60)"} M#[Net#b][0] == 0;
-  assert {:msg "AddDelay.actor(24.15): Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#61)"} 0 <= M#[Net#b][I#[Net#b]];
-  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#62)"} I#[Net#c] == I#[Net#a];
-  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#63)"} I#[Net#c] == I#[Net#b];
-  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#64)"} I#[Net#b] == I#[Net#e];
-  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#65)"} I#[Net#d] == I#[Net#c];
-  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#66)"} I#[Net#e] == I#[Net#c];
-  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#67)"} (Mode#[this#] == anon__4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
-  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#68)"} (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
+  assert {:msg "AddDelay.actor(23.15): Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#63)"} M#[Net#b][0] == 0;
+  assert {:msg "AddDelay.actor(24.15): Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#64)"} 0 <= M#[Net#b][I#[Net#b]];
+  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#65)"} R#[Net#a] == C#[Net#d];
+  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#66)"} I#[Net#c] == I#[Net#a];
+  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#67)"} I#[Net#c] == I#[Net#b];
+  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#68)"} I#[Net#b] == I#[Net#e];
+  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#69)"} I#[Net#d] == I#[Net#c];
+  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#70)"} I#[Net#e] == I#[Net#c];
+  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#71)"} (Mode#[this#] == anon__4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
+  assert {:msg "Channel invariant might be falsified by network input on port 'in1' for contract 'anon__4' (#72)"} (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
 }
 procedure Netanon__4#exit#11()
   modifies C#, R#, M#, I#, H#, I#sub;
@@ -499,6 +507,7 @@ procedure Netanon__4#exit#11()
   assume Mode#[this#] == anon__4;
   assume M#[Net#b][0] == 0;
   assume 0 <= M#[Net#b][I#[Net#b]];
+  assume R#[Net#a] == C#[Net#d];
   assume I#[Net#c] == I#[Net#a];
   assume I#[Net#c] == I#[Net#b];
   assume I#[Net#b] == I#[Net#e];
@@ -528,24 +537,24 @@ procedure Netanon__4#exit#11()
   assume !((1 <= (C#[Net#a] - R#[Net#a])) && (1 <= (C#[Net#b] - R#[Net#b])));
   assume !(1 <= (C#[Net#e] - R#[Net#e]));
   assume !(1 <= (C#[Net#c] - R#[Net#c]));
-  assert {:msg "AddDelay.actor(16.3): The correct number of tokens might not be produced on output 'out' for contract 'anon__4' (#69)"} (C#[Net#d] - I#[Net#d]) == 1;
-  assert {:msg "Network action postcondition might not hold (#70)"} M#[Net#d][I#[Net#d]] >= M#[Net#a][I#[Net#a]];
-  assert {:msg "Network action postcondition might not hold (#71)"} (0 < I#[Net#d]) ==> (M#[Net#d][I#[Net#d]] == (M#[Net#d][I#[Net#d] - 1] + M#[Net#a][I#[Net#a]]));
+  assert {:msg "AddDelay.actor(16.3): The correct number of tokens might not be produced on output 'out' for contract 'anon__4' (#73)"} (C#[Net#d] - I#[Net#d]) == 1;
+  assert {:msg "Network action postcondition might not hold (#74)"} M#[Net#d][I#[Net#d]] >= M#[Net#a][I#[Net#a]];
+  assert {:msg "Network action postcondition might not hold (#75)"} (0 < I#[Net#d]) ==> (M#[Net#d][I#[Net#d]] == (M#[Net#d][I#[Net#d] - 1] + M#[Net#a][I#[Net#a]]));
   R#[Net#d] := R#[Net#d] + 1;
   I# := R#;
-  assert {:msg "AddDelay.actor(23.15): The network might not preserve the channel invariant for contract 'anon__4' (#72)"} M#[Net#b][0] == 0;
-  assert {:msg "AddDelay.actor(24.15): The network might not preserve the channel invariant for contract 'anon__4' (#73)"} 0 <= M#[Net#b][I#[Net#b]];
-  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#74)"} I#[Net#c] == I#[Net#a];
-  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#75)"} I#[Net#c] == I#[Net#b];
-  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#76)"} I#[Net#b] == I#[Net#e];
-  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#77)"} I#[Net#d] == I#[Net#c];
-  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#78)"} I#[Net#e] == I#[Net#c];
-  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#79)"} (Mode#[this#] == anon__4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
-  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#80)"} (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
-  assert {:msg "AddDelay.actor(22.13): The network might not preserve the network invariant for contract 'anon__4' (#81)"} (C#[Net#b] - R#[Net#b]) == 1;
-  assert {:msg "The network might not preserve the network invariant for contract 'anon__4': Unread tokens might be left on channel a (#82)"} (C#[Net#a] - R#[Net#a]) == 0;
-  assert {:msg "The network might not preserve the network invariant for contract 'anon__4': Unread tokens might be left on channel c (#83)"} (C#[Net#c] - R#[Net#c]) == 0;
-  assert {:msg "The network might not preserve the network invariant for contract 'anon__4': Unread tokens might be left on channel d (#84)"} (C#[Net#d] - R#[Net#d]) == 0;
-  assert {:msg "The network might not preserve the network invariant for contract 'anon__4': Unread tokens might be left on channel e (#85)"} (C#[Net#e] - R#[Net#e]) == 0;
-  assert {:msg "The network might not preserve the network invariant for contract 'anon__4' (#86)"} R#[Net#a] == C#[Net#d];
+  assert {:msg "AddDelay.actor(23.15): The network might not preserve the channel invariant for contract 'anon__4' (#76)"} M#[Net#b][0] == 0;
+  assert {:msg "AddDelay.actor(24.15): The network might not preserve the channel invariant for contract 'anon__4' (#77)"} 0 <= M#[Net#b][I#[Net#b]];
+  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#78)"} R#[Net#a] == C#[Net#d];
+  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#79)"} I#[Net#c] == I#[Net#a];
+  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#80)"} I#[Net#c] == I#[Net#b];
+  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#81)"} I#[Net#b] == I#[Net#e];
+  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#82)"} I#[Net#d] == I#[Net#c];
+  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#83)"} I#[Net#e] == I#[Net#c];
+  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#84)"} (Mode#[this#] == anon__4) ==> (((C#[Net#a] - I#[Net#a]) >= 1) ==> (0 <= M#[Net#a][I#[Net#a]]));
+  assert {:msg "The network might not preserve the channel invariant for contract 'anon__4' (#85)"} (Mode#[this#] == anon__4) ==> ((C#[Net#a] - I#[Net#a]) <= 1);
+  assert {:msg "AddDelay.actor(22.13): The network might not preserve the network invariant for contract 'anon__4' (#86)"} (C#[Net#b] - R#[Net#b]) == 1;
+  assert {:msg "The network might not preserve the network invariant for contract 'anon__4': Unread tokens might be left on channel a (#87)"} (C#[Net#a] - R#[Net#a]) == 0;
+  assert {:msg "The network might not preserve the network invariant for contract 'anon__4': Unread tokens might be left on channel c (#88)"} (C#[Net#c] - R#[Net#c]) == 0;
+  assert {:msg "The network might not preserve the network invariant for contract 'anon__4': Unread tokens might be left on channel d (#89)"} (C#[Net#d] - R#[Net#d]) == 0;
+  assert {:msg "The network might not preserve the network invariant for contract 'anon__4': Unread tokens might be left on channel e (#90)"} (C#[Net#e] - R#[Net#e]) == 0;
 }
