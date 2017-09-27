@@ -15,6 +15,7 @@ object Promela {
     def &&(e: Expr) = BinaryExpr(this,"&&",e)
     def ||(e: Expr) = BinaryExpr(this,"||",e)
     def ==@(e: Expr) = BinaryExpr(this,"==",e)
+    def !=@(e: Expr) = BinaryExpr(this,"!=",e)
   }
   trait Type
   
@@ -34,7 +35,7 @@ object Promela {
   case class Iteration(options: List[OptionStmt]) extends Stmt
   case class For(ivar: VarExp, start: Expr, end: Expr, body: List[Stmt]) extends Stmt
   case class Assign(trgt: Expr, value: Expr) extends Stmt
-  case class Run(procId: String, params: List[Expr]) extends Stmt
+  case class Run(procId: String, params: List[Expr], priority: Option[Expr]) extends Stmt
   case class Send(ch: String, exp: Expr) extends Stmt
   case class Receive(ch: String, exp: Expr) extends Stmt
   case class Peek(ch: String, exp: Expr) extends Stmt
@@ -70,7 +71,7 @@ object Promela {
   
   private val nl = System.getProperty("line.separator");
   
-  class PromelaPrinter(ccode: Boolean) {
+  class PromelaPrinter(ccode: Boolean, priorities: Boolean) {
     
     var indentLvl = 0
     
@@ -199,8 +200,16 @@ object Promela {
         case Send(cId, exp) => indent + cId + " ! (" + printExpr(exp) + ");"
         case Receive(cId, exp) => indent + cId + " ? (" + printExpr(exp) + ");"
         case Peek(cId, exp) => indent + cId + " ? <" + printExpr(exp) + ">;"
-        case Run(pId, params) =>
-          indent + "run " + pId + "(" + (params.map { e => printExpr(e) }).mkString(",") + ");"
+        case Run(pId, params, priority) => {
+          val priorityStr = {
+            priority match {
+              case None => ""
+              case Some(expr) => 
+                if (priorities) " priority " + printExpr(expr) else ""
+            }
+          }
+          indent + "run " + pId + "(" + (params.map { e => printExpr(e) }).mkString(",") + ")" + priorityStr + ";"
+        }
         case vd: VarDecl => printVarDecl(vd)
         case PrintStmt(str) => indent + "printf(\"" + str + "\");"
         case PrintStmtValue(str,args) => indent + "printf(\"" + str + "\"," + (args.map { e => printExpr(e) }).mkString(",") + ");"

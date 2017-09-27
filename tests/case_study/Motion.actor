@@ -37,7 +37,7 @@ network Motion
     guard (BTYPE[@] & ACCODED) != int(0,12)
     guard (BTYPE[@] & MOTION) = int(0,12)
   end
-  
+/*  
   entities
     btype_bc = Broadcast3();
     vid_bc = Broadcast2_9();
@@ -46,7 +46,29 @@ network Motion
     buffer = Mgnt_Framebuf();
     interpolation = Algo_Interp_HalfpelBilinearRoundingControl();
   end
+*/
+/*
+  // Opt. for locality
+  entities
+    vid_bc = Broadcast2_9();
+    add = Algo_Add();
+    interpolation = Algo_Interp_HalfpelBilinearRoundingControl();
+    buffer = Mgnt_Framebuf();
+    address = Mgnt_Address();
+    btype_bc = Broadcast3();
+  end
+*/
 
+  // Opt. for buffer size
+  entities
+    btype_bc = Broadcast3();
+    address = Mgnt_Address();
+    buffer = Mgnt_Framebuf();
+    interpolation = Algo_Interp_HalfpelBilinearRoundingControl();
+    add = Algo_Add();
+    vid_bc = Broadcast2_9();
+  end
+  
   structure
     cBTYPE: BTYPE --> btype_bc.X;
     cBTYPE_add: btype_bc.Y1 --> add.BTYPE;

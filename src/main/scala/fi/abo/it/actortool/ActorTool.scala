@@ -258,7 +258,6 @@ object ActorTool {
         case Param("scheduleWeights") => {
           val errMsg = "parameter scheduleWeights takes a comma-separated where each element is of format W=x, wherw W is an identifier and x is an integer"
 
-            
           value match {
             case Some(list) => {
               try {
@@ -452,6 +451,9 @@ object ActorTool {
       }
     }
     
+    timings += (Step.Infer -> (System.nanoTime - tmpTime))
+    tmpTime = System.nanoTime
+    
     if (params.PrintXMLDescription) {
       println(util.XMLPrinter.printPretty(program))
       return
@@ -482,24 +484,24 @@ object ActorTool {
       timings += (Step.Scheduling -> (System.nanoTime - tmpTime))
       tmpTime = System.nanoTime
       
-      
-      val scheduleVerifier = new BoogieScheduleVerifier(params)
-      println
-      for (s <- scheduleCtxs) {
-        println("Verifying schedules for " + s.entity.fullName + "...")
-        scheduleVerifier.invoke(s)
+      if (params.DoVerify) {
+        val scheduleVerifier = new BoogieScheduleVerifier(params)
+        println
+        for (s <- scheduleCtxs) {
+          println("Verifying schedules for " + s.entity.fullName + "...")
+          scheduleVerifier.invoke(s)
+        }
+        println
+        
+        timings += (Step.Verification -> (System.nanoTime - tmpTime))
+        tmpTime = System.nanoTime
       }
-      println
-      
-      timings += (Step.Verification -> (System.nanoTime - tmpTime))
-      tmpTime = System.nanoTime
       
     }
     else {
       // Verification
       
-      timings += (Step.Infer -> (System.nanoTime - tmpTime))
-      tmpTime = System.nanoTime
+      
   
       if (!params.DoTranslate) return
       

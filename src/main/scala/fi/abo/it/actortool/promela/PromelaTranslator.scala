@@ -255,7 +255,7 @@ class PromelaTranslator(params: CommandLineParameters) {
         val chanNames = actor.inports:::actor.outports map { p => instance.connections(p.id) }
         val chanParams = chanNames map { p => P.VarExp(rootRenamings.R(p.id)) }
         val givenParams = instance.arguments map { x => translateExpr(x)(rootRenamings) }
-        P.Run(actor.id, P.IntLiteral(instance.mapId)::chanParams:::givenParams)
+        P.Run(actor.id, P.IntLiteral(instance.mapId)::chanParams:::givenParams, None)
       }
     }
     
@@ -291,6 +291,19 @@ class PromelaTranslator(params: CommandLineParameters) {
       decls +=  P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
+    decls += P.VarDecl(
+        Instrumentation.MAX_SIZE_ARRAY,
+        P.ArrayType(P.NamedType("int"), nw.structure.get.connections.size),
+        None)
+    
+//    for (c <- nw.structure.get.connections) {
+//      decls +=  
+//        P.VarDecl(
+//            "__INSTR_MAX_" + rootRenamings.R(c.id), 
+//            P.NamedType("int"),
+//            Some(P.IntLiteral(0)))
+//    }
+    
     
     val chans = nw.structure.get.connections.filter{ c => !c.isInput && !c.isOutput }
     val chansWithMax = chans.map { ch => {
@@ -319,12 +332,12 @@ class PromelaTranslator(params: CommandLineParameters) {
     }
     
     val runs: List[P.Run] = {
-      for ((id,instance) <- instances.toList) yield {
+      for (((id,instance),idx) <- instances.toList.zipWithIndex) yield {
         val actor = instance.actor
         val chanNames = actor.inports:::actor.outports map { p => instance.connections(p.id) }
         val chanParams = chanNames map { p => P.VarExp(rootRenamings.R(p.id)) }
         val givenParams = instance.arguments map { x => translateExpr(x)(rootRenamings) }
-        P.Run(actor.id, P.IntLiteral(instance.mapId)::chanParams:::givenParams)
+        P.Run(actor.id, P.IntLiteral(instance.mapId)::chanParams:::givenParams, Some(P.IntLiteral(idx+1)))
       }
     }
     

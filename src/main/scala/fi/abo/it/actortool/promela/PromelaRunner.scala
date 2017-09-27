@@ -14,7 +14,8 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 object PromelaRunner {
   
   def simulate(progTxt: String, outputFile: String, scheduleParser: ScheduleParser) = {
-    val process = Process(Seq("/Users/jonatan/Tools/bin/spin","-T",outputFile), new java.io.File("output"))
+    val seed = scala.util.Random.nextInt
+    val process = Process(Seq("/Users/jonatan/Tools/bin/spin","-T","-n"+seed,outputFile), new java.io.File("output"))
     writeFile("output/"+outputFile,progTxt)
     val parser = new SpinParser(Step.Simulate)
     var exitCode = process ! parser
@@ -40,7 +41,7 @@ object PromelaRunner {
   def search(progTxt: String, outputFile: String, scheduleParser: ScheduleParser): Int = {
     val commands = List(
         Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile),
-        Seq("gcc", "-O2" ,"-DVECTORSZ=1000000", "-DCOLLAPSE", "-DSAFETY","-DMEMLIM=6144" ,"-o","pan","pan.c"),
+        Seq("gcc", "-O2" ,"-DVECTORSZ=1000000", "-DCOLLAPSE", "-DSAFETY","-DMEMLIM=4096" /*, "-DMA=600000"*/ ,"-o","pan","pan.c"),
         Seq("./pan", "-m1000000"),
         Seq("./pan", "-r", "-n")
       )
@@ -92,16 +93,22 @@ object PromelaRunner {
       
       var exitCode = proc.exitValue
       if (exitCode != 0) {
-        val output = parser.mkString
-        System.err.println(output)
-        writeFile("output/" + outputFile + "_pml_backend.log", output)
-        throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
+        if (step == Step.Simulate) {
+          System.err.println("Warning: no schedule was found during search")
+        }
+        else {
+          val output = parser.mkString
+          System.err.println(output)
+          writeFile("output/" + outputFile + "_pml_backend.log", output)
+          throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
+        }
       }
-      if (step == Step.Simulate) {
-        scheduleParser.setCost(parser.cost)
-        scheduleParser.read(parser.schedule)
+      else {
+        if (step == Step.Simulate) {
+          scheduleParser.setCost(parser.cost)
+          scheduleParser.read(parser.schedule)
+        }
       }
-      
       parser.nextStep
     }
     
@@ -118,9 +125,6 @@ object PromelaRunner {
     writer.flush
     writer.close
   }
-  
-  
-  
   
 }
 

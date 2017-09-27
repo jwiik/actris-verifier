@@ -18,14 +18,20 @@ class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
   
   def schedule(entity: DFActor, mergedActors: Map[String,BasicActor], constants: List[Declaration]): List[ContractSchedule] = {
      val translations = translator.invoke(entity,mergedActors,Map.empty,constants)
-     val schedules = for (t <- translations) yield scheduleForContract(t)
+     val translationsToSchedule = translations
+     /*
+     .filter { 
+       t => params.ContractsToVerify.contains((t.entity.fullName -> t.contract.fullName)) 
+     }
+     */
+     val schedules = for (t <- translationsToSchedule) yield scheduleForContract(t)
      schedules
   }
   
   def scheduleForContract[T<:DFActor](translation: Translation[T]): ContractSchedule = {
     
-    val printerNoC = new Promela.PromelaPrinter(false)
-    val printerC = new Promela.PromelaPrinter(true)
+    val printerNoC = new Promela.PromelaPrinter(false,true)
+    val printerC = new Promela.PromelaPrinter(true,false)
     val simOutputParser = new ScheduleParser(translation)
     
     val promelaProg = translation.promelaProgram
@@ -43,18 +49,38 @@ class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
     
     val progTxtNoC = initCostDef + PromelaPrelude.get + promelaProg.map(printerNoC.print).foldLeft("")((a,b) => a + b)
     
-    println("Running spin simulation on contract '" + contract.fullName + "' of '" + entity.id + "'...")
+    println("Running spin simulations on contract '" + contract.fullName + "' of '" + entity.id + "'...")
+    
+    var simulatedSchedule: Option[ContractSchedule] = None 
+    for (i <- (0 until 10)) {
+      simOutputParser.startSchedule(contract)
+      PromelaRunner.simulate(progTxtNoC, entity.id + "__" + contract.fullName+"_sim.pml", simOutputParser)
+      simOutputParser.endSchedule
       
-    simOutputParser.startSchedule(contract)
-    PromelaRunner.simulate(progTxtNoC, entity.id + "__" + contract.fullName+"_sim.pml", simOutputParser)
-    simOutputParser.endSchedule
-    val simulatedSchedule = simOutputParser.getSchedule
+      val schedule = simOutputParser.getSchedule
+      
+      println(">>  " + schedule.cost)
+      
+      simulatedSchedule match {
+        case Some(bestSchedule) => {
+          if (bestSchedule.cost > schedule.cost) {
+            println(">> New best: " + schedule.cost)
+            simulatedSchedule = Some(schedule)
+          }
+        }
+        case None => {
+          simulatedSchedule = Some(schedule)
+        }
+      }
+
+    }
+    
     if (params.ScheduleSimulate) {
-      simulatedSchedule
+      simulatedSchedule.get
     }
     else {
-      val schedLength = simulatedSchedule.length
-      val schedCost = simulatedSchedule.cost
+      val schedLength = simulatedSchedule.get.length
+      val schedCost = simulatedSchedule.get.cost
       
       val outputParser = new ScheduleParser(translation)
       
@@ -83,7 +109,12 @@ class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
       outputParser.endSchedule
       val schedule = outputParser.getSchedule
       
-      schedule
+      if (schedule.cost == -1) {
+        simulatedSchedule.get
+      }
+      else {
+        schedule
+      }
     }
     
     

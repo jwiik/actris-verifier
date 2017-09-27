@@ -36,31 +36,13 @@ class InstrumentationSubPrelude(initCost: Int) extends PromelaPreludeComponent {
 
 int __INSTR_COST = 0;
 int __INSTR_ACC_BUFFER_SUM = 0;
+int __INSTR_ACTOR_SWITCHES = 0;
 int __INSTR_NUM_FIRINGS = 0;
+int __INSTR_PREV_ACTOR = -1;
+int __INSTR_BUFFER_SUM = -1;
+int __INSTR_MAX_BUFFER_SUM = -1;
 
 c_state "int BEST_COST = @init_cost@" "Hidden"
-
-c_code {
-  
-  int best_c() {
-    if (now.__INSTR_COST < BEST_COST) {
-      return 1;
-    }
-    else {
-      return 0;
-    }
-  }
-  
-  int best() {
-    if (now.__INSTR_COST < BEST_COST) {
-      BEST_COST = now.__INSTR_COST;
-      printf(">> New best: %d\n", BEST_COST);
-      putrail();
-      //Nr_Trails--;
-    }
-    return 0;
-  }
-}
 
 """
 /*
