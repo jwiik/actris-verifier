@@ -57,9 +57,23 @@ class Checker {
     override def toString = z3Model.toString
   }
   
-  class Context(
-      val z3Constants: Map[String,Z3AST], 
-      val z3FuncDecls: Map[String,Z3FuncDecl])
+  trait Context {
+    def constants: Map[String,Z3AST]
+    def functionDecls: Map[String,Z3FuncDecl]
+  }
+  
+  class BasicContext(
+      override val constants: Map[String,Z3AST], 
+      override val functionDecls: Map[String,Z3FuncDecl]) extends Context
+      
+  class ChildContext(
+      val parent: Context,
+      val chConstants: Map[String,Z3AST], 
+      val chFunctionDecls: Map[String,Z3FuncDecl]) extends Context {
+    
+    override val constants = parent.constants ++ chConstants
+    override val functionDecls = parent.functionDecls ++ chFunctionDecls
+  }
   
   def getSatisfyingModel(
       constraints: List[Expr],
@@ -82,7 +96,7 @@ class Checker {
           "C#" -> z3.mkFuncDecl("C#", Types.Chan, Types.Int))//,
           //"M#" -> z3.mkFuncDecl("M#", Seq(Types.Chan,Types.Int), Types.Int)
     
-    val ctx = new Context(z3Constants ++ z3PortIds,z3Funcs++z3Ports)
+    val ctx = new BasicContext(z3Constants ++ z3PortIds,z3Funcs++z3Ports)
     val z3ConstantConstraints = 
       (portIds.map { d => z3.mkEq(z3PortIds(d.id), transExpr(d.value.get)(ctx) ) }) :::
       (constants.map { d => z3.mkEq(z3Constants(d.id), transExpr(d.value.get)(ctx) ) })
@@ -151,6 +165,12 @@ class Checker {
       case Or(l,r) => z3.mkOr(transExpr(l),transExpr(r))
       case Not(e) => z3.mkNot(transExpr(e))
       case Implies(l,r) => z3.mkImplies(transExpr(l),transExpr(r))
+      case Forall(vars,exp,pat) => {
+        val quantDecls = vars.map { d =>  (z3.mkSymbol(d.id),transType(d.typ)) }
+        val ctxDecls = vars.map{ d =>  d.id -> z3.mkConst(d.id, transType(d.typ)) }.toMap
+        val cCtx = new ChildContext(ctx,ctxDecls,Map.empty)
+        z3.mkForall(1, Seq.empty, quantDecls, transExpr(exp)(cCtx))
+      }
       case Less(l,r) => {
         l.typ match {
           case BvType(_,true) => z3.mkBVSlt(transExpr(l), transExpr(r))
@@ -190,13 +210,18 @@ class Checker {
       case hx@HexLiteral(i) => z3.mkNumeral(Integer.parseInt(i, 16).toString, transType(hx.typ))
       case FunctionApp("int2bv",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
       case FunctionApp("int",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
-      case Id(id) => ctx.z3Constants(id)
-      case IndexAccessor(Id(ch),idx) => z3.mkApp(ctx.z3FuncDecls(("M#"+ch)), transExpr(idx))
-      case FunctionApp("@",args) => z3.mkApp(ctx.z3FuncDecls("I#"), (args map transExpr):_*)
+      case Id(id) => ctx.constants(id)
+      case IndexAccessor(Id(ch),idx) => z3.mkApp(ctx.functionDecls(("M#"+ch)), transExpr(idx))
+      case FunctionApp("tot",args) => z3.mkApp(ctx.functionDecls("C#"), (args map transExpr):_*)
+      case FunctionApp("@",args) => z3.mkApp(ctx.functionDecls("I#"), (args map transExpr):_*)
+      case FunctionApp("tot@",args) => 
+        z3.mkSub(
+            z3.mkApp(ctx.functionDecls("C#"), (args map transExpr):_*),
+            z3.mkApp(ctx.functionDecls("I#"), (args map transExpr):_*))
       case IfThenElse(cond,thn,els) => z3.mkITE(transExpr(cond), transExpr(thn), transExpr(els))
       case sm@SpecialMarker("@") => {
         val name = sm.extraData("accessor").asInstanceOf[String]
-        z3.mkApp(ctx.z3FuncDecls("I#"), ctx.z3Constants(name))
+        z3.mkApp(ctx.functionDecls("I#"), ctx.constants(name))
       }
     }
   }

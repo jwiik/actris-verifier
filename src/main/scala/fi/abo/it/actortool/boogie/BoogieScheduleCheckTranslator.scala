@@ -3,12 +3,18 @@ package fi.abo.it.actortool.boogie
 import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule._
 
-class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToVerify: List[(String,String)]) 
+class BoogieScheduleCheckTranslator(
+    val mergedActions: Boolean, 
+    val contractsToVerify: List[(String,String)]
+    //val smokeTest: Boolean,
+    //val skipMutualExclusiveness: Boolean
+    ) 
     extends EntityTranslator[ScheduleContext,ContractSchedule] 
     with GeneralBackend[ScheduleContext,Seq[BoogieTranslation[ContractSchedule]]] {
 
   
   def invoke(scheduleCtx: ScheduleContext) = {
+    
     translateEntity(scheduleCtx)
   }
   
@@ -24,12 +30,11 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
         }
       }).flatten
     
-    
+      
     val decls = {
       scheduleCtx.entity match {
         case ba: BasicActor => {
           val vs = VerStruct.forActor(ba,false)
-          
           //translateFunctionDecl(vs) ++ 
           //actionChecks ++ 
           scheduleCtx.schedules.map { s => 
@@ -120,6 +125,10 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
         stmts += B.Assume(B.ChannelIdx(transExpr(ch,tvs),B.R(transExpr(ch,tvs))) ==@ transExpr(Id(id).withType(ch.typ),tvs))
       }
       
+      for ((id,ch) <- stateChannels) {
+        stmts += Boogie.Assign(B.R(transExpr(ch,tvs)),B.R(transExpr(ch,tvs)) + B.Int(1))
+      } 
+      
       for (ipat <- action.inputPattern) {
         val id = ipat.portId
         stmts += B.Assert(
@@ -198,6 +207,13 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
           B.Urd(transExpr(opat.portId,opat.typ,vs)) ==@ B.Int(opat.rate),
           opat.pos,
           "The correct amount of tokens might not be produced on output " + opat.portId)
+    }
+    
+    for (q <- schedule.contract.ensures) {
+      stmts += B.Assert(
+          transExpr(q.expr,vs),
+          q.expr.pos,
+          "The contract postcondition might not hold")
     }
     
     for (inv <- avs.entity.contractInvariants) stmts += BAssert(inv, "Contract invariant might not be preserved", vs)
@@ -385,6 +401,13 @@ class BoogieScheduleCheckTranslator(val mergedActions: Boolean, val contractsToV
           B.Urd(transExpr(opat.portId,opat.typ,nwvs)) ==@ B.Int(opat.rate),
           opat.pos,
           "The correct amount of tokens might not be produced on output " + opat.portId)
+    }
+    
+    for (q <- schedule.contract.ensures) {
+      B.Assert(
+          transExpr(q.expr,nwvs),
+          q.pos,
+          "The contract postcondition might not hold")
     }
     
     List(B.createProc(nwvs.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))

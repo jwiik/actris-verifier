@@ -1,7 +1,9 @@
+
+@merge
 actor Algo_IDCT2D_ISOIEC_23002_1()
 	int(size=13) IN, bool SIGNED ==> int(size=9) OUT :
 	
-	contract IN:64, SIGNED:1 ==> OUT:64 
+	Main: contract IN:64, SIGNED:1 ==> OUT:64 
 	end
 
 	int(size=32) A = int(1024,32);
@@ -35,6 +37,7 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 		B, E, F, G, B, G, F, E
 	];
 
+	idct: 
 	action IN:[ x ] repeat 64, SIGNED:[ s ] ==> OUT:[ output ] repeat 64
 	var
 		int(size=32) block1[64] := [ scale[n] * bvresize(x[n],32) : for int n in 0 .. 63 ],

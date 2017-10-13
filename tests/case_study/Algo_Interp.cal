@@ -58,13 +58,14 @@
 * Interpolation for motion compensation
 *********************************/
 
+@merge
 actor Algo_Interp_HalfpelBilinearRoundingControl () 
 	int(size=9) RD, 
 	int(size=4) halfpel 
 		==>
 		int(size=9) MOT :
 		
-	Main: contract RD:81, halfpel:1 ==> MOT:17 end
+	Main: contract RD:81, halfpel:1 ==> MOT:64 end
 
 	stream invariant rd@(halfpel) = 0 ==> state(start)
 

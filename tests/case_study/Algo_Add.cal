@@ -12,6 +12,7 @@
 //              A PARTICULAR PURPOSE, OR AGAINST INFRINGEMENT.
 // Add motion and texture to produce pixels
 
+@merge
 actor Algo_Add () int(size=9) MOT, int(size=9) TEX, int(size=12) BTYPE ==> int(size=9) VID :
 
 	NewVop: contract BTYPE:3 ==> 

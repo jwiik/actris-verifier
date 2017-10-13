@@ -31,9 +31,7 @@ object PromelaRunner {
     
     scheduleParser.setCost(cost)
     scheduleParser.read(parser.schedule)
-    
-    
-    
+
     writeFile("output/" + outputFile + "_backend_sim.log", parser.mkString)
 
   }

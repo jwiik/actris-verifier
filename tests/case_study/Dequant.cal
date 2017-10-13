@@ -41,13 +41,13 @@ ENDCOPYRIGHT
 //
 // MPEG-4 inverse quantization function
 
-//@merge
+@merge
 actor Dequant()
 	int(size=13) DC, int(size=13) AC, int(size=6) QP
 		==>
 	int(size=13) OUT :
 	
-	contract QP:1, DC:1, AC:63 ==> OUT:64 end
+	Main: contract QP:1, DC:1, AC:63 ==> OUT:64 end
 	
 	stream invariant rd@(QP) = 0 ==> state(start)
 	

@@ -30,7 +30,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
   
   def scheduleForContract[T<:DFActor](translation: Translation[T]): ContractSchedule = {
     
-    val printerNoC = new Promela.PromelaPrinter(false,true)
+    val printerNoC = new Promela.PromelaPrinter(false,false)
     val printerC = new Promela.PromelaPrinter(true,false)
     val simOutputParser = new ScheduleParser(translation)
     
@@ -58,8 +58,6 @@ class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
       simOutputParser.endSchedule
       
       val schedule = simOutputParser.getSchedule
-      
-      println(">>  " + schedule.cost)
       
       simulatedSchedule match {
         case Some(bestSchedule) => {

@@ -40,7 +40,7 @@ ENDCOPYRIGHT
 // Author: David B. Parlour (dave.parlour@xilinx.com)
 //
 
-//@merge
+@merge
 actor Addressing_simple () 
 	int(size=12) BTYPE 
 	==> 

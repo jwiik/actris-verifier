@@ -347,7 +347,13 @@ object VerStruct {
       }
     }
     
+    for ((_,id) <- parent.stateChannelNames) {
+      decls += BDecl(id.id,ChanType(id.typ))
+    }
+    
     decls ++= guard.declarations
+    
+    assumes += B.Assume(createUniquenessCondition(decls.toList))
     
     new ActionVerStruct(parent,action,decls.toList,assumes.toList,actionVariableInits.toList,guard)
   }
@@ -378,7 +384,8 @@ object VerStruct {
       }
     }
     
-    assumes += B.Assume(createUniquenessCondition( parentChannels.toList ++ stateChannels.map{ x => BDecl(x.id,x.typ) }.toList ))
+    assumes += 
+      B.Assume(createUniquenessCondition( parentChannels.toList ++ stateChannels.map{ x => BDecl(x.id,x.typ) }.toList ))
     
     new ScheduleVerStruct(parent,schedule,decls.toSeq,assumes.toList,Nil,null)
   }

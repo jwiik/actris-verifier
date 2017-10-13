@@ -11,6 +11,7 @@
 //              A PARTICULAR PURPOSE, OR AGAINST INFRINGEMENT.
 // Frame buffer address generation for motion compensation
 
+@merge
 actor Mgnt_Address ()
 	int(size=9) MV, 
 	int(size=12) BTYPE 

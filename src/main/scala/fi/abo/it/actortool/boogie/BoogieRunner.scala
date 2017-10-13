@@ -90,8 +90,7 @@ object BoogieRunner {
         case _ => {
           errorLines += line
           boogieOutput += line
-          Console.out.print(line)
-          Console.out.flush
+          Console.out.println(line)
         }
       }
       previousLine = line
