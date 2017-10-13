@@ -1,0 +1,116 @@
+network TextureMacro
+  int(size=12) BTYPE, int(size=13) QFS, int(size=6) QP
+  ==>
+  int(size=9) F:
+  
+  StartMode:
+  contract BTYPE:3 ==> 
+    guard (BTYPE[@] & NEWVOP) != 0x000
+  end
+  
+  OtherMode:
+  contract BTYPE:1, QP:1 ==> 
+    guard (BTYPE[@] & NEWVOP) = 0x000
+    guard (BTYPE[@] & INTRA) = 0x000
+    guard (BTYPE[@] & ACCODED) = 0x000
+  end
+  
+  InterACMode:
+  contract BTYPE:1, QP:1, QFS:64 ==> F:64
+    guard (BTYPE[@] & NEWVOP) = 0x000
+    guard (BTYPE[@] & INTRA) = 0x000
+    guard (BTYPE[@] & INTER) != 0x000 && (BTYPE[@] & ACCODED) != 0x000
+  end
+  
+  IntraMode:
+  contract BTYPE:6, QP:6, QFS:384 ==> F:384
+    guard (BTYPE[@] & NEWVOP) = 0x000
+    guard (BTYPE[@] & INTER) = 0x000
+    guard (BTYPE[@] & INTRA) != 0x000
+  end
+  
+  
+  chinvariant 64*tot@(cQFS_DC) = rd@(cQFS)
+  chinvariant 64*tot@(cQFS_AC) = 63*rd@(cQFS)
+  
+  chinvariant mode(StartMode) && tot@(BTYPE) > 0 ==> (BTYPE[@] & NEWVOP) != 0x000
+  chinvariant mode(StartMode) ==> tot@(cAC_PRED_DIR) > 0 ==> cAC_PRED_DIR[@] = -int(2,3)
+  chinvariant mode(StartMode) ==> 
+    tot@(cQFS) = 0 && tot@(cQP) = 0 && tot@(cQFS_DC) = 0 && tot@(cQFS_AC) = 0 && tot@(cMODE) = 0 &&
+    tot@(cPTR) = 0 && tot@(cQUANT) = 0 && tot@(cSIGNED) = 0 && tot@(cQF_DC) = 0 && tot@(cPQF_AC) = 0 && tot@(cQF_AC) = 0 &&
+    tot@(cQ_OUT) = 0 && tot@(cOUT) = 0  
+  chinvariant mode(StartMode) ==> 3*tot@(cAC_PRED_DIR) = rd@(cBTYPE)
+  
+  
+  chinvariant mode(OtherMode) ==> tot@(BTYPE) <= 1
+  chinvariant mode(OtherMode) && tot@(BTYPE) > 0 ==> 
+    (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTRA) = 0x000 && (BTYPE[@] & ACCODED) = 0x000
+  chinvariant mode(OtherMode) ==> tot@(cAC_PRED_DIR) > 0 ==> cAC_PRED_DIR[@] = -int(1,3)
+  chinvariant mode(OtherMode) ==> 
+    tot@(cQFS) = 0 && tot@(cQFS_DC) = 0 && tot@(cQFS_AC) = 0 && tot@(cMODE) = 0 &&
+    tot@(cPTR) = 0 && tot@(cQUANT) = 0 && tot@(cSIGNED) = 0 && tot@(cQF_DC) = 0 && tot@(cPQF_AC) = 0 && tot@(cQF_AC) = 0 &&
+    tot@(cQ_OUT) = 0 && tot@(cOUT) = 0  
+  chinvariant mode(OtherMode) ==> tot@(cAC_PRED_DIR) = rd@(cBTYPE)
+  chinvariant mode(OtherMode) ==> tot@(cAC_PRED_DIR) = rd@(cQP)
+  
+  
+  chinvariant mode(InterACMode) && tot@(BTYPE) > 0 ==> 
+    (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTRA) = 0x000 && (BTYPE[@] & INTER) != 0x000 && (BTYPE[@] & ACCODED) != 0x000
+  chinvariant mode(IntraMode) && tot@(BTYPE) > 0 ==> 
+    (BTYPE[@] & NEWVOP) = 0x000 && (BTYPE[@] & INTER) = 0x000 && (BTYPE[@] & INTRA) != 0x000
+  
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cAC_PRED_DIR) > 0 ==> int(0,3) <= cAC_PRED_DIR[@] && cAC_PRED_DIR[@] <= int(2,3)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cMODE) > 0 ==> int(0,3) <= cMODE[@] && cMODE[@] <= int(2,3)
+  
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> rd@(cBTYPE) = tot@(cPTR)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> rd@(cBTYPE) = tot@(cAC_PRED_DIR)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> rd@(cBTYPE) = tot@(cSIGNED)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> rd@(cBTYPE) = tot@(cQF_DC)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> rd@(cBTYPE) = tot@(cQUANT)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> rd@(cBTYPE) = tot@(cMODE)
+  
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> rd@(cBTYPE) = rd@(cQFS_DC)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> rd@(cBTYPE) = rd@(cQP)
+  
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cPQF_AC) = rd@(cQFS_AC)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cPQF_AC) = 63*rd@(cMODE)
+  
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cQF_AC) = rd@(cPQF_AC)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cQF_AC) = 63*rd@(cAC_PRED_DIR)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cQF_AC) = 63*rd@(cPTR)
+    
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cQ_OUT) = 64*rd@(cQUANT)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cQ_OUT) = 64*rd@(cQF_DC)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> 63*tot@(cQ_OUT) = 64*rd@(cQF_AC)
+  
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cOUT) = rd@(cQ_OUT)
+  chinvariant mode(InterACMode) || mode(IntraMode) ==> tot@(cOUT) = 64*rd@(cSIGNED)
+    
+  entities
+    DCSplit = DCSplit();
+    DCReconstruction = DC_Reconstruction();
+    IS = Algo_IS_simple();
+    IAP = Algo_IAP();
+    IQ = Dequant();
+    IDCT = Algo_IDCT2D_ISOIEC_23002_1();
+  end
+
+  structure
+    cQFS: QFS --> DCSplit.IN;
+    cQP: QP --> DCReconstruction.QP;
+    cBTYPE: BTYPE --> DCReconstruction.BTYPE;
+    cQFS_DC: DCSplit.DC --> DCReconstruction.QFS_DC;
+    cQFS_AC: DCSplit.AC --> IS.QFS_AC;
+    cMODE: DCReconstruction.MODE --> IS.AC_PRED_DIR;
+    cPTR: DCReconstruction.PTR --> IAP.PTR;
+    cAC_PRED_DIR: DCReconstruction.AC_PRED_DIR --> IAP.AC_PRED_DIR;
+    cQUANT: DCReconstruction.QUANT --> IQ.QP;
+    cSIGNED: DCReconstruction.SIGNED --> IDCT.SIGNED;
+    cQF_DC: DCReconstruction.QF_DC --> IQ.DC;
+    cPQF_AC: IS.PQF_AC --> IAP.PQF_AC;
+    cQF_AC: IAP.QF_AC --> IQ.AC;
+    cQ_OUT: IQ.OUT --> IDCT.IN;
+    cOUT: IDCT.OUT --> F;
+  end
+
+end
