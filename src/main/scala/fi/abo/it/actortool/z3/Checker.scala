@@ -206,18 +206,19 @@ class Checker {
       }
       case Plus(l,r) => z3.mkAdd(transExpr(l),transExpr(r))
       case Minus(l,r) => z3.mkSub(transExpr(l),transExpr(r))
+      case Times(l,r) => z3.mkMul(transExpr(l),transExpr(r))
       case IntLiteral(i) => z3.mkInt(i, Types.Int)
       case hx@HexLiteral(i) => z3.mkNumeral(Integer.parseInt(i, 16).toString, transType(hx.typ))
       case FunctionApp("int2bv",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
       case FunctionApp("int",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
       case Id(id) => ctx.constants(id)
-      case IndexAccessor(Id(ch),idx) => z3.mkApp(ctx.functionDecls(("M#"+ch)), transExpr(idx))
-      case FunctionApp("tot",args) => z3.mkApp(ctx.functionDecls("C#"), (args map transExpr):_*)
-      case FunctionApp("@",args) => z3.mkApp(ctx.functionDecls("I#"), (args map transExpr):_*)
+      case IndexAccessor(Id(ch),idx) => mkM(ch, List(idx)) 
+      case FunctionApp("tot",args) => mkC(args)
+      case FunctionApp("@",args) => mkI(args)
       case FunctionApp("tot@",args) => 
-        z3.mkSub(
-            z3.mkApp(ctx.functionDecls("C#"), (args map transExpr):_*),
-            z3.mkApp(ctx.functionDecls("I#"), (args map transExpr):_*))
+        z3.mkSub(mkC(args), mkI(args))
+      case FunctionApp("current",List(ch,idx)) => 
+        z3.mkAnd(z3.mkLE(mkI(List(ch)), transExpr(idx)), z3.mkGT(transExpr(idx), mkC(List(ch))))
       case IfThenElse(cond,thn,els) => z3.mkITE(transExpr(cond), transExpr(thn), transExpr(els))
       case sm@SpecialMarker("@") => {
         val name = sm.extraData("accessor").asInstanceOf[String]
@@ -226,4 +227,15 @@ class Checker {
     }
   }
   
+  def mkI(args: List[Expr])(implicit ctx: Context) = 
+    z3.mkApp(ctx.functionDecls("I#"), (args map transExpr):_*)
+    
+  def mkR(args: List[Expr])(implicit ctx: Context) = 
+    z3.mkApp(ctx.functionDecls("R#"), (args map transExpr):_*)
+    
+  def mkC(args: List[Expr])(implicit ctx: Context) = 
+    z3.mkApp(ctx.functionDecls("C#"), (args map transExpr):_*)
+    
+  def mkM(ch:String, args: List[Expr])(implicit ctx: Context) = 
+    z3.mkApp(ctx.functionDecls(("M#"+ch)), (args map transExpr):_*)
 }

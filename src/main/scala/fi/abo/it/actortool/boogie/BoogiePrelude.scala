@@ -75,6 +75,8 @@ function {:bvbuiltin "bvsub"} AT#BvSub@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv
 function {:bvbuiltin "bvmul"} AT#BvMul@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvsdiv"} AT#BvSdiv@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvudiv"} AT#BvUdiv@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvsmod"} AT#BvSmod@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
+function {:bvbuiltin "bvumod"} AT#BvUmod@bvsize@(a: bv@bvsize@, b: bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvshl"} AT#BvShl@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvlshr"} AT#BvLshr@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;
 function {:bvbuiltin "bvashr"} AT#BvAshr@bvsize@(bv@bvsize@,bv@bvsize@): bv@bvsize@;

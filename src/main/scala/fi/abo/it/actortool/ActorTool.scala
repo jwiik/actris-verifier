@@ -229,13 +229,19 @@ object ActorTool {
         case Param("printInvariantStats") => aPrintInvariantStats = true
         case Param("promela") => {
           value match {
-            case s@Some(nwId) => aSchedule = s
+            case s@Some(_) => {
+              aDoInfer = false // Invariant inference is turned of for scheduling mode
+              aSchedule = s
+            }
             case None => reportCommandLineError("parameter 'promela' takes a string as argument")
           }
         }
         case Param("schedule") => {
           value match {
-            case s@Some(nwId) => aSchedule = s
+            case s@Some(_) => {
+              aDoInfer = false // Invariant inference is turned of for scheduling mode
+              aSchedule = s
+            }
             case None => reportCommandLineError("parameter 'schedule' takes a string identifying the top network as argument")
           }
         }
@@ -485,6 +491,10 @@ object ActorTool {
       tmpTime = System.nanoTime
       
       if (params.DoVerify) {
+        
+        val actionsVerifier = new BoogieVerifier(params,true)
+        actionsVerifier.invoke(programContext)
+        
         val scheduleVerifier = new BoogieScheduleVerifier(params)
         println
         for (s <- scheduleCtxs) {
@@ -501,11 +511,9 @@ object ActorTool {
     else {
       // Verification
       
-      
-  
       if (!params.DoTranslate) return
       
-      val verifier = new BoogieVerifier(params)
+      val verifier = new BoogieVerifier(params,false)
       
       if (!params.DoVerify) return
       val programContext = new BasicProgramContext(componentsToVerify,typeCtx.get)

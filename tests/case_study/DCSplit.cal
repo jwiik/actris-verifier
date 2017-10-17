@@ -47,14 +47,11 @@ actor DCSplit()
 	
 	Main: contract IN:64 ==> DC:1, AC:63 
 	  ensures DC[@] = IN[@]
-	  //ensures AC[@+0] = IN[@+0+1]
-	  //ensures AC[@+1] = IN[@+1+1]
 	  ensures (forall int i :: 0 <= i && i < tot@(AC) ==> AC[@+i] = IN[@+i+1])
 	end
 	
 	contract invariant count = int(0,8)
-	action invariant (forall int i :: 0 <= i && i < tot@(AC) ==> AC[@+i] = IN[@+i+1])
-	
+	//action invariant (forall int i :: 0 <= i && i < tot@(AC) ==> AC[@+i] = IN[@+i+1])
 	//stream invariant int(0,8) <= count && count < int(64,8)
 	//stream invariant (rd@(IN) % 64) = bv2int(count)
 	//stream invariant rd@(IN) = 0 ==> tot@(DC) = 0
@@ -63,15 +60,14 @@ actor DCSplit()
 	//stream invariant rd@(IN) > 0 ==> tot@(AC) = rd@(IN)-1
 
 	dc: action IN:[ x ] ==> DC:[ x ]
-	guard
-		count = int(0,8)
+	guard count = int(0,8)
 	ensures count = int(1,8)
 	do
 		count := int(1,8);
 	end
 
 	ac: action IN:[ x ] ==> AC:[ x ]
-	ensures count = (prev(count) + int(1,8)) & int(63,8)
+	ensures count = (prev(count) + int(1,8)) % int(64,8)
 	do
 		// This actually limits count to 63, equivalent to '(count+1) mod 64' it seems ...
 		count := (count + int(1,8)) & int(63,8);

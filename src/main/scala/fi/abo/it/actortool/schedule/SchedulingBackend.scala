@@ -73,7 +73,7 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
       
     }
     
-    println("Actor merging done...")
+    println("Actor merging done.")
     
     val finalActor = mergedActorMap(topNwName)
     writeFile("output/"+finalActor.id+".actor", ASTPrinter.orcc.print(finalActor))

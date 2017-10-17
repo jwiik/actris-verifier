@@ -1,32 +1,32 @@
 @static
-actor Gain int in ==> int out :
-  action in:[i] ==> out:[2*i] end
+actor Gain int in1 ==> int out :
+  action in1:[i] ==> out:[2*i] end
 end
 
-actor Split int in ==> int pos, int neg :
-  stream invariant rd(in) = tot(pos)+tot(neg)
-  stream invariant 0 < rd(in) && 0 <= in[prev] ==> in[prev] = pos[last]
-  stream invariant 0 < rd(in) && in[prev] < 0  ==> in[prev] = neg[last]
-  action in:[i] ==> pos:[i] 
+actor Split int in1 ==> int pos, int neg :
+  stream invariant rd(in1) = tot(pos)+tot(neg)
+  stream invariant 0 < rd(in1) && 0 <= in1[prev] ==> in1[prev] = pos[last]
+  stream invariant 0 < rd(in1) && in1[prev] < 0  ==> in1[prev] = neg[last]
+  action in1:[i] ==> pos:[i] 
     guard 0 <= i
   end
-  action in:[j] ==> neg:[j] 
+  action in1:[j] ==> neg:[j] 
     guard j < 0
   end
 end
 
-network Net int in ==> int out1, int out2 :
+network Net int in1 ==> int out1, int out2 :
 
-  action in:1 ==> out1:1
-    requires in[@] = 1
-    requires (forall int i :: current(in,i) ==> in[i] = 1)
-    ensures out1[@] = 2*in[@]
+  contract in1:1 ==> out1:1
+    guard in1[@] = 1
+    requires (forall int i :: current(in1,i) ==> in1[i] = 1)
+    ensures out1[@] = 2*in1[@]
   end
   
-  action in:1 ==> out2:1
-    requires in[@] = -1
-    requires (forall int i :: current(in,i) ==> in[i] = -1)
-    ensures out2[@] = 2*in[@]
+  contract in1:1 ==> out2:1
+    guard in1[@] = -1
+    requires (forall int i :: current(in1,i) ==> in1[i] = -1)
+    ensures out2[@] = 2*in1[@]
   end
   
   chinvariant @(b) = @(d)+@(c)
@@ -39,8 +39,8 @@ network Net int in ==> int out1, int out2 :
   end
   
   structure
-    a: in --> gain.in;
-    b: gain.out --> split.in;
+    a: in1 --> gain.in1;
+    b: gain.out --> split.in1;
     c: split.pos --> out1;
     d: split.neg --> out2;
   end

@@ -12,11 +12,30 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
 object BoogieRunner {
 
-  class BoogieResult(val verified: Int, val errors: Int, val messages: Seq[String]) {
+  class BoogieResult(
+      val verified: Int, 
+      val errors: Int, 
+      val messages: Seq[String],
+      val boogieOutput: Seq[String]) {
+    
     def success = (errors == 0)
+  
+    def combine(res: BoogieResult) = { 
+      new BoogieResult(
+          this.verified+res.verified,
+          this.errors+res.errors,
+          this.messages++res.messages,
+          this.boogieOutput++res.boogieOutput)
+    }
+    
+    override def toString() = {
+      (if (messages.isEmpty) "" else "\n"+messages.mkString("\n")) + 
+      "\n" + this.verified + " verified with " + this.errors + " errors"
+    }
+    
   }
   
-  val summaryLine = """Boogie program verifier finished with ([\d]*) verified, ([\d]*) errors.*""".r
+  val summaryLine = """Boogie program verifier finished with ([\d]*) verified, ([\d]*) error.*""".r
   val summaryLine2 = """Boogie.*""".r
   val smokeLine = """\[smoke\].*""".r
   
@@ -75,22 +94,26 @@ object BoogieRunner {
     var verified, errors: Int = -1
     while (line != null) {
       //if (previousLine != null) println
-      line match {
-        case summaryLine(ver,err) => {
-          verified = ver.toInt
-          errors = err.toInt
-//          val formattedLine = "Verified: " + verified + " Errors: " + errors
-//          boogieOutput += formattedLine
-//          Console.out.print(formattedLine)
-//          Console.out.flush
-        }
-        case smokeLine(_) => {
-          smokeLines += line
-        }
-        case _ => {
-          errorLines += line
-          boogieOutput += line
-          Console.out.println(line)
+      if (line.length > 0) {
+        boogieOutput += line
+        line match {
+          case summaryLine(ver,err) => {
+            verified = ver.toInt
+            errors = err.toInt
+            
+  //          val formattedLine = "Verified: " + verified + " Errors: " + errors
+  //          boogieOutput += formattedLine
+  //          Console.out.print(formattedLine)
+  //          Console.out.flush
+          }
+          case smokeLine(_) => {
+            smokeLines += line
+          }
+          case _ => {
+            errorLines += line
+            //boogieOutput += line
+            //Console.out.print(line)
+          }
         }
       }
       previousLine = line
@@ -124,8 +147,9 @@ object BoogieRunner {
     destroyTimer.cancel
     
     //Console.out.println
-    
-    new BoogieResult(verified,errors,errorLines.toSeq)
+    val res = new BoogieResult(verified,errors,errorLines.toSeq,boogieOutput.toSeq)
+    //println(res.messages)
+    res
   }
   
   def writeFile(filename: String, text: String) {

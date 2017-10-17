@@ -205,7 +205,8 @@ abstract class EntityTranslator[T,U] {
 
 class Translator( 
     val smokeTest: Boolean,
-    val skipMutualExclusivenessCheck: Boolean) extends Backend[Seq[BoogieTranslation[_<:TopDecl]]] {  
+    val skipMutualExclusivenessCheck: Boolean,
+    val actorActionsOnly: Boolean) extends Backend[Seq[BoogieTranslation[_<:TopDecl]]] {  
   
   
   def invoke(programCtx: ProgramContext): Seq[BoogieTranslation[_<:TopDecl]] = {
@@ -214,12 +215,12 @@ class Translator(
     
     val stmtTranslator = new StmtExpTranslator();
     
-    lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,true)
+    lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,!actorActionsOnly)
     lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,true)
     
     val bProgram = programCtx.program flatMap {
       case a: BasicActor => actorTranslator.translateEntity(a)
-      case n: Network => networkTranslator.translateEntity(n)
+      case n: Network => if (!actorActionsOnly) networkTranslator.translateEntity(n) else Seq.empty
       case u: DataUnit => {
         Seq(BoogieTranslation(
             u,
@@ -238,6 +239,10 @@ class Translator(
       }
     }
     
+//    println(bProgram.size)
+//    for (p <- bProgram) {
+//      println(p.entity.id)
+//    }
     return bProgram
     
   }

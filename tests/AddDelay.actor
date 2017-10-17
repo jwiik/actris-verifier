@@ -16,12 +16,13 @@ network Net int in1 ==> int out :
   contract in1:1 ==> out:1
     requires 0 <= in1[@]
     ensures out[@] >= in1[@]
+    ensures out[0] = in1[0]
     ensures 0 < @(out) ==> out[@] = out[@-1]+in1[@]
   end
   
   invariant tokens(b,1)
-  chinvariant b[0] = 0
-  chinvariant 0 <= b[@]
+  //chinvariant b[0] = 0
+  //chinvariant 0 <= b[@]
   
   entities
     add = Add();

@@ -524,6 +524,8 @@ class StmtExpTranslator {
       case ("*",_) => "AT#BvMul"
       case ("/",true) => "AT#BvSdiv"
       case ("/",false) => "AT#BvUdiv"
+      case ("%",true) => "AT#BvSmod"
+      case ("%",false) => "AT#BvUmod"
       case ("<",true) => "AT#BvSlt"
       case ("<",false) => "AT#BvUlt"
       case ("<=",true) => "AT#BvSle"
