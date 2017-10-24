@@ -6,15 +6,13 @@ bv(size=8) data              // header and payload data samples as 8-bit unsigne
 ==> bv(size=32) chip          // packets of 32 chips
 :
 	                                 // 32-bit Pseudo-Noise (PN) sequence values
-	/*Map(bv(size=8) -> bv(size=32)) Chip_map_table;*/
-								/*[
-								 0x744ac39b, 0x44ac39b7, 0x4ac39b74, 0xac39b744,
-								 0xc39b744a, 0x39b744ac, 0x9b744ac3, 0xb744ac39,
-								 0xdee06931, 0xee06931d, 0xe06931de, 0x6931dee,
-								 0x6931dee0, 0x931dee06, 0x31dee069, 0x1dee0693];*/
-	/*function Chip_map_table(bv(size=8) in) --> bv(size=32): 0x744ac39b end*/
 	
-	Map(bv(size=8) -> bv(size=32)) Chip_map_table;
+	Map(bv(size=8) -> bv(size=32), size=16) Chip_map_table = 
+								[int(size=8)]
+								[0x744ac39b, 0x44ac39b7, 0x4ac39b74, 0xac39b744,
+								 0xc39b744a, 0x39b744ac, 0x9b744ac3, 0xb744ac39,
+								 0xdee06931, 0xee06931d, 0xe06931de, 0x6931dee0,
+								 0x6931dee0, 0x931dee06, 0x31dee069, 0x1dee0693];
 	
 	bv(size=8) lsn;
 	bv(size=8) msn;
@@ -30,188 +28,187 @@ end
 
 actor headerAdd()
 // Inputs: 
-bv(size=8) pl_bits,   // payload bits from upper layer 
-int St_in,
-bv(size=8) octet_count_in,
-bv(size=8) octet_index_in
+bv(size=8) pl_bits   // payload bits from upper layer 
 // Outputs:
 ==> 
 bv(size=8) data,      // header + payload data
-bv(size=8) len,       // header + payload length
-int St_out,
-bv(size=8) octet_count_out,
-bv(size=8) octet_index_out
+bv(size=9) len        // header + payload length
 :
+    Main: contract pl_bits:4 ==> data:9, len:1
+      requires bv2int(pl_bits[@]) = 4-1
+      ensures len[@] = bvresize(pl_bits[@],9) + int(6,9)
+    end
+    
+    contract invariant state(s_idle)
+    contract invariant octet_index = octet_count
+    stream contract invariant 9*rd(pl_bits) = 4*tot(data)
+    stream contract invariant rd(pl_bits) = 4*tot(len)
+    
+    action invariant 9*@(pl_bits) = 4*@(data)
+    action invariant @(pl_bits) = 4*@(len)
+    
+    action invariant 0x00 <= octet_index && octet_index <= octet_count
+    action invariant tot@(pl_bits) > 0 ==> bv2int(pl_bits[@]) = 4-1
+    
+    action invariant state(s_idle)    ==> octet_index = octet_count
+    action invariant state(s_header)  ==> 0x00 <= octet_index && octet_index <= 0x05
+    action invariant state(s_payload) ==> 0x06 <= octet_index && octet_index <= octet_count
+  
+    action invariant state(s_idle) && rd@(pl_bits) = 0 ==> tot@(data) = 0
+    action invariant state(s_idle) && rd@(pl_bits) > 0 ==> tot@(data) = bv2int(octet_count)
+  
+    action invariant state(s_header) ==> rd@(pl_bits) = 1
+    action invariant state(s_header) || state(s_payload) ==> tot@(data) = bv2int(octet_index)
+    action invariant state(s_payload) ==> rd@(pl_bits) = tot@(data)-5
+
+    action invariant state(s_idle) ==> (rd@(pl_bits) = 0 || rd@(pl_bits) = 4)
+  
+    action invariant rd@(pl_bits) = 0 ==> tot@(len) = 0
+    action invariant rd@(pl_bits) > 0 ==> octet_count = pl_bits[@] + 0x06
+  
+    action invariant rd@(pl_bits) > 0 ==> tot@(len) = 1
+    action invariant rd@(pl_bits) > 0 ==> len[@] = bvresize(pl_bits[@]+0x06,9)
+
     // variable to hold payload length
-	bv(size=8) octet_count;
+	bv(size=8) octet_count := 0x00;
 	
 	// variable to count processed payload octets
-	bv(size=8) octet_index;
+	bv(size=8) octet_index := 0x00;
 
 	// static variable
-	bv(size=8) HEADER_LEN //= 0x05;
+	bv(size=8) HEADER_LEN = 0x05;
 	
 	// the standard-defined header content
-	Map(bv(size=8) -> bv(size=8)) Header; //= [0, 0, 0, 0, 167];
+	Map(bv(size=8) -> bv(size=8), size=5) Header = 
+		[int(size=8)]
+		[int(0,8), int(0,8), int(0,8), int(0,8), int(167,8)];
 	
 	bv(size=8) data_out;
 
-	// init action
-	// initializes the data source
-	initialize ==> octet_index_out:[0x00], octet_count_out:[0x00], St_out:[0]
-	end
 	
 	// get_data_len action
 	// wait for packet to be available
 	// send payload length information to pulse shaper
 	get_data_len: action 
-			pl_bits:[ bits_in ],
-			octet_index_in: [octet_index], 
-			octet_count_in: [octet_count],
-			St_in:[St]
-		==> 
-			octet_index_out: [0x00], 
-			octet_count_out: [bits_in + 0x05 + 0x01], 
-			St_out: [1],  
-			len: [bits_in + 0x05 + 0x01]
-	guard 
-	  St = 0
+			pl_bits:[ bits_in ]
+		==>   
+			len: [bvresize(bits_in,9) + int(5,9) + int(1,9)]
+	do
+	  octet_index := 0x00;
+	  octet_count := bits_in + 0x05 + 0x01;
 	end
 
 	// send_header action
 	// transmit one octet belonging to header
 	send_header: action
-			octet_index_in: [octet_index], 
-			octet_count_in: [octet_count],
-			St_in:[St] 
-		==> 
-			St_out: [1],
-			octet_index_out: [octet_index + 0x01], 
-			octet_count_out: [octet_count], 
+		==>  
 			data:[ data_out ]
 	guard
-		octet_index < 0x05 &&
-		St = 1
+		octet_index < 0x05
 	do
 		data_out := Header[octet_index];
+		octet_index := octet_index + 0x01;
 	end
 
 	// send_length action
 	// transmit payload length in data as part of data frame
-	send_length: action 
-			octet_index_in: [octet_index], 
-			octet_count_in: [octet_count],
-			St_in:[St] 
-		==> 
-			St_out: [2],
-			octet_index_out: [octet_index + 0x01], 
-			octet_count_out: [octet_count], 
-			data:[ octet_count - 0x05 - 0x01 ]
+	send_length: action ==> data:[ octet_count - 0x05 - 0x01 ]
 	guard 
-		octet_index = 0x05 &&
-		St = 1
+		octet_index = 0x05
+	do
+		octet_index := octet_index + 0x01;
 	end
 
 	// send_payload_octet
 	// transmit one octet of the data coming from higher layer
 	send_payload_octet: action 
-			pl_bits:[ bits_in ],
-			octet_index_in: [octet_index], 
-			octet_count_in: [octet_count],
-			St_in:[St] 
-		==> 
-			St_out: [if octet_index + 0x01 = octet_count then 0 else 2 end],
-			octet_index_out: [octet_index + 0x01], 
-			octet_count_out: [octet_count], 
-			data:[ bits_in ]
+			pl_bits:[ bits_in ] ==> data:[ bits_in ]
 	guard
-		octet_index < octet_count &&
-		St = 2
+		octet_index < octet_count
+	do
+		octet_index := octet_index + 0x01;
+	end
+	
+	done: action ==>
+	guard
+		octet_index = octet_count
+	end
+	
+	schedule fsm s_idle :
+		s_idle ( get_data_len ) --> s_header;
+		s_header ( send_header ) --> s_header;
+		s_header ( send_length ) --> s_payload;
+		s_payload ( send_payload_octet ) --> s_payload;
+		s_payload ( done ) --> s_idle;
 	end
 
+	priority
+		send_header > send_length;
+		send_payload_octet > done;
+	end
+	
 end
 
 
-network headerAddNw bv(size=8) pl_bits ==> bv(size=8) data, bv(size=8) len :
 
-  contract pl_bits:4 ==> data:9, len:1
-    requires bv2int(pl_bits[@]) = rate(pl_bits)-1
-    ensures len[@] = pl_bits[@] + 0x06
-  end
-  
-  // Feedback loop state variables
-  invariant tokens(octet_count,1) && tokens(octet_index,1) && tokens(St,1)
-  invariant St[next] = 0 && octet_index[next] = octet_count[next]
-  
-  chinvariant 9*@(pl_bits) = 4*@(data)
-  chinvariant @(pl_bits) = 4*@(len)
-  
-  // We always have a token on feedback loops
-  chinvariant tokens(octet_count,1) && tokens(octet_index,1) && tokens(St,1)
-  
-  // octet_index is between 0 and octet_count
-  chinvariant 0x00 <= octet_index[next] && octet_index[next] <= octet_count[next]
-  
-  // There are three states: 0, 1 or 2
-  chinvariant 0 <= St[next] && St[next] <= 2
-  
-  chinvariant tot@(input) > 0 ==> bv2int(input[@]) = rate(input)-1
-  
-  chinvariant St[next] = 0 ==> octet_index[next] = octet_count[next]
-  chinvariant St[next] = 1 ==> 0x00 <= octet_index[next] && octet_index[next] <= 0x05
-  chinvariant St[next] = 2 ==> 0x06 <= octet_index[next] && octet_index[next] < octet_count[next]
-  
-  chinvariant St[next] = 0 && rd@(input) = 0 ==> tot@(data) = 0
-  chinvariant St[next] = 0 && rd@(input) > 0 ==> tot@(data) = bv2int(octet_count[next])
-  
-  chinvariant St[next] = 1 ==> rd@(input) = 1
-  chinvariant St[next] = 1 || St[next] = 2 ==> tot@(data) = bv2int(octet_index[next])
-  chinvariant St[next] = 2 ==> rd@(input) = tot@(data)-5
-
-  chinvariant St[next] = 0 <==> (rd@(input) = 0 || rd@(input) = rate(input))
-  
-  chinvariant rd@(input) = 0 ==> tot@(len) = 0
-  chinvariant rd@(input) > 0 ==> octet_count[next] = input[@] + 0x06
-  
-  chinvariant rd@(input) > 0 ==> tot@(len) = 1
-  chinvariant rd@(input) > 0 ==> len[@] = input[@]+0x06
-  
-      
-  entities
-    a = headerAdd()
-  end
-  
-  structure 
-    input:  pl_bits --> a.pl_bits;
-    octet_count:  a.octet_count_out --> a.octet_count_in;
-    octet_index:  a.octet_index_out --> a.octet_index_in;
-    St:     a.St_out --> a.St_in;
-    data:   a.data --> data;
-    len:    a.len --> len;
-  end
-
-end
 
 actor pulseShape() 
 // Inputs:
 bv(size=8) symb,           // I-Q symbols from QPSK modulator 
-bv(size=8) len,       		// Payload length
-bv(size=14) body_iterations_in,
-bv(size=14) body_index_in,
-int St_in
+bv(size=9) len       		// Payload length
 // Outputs:
 ==> 
 bool done,          // Flag to terminate
-bv(size=8) hsp,             // Half-sine pulse samples
-bv(size=14) body_iterations_out,
-bv(size=14) body_index_out,
-int St_out
+bv(size=8) hsp             // Half-sine pulse samples
 :
+
+    contract symb:576, len:1 ==> done:1, hsp:4616
+      requires len[@] = int(9,9)
+    end
+
+    contract invariant state(s_start)
+    stream contract invariant rd(symb) = 576*tot(done)
+    stream contract invariant rd(len) = tot(done)
+    stream contract invariant tot(hsp) = 4616*rd(len)
+    
+    action invariant @(symb) = 576*@(done)
+    action invariant @(len) = @(done)
+    action invariant @(hsp) = 4616*@(len)
+    
+    action invariant int(0,14) <= body_index && body_index <= body_iterations
+    
+    action invariant tot@(len) = 1 ==> 576 = 64*bv2int(len[@])
+    action invariant rd@(len) = 1 ==> (
+      body_iterations = bvresize(len[@],14) * uint(32,14) &&
+      2*bv2int(body_iterations) = 576 &&
+      rd@(symb)  = 2*bv2int(body_index)
+    )
+   
+    action invariant state(s_idle) ==> (
+      rd@(symb)  = 2*bv2int(body_index) &&
+      tot@(hsp)  = 16*bv2int(body_index) &&
+      16*rd@(symb) = 2*tot@(hsp) &&
+      tot@(done) = 0 &&
+      rd@(len)   = 1
+    )
+
+    action invariant state(s_start) && rd@(len) = 1 ==> (
+      rd@(symb)  = 2*bv2int(body_iterations) &&
+      tot@(hsp)  = 16*bv2int(body_iterations)+8 &&
+      16*rd@(symb) = 2*(tot@(hsp)-8) &&
+      tot@(done) = 1
+    )
+
+    action invariant state(s_start) && rd@(len) = 0 ==> (
+      rd@(symb)  = 0 &&
+      tot@(hsp)  = 0 &&
+      tot@(done) = 0
+    )
 
 	bv(size=8) symb_mem;     // Temporary storage for symbol values during transmission
                                     // the current hsp. range: [0...8] 
-	bv(size=8) body_iterations;   // Number of times the "body" part of the transmission has to be repeated 
-	bv(size=8) body_index;        // Number of times the "body" part of the transmission has been repeated
+	bv(size=14) body_iterations := int(0,14);   // Number of times the "body" part of the transmission has to be repeated 
+	bv(size=14) body_index := int(0,14);        // Number of times the "body" part of the transmission has been repeated
 
     bv(size=8) FILT_COEFF0 = 0x00;         // Static filter coefficients for half-sine pulse generation
     bv(size=8) FILT_COEFF1 = 0x31;
@@ -219,51 +216,30 @@ int St_out
     bv(size=8) FILT_COEFF3 = 0x76;
     bv(size=8) FILT_COEFF4 = 0x7f;
     
-    List(type: bv(size=8), size=16) hsps
+    List(type: bv(size=8), size=16) hsps;
 
 	// fixed-point multiplication with shift
 	function mul8( bv(size=8) x, bv(size=8) y ) --> bv(size=8) :
-		(x * y) >> 7
-	end
-	
-	initialize 
-		==>
-		body_iterations_out:[int2bv(0,14)],
-		body_index_out:[int2bv(0,14)],
-		St_out:[0]
+		(x * y) >> int(7,8)
 	end
 
 	// init action
 	// Fired when payload length is known
-	init: action 
-			len:[len_in],
-			body_iterations_in:[body_iterations],
-			body_index_in:[body_index],
-			St_in:[St]
-		==>
-			body_iterations_out:[bvconcat(uint2bv(0,6),len_in) * uint2bv(32,14)],
-			body_index_out:[int2bv(0,14)],
-			St_out:[1]
-	guard St = 0
+	init: action len:[len_in] ==>
 	do
 		symb_mem := 0x7F;
+		body_iterations := bvresize(len_in,14) * int(32,14);
+		body_index := int(0,14);
 	end
 
 	// tx-body action
 	// Consumes 2, produces 16 samples
 	tx_body: action 
-		symb:[ symb_1, symb_2 ],
-		body_iterations_in:[body_iterations],
-		body_index_in:[body_index],
-		St_in:[St]
+		symb:[ symb_1, symb_2 ]
 		==> 
 		hsp:[ hsps[0],hsps[1],hsps[2],hsps[3],hsps[4],hsps[5],hsps[6],hsps[7],
-			hsps[8],hsps[9],hsps[10],hsps[11],hsps[12],hsps[13],hsps[14],hsps[15] ],
-		body_iterations_out:[body_iterations],
-		body_index_out:[body_index + int2bv(1,14)],
-		St_out:[1]
+			hsps[8],hsps[9],hsps[10],hsps[11],hsps[12],hsps[13],hsps[14],hsps[15] ]
 	guard
-		St = 1 &&
 		body_index < body_iterations
 	do	
 		hsps[0] := mul8(FILT_COEFF0, symb_1);
@@ -291,22 +267,16 @@ int St_out
 		hsps[15] := mul8(FILT_COEFF3, symb_2);
 	
 		symb_mem := symb_2;
+		body_index := body_index + int(1,14);
 	end
 
 	// tx_tail action
 	// Finalizes the transmission signal with the fixed 0x7F value
 	tx_tail: action 
-		body_iterations_in:[body_iterations],
-		body_index_in:[body_index],
-		St_in:[St]
 		==> 
 		hsp:[ hsps[0],hsps[1],hsps[2],hsps[3],hsps[4],hsps[5],hsps[6],hsps[7] ], 
-		done: [ true ],
-		body_iterations_out:[body_iterations],
-		body_index_out:[body_index],
-		St_out:[0]
+		done: [ true ]
 	guard
-		St = 1 &&
 		body_index = body_iterations
 	do
 		hsps[0] := mul8(FILT_COEFF0, 0x7F);
@@ -323,70 +293,16 @@ int St_out
 		
 	end
 	
+	
+	schedule fsm s_start :
+		s_start ( init ) --> s_idle;
+		s_idle ( tx_body ) --> s_idle;
+		s_idle ( tx_tail ) --> s_start;
+	end
+	
 end
 
-network pulseShapeNw bv(size=8) symb, bv(size=8) len ==> bool done, bv(size=8) hsp :
-  
-  contract symb:576, len:1 ==> done:1, hsp:4616
-    requires len[@] = 0x09
-  end
-  
-  chinvariant @(symb) = 576*@(done)
-  chinvariant @(len) = @(done)
-  chinvariant @(hsp) = 4616*@(len)
-  
-  // Feedback loops
-  invariant tokens(body_iterations,1) && tokens(body_index,1) && tokens(St,1)
-  invariant St[next] = 0
-  chinvariant tokens(body_iterations,1) && tokens(body_index,1) && tokens(St,1)
-  
-  // State is 0, 1 or, body_index between 0 and body_iterations
-  chinvariant St[next] = 0 || St[next] = 1
-  chinvariant int2bv(0,14) <= body_index[next] && body_index[next] <= body_iterations[next]
-  
-  chinvariant tot@(len) = 1 ==> rate(symb) = 64*bv2int(len[@])
-  chinvariant rd@(len) = 1 ==> (
-    body_iterations[next] = bvconcat(uint2bv(0,6),len[@]) * uint2bv(32,14) &&
-    2*bv2int(body_iterations[next]) = rate(symb) &&
-    rd@(symb)  = 2*bv2int(body_index[next])
-  )
-   
-  chinvariant St[next] = 1 ==> (
-    rd@(symb)  = 2*bv2int(body_index[next]) &&
-    tot@(hsp)  = 16*bv2int(body_index[next]) &&
-    16*rd@(symb) = 2*tot@(hsp) &&
-    tot@(done) = 0 &&
-    rd@(len)   = 1
-  )
 
-  chinvariant St[next] = 0 && rd@(len) = 1 ==> (
-    rd@(symb)  = 2*bv2int(body_iterations[next]) &&
-    tot@(hsp)  = 16*bv2int(body_iterations[next])+8 &&
-    16*rd@(symb) = 2*(tot@(hsp)-8) &&
-    tot@(done) = 1
-  )
-
-  chinvariant St[next] = 0 && rd@(len) = 0 ==> (
-    rd@(symb)  = 0 &&
-    tot@(hsp)  = 0 &&
-    tot@(done) = 0
-  )
-  
-  entities
-    a = pulseShape()
-  end
-  
-  structure 
-    in_symb:  symb --> a.symb;
-    in_len:   len --> a.len;
-    body_iterations:  a.body_iterations_out --> a.body_iterations_in;
-    body_index:  a.body_index_out --> a.body_index_in;
-    St:     a.St_out --> a.St_in;
-    out_hsp:   a.hsp --> hsp;
-    out_done:    a.done --> done;
-  end
-  
-end
 
 actor qpskMod() 
 // Inputs:
@@ -397,7 +313,7 @@ bv(size=8) symb               // I-Q symbols. Range: [-128, 127]
 :
 	// mapping of chips to I-Q samples
 	function q7_map( bv(size=32) bit ) --> bv(size=8) :
-		255 * bit - 128	
+		bvresize( (int(255,32) * bit - int(128,32)) , 8)	
 	end
 	
 	//stream invariant 32*rd(chip) = tot(symb)
@@ -450,18 +366,36 @@ end
 
 network ZigBee bv(size=8) pl_bits ==> bool done, bv(size=8) hsp:
 
-  contract pl_bits:4 ==> done:1, hsp:4616
+  Main: contract pl_bits:4 ==> done:1, hsp:4616
     requires pl_bits[@] = 0x03
   end
   
-  chinvariant tot@(pl_bits) > 0 ==> pl_bits[@] = 0x03
-  chinvariant rd@(pl_bits) > 0 ==> ch_len[@] = 0x03 + 0x06
+  
+  action invariant 4*@(done) = @(pl_bits)
+  action invariant 4616*@(done) = @(hsp)
+  
+  action invariant @(ch_symb) = 576*@(ch_done)
+  action invariant @(ch_len) = @(ch_done)
+  action invariant @(ch_hsp) = 4616*@(ch_len)
+  
+  action invariant 9*@(ch_pl_bits) = 4*@(ch_data)
+  action invariant @(ch_pl_bits) = 4*@(ch_len)
+  
+  action invariant rd(ch_symb) = 576*tot(ch_done)
+  action invariant rd(ch_len) = tot(ch_done)
+  action invariant tot(ch_hsp) = 4616*rd(ch_len)
+  
+  action invariant 9*rd(ch_pl_bits) = 4*tot(ch_data)
+  action invariant rd(ch_pl_bits) = 4*tot(ch_len)
+  
+  action invariant tot@(pl_bits) > 0 ==> pl_bits[@] = int(3,8)
+  action invariant rd@(pl_bits) > 0 ==> ch_len[@] = bvresize(pl_bits[@],9) + int(6,9)
 
   entities
-    ha = headerAddNw();
+    ha = headerAdd();
     cm = chipMapper();
     qm = qpskMod();
-    ps = pulseShapeNw();
+    ps = pulseShape();
   end
   
   structure

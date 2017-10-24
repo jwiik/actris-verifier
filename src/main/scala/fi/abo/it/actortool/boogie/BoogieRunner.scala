@@ -13,6 +13,7 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 object BoogieRunner {
 
   class BoogieResult(
+      val name: String,
       val verified: Int, 
       val errors: Int, 
       val messages: Seq[String],
@@ -22,6 +23,7 @@ object BoogieRunner {
   
     def combine(res: BoogieResult) = { 
       new BoogieResult(
+          this.name + ", " + res.name,
           this.verified+res.verified,
           this.errors+res.errors,
           this.messages++res.messages,
@@ -91,6 +93,7 @@ object BoogieRunner {
     val boogieOutput: ListBuffer[String] = new ListBuffer()
     val smokeLines: ListBuffer[String] = new ListBuffer()
     val errorLines: ListBuffer[String] = new ListBuffer()
+    errorLines += "=== " + fileName + " ==="
     var verified, errors: Int = -1
     while (line != null) {
       //if (previousLine != null) println
@@ -147,7 +150,7 @@ object BoogieRunner {
     destroyTimer.cancel
     
     //Console.out.println
-    val res = new BoogieResult(verified,errors,errorLines.toSeq,boogieOutput.toSeq)
+    val res = new BoogieResult(fileName,verified,errors,errorLines.toSeq,boogieOutput.toSeq)
     //println(res.messages)
     res
   }

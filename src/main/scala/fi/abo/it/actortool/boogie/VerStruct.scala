@@ -195,10 +195,26 @@ object VerStruct {
     
     val (stateDcls,stateChannelNames) = getStateChannels(actor)
     
-    
-    //decls ++= stateDcls
+    decls ++= stateDcls
     
     assumes += B.Assume(createUniquenessCondition(decls.toList))
+    
+    val contractRates = actor.contractActions.map {
+      c => {
+        c ->
+        (actor.inports.map {
+          p => B.B(p.id) ==@ B.Int(c.inportRate(p.id))
+        } ++
+        actor.outports.map {
+          p => B.B(p.id) ==@ B.Int(c.outportRate(p.id))
+        })
+        .reduceLeft((a,b) => a && b)
+      }
+    }
+    
+    if (!contractRates.isEmpty) {
+      assumes += B.Assume(contractRates.unzip._2.reduceLeft((a,b) => a || b))
+    }
     
     assumes ++=
       actor.inports:::actor.outports map { 
@@ -347,9 +363,9 @@ object VerStruct {
       }
     }
     
-    for ((_,id) <- parent.stateChannelNames) {
-      decls += BDecl(id.id,ChanType(id.typ))
-    }
+//    for ((_,id) <- parent.stateChannelNames) {
+//      decls += BDecl(id.id,ChanType(id.typ))
+//    }
     
     decls ++= guard.declarations
     

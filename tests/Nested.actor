@@ -23,10 +23,10 @@ network SumNet int in1 ==> int out :
     ensures 0 < @(out) ==> out[@] = out[@-1]+in1[@]
   end
   
-  invariant tokens(sn_b,1)
-  stream invariant rd(in1) = tot(out)
-  stream invariant tot(out) > 0 ==> out[0] = in1[0]
-  stream invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in1[i])
+  contract invariant tokens(sn_b,1)
+  stream contract invariant rd(in1) = tot(out)
+  stream contract invariant tot(out) > 0 ==> out[0] = in1[0]
+  stream contract invariant (forall int i :: every(out,i,1,0) ==> out[i] = out[i-1]+in1[i])
   
   chinvariant sn_b[0] = 0
   chinvariant 0 <= sn_b[@]
@@ -55,9 +55,9 @@ actor Sum int x ==> int y:
   invariant rd(x) > 0 ==> sum = y[last]
   invariant tot(y) = 0 ==> sum = 0
   
-  stream invariant rd(x) = tot(y)
-  stream invariant tot(y) > 0 ==> y[0] = x[0]
-  stream invariant (forall int i :: every(y,i,1,0) ==> y[i] = y[i-1]+x[i])
+  stream action invariant rd(x) = tot(y)
+  stream action invariant tot(y) > 0 ==> y[0] = x[0]
+  stream action invariant (forall int i :: every(y,i,1,0) ==> y[i] = y[i-1]+x[i])
 
   initialize ==> do
     sum := 0;
@@ -74,22 +74,18 @@ end
 
 network Nested int in1 ==> int out1, int out2 :
   
-  Main: contract in1:2 ==> out1:2, out2:2
+  Main: contract in1:1 ==> out1:1, out2:1
     requires 0 <= in1[@]
-    requires 0 <= in1[@+1]
-    ensures out1[0] = in1[0]
-    ensures out2[0] = in1[0]
     ensures 0 < @(out1) ==> out1[@] = out1[@-1]+in1[@]
     ensures 0 < @(out2) ==> out2[@] = out2[@-1]+in1[@]
     ensures out1[@] = out2[@]
   end
   
-  //stream invariant (forall int i :: every(out1,i,1,0) ==> out1[i] = out1[i-1]+in[i])
-  //stream invariant (forall int i :: every(out1,i) ==> out1[i] = out2[i])
-  chinvariant (forall int i :: history(out1,i) ==> out1[i] = out2[i])
-  chinvariant @(d) = @(b)
-  chinvariant @(e) = @(c)
-      
+  action invariant tot(d) = rd(b)
+  action invariant tot(d) > 0 ==> d[0] = b[0]
+  action invariant (forall int k :: every(d,k,1,0) ==> d[k] = d[k-1]+b[k])
+  action invariant (forall int k :: history(out1,k) ==> out1[k] = out2[k])
+  
   entities
     net = SumNet();
     sum = Sum();

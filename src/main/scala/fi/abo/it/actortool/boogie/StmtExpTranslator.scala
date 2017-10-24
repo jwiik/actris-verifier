@@ -266,10 +266,15 @@ class StmtExpTranslator {
                 throw new TranslationException(params(0).pos,"The first argument to int should an integer literal")
             }
           }
-          case "uint2bv" => {
-            val value = params(0).asInstanceOf[IntLiteral].value
+          case "uint" => {
             val size = params(1).asInstanceOf[IntLiteral].value
-            Boogie.BVLiteral(value.toString,size)
+            params(0) match {
+              case IntLiteral(n) => 
+                Boogie.BVLiteral(n.toString,size)
+              case UnMinus(IntLiteral(n)) => throw new RuntimeException()
+              case x => 
+                throw new TranslationException(params(0).pos,"The first argument to int should an integer literal")
+            }
           }
           case "bv2int" => {
             val size = params(0).typ.asInstanceOf[BvType].size
@@ -414,7 +419,7 @@ class StmtExpTranslator {
         
       case hl@HexLiteral(x) => {
         //val bigInt = x.toList.map("0123456789abcdef".indexOf(_)).map(BigInt(_)).reduceLeft(_ * 16 + _)
-        val bigInt = Integer.parseInt(x, 16)
+        val bigInt = java.lang.Long.parseLong(x.toUpperCase, 16)
         //B.Int(bigInt.toString) // To decimal conversion
         B.IntBV(bigInt.toString,hl.typ.asInstanceOf[BvType].size)
       }

@@ -227,7 +227,7 @@ class NetworkTranslator(
     
     for (pre <- action.requires) {
       if (!pre.free) {
-        asgn += B.Assert(transExprPrecondCheck(pre.expr,acvs),pre.pos,"Precondition might not hold for instance at " + instance.pos)
+        asgn += B.Assert(transExprPrecondCheck(pre.expr,acvs),pre.expr.pos,"Precondition might not hold for instance at " + instance.pos)
       }
     }
     
@@ -263,7 +263,7 @@ class NetworkTranslator(
     for (chi <- acvs.actionInvariants) {
       if (!chi.assertion.free) {
         val msg = 
-            "Action at " + action.pos + " ('" + action.fullName + "') for actor instance '" + 
+            action.pos + ": Action '" + action.fullName + "' for actor instance '" + 
             instance.id + "' might not preserve the channel invariant"
         asgn += BAssert(chi, msg, acvs)
       }
@@ -390,7 +390,7 @@ class NetworkTranslator(
     
     for (q <- nwa.ensures) {
       if (!q.free) {
-        asgn += B.Assert(transExpr(q.expr,nwvs),q.pos,"Network action postcondition might not hold")
+        asgn += B.Assert(transExpr(q.expr,nwvs),q.expr.pos,"Network action postcondition might not hold")
       }
     }
     

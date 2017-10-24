@@ -2,43 +2,43 @@ actor add int in1, int in2 ==> int out :
   action in1:[i], in2:[j] ==> out:[i+j] end
 end
 
-actor delay(int k) int in ==> int out :
+actor delay(int k) int in1 ==> int out :
   int data;
   int y;
   
-  stream invariant tot(out) = 0 ==> data = k
-  stream invariant tot(out) > 0 ==> data = prev(in)
-  stream invariant rd(in) = tot(out)
+  invariant tot(out) = 0 ==> data = k
+  invariant tot(out) > 0 ==> data = prev(in1)
+  stream invariant rd(in1) = tot(out)
   stream invariant tot(out) > 0 ==> out[0] = k
-  stream invariant (forall int idx :: every(out,idx,1,0) ==> out[idx] = in[idx-1])
+  stream invariant (forall int idx :: every(out,idx,1,0) ==> out[idx] = in1[idx-1])
   
   initialize ==> do data := k end
-  action in:[i] ==> out:[y] 
+  action in1:[i] ==> out:[y] 
   do 
   	y := data;
   	data := i;
   end
 end
 
-actor mulc(int c) int in ==> int out :
-  action in:[i] ==> out:[c*i] end
+actor mulc(int c) int in1 ==> int out :
+  action in1:[i] ==> out:[c*i] end
 end
 
-actor rshiftc(int s) int in ==> int out :
-  action in:[i] ==> out:[i >> s] end
+actor rshiftc(int s) int in1 ==> int out :
+  action in1:[i] ==> out:[i >> s] end
 end
 
-actor split int in ==> int out1, int out2 :
-  action in:[i] ==> out1:[i], out2:[i] end
+actor split int in1 ==> int out1, int out2 :
+  action in1:[i] ==> out1:[i], out2:[i] end
 end
 
-network iir() int in ==> int out :
+network fir() int in1 ==> int out :
   
-  action in:1 ==> out:1 
-    ensures @(out) = 0 ==> out[@] = 37*in[@]
-    ensures @(out) = 1 ==> out[@] = 37*in[@] + 109*in[@-1]
-  	ensures @(out) = 2 ==> out[@] = 37*in[@] + 109*in[@-1] + 109*in[@-2]
-    ensures @(out) > 3 ==> out[@] = 37*in[@] + 109*in[@-1] + 109*in[@-2] + 37*in[@-3]
+  contract in1:1 ==> out:1 
+    ensures @(out) = 0 ==> out[@] = 37*in1[@]
+    ensures @(out) = 1 ==> out[@] = 37*in1[@] + 109*in1[@-1]
+  	ensures @(out) = 2 ==> out[@] = 37*in1[@] + 109*in1[@-1] + 109*in1[@-2]
+    ensures @(out) > 3 ==> out[@] = 37*in1[@] + 109*in1[@-1] + 109*in1[@-2] + 37*in1[@-3]
   end
     
   entities
@@ -58,19 +58,19 @@ network iir() int in ==> int out :
   end
   
   structure
-    in --> spl_1.in;
-    spl_1.out1 --> mul_1.in;
-    spl_1.out2 --> delay_1.in;
+    in1 --> spl_1.in1;
+    spl_1.out1 --> mul_1.in1;
+    spl_1.out2 --> delay_1.in1;
 
-    delay_1.out --> spl_2.in;
-    spl_2.out1 --> mul_2.in;
-    spl_2.out2 --> delay_2.in;
+    delay_1.out --> spl_2.in1;
+    spl_2.out1 --> mul_2.in1;
+    spl_2.out2 --> delay_2.in1;
 
-    delay_2.out --> spl_3.in;
-    spl_3.out1 --> mul_3.in;
-    spl_3.out2 --> delay_3.in;
+    delay_2.out --> spl_3.in1;
+    spl_3.out1 --> mul_3.in1;
+    spl_3.out2 --> delay_3.in1;
     
-    delay_3.out --> mul_4.in;
+    delay_3.out --> mul_4.in1;
     
     mul_1.out --> add_1.in1;
     mul_2.out --> add_1.in2;

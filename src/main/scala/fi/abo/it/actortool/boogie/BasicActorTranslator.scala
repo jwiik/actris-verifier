@@ -138,7 +138,7 @@ class BasicActorTranslator(
     //asgn ++= transStmt( a.body )(avs.renamings)
     for (q <- initAction.ensures) {
       if (!q.free) {
-        asgn += B.Assert(transExpr(q.expr,vs), q.pos, "Action postcondition might not hold")
+        asgn += B.Assert(transExpr(q.expr,vs), q.expr.pos, "Action postcondition might not hold")
       }
     }
     for (opat <- initAction.outputPattern) {

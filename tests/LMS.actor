@@ -24,7 +24,7 @@ actor acc(int initial_sample) int operand_1 ==> int result :
 
     stream invariant tot(result) = rd(operand_1)+1
 
-	initialize ==> result:[ buffer ]
+	initialize ==> result:[ initial_sample ]
 	do
 		buffer := initial_sample;
 	end
@@ -57,21 +57,21 @@ actor rshiftc(int constant) int operand_1 ==> int result :
 	action operand_1:[ x ] ==> result:[ x >> constant ] end
 end
 
-actor split2 int in ==> int out1, int out2 :
-	action in:[i] ==> out1:[i], out2:[i] end
+actor split2 int in1 ==> int out1, int out2 :
+	action in1:[i] ==> out1:[i], out2:[i] end
 end
 
-actor split3 int in ==> int out1, int out2, int out3 :
-	action in:[i] ==> out1:[i], out2:[i], out3:[i] end
+actor split3 int in1 ==> int out1, int out2, int out3 :
+	action in1:[i] ==> out1:[i], out2:[i], out3:[i] end
 end
 
-actor split7 int in ==> int out1, int out2, int out3, int out4, int out5, int out6, int out7 :
-	action in:[i] ==> out1:[i], out2:[i], out3:[i], out4:[i], out5:[i], out6:[i], out7:[i] end
+actor split7 int in1 ==> int out1, int out2, int out3, int out4, int out5, int out6, int out7 :
+	action in1:[i] ==> out1:[i], out2:[i], out3:[i], out4:[i], out5:[i], out6:[i], out7:[i] end
 end
 
 network LMS int xk, int yk ==> int sink :
 
-  action xk:1, yk:1 ==> sink:1 end
+  contract xk:1, yk:1 ==> sink:1 end
   
   invariant tokens(D1,1)
   invariant tokens(D2,1)
@@ -131,37 +131,37 @@ network LMS int xk, int yk ==> int sink :
   
   structure
     
-    xk --> xk_spl.in;
+    xk --> xk_spl.in1;
     xk_spl.out1 --> delay_1.operand_1;
     xk_spl.out2 --> mul_a1.operand_1;
     xk_spl.out3 --> mul_b1.operand_1;
     
-    delay_1.result --> delay_1_spl.in;
+    delay_1.result --> delay_1_spl.in1;
     delay_1_spl.out1 --> delay_2.operand_1;
     delay_1_spl.out2 --> mul_a2.operand_1;
     delay_1_spl.out3 --> mul_b2.operand_1;
     
-    delay_2.result --> delay_2_spl.in;
+    delay_2.result --> delay_2_spl.in1;
     delay_2_spl.out1 --> delay_3.operand_1;
     delay_2_spl.out2 --> mul_a3.operand_1;
     delay_2_spl.out3 --> mul_b3.operand_1;
     
-    delay_3.result --> delay_3_spl.in;
+    delay_3.result --> delay_3_spl.in1;
     delay_3_spl.out1 --> delay_4.operand_1;
     delay_3_spl.out2 --> mul_a4.operand_1;
     delay_3_spl.out3 --> mul_b4.operand_1;
     
-    delay_4.result --> delay_4_spl.in;
+    delay_4.result --> delay_4_spl.in1;
     delay_4_spl.out1 --> delay_5.operand_1;
     delay_4_spl.out2 --> mul_a5.operand_1;
     delay_4_spl.out3 --> mul_b5.operand_1;
     
-    delay_5.result --> delay_5_spl.in;
+    delay_5.result --> delay_5_spl.in1;
     delay_5_spl.out1 --> delay_6.operand_1;
     delay_5_spl.out2 --> mul_a6.operand_1;
     delay_5_spl.out3 --> mul_b6.operand_1;
     
-    delay_6.result --> delay_6_spl.in;
+    delay_6.result --> delay_6_spl.in1;
     delay_6_spl.out1 --> mul_a7.operand_1;
     delay_6_spl.out2 --> mul_b7.operand_1;
     
@@ -178,7 +178,7 @@ network LMS int xk, int yk ==> int sink :
     add_a5.result --> add_a6.operand_2;
     mul_b7.result --> add_a6.operand_1;
     
-    mul_mu.result --> mul_mu_spl.in;
+    mul_mu.result --> mul_mu_spl.in1;
     mul_mu_spl.out1 --> mul_a7.operand_2;
     mul_mu_spl.out2 --> mul_a6.operand_2;
     mul_mu_spl.out3 --> mul_a5.operand_2;
@@ -202,7 +202,7 @@ network LMS int xk, int yk ==> int sink :
     mul_a7.result --> acc_7.operand_1;
     D7: acc_7.result --> mul_b7.operand_2;
     
-    sub.result --> sub_spl.in;
+    sub.result --> sub_spl.in1;
     sub_spl.out1 --> mul_mu.operand_1;
     sub_spl.out2 --> sink;
     

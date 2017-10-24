@@ -20,7 +20,10 @@ object Inferencer {
   final val Modules = List(StaticClass,BulletInvariants,NWPreToInvariant).map(m => (m.name,m)).toMap
   private val DefaultModules = Set(StaticClass,BulletInvariants,NWPreToInvariant)
       
-  def infer(program: List[TopDecl], typeCtx: Resolver.Context, modules: List[String], assumeInvariants: Boolean): InferenceOutcome = {
+  def infer(
+      program: List[TopDecl], 
+      typeCtx: Resolver.Context, 
+      modules: List[String], assumeInvariants: Boolean): InferenceOutcome = {
     val inferenceModules = modules match {
       case Nil => DefaultModules
       case List("default") => DefaultModules
@@ -50,7 +53,9 @@ object Inferencer {
       generateInputTokenLimit(a,typeCtx)
     }
     
-    def generatePreconditionDisjunction(n: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
+    def generatePreconditionDisjunction(
+        n: DFActor, 
+        typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
       val disjuncts: List[Expr] = n.contractActions flatMap { action => {
         val preconds: List[Expr] =
           (action.requiresExpr ++ action.guards).flatMap { r =>
@@ -84,7 +89,9 @@ object Inferencer {
       }
     }
     
-    def generateInputTokenLimit(n: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
+    def generateInputTokenLimit(
+        n: DFActor, 
+        typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean) {
       val disjuncts: List[Expr] =
         n.contractActions flatMap {
           action => {
@@ -150,7 +157,9 @@ object Inferencer {
     
     val quantVar = Id("idx$"); quantVar.typ = IntType(-1)
     
-    override def actor(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
+    override def actor(
+        actor: BasicActor, 
+        typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
       if (actor.isActor && actor.actorActions.filter(!_.init).isEmpty) return
       if (checkIfAmendable(actor)) {
         generateCountInvariants(actor, typeCtx)
@@ -158,14 +167,18 @@ object Inferencer {
       }
     }
     
-    override def network(n: Network, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
-      if (checkIfAmendable(n)) {
-        generateCountInvariants(n, typeCtx)
-      }
+    override def network(
+        n: Network, 
+        typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
+//      if (checkIfAmendable(n)) {
+//        generateCountInvariants(n, typeCtx)
+//      }
     }
     
     
-    def collectData(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context): (ActorAction,Map[String,Int]) = {
+    def collectData(
+        actor: BasicActor, 
+        typeCtx: Resolver.Context)(implicit ctx: Context): (ActorAction,Map[String,Int]) = {
       val firstAction = actor.actorActions.filter{ a => !a.init }(0)
       val initAction = actor.actorActions.find{ a => a.init }
       
@@ -178,7 +191,9 @@ object Inferencer {
       (firstAction,delayedChannels)
     }
     
-    def generateCountInvariants(actor: DFActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
+    def generateCountInvariants(
+        actor: DFActor, 
+        typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
       val countInvariants = new ListBuffer[Expr]
       
       val (firstAction,delayedChannels) = 
@@ -234,11 +249,17 @@ object Inferencer {
           countInvariants += Eq(ratedRd,ratedDelayedTot)
         }
       }
+      
       countInvariants.foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
+      
+      //println(actor.fullName + " " + countInvariants)
       actor.addActionInvariants(countInvariants.toList, assumeInvs,true)
     }
     
-    def generateValueInvariants(actor: BasicActor, typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
+    def generateValueInvariants(
+        actor: BasicActor, 
+        typeCtx: Resolver.Context)(implicit ctx: Context, assumeInvs: Boolean): Unit = {
+      
       if (!isStateless(actor)) return
       
       val valueInvariants = new ListBuffer[Expr]
@@ -379,6 +400,7 @@ object Inferencer {
         } // if
       } // for
       countInvariants foreach { inv => Resolver.resolveExpr(inv, typeCtx) }
+      //println(n.fullName + " " + countInvariants)
       n.addActionInvariants(countInvariants.toList, assumeInvs, false)
     } // def network
   }
