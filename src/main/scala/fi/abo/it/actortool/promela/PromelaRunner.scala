@@ -11,7 +11,7 @@ import fi.abo.it.actortool._
 import fi.abo.it.actortool.schedule.ContractSchedule
 import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
-object PromelaRunner {
+class PromelaRunner(params: CommandLineParameters) {
   
   def simulate(progTxt: String, outputFile: String, scheduleParser: ScheduleParser) = {
     val seed = scala.util.Random.nextInt

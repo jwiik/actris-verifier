@@ -23,6 +23,7 @@ trait ProgramContext {
 }
 
 class BasicProgramContext(val program: List[TopDecl], val typeContext: Resolver.Context) extends ProgramContext
+
 class ScheduleContext(
     val entity: DFActor,
     val schedules: List[ContractSchedule],
@@ -47,13 +48,11 @@ trait Backend[U] extends GeneralBackend[ProgramContext,U] {
 
 object ActorTool {
 
-  val DEBUG = true
+  val DEBUG = false
   
-  class TranslationException(val pos: Position, val msg: String) extends Exception(msg) {
-    //def this(pos: Position, msg: String) = this(pos, msg)
-  }
+  class TranslationException(val pos: Position, val msg: String) extends Exception(msg)
 
-  final val Param = "(?:[-/])(.*)".r
+  final val Param = "(?:--)(.*)".r
 
   object Step extends Enumeration {
     type Step = Value
@@ -105,8 +104,8 @@ object ActorTool {
   def parseCommandLine(args: Array[String]): Option[CommandLineParameters] = {
     var aBoogiePath = if (DEBUG) "./boogie" else "boogie"
     var aBoogieArgs = ""
-    var aPrintProgram = if (DEBUG) false else false
-    var aNoBplFile = if (DEBUG) false else true
+    var aPrintProgram = false
+    var aNoBplFile = false
     var aBplFile = "out.bpl"
     var aDoTypecheck = true
     var aDoInfer = true
@@ -122,6 +121,7 @@ object ActorTool {
     var aPrintInvariantStats = false
     var aToVerify: List[String] = List.empty
     var aSizedIntsAsBitVectors = true
+    var aSpinPath: String = "spin"
     var aSchedule: Option[String] = None
     var aMergeActions: Boolean = false
     var aPromelaPrint: Boolean = false
@@ -140,15 +140,16 @@ object ActorTool {
 
     for (a <- args) {
       val paramval = a.split(":", 2)
-      val (param, value) = (if (paramval.size == 1) (paramval(0), None) else (paramval(0), Some(paramval(1))));
+      val (param, value) = 
+        if (paramval.size == 1) (paramval(0), None) else (paramval(0), Some(paramval(1)))
       param match {
-        case Param("print") => aPrintProgram = true
-        case Param("boogiePath") => value match {
+        case Param("boogie-print") => aPrintProgram = true
+        case Param("boogie-path") => value match {
           case None    =>
             reportCommandLineError("parameter boogiePath takes an argument"); return None
           case Some(v) => aBoogiePath = v
         }
-        case Param("boogieTimeout") => value match {
+        case Param("boogie-timeout") => value match {
           case None =>
             reportCommandLineError("parameter boogieTimeout takes an integer argument"); return None
           case Some(v) =>
@@ -159,12 +160,11 @@ object ActorTool {
                 return None
             }
         }
-        case Param("noTypecheck")     => aDoTypecheck = false
-        case Param("noInfer")         => aDoInfer = false
-        case Param("noTranslate")     => aDoTranslate = false
-        case Param("noVerify")        => aDoVerify = false
-        case Param("bvMode")          => reportCommandLineError("parameter bvMode is obsolete.")
-        case Param("noAssumeGenInvs") => aAssumeInvs = false
+        case Param("no-typecheck")     => aDoTypecheck = false
+        case Param("no-infer")         => aDoInfer = false
+        case Param("no-translate")     => aDoTranslate = false
+        case Param("no-verify")        => aDoVerify = false
+        case Param("no-assume-gen-invs") => aAssumeInvs = false
         case Param("timings") => {
           value match {
             case Some(v) =>
@@ -180,7 +180,7 @@ object ActorTool {
               return None
           }
         }
-        case Param("inferModules") => {
+        case Param("infer-modules") => {
           value match {
             case Some(v) => {
               val modules = Inferencer.Modules
@@ -193,10 +193,10 @@ object ActorTool {
             case None => reportCommandLineError("parameter " + param + " takes a comma-separated list as parameter")
           }
         }
-        case Param("onlyMathematicalInts") => aSizedIntsAsBitVectors = false
-        case Param("smokeTest")            => aSmokeTest = true
-        case Param("replaceMaps")          => aReplaceMaps = true
-        case Param("toVerify") => {
+        case Param("only-mathematical-ints") => aSizedIntsAsBitVectors = false
+        case Param("smoke-test")            => aSmokeTest = true
+        case Param("replace-maps")          => aReplaceMaps = true
+        case Param("to-verify") => {
           value match {
             case Some(list) => {
               aToVerify = list.split(",").toList
@@ -206,7 +206,7 @@ object ActorTool {
               return None
           }
         }
-        case Param("contractsToVerify") => {
+        case Param("contracts-to-verify") => {
           value match {
             case Some(list) => {
               val strings = list.split(",").toList
@@ -226,14 +226,11 @@ object ActorTool {
               return None
           }
         }
-        case Param("printInvariantStats") => aPrintInvariantStats = true
-        case Param("promela") => {
+        case Param("print-invariant-stats") => aPrintInvariantStats = true
+        case Param("spin-path") => {
           value match {
-            case s@Some(_) => {
-              aDoInfer = false // Invariant inference is turned of for scheduling mode
-              aSchedule = s
-            }
-            case None => reportCommandLineError("parameter 'promela' takes a string as argument")
+            case Some(s) => aSpinPath = s
+            case None => reportCommandLineError("parameter spin-path takes a string as argument")
           }
         }
         case Param("schedule") => {
@@ -242,12 +239,13 @@ object ActorTool {
               aDoInfer = false // Invariant inference is turned of for scheduling mode
               aSchedule = s
             }
-            case None => reportCommandLineError("parameter 'schedule' takes a string identifying the top network as argument")
+            case None => 
+              reportCommandLineError("parameter 'schedule' takes a string identifying the top network as argument")
           }
         }
-        case Param("mergeActions") => aMergeActions = true
-        case Param("promelaPrint") => aPromelaPrint = true
-        case Param("promelaChanSize") => {
+        case Param("merge-actions") => aMergeActions = true
+        case Param("promela-print") => aPromelaPrint = true
+        case Param("promela-chan-size") => {
           value match {
             case Some(sz) => {
               try {
@@ -260,9 +258,11 @@ object ActorTool {
             case None => reportCommandLineError("parameter promelaChanSize takes an integer as argument.")
           }
         }
-        case Param("scheduleSimulate") => aScheduleSimulate = true
-        case Param("scheduleWeights") => {
-          val errMsg = "parameter scheduleWeights takes a comma-separated where each element is of format W=x, wherw W is an identifier and x is an integer"
+        case Param("schedule-simulate") => aScheduleSimulate = true
+        case Param("schedule-weights") => {
+          val errMsg = 
+            "parameter scheduleWeights takes a comma-separated where each element is of " + 
+            "format W=x, wherw W is an identifier and x is an integer"
 
           value match {
             case Some(list) => {
@@ -285,7 +285,7 @@ object ActorTool {
               return None
           }
         }
-        case Param("scheduleXML") => {
+        case Param("schedule-xml") => {
           value match {
             case Some(fp) => {
               val file = new File(fp)
@@ -300,7 +300,7 @@ object ActorTool {
             }
           }
         }
-        case Param("printXMLDescription") => {
+        case Param("print-xml-desc") => {
           aPrintXMLDescription = true
         }
             

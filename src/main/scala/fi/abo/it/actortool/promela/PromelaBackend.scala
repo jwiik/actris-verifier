@@ -15,6 +15,7 @@ import fi.abo.it.actortool.schedule.ApplicationInformation
 class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
   
   val translator = new PromelaTranslator(params)
+  val runner = new PromelaRunner(params)
   
   def schedule(entity: DFActor, mergedActors: Map[String,BasicActor], constants: List[Declaration]): List[ContractSchedule] = {
      val translations = translator.invoke(entity,mergedActors,Map.empty,constants)
@@ -54,7 +55,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
     var simulatedSchedule: Option[ContractSchedule] = None 
     for (i <- (0 until 10)) {
       simOutputParser.startSchedule(contract)
-      PromelaRunner.simulate(progTxtNoC, entity.id + "__" + contract.fullName+"_sim.pml", simOutputParser)
+      runner.simulate(progTxtNoC, entity.id + "__" + contract.fullName+"_sim.pml", simOutputParser)
       simOutputParser.endSchedule
       
       val schedule = simOutputParser.getSchedule
@@ -102,7 +103,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
       val formulaTxt = printerC.print(formula)
       outputParser.startSchedule(contract)
       
-      PromelaRunner.search(progTxt + formulaTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
+      runner.search(progTxt + formulaTxt, entity.id + "__" + contract.fullName+".pml", outputParser)
       
       outputParser.endSchedule
       val schedule = outputParser.getSchedule
