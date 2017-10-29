@@ -37,7 +37,7 @@ class BasicActorTranslator(
         gts += (a -> gt)
         allInpatDecls = allInpatDecls ++ gt.declarations
         actionFiringRules += (a -> (gt.pattern,gt.localGuard))
-        nonLocalActionFiringRules += (a -> (gt.pattern,gt.localGuard))
+        nonLocalActionFiringRules += (a -> (gt.pattern,gt.nonLocalGuard))
         actionInpatDecls += (a -> gt.declarations.toList)
         actionRenamings += (a -> gt.renamings)
       }
@@ -62,7 +62,7 @@ class BasicActorTranslator(
       val andedGuard = ownPattern && ownGuard
       
       val completeGuard = negHigherPrioGuards.foldLeft(B.Bool(true): Boogie.Expr)((g1,g2) => g1 && g2 ) && andedGuard
-      allGuards += ((action,completeGuard))
+      allGuards += action -> completeGuard
     }
     
     if (!skipMutualExclusivenessCheck) {

@@ -118,7 +118,7 @@ object ActorTool {
     var aSmokeTest = false
     var aReplaceMaps = false
     var aBoogieTimeout = if (DEBUG) 1000000 else 300
-    var aAssumeInvs = if (DEBUG) false else true
+    var aAssumeInvs = true //if (DEBUG) false else true
     var aPrintInvariantStats = false
     var aToVerify: List[String] = List.empty
     var aSizedIntsAsBitVectors = true

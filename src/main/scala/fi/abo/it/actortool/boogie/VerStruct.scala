@@ -272,6 +272,8 @@ object VerStruct {
       channels += BDecl(namePrefix+B.Sep+c.id,c.typ)
     }
     
+    
+    
     //val transCtx = TranslatorContext(renamings.toMap, false, Map.empty)
     
     val ioInvariants = new ListBuffer[(Instance,List[Invariant])]
@@ -309,6 +311,40 @@ object VerStruct {
         case None =>
       }
     }
+    
+//    val tempStruct =
+//      new NetworkVerStruct(
+//        network,
+//        decls.toList,
+//        assumes.toList,
+//        Map.empty, // State channels
+//        renamings.toMap,
+//        ioInvariants.toList,
+//        useContracts)
+//    
+//    val alreadyDeclared = collection.mutable.Set[String]()
+//    val allStateChannels = new collection.mutable.ListBuffer[Id]()
+//    for (e <- entities) {
+//      val ivs = VerStruct.forInstance(tempStruct, e, useContracts)
+//      val stateVarsInGuards = ivs.guardStateVariables
+//      val stateChannels = ivs.stateChannelNames.filter{ case (id,_) => stateVarsInGuards.contains(id) }
+//      allStateChannels ++= stateChannels.unzip._2
+//
+//      println(stateChannels)
+////      for (d <- ivs.declarations) {
+////        if (!alreadyDeclared.contains(d.name)) {
+////          decls += d
+////          alreadyDeclared += d.name
+////        }
+////      }
+//    }
+    
+//    for (e <- entities) {
+//      
+//      GuardStateAnalyzer.analyze(e.actor.actorActions, variables)
+//      val (stateDcls,stateChannelNames) = getStateChannels(e.actor, e.id)
+//      
+//    }
     
     new NetworkVerStruct(
         network,

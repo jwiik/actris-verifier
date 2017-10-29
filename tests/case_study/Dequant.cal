@@ -49,7 +49,7 @@ actor Dequant()
 	
 	Main: contract QP:1, DC:1, AC:63 ==> OUT:64 end
 	
-	stream invariant rd@(QP) = 0 ==> state(start)
+	contract invariant state(start)
 	
 	invariant tot@(OUT) = rd@(DC) + rd@(AC)
 	invariant state(start) ==> ( 

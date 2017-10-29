@@ -34,10 +34,12 @@ actor Algo_IS_simple () int(size=3) AC_PRED_DIR, int(size = 13) QFS_AC ==> int(s
     guard AC_PRED_DIR[@] >= int(0,3)
   end
   
-  stream invariant rd@(AC_PRED_DIR) = 0 ==> state(rest)
+  contract invariant state(rest)
   
-  stream invariant int(1,8) <= count && count <= int(64,8)
-  stream invariant state(rest) ==> count = int(1,8)
+  // stream
+  invariant int(1,8) <= count && count <= int(64,8)
+  // stream
+  invariant state(rest) ==> count = int(1,8)
   
   invariant mode(Skip) && tot@(AC_PRED_DIR) > 0 ==> AC_PRED_DIR[@] < int(0,3)
   invariant mode(Skip) ==> state(rest)

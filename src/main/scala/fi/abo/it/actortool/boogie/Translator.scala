@@ -218,17 +218,27 @@ class Translator(
     lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,!actorActionsOnly)
     lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,true)
     
-    val bProgram = programCtx.program flatMap {
-      case a: BasicActor => actorTranslator.translateEntity(a)
-      case n: Network => if (!actorActionsOnly) networkTranslator.translateEntity(n) else Seq.empty
-      case u: DataUnit => {
-        Seq(BoogieTranslation(
-            u,
-            u.constants flatMap { d =>
-              val axiom = stmtTranslator.transExpr(d.value.get,false)
-              List(Boogie.Const(d.id,false,B.type2BType(d.typ)),Boogie.Axiom(Boogie.VarExpr(d.id) ==@ axiom))
-            }))
-      }
+    val consts = programCtx.program.collect {
+      case u: DataUnit => 
+        u.constants flatMap { d =>
+          val axiom = stmtTranslator.transExpr(d.value.get,false)
+          List(Boogie.Const(d.id,false,B.type2BType(d.typ)),Boogie.Axiom(Boogie.VarExpr(d.id) ==@ axiom))
+        }
+    }.flatten
+    
+    val bProgram: Seq[BoogieTranslation[_<:TopDecl]] = programCtx.program flatMap {
+      case a: BasicActor => 
+        val translations = actorTranslator.translateEntity(a)
+        translations.map { t => BoogieTranslation(t.entity, consts ++ t.program) }
+      case n: Network => 
+        if (!actorActionsOnly) {
+          val translations = networkTranslator.translateEntity(n) 
+          translations.map { t => BoogieTranslation(t.entity, consts ++ t.program) }
+        }
+        else {
+          Seq.empty
+        }
+      case u: DataUnit => Seq.empty
       case td: TypeDecl => {
         //userTypes += (td.tp.id -> NamedType(td.tp.id))
         Seq(BoogieTranslation(
@@ -239,10 +249,6 @@ class Translator(
       }
     }
     
-//    println(bProgram.size)
-//    for (p <- bProgram) {
-//      println(p.entity.id)
-//    }
     return bProgram
     
   }

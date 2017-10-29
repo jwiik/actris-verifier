@@ -3,8 +3,11 @@
 actor Algo_IDCT2D_ISOIEC_23002_1()
 	int(size=13) IN, bool SIGNED ==> int(size=9) OUT :
 	
-	Main: contract IN:64, SIGNED:1 ==> OUT:64 
-	end
+	//Main: contract IN:64, SIGNED:1 ==> OUT:64 end
+	
+	//action invariant tot(OUT) = rd(IN)
+	//action invariant tot(OUT) = 64*rd(SIGNED)
+	
 
 	int(size=32) A = int(1024,32);
 
@@ -50,12 +53,11 @@ actor Algo_IDCT2D_ISOIEC_23002_1()
 		// scaled 1D IDCT for rows and columns
 		idct1d(block1, block2);
 		idct1d(block2, block1);
-		output :=
-			if s then
-				[ clip((block1[n] >> int(13,32)), -int(255,32)) : for int n in 0 .. 63 ]
-			else
-				[ clip((block1[n] >>  int(13,32)), int(0,32)) : for int n in 0 .. 63 ]
-			end  
+		if s then
+			output := [ clip((block1[n] >> int(13,32)), -int(255,32)) : for int n in 0 .. 63 ]
+		else
+			output := [ clip((block1[n] >>  int(13,32)), int(0,32)) : for int n in 0 .. 63 ]
+		end
 	end
 
 	procedure idct1d(int(size=32) X[64], int(size=32) Y[64])
