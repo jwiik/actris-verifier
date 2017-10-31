@@ -21,9 +21,23 @@ case class GuardTranslation(
     val localGuard: Boogie.Expr,
     val nonLocalGuard: Boogie.Expr)
 
-case class BoogieTranslation[T](val entity: T, program: Seq[Boogie.Decl])
+case class BoogieTranslation[T](val entities: Seq[T], program: Seq[Boogie.Decl]) {
+  
+  def this(e: T, program: Seq[Boogie.Decl]) = this(Seq(e),program)
+  
+  def append(appendix: Seq[Boogie.Decl]) =
+    BoogieTranslation(entities, appendix++program)
+  
+  def join(that: BoogieTranslation[T]) = 
+    BoogieTranslation(this.entities++that.entities,this.program++that.program)
+  
+}
+
+object BoogieTranslation { // Companion object
+  def apply[T](e: T, program: Seq[Boogie.Decl]) = new BoogieTranslation(e,program)
+}
     
-abstract class EntityTranslator[T,U] {
+abstract class EntityTranslator[T,U<:ASTNode] {
   
   val stmtTranslator = new StmtExpTranslator();
   
@@ -206,10 +220,10 @@ abstract class EntityTranslator[T,U] {
 class Translator( 
     val smokeTest: Boolean,
     val skipMutualExclusivenessCheck: Boolean,
-    val actorActionsOnly: Boolean) extends Backend[Seq[BoogieTranslation[_<:TopDecl]]] {  
+    val actorActionsOnly: Boolean) extends Backend[Seq[BoogieTranslation[ProgramContext]]] {  
   
   
-  def invoke(programCtx: ProgramContext): Seq[BoogieTranslation[_<:TopDecl]] = {
+  def invoke(programCtx: ProgramContext): Seq[BoogieTranslation[ProgramContext]] = {
     val typeCtx = programCtx.typeContext
     assert(typeCtx.getErrors.isEmpty)
     
@@ -226,30 +240,32 @@ class Translator(
         }
     }.flatten
     
-    val bProgram: Seq[BoogieTranslation[_<:TopDecl]] = programCtx.program flatMap {
+    val bProgram = programCtx.program flatMap {
       case a: BasicActor => 
         val translations = actorTranslator.translateEntity(a)
-        translations.map { t => BoogieTranslation(t.entity, consts ++ t.program) }
+        translations.map(_.program).reduceLeft{ (x,y) => x++y }
+//        translations.map { 
+//          t => t.append(consts)
+//        }
       case n: Network => 
         if (!actorActionsOnly) {
           val translations = networkTranslator.translateEntity(n) 
-          translations.map { t => BoogieTranslation(t.entity, consts ++ t.program) }
+          translations.map(_.program).reduceLeft{ (x,y) => x++y }
+//          translations.map { 
+//            t => t.append(consts)
+//          }
         }
         else {
           Seq.empty
         }
       case u: DataUnit => Seq.empty
       case td: TypeDecl => {
-        //userTypes += (td.tp.id -> NamedType(td.tp.id))
-        Seq(BoogieTranslation(
-            td,
-            for (f <- td.fields) yield {
-              Boogie.Const(td.tp.id+"."+f.id,true,BType.Field(B.type2BType(f.typ)))
-            }))
+        throw new RuntimeException("User type declarations is not currently supported in Boogie encoding")
       }
     }
     
-    return bProgram
+    
+    return Seq(BoogieTranslation(programCtx, bProgram))
     
   }
 

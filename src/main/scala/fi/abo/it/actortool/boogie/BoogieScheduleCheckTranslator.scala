@@ -9,8 +9,8 @@ class BoogieScheduleCheckTranslator(
     //val smokeTest: Boolean,
     //val skipMutualExclusiveness: Boolean
     ) 
-    extends EntityTranslator[ScheduleContext,ContractSchedule] 
-    with GeneralBackend[ScheduleContext,Seq[BoogieTranslation[ContractSchedule]]] {
+    extends EntityTranslator[ScheduleContext,ContractAction] 
+    with GeneralBackend[ScheduleContext,Seq[BoogieTranslation[ContractAction]]] {
 
   
   def invoke(scheduleCtx: ScheduleContext) = {
@@ -18,7 +18,7 @@ class BoogieScheduleCheckTranslator(
     translateEntity(scheduleCtx)
   }
   
-  def translateEntity(scheduleCtx: ScheduleContext): Seq[BoogieTranslation[ContractSchedule]] = {
+  def translateEntity(scheduleCtx: ScheduleContext): Seq[BoogieTranslation[ContractAction]] = {
     
     val constDecls =
       (scheduleCtx.program.collect{ 
@@ -38,13 +38,14 @@ class BoogieScheduleCheckTranslator(
           //translateFunctionDecl(vs) ++ 
           //actionChecks ++ 
           scheduleCtx.schedules.map { s => 
-            BoogieTranslation(s, constDecls ++ translateFunctionDecl(vs) ++ translateActorSchedule(scheduleCtx,s,vs))
+            
+            BoogieTranslation(Seq(s.contract), constDecls ++ translateFunctionDecl(vs) ++ translateActorSchedule(scheduleCtx,s,vs))
           }
         }
         case nw: Network => {
           val vs = VerStruct.forNetwork(nw,mergedActions)
           scheduleCtx.schedules.map {
-            s => BoogieTranslation(s, constDecls ++ translateNetworkSchedule(scheduleCtx, s, vs))
+            s => BoogieTranslation(Seq(s.contract), constDecls ++ translateNetworkSchedule(scheduleCtx, s, vs))
           }
         }
       }

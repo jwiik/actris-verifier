@@ -31,8 +31,9 @@ object BoogieRunner {
     }
     
     override def toString() = {
-      (if (messages.isEmpty) "" else "\n"+messages.mkString("\n")) + 
-      "\n" + this.verified + " verified with " + this.errors + " errors"
+      boogieOutput.mkString("\n")
+//      (if (messages.isEmpty) "" else "\n"+messages.mkString("\n")) + 
+//      "\n" + this.verified + " verified with " + this.errors + " errors"
     }
     
   }
@@ -93,7 +94,7 @@ object BoogieRunner {
     val boogieOutput: ListBuffer[String] = new ListBuffer()
     val smokeLines: ListBuffer[String] = new ListBuffer()
     val errorLines: ListBuffer[String] = new ListBuffer()
-    errorLines += "=== " + fileName + " ==="
+    errorLines += fileName + " " + ("=" * (60-fileName.length))
     var verified, errors: Int = -1
     while (line != null) {
       //if (previousLine != null) println

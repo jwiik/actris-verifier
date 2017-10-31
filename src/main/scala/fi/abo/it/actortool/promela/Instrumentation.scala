@@ -112,7 +112,9 @@ object Instrumentation {
         val sumTerms = chansWithMax.zipWithIndex.map { 
           case ((ch,max),i) => P.IndexAccessor(P.VarExp(MAX_SIZE_ARRAY), P.IntLiteral(i)) / P.IntLiteral(max) : P.Expr 
         }
-        val term = sumTerms.reduceLeft { (a,b) => a+b }
+        val term = 
+          if (sumTerms.isEmpty) P.IntLiteral(0)
+          else sumTerms.reduceLeft { (a,b) => a+b }
         
         if (buffWeight != 1) (P.IntLiteral(buffWeight) * term)
         else term

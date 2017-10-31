@@ -333,7 +333,7 @@ class BasicActorTranslator(
     
     for (q <- action.ensures) {
       if (!q.free) {
-        asgn += B.Assert(transExpr(q.expr,avs),q.pos,"Contract action postcondition might not hold")
+        asgn += B.Assert(transExpr(q.expr,avs),q.expr.pos,"Contract postcondition might not hold")
       }
     }
     

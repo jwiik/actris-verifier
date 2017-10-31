@@ -11,6 +11,7 @@ import fi.abo.it.actortool.boogie.Boogie
 import fi.abo.it.actortool.boogie.BoogieVerifier
 import fi.abo.it.actortool.promela.PromelaBackend
 import fi.abo.it.actortool.util.ASTPrinter
+import fi.abo.it.actortool.util.Config
 import fi.abo.it.actortool.boogie.BoogieScheduleVerifier
 import fi.abo.it.actortool.schedule.ContractSchedule
 import fi.abo.it.actortool.merging.ActorMerger
@@ -22,7 +23,9 @@ trait ProgramContext {
   def typeContext: Resolver.Context
 }
 
-class BasicProgramContext(val program: List[TopDecl], val typeContext: Resolver.Context) extends ProgramContext
+class BasicProgramContext(
+    val program: List[TopDecl], 
+    val typeContext: Resolver.Context) extends ProgramContext
 
 class ScheduleContext(
     val entity: DFActor,
@@ -48,7 +51,7 @@ trait Backend[U] extends GeneralBackend[ProgramContext,U] {
 
 object ActorTool {
 
-  val DEBUG = false
+  val DEBUG = Config.DEBUG
   
   class TranslationException(val pos: Position, val msg: String) extends Exception(msg)
 
@@ -96,7 +99,7 @@ object ActorTool {
     val PrintXMLDescription: Boolean
     val ContractsToVerify: List[(String,String)]
     
-    final lazy val help = "actortool [option] <filename>+\n"
+    final lazy val help = "actris [option] <filename>+\n"
   }
 
   //val actorSystem = ActorSystem("actortool")
