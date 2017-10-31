@@ -37,3 +37,7 @@ To generate Eclipse file, issue the following command in SBT:
 ```
 > eclipse
 ```
+
+## Build status
+
+[![Build Status](https://travis-ci.org/jwiik/actris-verifier.svg?branch=master)](https://travis-ci.org/jwiik/actris-verifier)
