@@ -1,6 +1,8 @@
 # Actris verifier
 
-Actris is a prototype contract-based verifier for dynamic dataflow programs. The verifier was developed as part of a research project at Åbo Akademi University.
+Actris is a prototype contract-based verifier for dynamic dataflow programs. The verifier was developed as part of a research project at Åbo Akademi University. The principles behind the tool has been documented and published in the paper:
+
+J. Wiik and P. Boström. [Specification and automated verification of dynamic dataflow networks](https://doi.org/10.1007/978-3-319-66197-1_9). In: Software Engineering and Formal Methods: 15th International Conference, SEFM 2017, Proceedings, LNCS. Springer, 2017.
 
 The tools is written in Scala and to some extent based on the Chalice verifer by Microsoft Research.
 
