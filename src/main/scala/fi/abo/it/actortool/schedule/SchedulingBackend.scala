@@ -14,6 +14,8 @@ case class Failure(errors: List[(Position,String)]) extends SchedulingOutcome
 
 class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParameters) extends Backend[SchedulingOutcome] {
   
+  val sep = java.io.File.separator
+  
   def invoke(programCtx: ProgramContext): SchedulingOutcome = {
     val topNwName = params.Schedule.get
     
@@ -76,11 +78,11 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
     println("Actor merging done.")
     
     val finalActor = mergedActorMap(topNwName)
-    writeFile("output/"+finalActor.id+".actor", ASTPrinter.orcc.print(finalActor))
+    writeFile(params.OutputDir+sep+finalActor.id+".actor", ASTPrinter.orcc.print(finalActor))
     
     if (!params.ScheduleXML.isDefined) {
       val appInfo = ApplicationInformation(topnw, actorScheduleInfo.toList)
-      writeFile("output/"+finalActor.id+"_schedules.xml", appInfo.print)
+      writeFile(params.OutputDir+sep+finalActor.id+"_schedules.xml", appInfo.print)
     }
     
     if (errors.isEmpty) Success(finalActor,allSchedules.toList) else Failure(errors)

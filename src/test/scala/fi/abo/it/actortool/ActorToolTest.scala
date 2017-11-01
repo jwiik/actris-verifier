@@ -48,6 +48,7 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val SizedIntsAsBitvectors = true
       val Schedule = None
       val ScheduleSimulate = false
+      val SpinPath = "spin"
       val PromelaPrint = false
       val MergeActions = false
       val PromelaChanSize = 100
@@ -55,5 +56,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val ScheduleXML = None
       val PrintXMLDescription = false
       val ContractsToVerify = List.empty
+      val OutputDir = new File("actris-output")
     } 
 }

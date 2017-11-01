@@ -13,17 +13,24 @@ import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
 class PromelaRunner(params: CommandLineParameters) {
   
+  val outputDir = params.OutputDir
+  val sep = java.io.File.separator
+  
   def simulate(progTxt: String, outputFile: String, scheduleParser: ScheduleParser) = {
     val seed = scala.util.Random.nextInt
-    val process = Process(Seq("/Users/jonatan/Tools/bin/spin","-T","-n"+seed,outputFile), new java.io.File("output"))
-    writeFile("output/"+outputFile,progTxt)
+    val process = Process(
+        Seq(params.SpinPath,
+            "-T",
+            "-n"+seed,
+            outputDir + sep + outputFile))
+    writeFile(outputDir+sep+outputFile,progTxt)
     val parser = new SpinParser(Step.Simulate)
     var exitCode = process ! parser
     
     if (exitCode != 0) {
       val output = parser.mkString
       System.err.println(output)
-      writeFile("output/" + outputFile + "_pml_backend_sim.log", output)
+      writeFile(outputDir + sep + outputFile + "_pml_backend_sim.log", output)
       throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
     }
     
@@ -32,33 +39,49 @@ class PromelaRunner(params: CommandLineParameters) {
     scheduleParser.setCost(cost)
     scheduleParser.read(parser.schedule)
 
-    writeFile("output/" + outputFile + "_backend_sim.log", parser.mkString)
+    writeFile(outputDir + sep + outputFile + "_backend_sim.log", parser.mkString)
 
   }
   
   def search(progTxt: String, outputFile: String, scheduleParser: ScheduleParser): Int = {
     val commands = List(
-        Seq("/Users/jonatan/Tools/bin/spin","-a","-o3",outputFile),
-        Seq("gcc", "-O2" ,"-DVECTORSZ=1000000", "-DCOLLAPSE", "-DSAFETY","-DMEMLIM=4096" /*, "-DMA=600000"*/ ,"-o","pan","pan.c"),
-        Seq("./pan", "-m1000000"),
-        Seq("./pan", "-r", "-n")
+        Seq(params.SpinPath,"-a","-o3",outputDir+sep+outputFile) -> Some(outputDir),
+        Seq("gcc", 
+            "-O2" ,
+            "-DVECTORSZ=1000000", 
+            "-DCOLLAPSE", "-DSAFETY",
+            "-DMEMLIM=4096" ,
+            "-o",
+            "pan",
+            "pan.c") -> Some(outputDir),
+        Seq(outputDir + sep + "pan", "-m1000000") -> None,
+        Seq(outputDir + sep + "pan", "-r", "-n") -> None
       )
         
     //val processes = commands.map { cmd => Process(cmd, new java.io.File("output")) }
 
     
-    writeFile("output/"+outputFile,progTxt)
+    writeFile(outputDir+sep+outputFile,progTxt)
     
     val parser = new SpinParser(Step.Generate)
     
     var cost: Option[Int] = None
     
-    for ((cmd,step) <- commands.zipWithIndex) {
-      parser.append(">> " + commands(step).mkString(" "))
+    for (((cmd,dir),step) <- commands.zipWithIndex) {
+      parser.append(">> " + cmd.mkString(" "))
       //val process = Process(cmd, new java.io.File("output"))
       
-      val proc = Runtime.getRuntime.exec(cmd.toArray, Array.empty[String], new java.io.File("output"))
-      
+      val proc = {
+        if (dir.isDefined) { 
+          Runtime.getRuntime.exec(
+              cmd.toArray, 
+              Array.empty[String], 
+              dir.get)
+        }
+        else {
+          Runtime.getRuntime.exec(cmd.toArray, Array.empty[String])
+        }
+      }
       Runtime.getRuntime.addShutdownHook(new Thread(new Runnable() {
         def run {
           proc.destroy
@@ -92,12 +115,12 @@ class PromelaRunner(params: CommandLineParameters) {
       var exitCode = proc.exitValue
       if (exitCode != 0) {
         if (step == Step.Simulate) {
-          System.err.println("Warning: no schedule was found during search")
+          System.out.println("No better schedules were found during search")
         }
         else {
           val output = parser.mkString
           System.err.println(output)
-          writeFile("output/" + outputFile + "_pml_backend.log", output)
+          writeFile(outputDir+ sep + outputFile + "_pml_backend.log", output)
           throw new RuntimeException("Non-zero exit code from spin: " + exitCode)
         }
       }
@@ -112,7 +135,7 @@ class PromelaRunner(params: CommandLineParameters) {
     
     //outputParser.read(out.mkString)
     
-    writeFile("output/" + outputFile + "_pml_backend.log", parser.mkString)
+    writeFile(outputDir + sep + outputFile + "_pml_backend.log", parser.mkString)
     
     parser.cost
   }
@@ -156,7 +179,7 @@ class SpinParser(startStep: Int) extends ProcessLogger {
   def append(str: String) = {
     //println(str)
     if (str.startsWith(">>")) {
-      println(str)
+      //println(str)
     }
     lines.append(str + "\n")
     if (state == Step.Verify) {

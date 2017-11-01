@@ -1,11 +1,14 @@
 package fi.abo.it.actortool
 
 import java.io.File
+import io.Source
 import collection.mutable.ListBuffer
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.File
 import java.io.FileWriter
+import java.io.{FileNotFoundException, IOException}
+import java.nio.file.Path
 import scala.util.parsing.input.Position
 import fi.abo.it.actortool.boogie.Boogie
 import fi.abo.it.actortool.boogie.BoogieVerifier
@@ -98,14 +101,15 @@ object ActorTool {
     val PromelaChanSize: Int
     val PrintXMLDescription: Boolean
     val ContractsToVerify: List[(String,String)]
-    
+    val SpinPath: String
+    val OutputDir: File
     final lazy val help = "actris [option] <filename>+\n"
   }
 
   //val actorSystem = ActorSystem("actortool")
 
   def parseCommandLine(args: Array[String]): Option[CommandLineParameters] = {
-    var aBoogiePath = if (DEBUG) "./boogie" else "boogie"
+    var aBoogiePath = "boogie"
     var aBoogieArgs = ""
     var aPrintProgram = false
     var aNoBplFile = false
@@ -134,6 +138,7 @@ object ActorTool {
     var aScheduleXML: Option[File] = None
     var aPrintXMLDescription: Boolean = false
     var aContractsToVerify: List[(String,String)] = List.empty
+    var aOutputDir = java.nio.file.Files.createTempDirectory("actris-output-").toFile
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -149,17 +154,17 @@ object ActorTool {
         case Param("boogie-print") => aPrintProgram = true
         case Param("boogie-path") => value match {
           case None    =>
-            reportCommandLineError("parameter boogiePath takes an argument"); return None
+            reportCommandLineError("parameter boogie-path takes an argument"); return None
           case Some(v) => aBoogiePath = v
         }
         case Param("boogie-timeout") => value match {
           case None =>
-            reportCommandLineError("parameter boogieTimeout takes an integer argument"); return None
+            reportCommandLineError("parameter boogie-timeout takes an integer argument"); return None
           case Some(v) =>
             try aBoogieTimeout = v.toInt
             catch {
               case e: NumberFormatException =>
-                reportCommandLineError("parameter boogieTimeout takes an integer as argument.")
+                reportCommandLineError("parameter boogie-timeout takes an integer as argument.")
                 return None
             }
         }
@@ -193,7 +198,8 @@ object ActorTool {
               }
               aInferModules = valList.toList
             }
-            case None => reportCommandLineError("parameter " + param + " takes a comma-separated list as parameter")
+            case None => 
+              reportCommandLineError("parameter " + param + " takes a comma-separated list as parameter")
           }
         }
         case Param("only-mathematical-ints") => aSizedIntsAsBitVectors = false
@@ -205,7 +211,7 @@ object ActorTool {
               aToVerify = list.split(",").toList
             }
             case None =>
-              reportCommandLineError("parameter toVerify takes a comma-separated list of components to verify.")
+              reportCommandLineError("parameter to-verify takes a comma-separated list of components to verify.")
               return None
           }
         }
@@ -216,7 +222,8 @@ object ActorTool {
               for (s <- strings) {
                 val componentName = s.split("\\.")
                 if (componentName.size != 2) {
-                  reportCommandLineError("parameter contractsToVerify takes contracts in the format <Component>.<Contract>")
+                  reportCommandLineError(
+                      "parameter contracts-to-verify takes contracts in the format <Component>.<Contract>")
                   return None
                 }
                 else {
@@ -225,7 +232,8 @@ object ActorTool {
               }
             }
             case None =>
-              reportCommandLineError("parameter contractsToVerify takes a comma-separated list of components to verify.")
+              reportCommandLineError(
+                  "parameter contracts-to-verify takes a comma-separated list of components to verify.")
               return None
           }
         }
@@ -243,7 +251,8 @@ object ActorTool {
               aSchedule = s
             }
             case None => 
-              reportCommandLineError("parameter 'schedule' takes a string identifying the top network as argument")
+              reportCommandLineError(
+                  "parameter 'schedule' takes a string identifying the top network as argument")
           }
         }
         case Param("merge-actions") => aMergeActions = true
@@ -255,16 +264,16 @@ object ActorTool {
                 aPromelaChanSize = sz.toInt
               } catch {
                 case e: NumberFormatException =>
-                  reportCommandLineError("parameter promelaChanSize takes an integer as argument.")
+                  reportCommandLineError("parameter promela-chan-size takes an integer as argument.")
               }
             }
-            case None => reportCommandLineError("parameter promelaChanSize takes an integer as argument.")
+            case None => reportCommandLineError("parameter promela-chan-size takes an integer as argument.")
           }
         }
         case Param("schedule-simulate") => aScheduleSimulate = true
         case Param("schedule-weights") => {
           val errMsg = 
-            "parameter scheduleWeights takes a comma-separated where each element is of " + 
+            "parameter schedule-weights takes a comma-separated where each element is of " + 
             "format W=x, wherw W is an identifier and x is an integer"
 
           value match {
@@ -299,14 +308,22 @@ object ActorTool {
               aScheduleXML = Some(file)
             }
             case None => {
-              reportCommandLineError("parameter scheduleXML takes a file path as argument");
+              reportCommandLineError("parameter schedule-xml takes a file path as argument");
             }
           }
         }
         case Param("print-xml-desc") => {
           aPrintXMLDescription = true
         }
-            
+        case Param("output-dir") => {
+          value match {
+            case Some(path) => {
+              aOutputDir = new File(path)
+            }
+            case None => reportCommandLineError("parameter output-dir")
+          }
+          
+        }   
         case Param(x) =>
           reportCommandLineError("unknown command line parameter " + x)
           return None
@@ -333,6 +350,7 @@ object ActorTool {
       }
       file
     }
+    
     Some(new CommandLineParameters {
       val BoogiePath = aBoogiePath
       val Files = aFiles
@@ -362,7 +380,10 @@ object ActorTool {
       val ScheduleXML = aScheduleXML
       val PrintXMLDescription = aPrintXMLDescription
       val ContractsToVerify = aContractsToVerify
+      val SpinPath = aSpinPath
+      val OutputDir = aOutputDir
     })
+    
   }
 
   def parsePrograms(params: CommandLineParameters): Option[List[TopDecl]] = {
@@ -393,7 +414,16 @@ object ActorTool {
 
   def main(args: Array[String]) {
     // Parse command line arguments
-    val params = parseCommandLine(args) match {
+    var configArgs: Array[String] = Array.empty 
+    try {
+      configArgs = Source.fromFile("actris_args").getLines.toArray
+    } 
+    catch {
+      case e: FileNotFoundException =>
+      case e: IOException => 
+    }
+    val allArgs = configArgs ++ args
+    val params = parseCommandLine(allArgs) match {
       case Some(p) => p
       case None    => return //invalid arguments, help has been displayed
     }
@@ -543,8 +573,11 @@ object ActorTool {
         c =>
           c match {
             case a: DFActor =>
-              val generated = (a.contractInvariants.count { inv => inv.generated }) + (a.actionInvariants.count { inv => inv.generated })
-              val userProvided = (a.contractInvariants.size + a.actionInvariants.size) - generated
+              val generated = 
+                (a.contractInvariants.count { inv => inv.generated }) + 
+                (a.actionInvariants.count { inv => inv.generated })
+              val userProvided = 
+                (a.contractInvariants.size + a.actionInvariants.size) - generated
               totUserProvided += userProvided
               totGenerated += generated
               println(a.fullName + " U:" + userProvided + " G:" + generated)
