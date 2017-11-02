@@ -22,6 +22,7 @@ install:
   - nuget restore ${BOOGIE_DIR}/Source/Boogie.sln
   - xbuild ${BOOGIE_DIR}/Source/Boogie.sln
   - ln -s ${PWD}/${Z3_DIR}/bin/z3 ${BOOGIE_DIR}/Binaries/z3.exe
-  - echo "mono $BOOGIE_DIR/Binaries/Boogie.exe $@" > boogie
+  - echo "#!/bin/bash\nmono $BOOGIE_DIR/Binaries/Boogie.exe $@" > boogie
+  - cat boogie
   - chmod 744 boogie
   - export PATH=.:$PATH
