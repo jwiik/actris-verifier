@@ -6,19 +6,13 @@ import java.io.File
 import scala.sys.process._
 
 class ActorToolTestSuite extends FlatSpec with Matchers {
-  val TestSet = List.empty[String]
-//  val TestSet = List(
-//      "AddDelay.actor",
-//      "IIR.actor",
-//      "FIR.actor",
-//      "Nested.actor",
-//      "DataDependent.actor",
-//      "zigbee/ZigBee.actor"
-//      )
+  val TestSet = List(
+      "AddDelay.actor"
+      )
   
   "All the networks" should "be verified without errors" in {
     for (path <- TestSet) {
-      val file = new File("tests/"+path)
+      val file = new File("examples/"+path)
       println("\n\n===============================")
       println("Verifying " + file.getName)
       ActorTool.verify(createParams(file.getAbsolutePath))
@@ -27,7 +21,7 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
   
   def createParams(filePath: String) =
     new ActorTool.CommandLineParameters{
-      val BoogiePath = "./boogie"
+      val BoogiePath = "boogie"
       val Files = List(new File(filePath))
       val BoogieArgs = ""
       val PrintProgram = false
