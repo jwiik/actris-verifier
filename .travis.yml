@@ -11,7 +11,6 @@ before_install:
   - echo "deb http://download.mono-project.com/repo/ubuntu trusty main" | sudo tee /etc/apt/sources.list.d/mono-official.list
   - sudo apt-get update
   - sudo apt-get install nuget
-  - sudo apt-get install mono
 install:
   - wget -O z3.zip ${Z3_URL}
   - wget -O boogie.zip ${BOOGIE_URL}
