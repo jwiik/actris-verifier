@@ -1,3 +1,20 @@
 language: scala
 scala:
    - 2.11.7
+env:
+  global:
+    - Z3_URL=https://github.com/Z3Prover/z3/releases/download/z3-4.5.0/z3-4.5.0-x64-ubuntu-14.04.zip
+    - BOOGIE_URL=https://github.com/boogie-org/boogie/archive/63de8b442914a044223d546eb4c2a1db003ada6d.zip
+install:
+  - wget -O z3 ${Z3_URL}
+  - wget -O boogie ${BOOGIE_URL}
+  - unzip z3-*.zip
+  - unzip boogie-*.zip
+  - export Z3_DIR=$(ls -d z3-*/)
+  - export BOOGIE_DIR=$(ls -d boogie-*/)
+  - nuget restore ${BOOGIE_DIR}/Source/Boogie.sln
+  - xbuild ${BOOGIE_DIR}/Source/Boogie.sln
+  - ln -s ${Z3_DIR}/bin/z3 ${BOOGIE_DIR}/Binaries/z3.exe
+  - echo "mono $BOOGIE_DIR/Binaries/Boogie.exe $@" > boogie
+  - chmod 744 boogie
+  - export PATH=.:$PATH
