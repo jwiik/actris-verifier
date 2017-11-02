@@ -8,10 +8,10 @@ env:
 install:
   - wget -O z3 ${Z3_URL}
   - wget -O boogie ${BOOGIE_URL}
-  - unzip z3-*.zip
-  - unzip boogie-*.zip
-  - export Z3_DIR=$(ls -d z3-*/)
-  - export BOOGIE_DIR=$(ls -d boogie-*/)
+  - unzip z3.zip
+  - unzip boogie.zip
+  - export Z3_DIR=$(ls -d z3*/)
+  - export BOOGIE_DIR=$(ls -d boogie*/)
   - nuget restore ${BOOGIE_DIR}/Source/Boogie.sln
   - xbuild ${BOOGIE_DIR}/Source/Boogie.sln
   - ln -s ${Z3_DIR}/bin/z3 ${BOOGIE_DIR}/Binaries/z3.exe
