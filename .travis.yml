@@ -18,12 +18,11 @@ install:
   - unzip z3.zip
   - unzip boogie.zip
   - export Z3_DIR=$(ls -d z3*/)
-  - export BOOGIE_DIR=$(ls -d boogie*/)
-  - nuget restore ${BOOGIE_DIR}/Source/Boogie.sln
-  - xbuild ${BOOGIE_DIR}/Source/Boogie.sln
-  - ln -s ${PWD}/${Z3_DIR}/bin/z3 ${BOOGIE_DIR}/Binaries/z3.exe
-  - printf -v BOOGIE_SCRIPT '#!/bin/bash\nmono $BOOGIE_DIR/Binaries/Boogie.exe $@'
+  - export BOOGIE_HOME=$(ls -d boogie*/)
+  - nuget restore ${BOOGIE_HOME}/Source/Boogie.sln
+  - msbuild ${BOOGIE_HOME}/Source/Boogie.sln
+  - ln -s ${PWD}/${Z3_DIR}/bin/z3 ${BOOGIE_HOME}/Binaries/z3.exe
+  - printf -v BOOGIE_SCRIPT '#!/bin/bash\nmono $BOOGIE_HOME/Binaries/Boogie.exe $@'
   - echo "$BOOGIE_SCRIPT" > boogie
-  - cat boogie
   - chmod 744 boogie
   - export PATH=.:$PATH
