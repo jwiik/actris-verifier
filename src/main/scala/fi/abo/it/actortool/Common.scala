@@ -303,6 +303,8 @@ abstract class ASTVisitor[T] {
         visitExpr(ifc); visitStmt(ifs); visitIfElses(eifs); visitStmt(els)
       case While(c, inv, s)            => visitExpr(c); visitExpr(inv); visitStmt(s)
       case ProcCall(_,inputs)          => visitExpr(inputs)
+      case ForEach(_,iterand,invs,stmt) =>
+        visitExpr(iterand); visitExpr(invs); visitStmt(stmt)
     }
   }
 
@@ -359,15 +361,17 @@ abstract class ASTVisitor[T] {
       case UnMinus(e) => visitExpr(e)
       case IfThenElse(c, t, e) =>
         visitExpr(c); visitExpr(t); visitExpr(e)
-      case Forall(v, e, None) => visitExpr(e)
-      case Forall(v, e, Some(p)) => visitExpr(e); visitExpr(p)
-      case Exists(v, e, None) => visitExpr(e)
-      case Exists(v, e, Some(p)) => visitExpr(e); visitExpr(p)
+      case Forall(_, e, None) => visitExpr(e)
+      case Forall(_, e, Some(p)) => visitExpr(e); visitExpr(p)
+      case Exists(_, e, None) => visitExpr(e)
+      case Exists(_, e, Some(p)) => visitExpr(e); visitExpr(p)
       case IndexAccessor(l, i) => visitExpr(l); visitExpr(i)
       case FieldAccessor(e, f) => visitExpr(e)
       case FunctionApp(n, args) => visitExpr(args)
       case ListLiteral(els) => for (e <- els) visitExpr(e)
       case MapLiteral(_,els) => for (e <- els) visitExpr(e)
+      case Range(s,e) => visitExpr(s); visitExpr(e)
+      case Comprehension(e,_,i) => visitExpr(e); visitExpr(i)
       case il: IntLiteral =>
       case hxl: HexLiteral =>
       case bl: BoolLiteral =>

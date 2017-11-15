@@ -526,6 +526,7 @@ object ActorTool {
       if (params.DoVerify) {
         
         val actionsVerifier = new BoogieVerifier(params,true)
+        println("\nVerifying actor actions... ")
         actionsVerifier.invoke(programContext)
         
         val scheduleVerifier = new BoogieScheduleVerifier(params)
@@ -534,7 +535,6 @@ object ActorTool {
           println("Verifying schedules for " + s.entity.fullName + "...")
           scheduleVerifier.invoke(s)
         }
-        println
         
         timings += (Step.Verification -> (System.nanoTime - tmpTime))
         tmpTime = System.nanoTime

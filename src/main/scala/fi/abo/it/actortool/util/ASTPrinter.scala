@@ -54,6 +54,8 @@ class ASTPrinter(orccCompatible: Boolean) {
         constants.map(d => nl + indent + printDecl(d)).mkString("") +
         indentRem + nl + "end"
       }
+      case TypeDecl(_,_) => 
+        throw new RuntimeException("User type declarations currently not supported")
     }
   }
   
@@ -135,7 +137,11 @@ class ASTPrinter(orccCompatible: Boolean) {
         (orders map { case (a,b) => indent + a.id + " > " + b.id }).mkString(";"+nl) +
         indentRem + nl + 
         indent + "end"
-        
+      case Schedule(initState,transitions) =>
+        indent + "schedule fsm " + initState + " : " + nl + indentAdd +
+        (transitions map { case t =>  t.from + "( " + t.action + " ) --> " + t.to }).mkString(";"+nl) +
+        indentRem + nl + 
+        indent + "end"
     }
   }
   
@@ -203,6 +209,8 @@ class ASTPrinter(orccCompatible: Boolean) {
       case Assert(e) => indent + "assert " + printExpr(e) + ";"
       case Assume(e) => indent + "assume " + printExpr(e) + ";"
       case Havoc(vars) => indent + "havoc " + (vars map printExpr).mkString(",") + ";"
+      case ProcCall(_,_) => 
+        throw new RuntimeException("Procedure calls not supported by AST printer")
     }
   }
   
@@ -218,15 +226,21 @@ class ASTPrinter(orccCompatible: Boolean) {
       case be: BinaryExpr => "(" + printExpr(be.left) + " "  + getOp(be.operator) + " " + printExpr(be.right) + ")"
       case Not(e) => getOp("!")+"(" + printExpr(e) + ")"
       case UnMinus(e) => "-("+printExpr(e)+")"
+      case BwNot(e) => "~("+printExpr(e)+")"
       case Id(id) => getId(id)
       case IntLiteral(i) => i.toString
       case BoolLiteral(b) => b.toString
+      case FloatLiteral(f) => throw new RuntimeException("Floats not yet supported")
       case HexLiteral(x) => "0x"+x 
       case FunctionApp(n,args) => printFunctionApp(n, args)
       case IndexAccessor(e,idx) => printExpr(e) + "[" + printExpr(idx) + "]"
       case SpecialMarker(s) => s
-      case Forall(vars,expr,pat) => "(forall " + (vars map printDecl).mkString(", ") + " :: " + printExpr(expr) + ")"
-      case IfThenElse(cond,thn,els) => "(if " + printExpr(cond) + " then " + printExpr(thn) + " else " + printExpr(els) + " end)"
+      case Forall(vars,expr,pat) => 
+        "(forall " + (vars map printDecl).mkString(", ") + " :: " + printExpr(expr) + ")"
+      case Exists(vars,expr,pat) => 
+        "(exists " + (vars map printDecl).mkString(", ") + " :: " + printExpr(expr) + ")"
+      case IfThenElse(cond,thn,els) => 
+        "(if " + printExpr(cond) + " then " + printExpr(thn) + " else " + printExpr(els) + " end)"
       case Range(str,end) => "(" + printExpr(str) + ".." + printExpr(end) + ")"
       case ListLiteral(lst) => "[" + lst.map(printExpr).mkString(",") + "]"
       case MapLiteral(dom,lst) => {
@@ -235,6 +249,8 @@ class ASTPrinter(orccCompatible: Boolean) {
       }
       case Comprehension(expr,v,iter) => 
         "[" + printExpr(expr) + " : for " + printDecl(v) + " in " + printExpr(iter) + "]"
+      case FieldAccessor(_,_) => 
+        throw new RuntimeException("Field accessors not currently supported")
     }
   }
   

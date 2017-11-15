@@ -45,7 +45,7 @@ class PromelaRunner(params: CommandLineParameters) {
   
   def search(progTxt: String, outputFile: String, scheduleParser: ScheduleParser): Int = {
     val commands = List(
-        Seq(params.SpinPath,"-a","-o3",outputDir+sep+outputFile) -> Some(outputDir),
+        Seq(params.SpinPath,"-a","-o3",outputFile) -> Some(outputDir),
         Seq("gcc", 
             "-O2" ,
             "-DVECTORSZ=1000000", 
@@ -55,8 +55,7 @@ class PromelaRunner(params: CommandLineParameters) {
             "pan",
             "pan.c") -> Some(outputDir),
         Seq(outputDir + sep + "pan", "-m1000000") -> None,
-        Seq(outputDir + sep + "pan", "-r", "-n") -> None
-      )
+        Seq(outputDir + sep + "pan", "-r", "-n") -> None)
         
     //val processes = commands.map { cmd => Process(cmd, new java.io.File("output")) }
 
