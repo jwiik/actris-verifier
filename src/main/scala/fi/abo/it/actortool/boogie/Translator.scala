@@ -229,8 +229,10 @@ class Translator(
     
     val stmtTranslator = new StmtExpTranslator();
     
-    lazy val actorTranslator = new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,!actorActionsOnly)
-    lazy val networkTranslator = new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,true)
+    lazy val actorTranslator = 
+      new BasicActorTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,!actorActionsOnly)
+    lazy val networkTranslator = 
+      new NetworkTranslator(smokeTest,skipMutualExclusivenessCheck,typeCtx,true)
     
     val consts = programCtx.program.collect {
       case u: DataUnit => 
@@ -265,7 +267,7 @@ class Translator(
     }
     
     
-    return Seq(BoogieTranslation(programCtx, bProgram))
+    return Seq(BoogieTranslation(programCtx, consts++bProgram))
     
   }
 

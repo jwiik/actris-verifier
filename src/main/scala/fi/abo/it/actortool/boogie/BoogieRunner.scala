@@ -128,24 +128,25 @@ object BoogieRunner {
     input.close
     
     if (params.SmokeTest) {
-      println
-      for (d <- bplProg) {
-        d match {
-          case p: Boogie.Proc => {
-            var found = false
-            for (line <- smokeLines) {
-              if (line.startsWith("[smoke]")) {
-                if (line.substring(7, line.indexOf(" ")) == p.id) found = true
-              }
-            }
-            if (!found) {
-              Console.out.println("Smoke test failed for Boogie procedure '" + p.id + "'")
-            }
-          }
-          case _ =>
-        }
-      }
-      println("Smoke test finished")
+//      println
+//      for (d <- bplProg) {
+//        d match {
+//          case p: Boogie.Proc => {
+//            var found = false
+//            for (line <- smokeLines) {
+//              if (line.startsWith("[smoke]")) {
+//                println(line.substring(7, line.indexOf(" ")))
+//                if (line.substring(7, line.indexOf(" ")) == p.id) found = true
+//              }
+//            }
+//            if (!found) {
+//              Console.out.println("Smoke test failed for Boogie procedure '" + p.id + "'")
+//            }
+//          }
+//          case _ =>
+//        }
+//      }
+//      println("Smoke test finished")
     }
     
     destroyTimer.cancel

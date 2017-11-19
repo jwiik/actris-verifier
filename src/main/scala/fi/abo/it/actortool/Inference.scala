@@ -75,7 +75,6 @@ object Inferencer {
           val modeName = Id(action.fullName)
           modeName.typ = ModeType
           val modeFunCall = FunctionApp("mode",List(modeName))
-          
           List(Implies(
               modeFunCall,  
               preconds reduceLeft { (a,b) => And(a,b) }))
@@ -106,6 +105,7 @@ object Inferencer {
             val modeName = Id(action.fullName)
             modeName.typ = ModeType
             val modeFunCall = FunctionApp("mode",List(modeName))
+            
             List(Implies(
               modeFunCall,  
               preds reduceLeft { (a,b) => And(a,b) }))

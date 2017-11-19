@@ -5,8 +5,8 @@ import fi.abo.it.actortool.schedule._
 
 class BoogieScheduleCheckTranslator(
     val mergedActions: Boolean, 
-    val contractsToVerify: List[(String,String)]
-    //val smokeTest: Boolean,
+    val contractsToVerify: List[(String,String)],
+    val smokeTest: Boolean
     //val skipMutualExclusiveness: Boolean
     ) 
     extends EntityTranslator[ScheduleContext,ContractAction] 
@@ -219,7 +219,11 @@ class BoogieScheduleCheckTranslator(
     
     for (inv <- avs.entity.contractInvariants) stmts += BAssert(inv, "Contract invariant might not be preserved", vs)
     
-    return List(B.createProc(schedule.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))
+    return List(
+        B.createProc(
+            schedule.entity.id+B.Sep+schedule.contract.fullName, 
+            decls.toList:::stmts.toList, 
+            smokeTest))
   }
   
   def translateNetworkSchedule(
@@ -411,7 +415,7 @@ class BoogieScheduleCheckTranslator(
           "The contract postcondition might not hold")
     }
     
-    List(B.createProc(nwvs.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, false))
+    List(B.createProc(nwvs.entity.id+B.Sep+schedule.contract.fullName, decls.toList:::stmts.toList, smokeTest))
   }
   
   def getFiringRules(instance: Instance, ivs: SubActionVerStruct) = {

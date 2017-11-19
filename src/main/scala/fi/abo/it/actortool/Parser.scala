@@ -10,10 +10,10 @@ import scala.util.parsing.input.Positional
 import scala.util.parsing.input.NoPosition
 import scala.util.matching.Regex
 import java.io.File
-
 import scala.language.postfixOps
+import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
-class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
+class Parser(params: CommandLineParameters) extends StandardTokenParsers {
   
   var currFile: File = null
   
@@ -42,8 +42,8 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
                        "forall", "exists", "do", "assert", "assume", "initialize", "requires", "ensures", 
                        "var", "schedule", "fsm", "regexp", "List", "type", "function", "repeat", "priority",
                        "free", "primary", "error", "recovery", "next", "last", "prev", "stream", "havoc", "bv",
-                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for", "procedure", "begin",
-                       "foreach" , "in"
+                       "ubv","Map", "if", "then", "else", "contract", "and", "or", "not", "for", "procedure", 
+                       "begin", "foreach" , "in", "io"
                       )
   lexical.delimiters += ("(", ")", "<==>", "==>", "&&", "||", "==", "!=", "<", "<=", ">=", ">", "=",
                        "+", "-", "*", "/", "%", "!", ".", ";", ":", ":=", ",", "|", "[", "]",
@@ -181,26 +181,37 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
     case exps => exps
   })
   
+  val argKeywords = Set("scheduled","unscheduled")
+  
   def contractInvDecl = filePositioned((
       opt("free") ~ 
-      opt("stream") ~ 
-      (("contract" ~ "invariant") ~> expression)) ^^ {
-    case free ~ stream ~ expr => {
-      ContractInvariant(Assertion(expr, free.isDefined),false, stream.isDefined)
+      opt("stream" | "io") ~ 
+      (("contract" ~ "invariant") ~>  opt("{" ~> (ident *) <~ "}") ~ expression)) ^^ {
+    case free ~ stream ~ (args ~ expr) => {
+      val argList = args.getOrElse(Nil)
+      for (a <- argList) if (!argKeywords.contains(a)) throw new RuntimeException("Invalid keyword")
+      if ((argList.contains("scheduled") && !params.Schedule.isDefined)
+          || (argList.contains("unscheduled") && params.Schedule.isDefined)) {
+        ContractInvariant(Assertion(BoolLiteral(true),free.isDefined),false,stream.isDefined)
+      }
+      else {
+        ContractInvariant(Assertion(expr,free.isDefined),false,stream.isDefined)
+      }
+      //ContractInvariant(Assertion(expr, free.isDefined),false, stream.isDefined)
     }
   })
   
   // These two are for backward compatibility 
   def baInvDecl = filePositioned(( 
       opt("free") ~ 
-      opt("stream") ~ 
+      opt("stream" | "io") ~ 
       ("invariant" ~> expression)) ^^ {
     case free ~ stream ~ expr => ActionInvariant(Assertion(expr,free.isDefined),false,stream.isDefined)
   })
   
   def nwInvDecl = filePositioned(( 
       opt("free") ~ 
-      opt("stream") ~ 
+      opt("stream" | "io") ~ 
       ("invariant" ~> expression)) ^^ {
     case free ~ stream ~ expr => ContractInvariant(Assertion(expr,free.isDefined),false,stream.isDefined)
   })
@@ -208,9 +219,19 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   
   def actionInvDecl = filePositioned(( 
       opt("free") ~ 
-      opt("stream") ~ 
-      (("chinvariant" | ("action" ~ "invariant")) ~> expression)) ^^ {
-    case free ~ stream ~ expr => ActionInvariant(Assertion(expr,free.isDefined),false,stream.isDefined)
+      opt("stream" | "io") ~ 
+      (("chinvariant" | ("action" ~ "invariant")) ~> opt("{" ~> (ident *) <~ "}") ~ expression)) ^^ {
+    case free ~ stream ~ (args ~ expr) => {
+      val argList = args.getOrElse(Nil)
+      for (a <- argList) if (!argKeywords.contains(a)) throw new RuntimeException("Invalid keyword")
+      if ((argList.contains("scheduled") && !params.Schedule.isDefined)
+          || (argList.contains("unscheduled") && params.Schedule.isDefined)) {
+        ActionInvariant(Assertion(BoolLiteral(true),free.isDefined),false,stream.isDefined)
+      }
+      else {
+        ActionInvariant(Assertion(expr,free.isDefined),false,stream.isDefined)
+      }
+    }
   })
   
   def varDecl = annotatable(filePositioned((typeName ~ ident ~ opt("[" ~> numericLit <~ "]" ) ~ opt(("=" | ":=") ~ expression) <~ Semi) ^^ {
@@ -509,9 +530,11 @@ class Parser(val sizedIntsAsBitvectors: Boolean) extends StandardTokenParsers {
   
   def primType: Parser[Type] = filePositioned(
     (("int" | "uint") ~ (opt("(" ~> "size" ~> "=" ~> numericLit <~ ")")) ^^ {
-      case "int" ~ Some(size) => if (sizedIntsAsBitvectors) BvType(size.toInt,true) else IntType(size.toInt)
+      case "int" ~ Some(size) => 
+        if (params.SizedIntsAsBitvectors) BvType(size.toInt,true) else IntType(size.toInt)
       case "int" ~ None => IntType(-1) 
-      case "uint" ~ Some(size) => if (sizedIntsAsBitvectors) BvType(size.toInt,false) else UintType(size.toInt)
+      case "uint" ~ Some(size) => 
+        if (params.SizedIntsAsBitvectors) BvType(size.toInt,false) else UintType(size.toInt)
       case "uint" ~ None => UintType(-1) 
     }) | 
     (("bv" ~> "(" ~> "size" ~> "=" ~> numericLit <~ ")") ^^ {

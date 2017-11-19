@@ -247,7 +247,7 @@ object ActorTool {
         case Param("schedule") => {
           value match {
             case s@Some(_) => {
-              aDoInfer = false // Invariant inference is turned of for scheduling mode
+              //aDoInfer = false // Invariant inference is turned of for scheduling mode
               aSchedule = s
             }
             case None => 
@@ -391,7 +391,7 @@ object ActorTool {
     val printProgram = params.PrintProgram
 
     // parse programs
-    val parser = new Parser(params.SizedIntsAsBitvectors)
+    val parser = new Parser(params)
     val parseResults = if (files.isEmpty) {
       //reportCommandLineError("No input file(s) provided.", params.help)
       Nil

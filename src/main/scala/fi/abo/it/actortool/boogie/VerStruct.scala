@@ -419,7 +419,7 @@ object VerStruct {
     val decls = new ListBuffer[BDecl]
     val assumes = new ListBuffer[Boogie.Assume]
     
-    decls ++= stateChannels.map(s => BDecl(s.id,ChanType(s.typ)))
+    //decls ++= stateChannels.map(s => BDecl(s.id,ChanType(s.typ)))
     
     if (schedule.entity.isActor) {
       assumes ++= 
