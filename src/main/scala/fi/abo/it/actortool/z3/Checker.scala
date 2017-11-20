@@ -140,6 +140,8 @@ class Checker {
             z3.mkNumeral((scala.math.pow(2,size-1)-1).toString, Types.Bv(size)),
             signed)
       }
+      case _ => 
+        throw new RuntimeException("Tried to get Z3 type constraints for unsupported type")
     }
   }
   
@@ -155,6 +157,13 @@ class Checker {
       case IntType => Types.Int
       case BvType(size,_) => Types.Bv(size)
       case BoolType => Types.Bool
+      case FloatType => 
+        throw new IllegalArgumentException("The type float is not supported in the Z3 backend")
+      case HalfType => 
+        throw new IllegalArgumentException("The type float is not supported in the Z3 backend")
+      case t =>
+        throw new RuntimeException(
+            "Variables of type " + t.id + " should have been substituted before calling the Z3 backend")
     }
   }
   
