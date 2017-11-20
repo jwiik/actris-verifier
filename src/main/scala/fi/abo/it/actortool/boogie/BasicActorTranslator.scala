@@ -24,10 +24,10 @@ class BasicActorTranslator(
     
     var allInpatDecls = Set.empty[BDecl]
     
-    if (checkContractActions) {
+    //if (checkContractActions) {
       // Ugly hack
       decls ++= translateFunctionDecl(avs)
-    }
+    //}
     
     decls += translateActorInit(avs)
     

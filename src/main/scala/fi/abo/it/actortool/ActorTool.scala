@@ -499,11 +499,10 @@ object ActorTool {
     }
     
     if (params.Schedule.isDefined) {
-      // Scheduling
+      // Scheduling (and possibly verification)
       
       val schedulingBackend = params.ScheduleXML match {
         case Some(file) => 
-          //ScheduleBuilder.fromFile(params.ScheduleXML.get, program)
           new SchedulingBackend(new XMLScheduler(file),params)
         case None =>
           new SchedulingBackend(new PromelaBackend(params),params)
@@ -532,7 +531,7 @@ object ActorTool {
         val scheduleVerifier = new BoogieScheduleVerifier(params)
         println
         for (s <- scheduleCtxs) {
-          println("Verifying schedules for " + s.entity.fullName + "...")
+          println("Verifying " + s.schedules.size + " schedule(s) for " + s.entity.fullName + "...")
           scheduleVerifier.invoke(s)
         }
         
