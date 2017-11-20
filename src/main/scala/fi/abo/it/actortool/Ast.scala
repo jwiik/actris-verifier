@@ -599,8 +599,10 @@ sealed abstract class Type(val id: String) extends ASTNode {
   def isParametrized = false
   def isNumeric = false
   def isInt = false
-  def isUnsignedInt = false
-  def isSignedInt = false
+  def isSigned = false
+  def isUnsigned = !isSigned
+  def isSignedInt = isInt && isSigned
+  def isUnsignedInt = isInt && isUnsigned
   def isBool = false
   def isFloat = false
   def isHalf = false
@@ -643,13 +645,13 @@ sealed abstract class AbstractIntType(name: String, val size: Int) extends Primi
 }
 
 sealed case class IntType(override val size: Int) extends AbstractIntType("int", size) {
-  override def isSignedInt = true
+  override def isSigned = true
 }
 
 object IntType extends IntType(-1)
 
 sealed case class UintType(override val size: Int) extends AbstractIntType("uint", size) {
-  override def isUnsignedInt = true
+  override def isSigned = false
 }
 
 object UintType extends UintType(-1)
@@ -684,6 +686,7 @@ case class MapType(val domainType: Type, val rangeType: Type, val size: Int) ext
 }
 case class BvType(val size: Int, val signed: Boolean) extends PrimitiveType((if (signed) "bv" else "ubv")+size) {
   override def isBv = true
+  override def isSigned = signed
 }
 case class StateType(a: BasicActor, states: List[String]) extends PrimitiveType("state") {
   override def isState = true

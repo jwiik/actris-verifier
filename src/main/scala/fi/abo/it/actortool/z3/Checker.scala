@@ -213,13 +213,40 @@ class Checker {
         if (e.typ.isBv) z3.mkBVNeg(transExpr(e))
         else z3.mkUnaryMinus(transExpr(e))
       }
-      case Plus(l,r) => z3.mkAdd(transExpr(l),transExpr(r))
-      case Minus(l,r) => z3.mkSub(transExpr(l),transExpr(r))
-      case Times(l,r) => z3.mkMul(transExpr(l),transExpr(r))
+      case op@Plus(l,r) => {
+        op.typ match {
+          case BvType(_,_) => z3.mkBVAdd(transExpr(l), transExpr(r))
+          case IntType(_) => z3.mkAdd(transExpr(l), transExpr(r))
+          case UintType(_) => z3.mkAdd(transExpr(l), transExpr(r))
+          case _ => throw new TranslationException(e.pos,l.typ.toString)
+        }
+      }
+      case op@Minus(l,r) => {
+        op.typ match {
+          case BvType(_,_) => z3.mkBVSub(transExpr(l), transExpr(r))
+          case IntType(_) => z3.mkSub(transExpr(l), transExpr(r))
+          case UintType(_) => z3.mkSub(transExpr(l), transExpr(r))
+          case _ => throw new TranslationException(e.pos,l.typ.toString)
+        }
+      }
+      case op@Times(l,r) => {
+        op.typ match {
+          case BvType(_,_) => z3.mkBVMul(transExpr(l), transExpr(r))
+          case IntType(_) => z3.mkMul(transExpr(l), transExpr(r))
+          case UintType(_) => z3.mkMul(transExpr(l), transExpr(r))
+          case _ => throw new TranslationException(e.pos,l.typ.toString)
+        }
+      }
       case IntLiteral(i) => z3.mkInt(i, Types.Int)
       case hx@HexLiteral(i) => z3.mkNumeral(Integer.parseInt(i, 16).toString, transType(hx.typ))
       case FunctionApp("int2bv",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
       case FunctionApp("int",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
+      case sh@RShift(l,r) => {
+        if (sh.typ.isBv && sh.typ.isSigned) z3.mkBVAshr(transExpr(l), transExpr(r))
+        else if (sh.typ.isBv && !sh.typ.isSigned) z3.mkBVLshr(transExpr(l), transExpr(r))
+        else throw new IllegalArgumentException(
+            "Shift operators only supported for bitvectors in Z3 backend")
+      }
       case Id(id) => ctx.constants(id)
       case IndexAccessor(Id(ch),idx) => mkM(ch, List(idx)) 
       case FunctionApp("tot",args) => mkC(args)
