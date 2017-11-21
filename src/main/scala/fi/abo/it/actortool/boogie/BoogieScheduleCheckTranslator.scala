@@ -231,8 +231,11 @@ class BoogieScheduleCheckTranslator(
       schedule: ContractSchedule, 
       nwvs: RootVerStruct[Network]): List[Boogie.Proc] = {
     
-    if (!contractsToVerify.isEmpty && !contractsToVerify.contains(nwvs.entity.id -> schedule.contract.fullName)) {
+    if (!contractsToVerify.isEmpty && 
+        !contractsToVerify.contains(nwvs.entity.id -> schedule.contract.fullName)) {
+      
       return List.empty
+      
     }
     
     val decls = new collection.mutable.ListBuffer[Boogie.Stmt]
@@ -409,9 +412,9 @@ class BoogieScheduleCheckTranslator(
     }
     
     for (q <- schedule.contract.ensures) {
-      B.Assert(
+      stmts += B.Assert(
           transExpr(q.expr,nwvs),
-          q.pos,
+          q.expr.pos,
           "The contract postcondition might not hold")
     }
     
