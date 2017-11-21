@@ -6,6 +6,7 @@ import fi.abo.it.actortool.util.ASTPrinter
 import fi.abo.it.actortool.util.ConnectionMap
 import collection.mutable.ListBuffer
 import scala.util.parsing.input.Position
+import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
 object Constants {
   val Sep = "__"
@@ -19,7 +20,9 @@ case class Failure(actor: BasicActor, errors: List[(Position,String)]) extends M
  * This class implements merging of networks and actors into composite actors. The composite
  * actor will have a (concrete) action for each contract.
  */
-class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleContext,MergingOutcome] {
+class ActorMerger(
+    params: CommandLineParameters, 
+    constants: List[Declaration]) extends GeneralBackend[ScheduleContext,MergingOutcome] {
   
   val Sep = Constants.Sep
   
@@ -150,7 +153,7 @@ class ActorMerger(constants: List[Declaration]) extends GeneralBackend[ScheduleC
         entity.outports,
         members).withAnnotationsFrom(entity)
     //println(ASTPrinter.get.print(actor))
-    Resolver.resolve(List(actor),constants) match {
+    Resolver.resolve(List(actor),params,constants) match {
       case Resolver.Errors(errs) => {
         val nerrs = errs.map { case (p,s) => p -> ("[" + actor.fullName  + "] " + s) }
         Failure(actor,nerrs)

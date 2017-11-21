@@ -131,19 +131,24 @@ class PromelaTranslator(params: CommandLineParameters) {
       constants: List[Declaration]): List[Translation[DFActor]] = {
     
     assert(!entity.contractActions.isEmpty, entity.fullName + " has no contracts")
+    
     val procs = new ListBuffer[P.ProcType]
+    var addedToProcList = Set[String]()
+    
     entity match {
       case nw: Network => {
         val entities = nw.entities.get.entities
         for (e <- entities) {
           if (alreadyTranslated.contains(e.actor.id)) {
             assert(false)
-            procs += alreadyTranslated(e.actor.id)
           }
           else if (mergedActors.contains(e.actor.id)) {
             val mergedActor = mergedActors(e.actor.id)
-            val proc = translateActor(mergedActor, constants)
-            procs += proc
+            if (!addedToProcList.contains(e.actor.id)) {
+              val proc = translateActor(mergedActor, constants)
+              procs += proc
+              addedToProcList += e.actor.id
+            }
           }
           else {
             assert(false)
@@ -224,9 +229,26 @@ class PromelaTranslator(params: CommandLineParameters) {
     
     val instance = Instance("this",actor.id,Nil)
     instance.actor = actor
-    val connections = 
-      actor.inports.map { p => val c = Connection(Some("ch__"+p.id),PortRef(None,p.id),PortRef(Some("this"),p.id)); c.typ = ChanType(p.portType); c } :::
-      actor.outports.map { p => val c = Connection(Some("ch__"+p.id),PortRef(Some("this"),p.id),PortRef(None,p.id)); c.typ = ChanType(p.portType); c }
+    
+    val connections = {
+      actor.inports.map { p => 
+        val c = Connection(
+            Some("ch__"+p.id),
+            PortRef(None,p.id),
+            PortRef(Some("this"),p.id)); 
+        c.typ = ChanType(p.portType); 
+        c 
+      } :::
+      actor.outports.map { p => 
+        val c = Connection(
+            Some("ch__"+p.id),
+            PortRef(Some("this"),p.id),
+            PortRef(None,p.id)); 
+        c.typ = ChanType(p.portType); 
+        c 
+      }
+    }
+    
     val channelMapping = Util.buildConnectionMap(connections)
     
     for (c <- constants) {
@@ -234,7 +256,10 @@ class PromelaTranslator(params: CommandLineParameters) {
     }
     
     for (c <- connections) {
-      decls += P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
+      decls += P.VarDecl(
+          rootRenamings.R(c.id), 
+          P.NamedType("chan"),
+          Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
     
@@ -261,7 +286,7 @@ class PromelaTranslator(params: CommandLineParameters) {
     
     val inits = generateInitialisations(actor, runs, (channelMapping.map { case (pr,c) => (pr,c.id) }).toMap , constants)
     
-    val contractTranslations = 
+    val contractTranslations = {
       for ((contract,init) <- inits) yield {
         val formula = generateEndStatePredicate(actor, contract, channelMapping, connections)
         
@@ -273,10 +298,16 @@ class PromelaTranslator(params: CommandLineParameters) {
         //(contract,program)
         Translation(actor,contract,program,formula,idMap,mergedActors)
       }
+    }
     contractTranslations.toList
   }
   
-  def translateNetwork(nw: Network, constants: List[Declaration], procs: List[P.ProcType], mergedActors: Map[String,BasicActor]): List[Translation[Network]] = {
+  def translateNetwork(
+      nw: Network, 
+      constants: List[Declaration], 
+      procs: List[P.ProcType], 
+      mergedActors: Map[String,BasicActor]): List[Translation[Network]] = {
+    
     val idMap = new IdMap
     val decls = ListBuffer[P.Decl]()
     val instances = ListBuffer[(String,PromelaInstance)]()
@@ -288,21 +319,17 @@ class PromelaTranslator(params: CommandLineParameters) {
     }
     
     for (c <- nw.structure.get.connections) {
-      decls +=  P.VarDecl(rootRenamings.R(c.id), P.NamedType("chan"),Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
+      decls +=  
+        P.VarDecl(
+            rootRenamings.R(c.id), 
+            P.NamedType("chan"),
+            Some(P.ChInit(params.PromelaChanSize,translateType(c.typ.asInstanceOf[ChanType].contentType))))
     }
     
     decls += P.VarDecl(
         Instrumentation.MAX_SIZE_ARRAY,
         P.ArrayType(P.NamedType("int"), nw.structure.get.connections.size),
         None)
-    
-//    for (c <- nw.structure.get.connections) {
-//      decls +=  
-//        P.VarDecl(
-//            "__INSTR_MAX_" + rootRenamings.R(c.id), 
-//            P.NamedType("int"),
-//            Some(P.IntLiteral(0)))
-//    }
     
     
     val chans = nw.structure.get.connections.filter{ c => !c.isInput && !c.isOutput }
@@ -359,7 +386,12 @@ class PromelaTranslator(params: CommandLineParameters) {
     contractTranslations.toList
   }
   
-  def generateInitialisations(entity: DFActor, runs: List[P.Stmt], channelMapping: Map[PortRef, String], constants: List[Declaration]): Map[ContractAction,P.Init] = {
+  def generateInitialisations(
+      entity: DFActor, 
+      runs: List[P.Stmt], 
+      channelMapping: Map[PortRef, String], 
+      constants: List[Declaration]): Map[ContractAction,P.Init] = {
+    
     (for (contract <- entity.contractActions) yield {
       // Generate an input satisfying the contract
       val input = inputGenerator.generateInput(contract,constants)
@@ -379,7 +411,12 @@ class PromelaTranslator(params: CommandLineParameters) {
     }).toMap
   }
 
-  case class PromelaInstance(id: String, arguments: List[Expr], actor: BasicActor, mapId: Int, connections: Map[String,Connection])
+  case class PromelaInstance(
+      id: String, 
+      arguments: List[Expr], 
+      actor: BasicActor, 
+      mapId: Int, 
+      connections: Map[String,Connection])
   
   def computeMaxRates(actor: DFActor, withRepeat: Boolean) = {
     val rates = actor.inports.map {
@@ -540,13 +577,11 @@ class PromelaTranslator(params: CommandLineParameters) {
       
       val stmt = new ListBuffer[P.Stmt]
       
-//      stmt += 
-//        P.If(List(
-//          P.GuardStmt(P.ExprStmt(P.VarExp("more_expensive")), List(P.Goto("term"))),
-//          P.GuardStmt(P.Else, List(P.Skip))).
-//          map { g => P.OptionStmt(List(g)) })
-      
-      stmt += P.PrintStmtValue("<action id='%d' actor='"+rootRenamings.R(a.fullName)+ "' action='" + rootRenamings.R(act.fullName) + "' />\\n",List(P.VarExp("__uid")))
+      stmt += P.PrintStmtValue(
+          "<action id='%d' actor='" + rootRenamings.R(a.fullName) + 
+            "' action='" + rootRenamings.R(act.fullName) + "' />\\n",
+          List(P.VarExp("__uid")))
+          
       val actionRenamings = beforeInputRenamings.getSubContext
       for (p <- act.inputPattern) {
         if (p.repeat > 1) {
@@ -616,7 +651,11 @@ class PromelaTranslator(params: CommandLineParameters) {
     val constInitBlock = if (!constInits.isEmpty) List(P.DStep(constInits.toList)) else Nil  
     
     val opts = actions.toList map { a => P.OptionStmt(List(a)) }
-    P.ProcType(a.id, params.toList, Nil, decls.toList ::: constInitBlock ::: initBody.toList ::: List(P.Iteration(opts)))
+    P.ProcType(
+        a.id, 
+        params.toList, 
+        Nil, 
+        decls.toList ::: constInitBlock ::: initBody.toList ::: List(P.Iteration(opts)))
   }
   
   def translateDeclaration(
@@ -673,20 +712,20 @@ class PromelaTranslator(params: CommandLineParameters) {
     (stmt.toList, constInits.toList)
   }
   
-  def handleCollectionLiteralDecl(lst: List[Expr], newName: String, assignArray: P.Expr, tp: Type, renamings: RenamingContext): List[P.Stmt] = {
+  def handleCollectionLiteralDecl(
+      lst: List[Expr], 
+      newName: String, 
+      assignArray: P.Expr, 
+      tp: Type, 
+      renamings: RenamingContext): List[P.Stmt] = {
+    
     val stmt = new ListBuffer[P.Stmt]
     stmt += P.VarDecl(newName,translateType(tp), None)
-//    if (Analysis.allEqual(lst)) {
-//      val iterVar = "__idx__"+newName
-//      stmt += P.VarDecl(iterVar,P.NamedType("int"),None)
-//      val asgn = P.Assign(P.IndexAccessor(assignArray,P.VarExp(iterVar)) , translateExpr(lst(0))(renamings))
-//      stmt += P.For(P.VarExp(iterVar), P.IntLiteral(0), P.IntLiteral(lst.size-1),List(asgn))
-//    }
-//    else {
-      for ((l,i) <- lst.zipWithIndex) {
-        stmt += P.Assign(P.IndexAccessor(assignArray,P.IntLiteral(i)) , translateExpr(l)(renamings))
-      }
-//    }
+
+    for ((l,i) <- lst.zipWithIndex) {
+      stmt += P.Assign(P.IndexAccessor(assignArray,P.IntLiteral(i)) , translateExpr(l)(renamings))
+    }
+    
     stmt.toList
   }
   
@@ -709,7 +748,8 @@ class PromelaTranslator(params: CommandLineParameters) {
                 if (!info.isEmpty) {
                   val sequence = new ListBuffer[P.Stmt]
                   for ((s,lit) <- info) {
-                    sequence ++= handleCollectionLiteralDecl(lit.elements, s, translateExpr(id), lit.typ, renamings)
+                    sequence ++= 
+                      handleCollectionLiteralDecl(lit.elements, s, translateExpr(id), lit.typ, renamings)
                   }
                   //sequence += P.Assign(translateExpr(id),translateExpr(newThn))
                   P.Sequence(sequence.toList)
@@ -723,16 +763,11 @@ class PromelaTranslator(params: CommandLineParameters) {
                 val (newEls,info) = ListLiteralReplacer.findAndReplace(els)
                 if (!info.isEmpty) {
                   val sequence = new ListBuffer[P.Stmt]
+                  
                   for ((s,lit) <- info) {
-                    
                     sequence ++= handleCollectionLiteralDecl(lit.elements, s, translateExpr(id), lit.typ, renamings)
-                    
-//                    sequence += P.VarDecl(s,translateType(lit.typ),None)
-//                    for ((l,i) <- lit.elements.zipWithIndex) {
-//                      sequence += P.Assign(P.IndexAccessor(translateExpr(id),P.IntLiteral(i)) , translateExpr(l)(renamings))
-//                    }
                   }
-                  //sequence += P.Assign(translateExpr(i),translateExpr(newEls))
+                  
                   P.Sequence(sequence.toList)
                 }
                 else P.Assign(translateExpr(id),translateExpr(newEls))
@@ -757,7 +792,8 @@ class PromelaTranslator(params: CommandLineParameters) {
               }
               P.Sequence(sequence.toList)
             }
-            case x => throw new RuntimeException("Cannot assign directly to array in Promela: " + ASTPrinter.get.printExpr(x))
+            case x => 
+              throw new RuntimeException("Cannot assign directly to array in Promela: " + ASTPrinter.get.printExpr(x))
           }
           
         }
@@ -877,12 +913,11 @@ class PromelaTranslator(params: CommandLineParameters) {
         }
         translateExpr(replaced)
       }
-      case ll@ListLiteral(lst) => throw new RuntimeException("Encountered list literal in Promela translation at " + ll.pos + ": " + ll)
-      case cmpr: Comprehension => throw new RuntimeException("Encountered comprehension in Promela translation at " + cmpr.pos + ": " + cmpr)
+      case ll@ListLiteral(lst) => 
+        throw new RuntimeException("Encountered list literal in Promela translation at " + ll.pos + ": " + ll)
+      case cmpr: Comprehension => 
+        throw new RuntimeException("Encountered comprehension in Promela translation at " + cmpr.pos + ": " + cmpr)
       case Id(i) => {
-        if (renamings.isUninterpreted(i)) {
-          println("mamma")
-        }
         P.VarExp(renamings.get(i).getOrElse(renamings.R(i)))
       }
       case HexLiteral(h) => {

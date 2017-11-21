@@ -31,7 +31,7 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
     val actorScheduleInfo = new collection.mutable.ListBuffer[ActorInformation]
     
     val constants = (programCtx.program.collect { case DataUnit(_,constants) => constants }).flatten
-    val mergerBackend = new ActorMerger(constants)
+    val mergerBackend = new ActorMerger(params,constants)
 
     val evaluationOrder = DepTree(topnw).postOrder
     

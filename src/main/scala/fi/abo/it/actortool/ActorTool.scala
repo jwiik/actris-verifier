@@ -459,7 +459,7 @@ object ActorTool {
     if (!params.DoTypecheck) return
     
     
-    var typeCtx = Resolver.resolve(program) match {
+    var typeCtx = Resolver.resolve(program,params) match {
       case Resolver.Errors(msgs) =>
         msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
       case Resolver.Success(rootCtx) =>
@@ -468,7 +468,7 @@ object ActorTool {
     
     program = (RangeExpander | ForEachExpander | OutputPatternNormaliser).process(program)
 
-    typeCtx = Resolver.resolve(program) match {
+    typeCtx = Resolver.resolve(program,params) match {
       case Resolver.Errors(msgs) =>
         msgs foreach { case (pos, msg) => reportError(pos, msg) }; return
       case Resolver.Success(rootCtx) =>

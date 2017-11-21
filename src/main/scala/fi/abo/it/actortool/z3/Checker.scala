@@ -237,6 +237,15 @@ class Checker {
           case _ => throw new TranslationException(e.pos,l.typ.toString)
         }
       }
+      case op@Div(l,r) => {
+        op.typ match {
+          case BvType(_,true) => z3.mkBVSdiv(transExpr(l), transExpr(r))
+          case BvType(_,false) => z3.mkBVUdiv(transExpr(l), transExpr(r))
+          case IntType(_) => z3.mkDiv(transExpr(l), transExpr(r))
+          case UintType(_) => z3.mkDiv(transExpr(l), transExpr(r))
+          case _ => throw new TranslationException(e.pos,l.typ.toString)
+        }
+      }
       case IntLiteral(i) => z3.mkInt(i, Types.Int)
       case hx@HexLiteral(i) => z3.mkNumeral(Integer.parseInt(i, 16).toString, transType(hx.typ))
       case FunctionApp("int2bv",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))

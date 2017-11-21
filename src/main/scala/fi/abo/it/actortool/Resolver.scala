@@ -4,6 +4,10 @@ import scala.util.parsing.input.Position
 import scala.util.parsing.input.Positional
 import collection.mutable.ListBuffer
 import fi.abo.it.actortool.ActorTool.TranslationException
+import fi.abo.it.actortool.ActorTool.CommandLineParameters
+import fi.abo.it.actortool.ActorTool.CommandLineParameters
+import fi.abo.it.actortool.ActorTool.CommandLineParameters
+import fi.abo.it.actortool.ActorTool.CommandLineParameters
 
 object Resolver {
   
@@ -28,9 +32,16 @@ object Resolver {
     def lookupRefTypeDecl(id: String): Option[TypeDecl] = None 
     def variables: List[Declaration]
     def isActorVariable(id: String) = false
+    def commandLineParameters: CommandLineParameters
   }
   
-  sealed class RootContext(override val parentNode: ASTNode, override val actors: Map[String,DFActor], val constants: Map[String,Declaration], val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
+  sealed class RootContext(
+      override val commandLineParameters: CommandLineParameters,
+      override val parentNode: ASTNode, 
+      override val actors: Map[String,DFActor],
+      val constants: Map[String,Declaration], 
+      val userTypes: Map[String,TypeDecl]) extends Context(parentNode, null) {
+    
     var reuseIdTypes = false
     override def useTypeOfIds = reuseIdTypes
     override def getErrors = errors.toList
@@ -42,9 +53,16 @@ object Resolver {
   }
   
   
-  sealed class EmptyContext(override val useTypeOfIds: Boolean) extends RootContext(null,Map.empty,Map.empty,Map.empty)
+  sealed class EmptyContext(
+      override val useTypeOfIds: Boolean,
+      override val commandLineParameters: CommandLineParameters) 
+      extends RootContext(commandLineParameters,null,Map.empty,Map.empty,Map.empty)
   
-  sealed abstract class ChildContext(override val parentNode: ASTNode, override val parentCtx: Context, val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
+  sealed abstract class ChildContext(
+      override val parentNode: ASTNode, 
+      override val parentCtx: Context, 
+      val vars: Map[String,Declaration]) extends Context(parentNode, parentCtx) {
+    
     override def lookUp(id: String): Option[Declaration] = if (vars contains id) Some(vars(id)) else parentCtx.lookUp(id)
     override def getErrors = parentCtx.getErrors
     override def error(p: Position, msg: String) = parentCtx.error(p,msg)
@@ -59,6 +77,7 @@ object Resolver {
     override def variables = vars.values.toList
     override def useTypeOfIds = parentCtx.useTypeOfIds
     override def isActorVariable(id: String) = parentCtx.isActorVariable(id)
+    override def commandLineParameters = parentCtx.commandLineParameters
   }
   
   sealed class ActorContext[T<:DFActor](val actor: T,
@@ -123,7 +142,11 @@ object Resolver {
   sealed class QuantifierContext(val quantifier: Quantifier, override val parentCtx: Context, 
       override val vars: Map[String,Declaration]) extends ChildContext(quantifier,parentCtx,vars)
 
-  def resolve(prog: List[TopDecl], providedConstants: List[Declaration] = List.empty): ResolverOutcome = {
+  def resolve(
+      prog: List[TopDecl], 
+      params: CommandLineParameters, 
+      providedConstants: List[Declaration] = List.empty): ResolverOutcome = {
+    
     var decls = Map[String,TopDecl]()
     
     val actors: scala.collection.mutable.Map[String,DFActor] = new scala.collection.mutable.HashMap()
@@ -143,7 +166,7 @@ object Resolver {
         case td: TypeDecl => userTypes += (td.id -> td)
       }
     }
-    val constCtx = new EmptyContext(false)
+    val constCtx = new EmptyContext(false,params)
     val constants: scala.collection.mutable.Map[String,Declaration] = new scala.collection.mutable.HashMap()
     constants ++= providedConstants map { d => (d.id,d) }
     for ((_,u) <- units) {
@@ -163,7 +186,7 @@ object Resolver {
       }
     }
     
-    val rootCtx = new RootContext(null,actors.toMap,constants.toMap,userTypes)
+    val rootCtx = new RootContext(params,null,actors.toMap,constants.toMap,userTypes)
     
     for (decl <- actors.values) {
       val inports = scala.collection.mutable.HashMap[String,InPort]()
@@ -1106,12 +1129,21 @@ object Resolver {
       case _ => ctx.error(params(0).pos, "The 1st argument to '" + fa.name +  "' has to be an integer literal " + params(0))
     }
     val size = params(1).asInstanceOf[IntLiteral].value
-    
-    fa.typ = fa.name match {
-      case "int2bv" => BvType(size,true)
-      case "int" => BvType(size,true)
-      case "uint2bv" => BvType(size,false)
-      case "uint" => BvType(size,false)
+    if (!ctx.commandLineParameters.SizedIntsAsBitvectors) {
+      fa.typ = fa.name match {
+        case "int2bv" => IntType
+        case "int" => IntType
+        case "uint2bv" => UintType
+        case "uint" => UintType
+      }
+    }
+    else {
+      fa.typ = fa.name match {
+        case "int2bv" => BvType(size,true)
+        case "int" => BvType(size,true)
+        case "uint2bv" => BvType(size,false)
+        case "uint" => BvType(size,false)
+      }
     }
     assert(fa.typ != null)
     fa.typ
