@@ -16,6 +16,11 @@ class NetworkTranslator(
     Seq(BoogieTranslation(network, translateNetwork(nwvs)))
   }
   
+  def generateInitProcedure(network: Network): Seq[BoogieTranslation[Network]] = {
+    val nwvs = VerStruct.forNetwork(network,false)
+    Seq(BoogieTranslation(network, translateNetworkInit(nwvs)))
+  }
+  
   def translateNetwork(nwvs: RootVerStruct[Network]): List[Boogie.Decl] = {
     val decls = new ListBuffer[Boogie.Decl]()
 
@@ -69,10 +74,7 @@ class NetworkTranslator(
     val asgn = new ListBuffer[Boogie.Stmt]
     val connections = nwvs.entity.structure.get.connections
     val entities = nwvs.entity.entities.get.entities
-//    asgn ++= (nwvs.entityDecls map { _.decl })
-//    asgn ++= nwvs.subactorVarDecls map { _.decl }
-//    asgn ++= nwvs.uniquenessConditions map {B.Assume(_)}
-//    asgn ++= nwvs.basicAssumes
+    
     asgn ++= nwvs.declarations map { _.decl }
     asgn ++= nwvs.assumes
     

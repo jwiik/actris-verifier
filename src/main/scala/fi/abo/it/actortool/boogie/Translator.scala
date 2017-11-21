@@ -246,19 +246,14 @@ class Translator(
       case a: BasicActor => 
         val translations = actorTranslator.translateEntity(a)
         translations.map(_.program).reduceLeft{ (x,y) => x++y }
-//        translations.map { 
-//          t => t.append(consts)
-//        }
       case n: Network => 
         if (!actorActionsOnly) {
           val translations = networkTranslator.translateEntity(n) 
           translations.map(_.program).reduceLeft{ (x,y) => x++y }
-//          translations.map { 
-//            t => t.append(consts)
-//          }
         }
         else {
-          Seq.empty
+          val translations = networkTranslator.generateInitProcedure(n)
+          translations.map(_.program).reduceLeft{ (x,y) => x++y }
         }
       case u: DataUnit => Seq.empty
       case td: TypeDecl => {
