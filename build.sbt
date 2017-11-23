@@ -9,4 +9,4 @@ libraryDependencies += "org.scala-lang.modules" % "scala-xml_2.11" % "1.0.6"
 
 packSettings
 packMain := Map("actris" -> "fi.abo.it.actortool.ActorTool")
-packJvmOpts := Map("actris" -> Seq("-Djava.library.path=\"/usr/local/lib\""))
+packJvmOpts := Map("actris" -> Seq("-Xss64M" ,"-Djava.library.path=\"/usr/local/lib\""))
