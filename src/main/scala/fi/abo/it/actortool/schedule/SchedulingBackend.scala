@@ -75,17 +75,24 @@ class SchedulingBackend(val scheduler: Scheduler, val params: CommandLineParamet
       
     }
     
-    println("Actor merging done.")
+    println("Actor merging done")
     
-    val finalActor = mergedActorMap(topNwName)
-    writeFile(params.OutputDir+sep+finalActor.id+".actor", ASTPrinter.orcc.print(finalActor))
+    mergedActorMap.get(topNwName) match {
+      case Some(finalActor) => {
+        writeFile(params.OutputDir+sep+finalActor.id+".actor", ASTPrinter.orcc.print(finalActor))
     
-    if (!params.ScheduleXML.isDefined) {
-      val appInfo = ApplicationInformation(topnw, actorScheduleInfo.toList)
-      writeFile(params.OutputDir+sep+finalActor.id+"_schedules.xml", appInfo.print)
+        if (!params.ScheduleXML.isDefined) {
+          val appInfo = ApplicationInformation(topnw, actorScheduleInfo.toList)
+          writeFile(params.OutputDir+sep+finalActor.id+"_schedules.xml", appInfo.print)
+        }
+        
+        if (errors.isEmpty) Success(finalActor,allSchedules.toList) else Failure(errors)
+      }
+      case None => {
+        Failure(errors)
+      }
     }
     
-    if (errors.isEmpty) Success(finalActor,allSchedules.toList) else Failure(errors)
     
   }
   

@@ -96,6 +96,7 @@ object ActorTool {
     val ScheduleWeights: Map[String,Int]
     val ScheduleSimulate: Boolean
     val ScheduleXML: Option[File]
+    val ScheduleAbstraction: Boolean
     val MergeActions: Boolean
     val PromelaPrint: Boolean
     val PromelaChanSize: Int
@@ -123,22 +124,25 @@ object ActorTool {
     var aSoundnessChecks = false
     var aSmokeTest = false
     var aReplaceMaps = false
-    var aBoogieTimeout = if (DEBUG) 1000000 else 300
+    var aBoogieTimeout = if (DEBUG) 1000000 else 3000
     var aAssumeInvs = true //if (DEBUG) false else true
     var aPrintInvariantStats = false
     var aToVerify: List[String] = List.empty
     var aSizedIntsAsBitVectors = true
     var aSpinPath: String = "spin"
     var aSchedule: Option[String] = None
-    var aMergeActions: Boolean = false
+    var aMergeActions: Boolean = true
     var aPromelaPrint: Boolean = false
     var aScheduleSimulate: Boolean = false
     var aPromelaChanSize: Int = 512
     var aScheduleWeights: Map[String,Int] = Map.empty
     var aScheduleXML: Option[File] = None
+    var aScheduleAbstraction = true
     var aPrintXMLDescription: Boolean = false
     var aContractsToVerify: List[(String,String)] = List.empty
-    var aOutputDir = java.nio.file.Files.createTempDirectory("actris-output-").toFile
+    var aOutputDir = 
+      java.nio.file.Files.createTempDirectory("actris-output-").toFile
+    
 
     lazy val help = {
       "actortool [option] <filename>+\n"
@@ -256,6 +260,7 @@ object ActorTool {
           }
         }
         case Param("merge-actions") => aMergeActions = true
+        case Param("no-merge-actions") => aMergeActions = false
         case Param("promela-print") => aPromelaPrint = true
         case Param("promela-chan-size") => {
           value match {
@@ -311,6 +316,9 @@ object ActorTool {
               reportCommandLineError("parameter schedule-xml takes a file path as argument");
             }
           }
+        }
+        case Param("no-schedule-abstraction") => {
+          aScheduleAbstraction = false
         }
         case Param("print-xml-desc") => {
           aPrintXMLDescription = true
@@ -378,6 +386,7 @@ object ActorTool {
       val PromelaChanSize = aPromelaChanSize
       val ScheduleWeights = aScheduleWeights
       val ScheduleXML = aScheduleXML
+      val ScheduleAbstraction = aScheduleAbstraction
       val PrintXMLDescription = aPrintXMLDescription
       val ContractsToVerify = aContractsToVerify
       val SpinPath = aSpinPath

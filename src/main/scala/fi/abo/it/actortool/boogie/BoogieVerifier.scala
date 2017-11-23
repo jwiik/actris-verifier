@@ -34,7 +34,10 @@ class BoogieScheduleVerifier(
     
     val translator = 
       new BoogieScheduleCheckTranslator(
-          params.MergeActions, params.ContractsToVerify, params.SmokeTest)
+          params.MergeActions, 
+          params.ContractsToVerify, 
+          params.SmokeTest, 
+          params.ScheduleAbstraction)
     val typeCtx = scheduleCtx.typeContext
     
     val schedBplProcs = translator.invoke(scheduleCtx)

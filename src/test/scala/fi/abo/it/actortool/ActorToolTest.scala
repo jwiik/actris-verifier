@@ -51,5 +51,6 @@ class ActorToolTestSuite extends FlatSpec with Matchers {
       val PrintXMLDescription = false
       val ContractsToVerify = List.empty
       val OutputDir = new File("actris-output")
+      val ScheduleAbstraction = true
     } 
 }

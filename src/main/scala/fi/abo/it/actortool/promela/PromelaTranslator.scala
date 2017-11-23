@@ -921,8 +921,8 @@ class PromelaTranslator(params: CommandLineParameters) {
         P.VarExp(renamings.get(i).getOrElse(renamings.R(i)))
       }
       case HexLiteral(h) => {
-        val bigInt = Integer.parseInt(h, 16)
-        P.IntLiteral(bigInt)
+        val bigInt = java.lang.Long.parseLong(h.toUpperCase, 16)
+        P.IntLiteral(bigInt.toString)
       }
       case IntLiteral(i) => P.IntLiteral(i)
       case BoolLiteral(b) => P.BoolLiteral(b)

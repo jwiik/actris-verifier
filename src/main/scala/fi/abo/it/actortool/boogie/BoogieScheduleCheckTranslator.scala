@@ -6,9 +6,8 @@ import fi.abo.it.actortool.schedule._
 class BoogieScheduleCheckTranslator(
     val mergedActions: Boolean, 
     val contractsToVerify: List[(String,String)],
-    val smokeTest: Boolean
-    //val skipMutualExclusiveness: Boolean
-    ) 
+    val smokeTest: Boolean,
+    val scheduleAbstraction: Boolean) 
     extends EntityTranslator[ScheduleContext,ContractAction] 
     with GeneralBackend[ScheduleContext,Seq[BoogieTranslation[ContractAction]]] {
 
@@ -39,13 +38,17 @@ class BoogieScheduleCheckTranslator(
           //actionChecks ++ 
           scheduleCtx.schedules.map { s => 
             
-            BoogieTranslation(Seq(s.contract), constDecls ++ translateFunctionDecl(vs) ++ translateActorSchedule(scheduleCtx,s,vs))
+            BoogieTranslation(
+                Seq(s.contract), 
+                constDecls ++ translateFunctionDecl(vs) ++ translateActorSchedule(scheduleCtx,s,vs))
           }
         }
         case nw: Network => {
           val vs = VerStruct.forNetwork(nw,mergedActions)
           scheduleCtx.schedules.map {
-            s => BoogieTranslation(Seq(s.contract), constDecls ++ translateNetworkSchedule(scheduleCtx, s, vs))
+            s => BoogieTranslation(
+                Seq(s.contract), 
+                constDecls ++ translateNetworkSchedule(scheduleCtx, s, vs))
           }
         }
       }
@@ -93,9 +96,6 @@ class BoogieScheduleCheckTranslator(
     
     stmts ++= schedule.contract.guards.map { g => B.Assume(transExpr(g,vs)) }
     stmts ++= schedule.contract.requires.map { r => B.Assume(transExpr(r.expr,vs)) }
-    
-//    stmts ++= 
-//      stateChannels.map { case (id,ch) => B.Assume(B.C(transExpr(ch,vs)) ==@ B.R(transExpr(ch,vs)) + B.Int(1)) }
     
     for ((firing,idx) <- schedule.sequence.zipWithIndex) {
       
@@ -170,8 +170,13 @@ class BoogieScheduleCheckTranslator(
             r.pos,
             "Precondition might not hold for action '" + action.fullName + "'" ) 
       }
-      
-      stmts ++= generateHavoc(tvs.assignedVariables,tvs)
+    
+      if (scheduleAbstraction) {
+        stmts ++= generateHavoc(tvs.assignedVariables,tvs)
+      }
+      else {
+        stmts ++= transStmt( tvs.entity.body, tvs)
+      }
       
       for (opat <- action.outputPattern) {
         val id = opat.portId
@@ -366,7 +371,12 @@ class BoogieScheduleCheckTranslator(
         }
       }
       
-      stmts ++= generateHavoc(acvs.assignedVariables, acvs)
+//      if (scheduleAbstraction) {
+        stmts ++= generateHavoc(acvs.assignedVariables, acvs)
+//      }
+//      else {
+//        stmts ++= transStmt( acvs.entity.body, acvs)
+//      }
       
       for (pat <- action.outputPattern) {
         val id = nwvs.connectionMap.getSrc(PortRef(Some(e.id),pat.portId))

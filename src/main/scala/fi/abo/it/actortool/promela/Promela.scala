@@ -59,7 +59,12 @@ object Promela {
   case class IndexAccessor(exp: Expr, idx: Expr) extends Expr
   case class ConditionalExpr(cond: Expr, thn: Expr, els: Expr) extends Expr
   case class VarExp(id: String) extends Expr
-  case class IntLiteral(i: Int) extends Expr
+  case class IntLiteral(i: String) extends Expr {
+    def this(i: Int) = this(i.toString)
+  }
+  object IntLiteral {
+    def apply(i: Int) = new IntLiteral(i)
+  }
   case class BoolLiteral(b: Boolean) extends Expr
   case class ArrayLiteral(values: List[Expr]) extends Expr
   case class CExpr(code: String) extends Expr
@@ -234,7 +239,7 @@ object Promela {
         case IndexAccessor(exp,idx) => printExpr(exp)+ "[" + printExpr(idx) + "]"
         case ConditionalExpr(cond,thn,els) => "(" + printExpr(cond) + " -> " + printExpr(thn) + " : " + printExpr(els) + ")"
         case ArrayLiteral(lst) => "{" + lst.map(printExpr).mkString(",") + "}"
-        case IntLiteral(i) => if (i < 0) "(-" + (-i).toString + ")" else i.toString
+        case IntLiteral(i) => i
         case BoolLiteral(true) => "true"
         case BoolLiteral(false) => "false"
         case CExpr(code) => printCExpr(code)

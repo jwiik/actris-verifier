@@ -79,9 +79,10 @@ class ActorMerger(
             (e, actor.actorActions.find(_.init).get) 
           }
           
+          val schedData = for (s <- schedules) yield {
+            createActionForNetworkContract(nw, s, tokenAmounts, actorVariablesMap)
+          }
           
-          
-          val schedData = for (s <- schedules) yield createActionForNetworkContract(nw, s, tokenAmounts, actorVariablesMap)
           val (actions,sizes) = schedData.unzip
           
           val maxSizes = (for (c <- connections.filter(!_.isInput)) yield {
@@ -95,7 +96,11 @@ class ActorMerger(
 
           for (c <- connections.filter { !_.isInput }) {
             if (maxSizes(c.id) > 0) {
-              members += Declaration(c.id,MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,maxSizes(c.id)),false,None)
+              members += Declaration(
+                  c.id,
+                  MapType(IntType,c.typ.asInstanceOf[ChanType].contentType,maxSizes(c.id)),
+                  false,
+                  None)
             }
           }
           
