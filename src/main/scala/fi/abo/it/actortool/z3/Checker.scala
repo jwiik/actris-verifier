@@ -189,6 +189,15 @@ class Checker {
           case _ => throw new TranslationException(e.pos,e.typ.toString)
         }
       }
+      case Greater(l,r) => {
+        l.typ match {
+          case BvType(_,true) => z3.mkBVSgt(transExpr(l), transExpr(r))
+          case BvType(_,false) => z3.mkBVUgt(transExpr(l), transExpr(r))
+          case IntType(_) => z3.mkGT(transExpr(l), transExpr(r))
+          case UintType(_) => z3.mkGT(transExpr(l), transExpr(r))
+          case _ => throw new TranslationException(e.pos,e.typ.toString)
+        }
+      }
       case AtMost(l,r) => {
         l.typ match {
           case BvType(_,true) => z3.mkBVSle(transExpr(l), transExpr(r))
@@ -249,6 +258,27 @@ class Checker {
       case IntLiteral(i) => z3.mkInt(i, Types.Int)
       case hx@HexLiteral(i) => z3.mkNumeral(Integer.parseInt(i, 16).toString, transType(hx.typ))
       case FunctionApp("int2bv",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
+      case fa@FunctionApp("bvresize",List(vec,size)) => {
+        val z3Vec = transExpr(vec)
+        size match {
+          case IntLiteral(newSize) => {
+            val argSize = vec.typ.asInstanceOf[BvType].size
+            if (newSize < argSize) {
+              z3.mkExtract(newSize, 0, z3Vec)
+            }
+            else if (newSize > argSize) {
+              z3.mkConcat(z3.mkInt(0,Types.Bv(newSize-argSize)), z3Vec)
+              //Boogie.BinaryExpr("++",Boogie.BVLiteral("0",newSize-argSize),param1)
+            }
+            else {
+              z3Vec
+            }
+          }
+          case x => {
+            throw new TranslationException(fa.pos,"The second argument should an int literal")
+          }
+        }
+      }
       case FunctionApp("int",List(IntLiteral(i),IntLiteral(s))) => z3.mkInt(i,Types.Bv(s))
       case sh@RShift(l,r) => {
         if (sh.typ.isBv && sh.typ.isSigned) z3.mkBVAshr(transExpr(l), transExpr(r))
