@@ -22,19 +22,19 @@ import fi.abo.it.actortool.schedule.XMLScheduler
 import fi.abo.it.actortool.schedule.SchedulingBackend
 
 trait ProgramContext {
-  def program: List[TopDecl]
+  def program: Seq[TopDecl]
   def typeContext: Resolver.Context
 }
 
 class BasicProgramContext(
-    val program: List[TopDecl], 
+    val program: Seq[TopDecl], 
     val typeContext: Resolver.Context) extends ProgramContext
 
 class ScheduleContext(
     val entity: DFActor,
-    val schedules: List[ContractSchedule],
+    val schedules: Seq[ContractSchedule],
     val mergedActors: Map[String,BasicActor],
-    val program: List[TopDecl], 
+    val program: Seq[TopDecl], 
     val typeContext: Resolver.Context) extends ProgramContext {
   
   val entities = entity match {
@@ -155,6 +155,17 @@ object ActorTool {
       val (param, value) = 
         if (paramval.size == 1) (paramval(0), None) else (paramval(0), Some(paramval(1)))
       param match {
+        case Param("version") => {
+          if (System.getProperty("prog.version") != null) {
+            val ver = System.getProperty("prog.version")
+            val rev = System.getProperty("prog.revision")
+            println("Actris verifier v" + ver + " (" + rev + ")")
+          }
+          else {
+            println("Actris verifier (development version)")
+          }
+          return None
+        }
         case Param("boogie-print") => aPrintProgram = true
         case Param("boogie-path") => value match {
           case None    =>
@@ -487,9 +498,16 @@ object ActorTool {
     timings += (Step.Resolve -> (System.nanoTime - tmpTime))
     tmpTime = System.nanoTime
     
-    val componentsToVerify =
-        if (params.ComponentsToVerify.isEmpty) program
-        else program.filter { x => params.ComponentsToVerify.contains(x.id) || x.isUnit || x.isType }
+    val componentsToVerify = {
+      if (params.ComponentsToVerify.isEmpty) {
+        program
+      }
+      else {
+        program.filter { 
+          x => params.ComponentsToVerify.contains(x.id) || x.isUnit || x.isType 
+        }
+      }
+    }.map { x => x.id -> x }
     
     if (params.DoInfer) {
       Inferencer.infer(program, typeCtx.get, params.InferModules, params.AssumeGenInvs) match {
@@ -517,10 +535,13 @@ object ActorTool {
           new SchedulingBackend(new PromelaBackend(params),params)
       }
       
+      val schedulingProgramCtx: ProgramContext = 
+        new BasicProgramContext(program,typeCtx.get)
+      val verificationProgramCtx: ProgramContext = 
+        new BasicProgramContext(componentsToVerify.unzip._2,typeCtx.get)
       
-      val programContext: ProgramContext = new BasicProgramContext(program,typeCtx.get)
       val promelaBackend = new PromelaBackend(params)
-      val (ba,scheduleCtxs) = schedulingBackend.invoke(programContext) match {
+      val (ba,scheduleCtxs) = schedulingBackend.invoke(schedulingProgramCtx) match {
         case schedule.Success(ba,scheduleCtxs) => (ba,scheduleCtxs)
         case schedule.Failure(errs) => {
           errs.map { case (pos,msg) => reportError(pos, msg) }
@@ -535,13 +556,16 @@ object ActorTool {
         
         val actionsVerifier = new BoogieVerifier(params,true)
         println("\nVerifying actor actions... ")
-        actionsVerifier.invoke(programContext)
+        actionsVerifier.invoke(verificationProgramCtx)
         
         val scheduleVerifier = new BoogieScheduleVerifier(params)
-        println
+        
+        val componentMap = componentsToVerify.toMap
         for (s <- scheduleCtxs) {
-          println("Verifying " + s.schedules.size + " schedule(s) for " + s.entity.fullName + "...")
-          scheduleVerifier.invoke(s)
+          if (componentMap.contains(s.entity.id)) {
+            println("Verifying " + s.schedules.size + " schedule(s) for " + s.entity.fullName + "...")
+            scheduleVerifier.invoke(s)
+          }
         }
         
         timings += (Step.Verification -> (System.nanoTime - tmpTime))
@@ -557,7 +581,7 @@ object ActorTool {
       val verifier = new BoogieVerifier(params,false)
       
       if (!params.DoVerify) return
-      val programContext = new BasicProgramContext(componentsToVerify,typeCtx.get)
+      val programContext = new BasicProgramContext(componentsToVerify.unzip._2,typeCtx.get)
       verifier.invoke(programContext)
   
       timings += (Step.Verification -> (System.nanoTime - tmpTime))
@@ -577,7 +601,7 @@ object ActorTool {
     if (params.PrintInvariantStats) {
       println("Number of invariants: ")
       var totUserProvided, totGenerated = 0
-      componentsToVerify map {
+      componentsToVerify.unzip._2 map {
         c =>
           c match {
             case a: DFActor =>

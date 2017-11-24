@@ -17,7 +17,7 @@ class PromelaBackend(val params: CommandLineParameters) extends Scheduler {
   val translator = new PromelaTranslator(params)
   val runner = new PromelaRunner(params)
   
-  def schedule(entity: DFActor, mergedActors: Map[String,BasicActor], constants: List[Declaration]): List[ContractSchedule] = {
+  def schedule(entity: DFActor, mergedActors: Map[String,BasicActor], constants: Seq[Declaration]): List[ContractSchedule] = {
      val translations = translator.invoke(entity,mergedActors,Map.empty,constants)
      val translationsToSchedule = translations
      /*

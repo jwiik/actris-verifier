@@ -77,9 +77,9 @@ class Checker {
   
   def getSatisfyingModel(
       constraints: List[Expr],
-      ports: List[Declaration],
-      portIds: List[Declaration],
-      constants: List[Declaration]): Result = {
+      ports: Seq[Declaration],
+      portIds: Seq[Declaration],
+      constants: Seq[Declaration]): Result = {
     
     val solver = z3.mkSolver
     
@@ -98,7 +98,7 @@ class Checker {
     
     val ctx = new BasicContext(z3Constants ++ z3PortIds,z3Funcs++z3Ports)
     val z3ConstantConstraints = 
-      (portIds.map { d => z3.mkEq(z3PortIds(d.id), transExpr(d.value.get)(ctx) ) }) :::
+      (portIds.map { d => z3.mkEq(z3PortIds(d.id), transExpr(d.value.get)(ctx) ) }) ++
       (constants.map { d => z3.mkEq(z3Constants(d.id), transExpr(d.value.get)(ctx) ) })
     
     val funcAxioms: List[Z3AST] =

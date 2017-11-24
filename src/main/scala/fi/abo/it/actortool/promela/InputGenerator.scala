@@ -6,7 +6,7 @@ import fi.abo.it.actortool.ActorTool.TranslationException
 
 class InputGenerator {
   
-  def generateInput(contract: ContractAction, constants: List[Declaration]): Map[String,List[Expr]] = {
+  def generateInput(contract: ContractAction, constants: Seq[Declaration]): Map[String,List[Expr]] = {
     var declarations = List.empty[Declaration]
     var portIdDeclarations = List.empty[Declaration]
     var portId = Map.empty[String,Int]

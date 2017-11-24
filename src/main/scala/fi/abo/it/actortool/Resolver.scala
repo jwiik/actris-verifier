@@ -143,9 +143,9 @@ object Resolver {
       override val vars: Map[String,Declaration]) extends ChildContext(quantifier,parentCtx,vars)
 
   def resolve(
-      prog: List[TopDecl], 
+      prog: Seq[TopDecl], 
       params: CommandLineParameters, 
-      providedConstants: List[Declaration] = List.empty): ResolverOutcome = {
+      providedConstants: Seq[Declaration] = List.empty): ResolverOutcome = {
     
     var decls = Map[String,TopDecl]()
     

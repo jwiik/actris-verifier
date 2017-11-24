@@ -13,7 +13,7 @@ import fi.abo.it.actortool.util.Analysis
 case class Translation[+T<:DFActor](
     val entity: T, 
     val contract: ContractAction,
-    val promelaProgram: List[Promela.Decl],
+    val promelaProgram: Seq[Promela.Decl],
     val ltlFormula: Promela.Expr,
     val idMap: IdMap,
     val mergedActors: Map[String,BasicActor])
@@ -128,7 +128,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       entity: DFActor, 
       mergedActors: Map[String,BasicActor], 
       alreadyTranslated: Map[String,P.ProcType], 
-      constants: List[Declaration]): List[Translation[DFActor]] = {
+      constants: Seq[Declaration]): List[Translation[DFActor]] = {
     
     assert(!entity.contractActions.isEmpty, entity.fullName + " has no contracts")
     
@@ -173,7 +173,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       actor: DFActor, 
       contract: ContractAction, 
       channelMap: Map[PortRef,Connection], 
-      connections: List[Connection]): P.Expr = {
+      connections: Seq[Connection]): P.Expr = {
     
     actor match {
       case nw: Network => 
@@ -199,7 +199,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       delayTokens: Map[String,Expr], 
       contract: ContractAction, 
       channelMap: Map[PortRef,Connection],
-      connections: List[Connection]): P.Expr = {
+      connections: Seq[Connection]): P.Expr = {
     
     val outputTokens = 
       actor.outports.map( p => (channelMap(PortRef(None,p.id)).id, contract.outportRate(p.id)) ).toMap
@@ -218,8 +218,8 @@ class PromelaTranslator(params: CommandLineParameters) {
   
   def translateBasicActor(
       actor: BasicActor, 
-      constants: List[Declaration], 
-      procs: List[P.ProcType], 
+      constants: Seq[Declaration], 
+      procs: Seq[P.ProcType], 
       mergedActors: Map[String,BasicActor]): List[Translation[BasicActor]] = {
     
     val idMap = new IdMap
@@ -294,7 +294,7 @@ class PromelaTranslator(params: CommandLineParameters) {
         
         val setups = List(init)
         
-        val program: List[P.Decl] = decls.toList ::: List(instr) ::: procs ::: setups
+        val program: List[P.Decl] = decls.toList ++ List(instr) ++ procs ++ setups
         //(contract,program)
         Translation(actor,contract,program,formula,idMap,mergedActors)
       }
@@ -304,8 +304,8 @@ class PromelaTranslator(params: CommandLineParameters) {
   
   def translateNetwork(
       nw: Network, 
-      constants: List[Declaration], 
-      procs: List[P.ProcType], 
+      constants: Seq[Declaration], 
+      procs: Seq[P.ProcType], 
       mergedActors: Map[String,BasicActor]): List[Translation[Network]] = {
     
     val idMap = new IdMap
@@ -378,7 +378,7 @@ class PromelaTranslator(params: CommandLineParameters) {
         
         val setups = List(init) 
         
-        val program: List[P.Decl] = decls.toList ::: List(instr) ::: procs ::: setups
+        val program: Seq[P.Decl] = decls.toList ++ List(instr) ++ procs ++ setups
         //(contract,program)
         Translation(nw,contract,program,formula,idMap,mergedActors)
       }
@@ -390,7 +390,7 @@ class PromelaTranslator(params: CommandLineParameters) {
       entity: DFActor, 
       runs: List[P.Stmt], 
       channelMapping: Map[PortRef, String], 
-      constants: List[Declaration]): Map[ContractAction,P.Init] = {
+      constants: Seq[Declaration]): Map[ContractAction,P.Init] = {
     
     (for (contract <- entity.contractActions) yield {
       // Generate an input satisfying the contract
@@ -438,7 +438,7 @@ class PromelaTranslator(params: CommandLineParameters) {
     maxRates
   }
   
-  def translateActor(a: BasicActor, constants: List[Declaration]): P.ProcType = {
+  def translateActor(a: BasicActor, constants: Seq[Declaration]): P.ProcType = {
     val actorRenamings = rootRenamings.getSubContext
     
     val params = new ListBuffer[P.ParamDecl]

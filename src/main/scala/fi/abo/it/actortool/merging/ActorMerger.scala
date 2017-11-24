@@ -22,7 +22,7 @@ case class Failure(actor: BasicActor, errors: List[(Position,String)]) extends M
  */
 class ActorMerger(
     params: CommandLineParameters, 
-    constants: List[Declaration]) extends GeneralBackend[ScheduleContext,MergingOutcome] {
+    constants: Seq[Declaration]) extends GeneralBackend[ScheduleContext,MergingOutcome] {
   
   val Sep = Constants.Sep
   
@@ -106,7 +106,7 @@ class ActorMerger(
           
           members += createInitActionForNetwork(nw, initSequence, actorVariablesMap, tokenAmounts)
           
-          members.toList:::actions
+          members.toList ++ actions
         }
         case ba: BasicActor => {
           val members = new ListBuffer[Member]
@@ -147,7 +147,7 @@ class ActorMerger(
           }
           members ++= initActions
           val actions = for (s <- schedules) yield createActionForActorContract(ba, s, actorVariables)
-          members.toList:::actions
+          members.toList ++ actions
         }
       }
     

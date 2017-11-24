@@ -5,14 +5,14 @@ import fi.abo.it.actortool._
 import xml.NodeSeq
 
 trait Scheduler {
-  def schedule(entity: DFActor, mergedActors: Map[String,BasicActor], constants: List[Declaration]): List[ContractSchedule]
+  def schedule(entity: DFActor, mergedActors: Map[String,BasicActor], constants: Seq[Declaration]): List[ContractSchedule]
 }
 
 class XMLScheduler(file: File) extends Scheduler {
   
   val xmlSchedules = xml.XML.loadFile(file)
   
-  def schedule(entity: DFActor, mergedActors: Map[String,BasicActor], constants: List[Declaration]): List[ContractSchedule] = {
+  def schedule(entity: DFActor, mergedActors: Map[String,BasicActor], constants: Seq[Declaration]): List[ContractSchedule] = {
     
     val instances = entity match {
       case ba: BasicActor => Map("this" -> Instance("this", ba.id, Nil))
