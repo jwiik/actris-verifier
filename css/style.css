@@ -1,0 +1,6 @@
+h1 small {
+  display: block;
+  padding-top: 0.2em;
+  padding-bottom: 1em;
+  font-style: italic;
+}
