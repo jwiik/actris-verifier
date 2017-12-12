@@ -1,0 +1,20 @@
+body {
+  padding-bottom: 50px;
+}
+.publications li {
+  margin-bottom: 0.5em;
+}
+.publications .journal {
+  font-style: italic;
+}
+.publications .booktitle {
+  font-style: italic;
+}
+@media (min-width: 768px) {
+  .container {
+    max-width: 730px;
+  }
+}
+span.keyword {
+  font-weight: bold;
+}
