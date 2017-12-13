@@ -51,24 +51,94 @@
           <p>Actris translates actors, networks and their contracts into code in the Boogie intermediate verification language. The Boogie verifier then carries out the rest of the proof by generating verification conditions that are discharged by the Z3 SMT solver.</p>
         </div>
       </div>
-      <!--
+      
       <div class="row">
         <div id="example" class="col-sm-12">
           <h2>Example</h2>
+          <p>As an example, consider the network illustrated below:</p>
+          <img src="1.svg" />
+          <p>It consists of the two actors <code>Add</code> and <code>Delay</code>. The source code of these actors is given below.</p>
           <figure class="highlight">
-<pre><code class="language-html" data-lang="html"><span class="keyword">actor</span> Add <span class="keyword">int</span> in1, <span class="keyword">int</span> in2 ==> <span class="keyword">int</span> out:
-  <span class="keyword">action</span> in1:[i], in2:[j] ==> out:[i+j] <span class="keyword">end</span>
+<pre><code class="language-html" data-lang="html"><span class="keyword">actor</span> Add <span class="keyword">int</span> in1, <span class="keyword">int</span> in2 ==> <span class="keyword">int</span> out1:
+  <span class="keyword">action</span> in1:[i], in2:[j] ==> out1:[i+j] <span class="keyword">end</span>
 <span class="keyword">end</span>
-
-<span class="keyword">actor</span> Delay(<span class="keyword">int</span> k) <span class="keyword">int</span> in ==> <span class="keyword">int</span> out:
-  <span class="keyword">initialize</span> ==> out:[k] <span class="keyword">end</span>
-  <span class="keyword">action</span> in:[i] ==> out:[i] <span class="keyword">end</span>
+</code></pre></figure>
+<figure class="highlight"><pre><code class="language-html" data-lang="html"><span class="keyword">actor</span> Delay(<span class="keyword">int</span> k) <span class="keyword">int</span> in1 ==> <span class="keyword">int</span> out1:
+  <span class="keyword">initialize</span> ==> out1:[k] <span class="keyword">end</span>
+  <span class="keyword">action</span> in1:[i] ==> out1:[i] <span class="keyword">end</span>
 <span class="keyword">end</span>
 </code></pre>
           </figure>
+          <p>In Actris, also networks are described in a similar format to that of actors:</p>
+          <figure class="highlight">
+          <pre><code class="language-html" data-lang="html"><span class="keyword">network</span> SumNet <span class="keyword">int</span> in1 ==> <span class="keyword">int</span> out1:
+  <span class="keyword">contract</span> in1:1 ==> out1:1
+    <span class="keyword">requires</span> 0 &lt;= in1[@]
+    <span class="keyword">ensures</span> out[@] >= in1[@]
+    <span class="keyword">ensures</span> out[0] = in1[0]
+    <span class="keyword">ensures</span> 0 &lt; @(out) ==> out[@] = out[@-1]+in1[@]
+  <span class="keyword">end</span>  
+  
+  <span class="keyword">contract invariant</span> tokens(b,1)
+  <span class="keyword">action invariant</span> b[0] = 0
+  <span class="keyword">action invariant</span> 0 &lt;= b[@]
+  
+  <span class="keyword">entities</span>
+    add = Add();
+    del = Delay(0);
+  <span class="keyword">end</span>  
+  
+  <span class="keyword">structure</span>
+    a: in1 --> add.in1;
+    b: del.out1 --> add.in2;
+    c: add.out1 --> out1;
+    d: add.out1 --> del.in1;
+  <span class="keyword">end</span>  
+<span class="keyword">end</span>  
+</code></pre>
+          </figure>
+          <p>
+            Here the contract specifies the intended behaviour of the network: The network takes one input token on the iport <code>in1</code>
+            and outputs one token on the outport <code>out1</code>. For more details on what e.g. the <code>requires</code>, <code>ensures</code> and 
+            <code>invariant</code> keywords mean, we refer to the papers mentioned below.
+          </p>
+          <p>
+            Actris is able to automatically prove that the network satisfies its contract. It does so by translating the contracts, actors and 
+            networks into input for the Boogie program verifier. The Boogie verifier then carries out the rest of the proof by generating
+            proof obligations which are discharged using the Z3 SMT solver.
+          </p>
         </div>
       </div>
-      -->
+      <div class="row">
+        <div id="download" class="col-sm-12">
+          <h2>Download</h2>
+          <p>Actris is available open source at <a href="https://github.com/jwiik/actris-verifier">GitHub</a>. The latest version together as well as some working examples can be downloaded <a href="https://github.com/jwiik/actris-verifier/releases/latest">here</a>. The examples bundled with the distribution include e.g. digital filters, a ZigBee transmitter and a MPEG-4 decoder.</p>
+        </div>
+      </div>
+      <div class="row">
+        <div id="instructions" class="col-sm-12">
+          <h2>Instructions</h2>
+          <p> The tool is written in Scala and should be cross-platform. It has been tested on macOS 10.11, Ubuntu and Windows 7 and requires Java 7 or later. It also requires that the Boogie program verifier is available on the system <code>PATH</code>.</p>
+          <p>The tool can be installed by running the command <code>make install</code> in the root folder of the distributable zip-file.</p>
+          <p>
+            To verify the example described above on a UNIX-based system, run the command, assuming that <code>actris</code> is available 
+            on the path and that the actors and networks are saved in the files <code>Add.actor</code>, <code>Delay.actor</code> and <code>SumNet.actor</code>:
+          </p>
+          <p><code>actris Add.actor Delay.actor SumNet.actor</code></p>
+          <p>On Windows systems, the <code>actris.bat</code> file can be used to run the tool.</p>
+          <p>
+            Starting from v1.0.0, Actris supports a new verification approach, based on finding static schedules for contracts.
+            This can significantly reduce the number of invariant annotations needed for verification.
+            To use this approach, Actris should be run with the <code>--schedule</code> parameter:
+          </p>
+          <p><code>actris --schedule:SumNet Add.actor Delay.actor SumNet.actor</code></p>
+          <p>
+            The scheduling backend depends on the SPIN model checker. Hence, SPIN should be available on the <code>PATH</code>. Additionally
+            the scheduling backend also uses the Java API of the Z3 SMT solver as well as the <a href="https://github.com/epfl-lara/ScalaZ3">ScalaZ3</a> 
+            binders.        
+          </p>
+        </div>
+      </div>
       <div class="row">
         <div id="publications" class="col-sm-12">
           <h2>Publications</h2>
@@ -79,40 +149,7 @@
           </ul>
         </div>
       </div>
-      <div class="row">
-        <div id="download" class="col-sm-12">
-          <h2>Download</h2>
-          <p>The tool can be downloaded below. The tool is written in Scala and should be cross-platform. It has been tested on macOS 10.11 and Windows 7 and requires Java 7 or later. It also requires that the Boogie program verifier is available on the system <code>PATH</code>.</p>
-          <ul>
-            <li>
-              Actris v1.0.0 
-              <a href="https://github.com/jwiik/actris-verifier/releases/download/v1.0.0/actris-1.0.0.zip">zip</a> 
-              <a href="https://github.com/jwiik/actris-verifier/archive/v1.0.0.zip">source</a>
-              <a href="http://users.abo.fi/jonwiik/actris/actris-v1.0.0-examples.zip">examples</a>
-            </li>
-            <li>
-              Actris v0.2.0 
-              <a href="https://github.com/jwiik/actris-verifier/archive/v0.2.0.zip">source</a>
-              <a href="http://users.abo.fi/jonwiik/actris/actris-v0.2.0-examples.zip">examples</a>
-            </li>
-          </ul>
-          <p>The examples for the distributions include e.g. digital filters, a ZigBee transmitter and a MPEG-4 decoder.</p>
-        </div>
-      </div>
-      <div class="row">
-        <div id="instructions" class="col-sm-12">
-          <h2>Instructions</h2>
-          <p>To run the tool on a UNIX-based system, run the command:</p>
-          <p><code>&#60;actris_path&#62;&#47;bin&#47;actris &#60;path_to_program&#62;</code></p>
-          <p>On Windows systems, the <code>actris.bat</code> file can be used to run the tool.</p>
-        </div>
-      </div>
-      <div class="row">
-        <div id="credits" class="col-sm-12">
-          <h2>Credits</h2>
-          <p>The tool and the underlying principles have been developed by Jonatan Wiik and Pontus Boström at Åbo Akademi University, Finland.</p>
-        </div>
-      </div>
+
     </div>
   </body>
 </html>
